@@ -1,4 +1,8 @@
 /**
+ * Used as a sort of "mixin" to calculate where an annotation of a note
+ * should begin based on the direction of the note stem and the type of
+ * annotation.
+ *
  * @jsx React.DOM
  */
 

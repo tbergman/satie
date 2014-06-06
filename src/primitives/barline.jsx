@@ -1,4 +1,7 @@
 /**
+ * Renderes a full-stave-height barline at (x,y).
+ * Does not do any interesting calculations.
+ *
  * @jsx React.DOM
  */
 

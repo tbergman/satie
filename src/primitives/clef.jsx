@@ -1,4 +1,6 @@
 /**
+ * Responsible for the rendering of a full-sized clef.
+ *
  * @jsx React.DOM
  */
 

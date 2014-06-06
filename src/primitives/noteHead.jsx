@@ -1,4 +1,6 @@
 /**
+ * Renders a note head.
+ *
  * @jsx React.DOM
  */
 

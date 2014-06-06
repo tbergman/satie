@@ -1,4 +1,7 @@
 /**
+ * Renders an accidental centered at (x, y) on line 'line'.
+ * Position adjustments of accidentals should be taken care of by PitchBridge.
+ *
  * @jsx React.DOM
  */
 
@@ -13,7 +16,11 @@ var Accidental = React.createClass({
             if (SMuFL.glyphClasses.accidentals.indexOf(props[propName]) === -1) {
                 console.warn(props[propName], " is not a valid accidental.");
             }
-        }
+        },
+        x: React.PropTypes.number.isRequired,
+        y: React.PropTypes.number.isRequired,
+        line: React.PropTypes.number.isRequired,
+        stroke: React.PropTypes.string
     },
     getDefaultProps: function() {
         return {

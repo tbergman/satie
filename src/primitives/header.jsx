@@ -1,4 +1,7 @@
 /**
+ * Renders the title, author, etc. of a song.
+ * Unlike other primitivies, this one decides the position of its children.
+ *
  * @jsx React.DOM
  */
 

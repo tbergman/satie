@@ -1,4 +1,6 @@
 /**
+ * Responsible for rendering the "flag" on unbeamed eigth notes and shorter.
+ *
  * @jsx React.DOM
  */
 

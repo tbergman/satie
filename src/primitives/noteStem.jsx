@@ -1,4 +1,6 @@
 /**
+ * Renders a stem based on a height decided in Note.
+ *
  * @jsx React.DOM
  */
 

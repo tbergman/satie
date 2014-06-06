@@ -1,4 +1,6 @@
 /**
+ * Renders a simple, compount, or common time signature.
+ * 
  * @jsx React.DOM
  */
 

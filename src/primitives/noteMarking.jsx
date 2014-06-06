@@ -1,4 +1,6 @@
 /**
+ * Renders annotations like staccato, or accents.
+ *
  * @jsx React.DOM
  */
 

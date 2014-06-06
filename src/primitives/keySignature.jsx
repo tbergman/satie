@@ -1,4 +1,6 @@
 /**
+ * Renders a key signature. Not responsible for calculating the width.
+ *
  * @jsx React.DOM
  */
 

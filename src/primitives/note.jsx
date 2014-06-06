@@ -1,4 +1,9 @@
 /**
+ * Renders a note including annotations, dots, stems, ties, accidentals, and flags.
+ * Either rendered by PitchBridge or BeamGroup. Does not render beams.
+ *
+ * The stem height is calculated in this file.
+ *
  * @jsx React.DOM
  */
 

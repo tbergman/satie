@@ -1,4 +1,6 @@
 /**
+ * Renders a ledger line at (x, y + line).
+ *
  * @jsx React.DOM
  */
 
