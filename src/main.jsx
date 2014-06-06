@@ -63,7 +63,8 @@ var Ripieno = React.createClass({
                 session={this.state.session}
                 loadSongs={this.loadSongs} />
 
-            <NotFound handler={FourOhFour} />
+            <NotFound handler={FourOhFour}
+                session={this.state.session} />
         </Locations>;
     },
     getInitialState: function() {
