@@ -1,4 +1,12 @@
 /**
+ * Renders everything under /song. It's an editor for your songs, and a viewer
+ * for everyone else's. Songs that are not secret can be seen by anyone with the
+ * right URL, even those who are not logged in.
+ *
+ * There are functions in this file for setting an editing Tool, for saving and
+ * uploading, for changing the rastal size, and other things that neither belong
+ * in the Ribbon nor the Renderer.
+ *
  * @jsx React.DOM
  */
 
@@ -14,7 +22,6 @@ var lylite = require("./renderer/lylite.jison").parser;
 var unittest = require("./unittest.jsx");
 
 var SongEditor = React.createClass({
-    mixins: [Router.NavigatableMixin],
     propTypes: {
         aspectRatio: React.PropTypes.number.isRequired
     },
@@ -32,6 +39,9 @@ var SongEditor = React.createClass({
             </div>;
         }
 
+        // Right now, the size of the sheet music is decided by the size
+        // and shape of the viewer. In the future, it will be possible to
+        // zoom in and out.
         var width = this.state.width*0.8;
         var height = width/this.props.aspectRatio;
         if (height/this.state.height > 2) {
@@ -39,12 +49,19 @@ var SongEditor = React.createClass({
             width = this.props.aspectRatio * height;
         }
 
+        // The Ribbon is hidden for viewers with small screens (e.g., tablets),
+        // and users viewing someone else's song. If a song is loading, and
+        // we're not sure who owns it, we render the Ribbon. This makes loading
+        // slightly faster.
         var showRibbon = this.state.width > 910 &&
             this.props.session.user &&
             (!this.state.song ||
                 this.props.session.user._id === this.state.song._owner);
 
         return <div className="global">
+
+            {/* THE RIBBON */}
+
             {showRibbon && <span className="pageHeader">
                 <Ribbon
                     session={this.props.session}
@@ -56,6 +73,9 @@ var SongEditor = React.createClass({
                     largerFn={this.largerFn}
                     smallerFn={this.smallerFn} />
             </span>}
+
+            {/* THE SHEET MUSIC */}
+
             {this.state.song && <div className="workspace" style={{top: showRibbon ? 140 : 0}}>
                 <div className="page" style={{
                         width: width,
@@ -69,14 +89,25 @@ var SongEditor = React.createClass({
                         tool={this.state.tool} />
                 </div>
             </div>}
+
         </div>;
     },
+
+
+    /**
+     * Given a song element (see song.d), render it.
+     */
     show: function(song) {
         this.setState({
             song: song,
             staves: lylite.parse(song.src)
         });
     },
+
+    /**
+     * Given a song id (from e.g., the URL), find it and render it.
+     * If it is not currently cached, requests it from the API.
+     */
     showId: function(id, songs) {
         songs = songs || this.props.songs;
 
@@ -104,14 +135,18 @@ var SongEditor = React.createClass({
         };
     },
 
-    handleChange: function(ev) {
-        this.setState({
-            lilytext: ev.target.value
-        });
-    },
+    /**
+     * Called from the Ribbon. See tool.jsx
+     */
     handleToolSet: function(tool) {
         this.setState({tool: tool});
     },
+
+    /**
+     * Decrease the rastal size by one (lower rastal numbers are larger).
+     *
+     * Forces a complete re-annotation and rendering.
+     */
     largerFn: function() {
         if (this.state.rastal > 0) {
             this.setState({
@@ -119,6 +154,12 @@ var SongEditor = React.createClass({
             });
         }
     },
+
+    /**
+     * Decrease the rastal size by one (lower rastal numbers are larger).
+     *
+     * Forces a complete re-annotation and rendering.
+     */
     smallerFn: function() {
         if (this.state.rastal < 8) {
             this.setState({
@@ -126,6 +167,13 @@ var SongEditor = React.createClass({
             });
         }
     },
+    
+    /**
+     * Called whenever the window is resized, whether or not the node has actually
+     * changed sizes.
+     *
+     * Does not affect annotation, but forces a complete re-rendering.
+     */
     updateDimensions: function() {
         var r = this.getDOMNode().getBoundingClientRect();
         this.setState({
@@ -133,18 +181,34 @@ var SongEditor = React.createClass({
             height: r.height
         });
     },
+
+    /**
+     * Debugging utility to verify that the current sheet music can be saved and
+     * re-opened. Called in save, because it's a lot better to crash here than when
+     * quitting and loading a file later.
+     */
     reload: function() {
         var lyliteStr = this.refs.renderer.writeLylite();
         this.setState({
             staves: lylite.parse(lyliteStr)
         });
     },
+
+    /**
+     * Save a lilypond-style file to your computer.
+     */
     download: function() {
         var lyliteStr = this.refs.renderer.writeLylite();
         var blob = new Blob([lyliteStr], {type: "text/plain;charset=utf-8"});
         saveAs(blob, "music.lylite");
     },
+
+    /**
+     * Updates the server with the current sheet music.
+     */
     save: function() {
+        this.reload(); // better crash here than on loading the sheet music later
+
         this.state.song.src = this.refs.renderer.writeLylite();
         ajax.putJSON("/api/song/" + this.state.song._id, {
                 data: this.state.song.src
@@ -152,6 +216,12 @@ var SongEditor = React.createClass({
                 console.log("Saved!");
             });
     },
+
+    /**
+     * Given an event from a file input, try to parse it as Lylite.
+     *
+     * Replaces the current file currently.
+     */
     open: function(evt) {
         var files = evt.target.files;
         if (!files.length) {
@@ -174,6 +244,7 @@ var SongEditor = React.createClass({
 
     componentWillMount: function() {
         if (!this.props.songs) {
+            // Cache songs from library
             this.props.loadSongs();
             return;
         }
@@ -195,8 +266,11 @@ var SongEditor = React.createClass({
     },
     componentDidUnmount: function() {
         window.removeEventListener("resize", this.updateDimensions);
-    }
+    },
+
+    mixins: [Router.NavigatableMixin] // for this.navigate
 });
 
 var V_PADDING = 20;
+
 module.exports = SongEditor;

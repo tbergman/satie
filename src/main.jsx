@@ -147,7 +147,6 @@ var Ripieno = React.createClass({
     }
 });
 
-var V_PADDING = 20;
 var futurePath = null;
 
 (() => {
