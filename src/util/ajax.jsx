@@ -1,6 +1,9 @@
 var _ = require("underscore");
 
 var postJSON = (withCredentials, verb, url, json, onload) => {
+    if (url.indexOf("/api") === 0 && window.RipienoDesktop) {
+        url = "http://ripieno.local:8000" + url;
+    }
     var request = new XMLHttpRequest();
     request.open(verb, url);
     request.withCredentials = withCredentials;
@@ -10,6 +13,9 @@ var postJSON = (withCredentials, verb, url, json, onload) => {
 };
 
 var getJSON = (withCredentials, url, onload) => {
+    if (url.indexOf("/api") === 0 && window.RipienoDesktop) {
+        url = "http://ripieno.local:8000" + url;
+    }
     var request = new XMLHttpRequest();
     request.open("GET", url);
     request.withCredentials = withCredentials;

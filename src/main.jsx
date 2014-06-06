@@ -104,7 +104,8 @@ var Ripieno = React.createClass({
             });
     },
     componentWillMount: function() {
-        ajax.getJSON("/api/user/start_session", (response, request) => {
+        var path = "/api/user/start_session";
+        ajax.getJSON(path, (response, request) => {
             if (request.status !== 200) {
                 this.setState({failed: true});
                 return;
