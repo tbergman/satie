@@ -100,6 +100,8 @@
 "\semicirculus"       return 'ARTIC'
 "\signumcongruentiae" return 'ARTIC'
 
+"\pageBreak"          return 'PAGE_BREAK'
+
 "."+                  return 'DOTS'
 
 "{"                   return 'LBRACE'
@@ -319,6 +321,7 @@ partElement
   | relativeMode                         { $$ = $1; }
   | completePitchOrChord                 { $$ = $1; }
   | tupletMode                           { $$ = $1; }
+  | 'PAGE_BREAK'                         { $$ = {append: [{barline: true}, {newpage: true}, {newline: true}]}; }
   | 'SLUR_OPEN' partElements 'SLUR_CLOSE'
         {
             $$ = {appendSlur: [{slur: $2.length + 1}].concat($2)}

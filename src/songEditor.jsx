@@ -76,20 +76,16 @@ var SongEditor = React.createClass({
             </span>}
 
             {/* THE SHEET MUSIC */}
-
-            {this.state.song && <div className="workspace" style={{top: showRibbon ? 140 : 0}}>
-                <div className="page" style={{
-                        width: width,
-                        height: height,
-                        marginTop: V_PADDING,
-                        marginBottom: V_PADDING}}>
-                    <Renderer
-                        ref="renderer"
-                        staveHeight={this.state.staveHeight}
-                        staves={this.state.staves}
-                        tool={this.state.tool} />
-                </div>
-            </div>}
+            {this.state.song && <Renderer
+                height={height}
+                marginBottom={V_PADDING}
+                marginTop={V_PADDING}
+                ref="renderer"
+                staveHeight={this.state.staveHeight}
+                staves={this.state.staves}
+                tool={this.state.tool}
+                top={showRibbon ? 140 : 0}
+                width={width} />}
 
         </div>;
     },

@@ -6,6 +6,7 @@ var Bridge = require("./bridge.jsx");
 
 var React = require("react");
 
+var NewPageBridge = require("./newpageBridge.jsx");
 var StaveLines = require("../primitives/staveLines.jsx");
 var renderUtil = require("./util.jsx");
 
@@ -15,6 +16,13 @@ class NewlineBridge extends Bridge {
     prereqs() {
         return [
             [
+                (obj, cursor) => cursor.y + cursor.lineSpacing < cursor.maxY,
+                NewPageBridge.createNewPage,
+                "Pages should not overflow"
+            ],
+            [
+                // This requirement should be last so that it only happens once
+                // per line.
                 (obj, cursor) => cursor.maxX - cursor.x <= 0.01,
                 this.justify.bind(this),
                 "Notes should be full justfied within a line."
@@ -49,6 +57,8 @@ class NewlineBridge extends Bridge {
         cursor.lines[cursor.line].beats = 0;
         cursor.lines[cursor.line].x = cursor.x;
         cursor.lines[cursor.line].y = cursor.y;
+        cursor.lines[cursor.line].pageLines = cursor.pageLines;
+        cursor.lines[cursor.line].pageStarts = cursor.pageStarts;
         cursor.lines[cursor.line].keySignature = cursor.prevKeySignature;
 
         var Renderer = require("./renderer.jsx");
@@ -103,6 +113,9 @@ var createNewline = (obj, cursor, stave, idx) => {
         if (stave.body[fidx].barline) {
             break;
         }
+    }
+    if (stave.body[fidx + 1].newpage) {
+        return true;
     }
     for (var i = idx + 1; i < stave.body.length; ++i) {
         if (stave.body[i]._annotated) {

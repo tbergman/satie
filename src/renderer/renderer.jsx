@@ -12,6 +12,7 @@ var Bridge = require("./bridge.jsx");
 var ClefBridge = require("./clefBridge.jsx");
 var Header = require("../primitives/header.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
+var NewPageBridge = require("./newpageBridge.jsx");
 var NewlineBridge = require("./newlineBridge.jsx");
 var PitchBridge = require("./pitchBridge.jsx");
 var SlurBridge = require("./slurBridge.jsx");
@@ -26,6 +27,7 @@ var bridges = {
     chord: new PitchBridge(),
     clef: new ClefBridge(),
     keySignature: new KeySignatureBridge(),
+    newpage: new NewPageBridge(),
     newline: new NewlineBridge(),
     pitch: new PitchBridge(),
     slur: new SlurBridge(),
@@ -43,7 +45,26 @@ var Renderer = React.createClass({
         var y = 0;
         var staves = this.props.staves;
 
-        var ret = <svg
+        var pages = [];
+        var pageStarts = this._cursor.pageStarts;
+        var pageLines = this._cursor.pageLines;
+        var pageCount = pageStarts.length;
+        for (var i = 1; i < pageCount; ++i) {
+            pages.push({from: pageStarts[i - 1], to: pageStarts[i], idx: i-1});
+        }
+        pages.push({from: pageStarts[pageCount - 1], to: staves[2].body.length, idx: pageCount - 1});
+
+        var ret = <div className="workspace" style={{top: this.props.top}}>
+            {pages.map((page) => <div className="page"
+                key={"page" + page.idx}
+                style={{
+                    width: this.props.width,
+                    height: this.props.height,
+                    marginTop: this.props.marginTop,
+                    marginBottom: this.props.marginBottom}}>
+            <svg
+                data-page={page.idx}
+                ref={"svg" + page.idx}
                 height="100%"
                 onClick={this.handleMouseClick}
                 onMouseLeave={this.handleMouseLeave}
@@ -52,6 +73,9 @@ var Renderer = React.createClass({
                 width="100%">
             {staves.map((stave, idx) => {
                 if (stave.header) {
+                    if (page.from) {
+                        return null;
+                    }
                     y += Header.getHeight(stave.header);
                     return <Header
                         fontSize={fontSize*FONT_SIZE_FACTOR}
@@ -62,22 +86,22 @@ var Renderer = React.createClass({
                 } else if (stave.body) {
                     return <g key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                         {/* TODO: move to /annotate/ */}
-                        <StaveLines
+                        {!page.from && <StaveLines
                             key={idx + "StaveLinesMain"}
                             width={renderUtil.mm(215.9 - 45, fontSize)}
                             x={renderUtil.mm(30, fontSize)}
-                            y={stave.body[0]["$Bridge_y"]} />
+                            y={stave.body[0]["$Bridge_y"]} />}
 
-                        {stave.body.reduce((memo, obj) => {
+                        {stave.body.slice(page.from, page.to).reduce((memo, obj) => {
                             if (obj.newline) {
                                 memo.push([]);
                             }
                             memo[memo.length - 1].push(obj);
                             return memo;
-                        }, [[]]).map((s, idx) => <LineContainer
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) => <LineContainer
                                 staveHeight={this.props.staveHeight}
                                 generate={() => s.map(t => render(t))}
-                                idx={idx} key={idx} />)}
+                                idx={idx + pageLines[page.idx]} key={idx} />)}
                     </g>;
                 } else {
                     return null;
@@ -88,7 +112,9 @@ var Renderer = React.createClass({
                     this.state.mouse,
                     _pointerData,
                     fontSize)}
-        </svg>;
+        </svg>
+        </div>)}
+        </div>;
 
         this.markClean();
 
@@ -211,7 +237,7 @@ var Renderer = React.createClass({
         var foundObj = false;
         var foundIdx;
         var musicLine;
-        for (var i = 0; i < cursor.lines.length; ++i) {
+        for (var i = cursor.pageLines[mouse.page]; i < cursor.lines.length; ++i) {
             if (mouse.y < cursor.lines[i].y + 8/4) {
                 musicLine = i;
                 dynY = cursor.lines[i].y;
@@ -219,8 +245,8 @@ var Renderer = React.createClass({
                 if (dynLine > 8.5 || dynLine < -2.5) {
                     return <g />;
                 }
-                var body = this.props.staves[1].body;
-                for (var j = 0; j < body.length; ++j) {
+                var body = this.props.staves[2].body; // XXX: Make more robust!
+                for (var j = cursor.pageStarts[mouse.page]; j < body.length; ++j) {
                     var item = body[j];
                     if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
                         if ((item.keySignature ||
@@ -286,6 +312,9 @@ var Renderer = React.createClass({
             line: 0,
             lineSpacing: 3.3,
             maxX: renderUtil.mm(215.9 - 15, fontSize),
+            maxY: renderUtil.mm(292.1 - 15, fontSize),
+            pageLines: [0],
+            pageStarts: [0],
             smallest: 10000,
             start: 0,
             x: firstX,
@@ -381,16 +410,15 @@ var Renderer = React.createClass({
         return i + 1;
     },
     getPositionForMouse: function(event) {
-        if (!this._svg_pt) {
-            this._svg_elt = this.getDOMNode();
-            this._svg_pt = this._svg_elt.createSVGPoint();
-        }
-        this._svg_pt.x = event.clientX;
-        this._svg_pt.y = event.clientY;
-        var pt = this._svg_pt.matrixTransform(this._svg_elt.getScreenCTM().inverse());
+        var svg_elt = event.target.farthestViewportElement || event.target;
+        var svg_pt = svg_elt.createSVGPoint();
+        svg_pt.x = event.clientX;
+        svg_pt.y = event.clientY;
+        var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
-            y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR
+            y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
+            page: svg_elt.getAttribute("data-page")
         };
     },
     handleMouseClick: function(event) {
