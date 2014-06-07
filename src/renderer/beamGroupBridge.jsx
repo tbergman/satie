@@ -100,7 +100,7 @@ class BeamGroupBridge extends Bridge {
         });
 
         if (tuplet) {
-            lylite.push("\\times " + tuplet.num + " / " + tuplet.den + "{");
+            lylite.push("\\times " + tuplet.num + "/" + tuplet.den + "{");
             var count2 = count;
             unresolved.push((obj, lylite, unresolved) => {
                 if (!obj.pitch && !obj.chord) {
