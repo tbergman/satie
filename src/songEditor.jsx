@@ -19,6 +19,7 @@ var Renderer = require("./renderer/renderer.jsx");
 var Ribbon = require("./ribbon/ribbon.jsx");
 var ajax = require("./util/ajax.jsx").untrusted;
 var lylite = require("./renderer/lylite.jison").parser;
+var renderUtil = require("./renderer/util.jsx");
 var unittest = require("./unittest.jsx");
 
 var SongEditor = React.createClass({
@@ -84,7 +85,7 @@ var SongEditor = React.createClass({
                         marginBottom: V_PADDING}}>
                     <Renderer
                         ref="renderer"
-                        rastal={this.state.rastal}
+                        staveHeight={this.state.staveHeight}
                         staves={this.state.staves}
                         tool={this.state.tool} />
                 </div>
@@ -98,9 +99,16 @@ var SongEditor = React.createClass({
      * Given a song element (see song.d), render it.
      */
     show: function(song) {
+        var staves = lylite.parse(song.src);
+        if (!_(staves).any(s => s.staveHeight)) {
+            staves.splice(0, 0, {staveHeight: renderUtil.rastalToHeight[4]})
+        }
+        var staveHeight = _(staves).find(s => s.staveHeight).staveHeight;
+
         this.setState({
             song: song,
-            staves: lylite.parse(song.src)
+            staves: staves,
+            staveHeight: staveHeight
         });
     },
 
@@ -131,7 +139,7 @@ var SongEditor = React.createClass({
             height: 0,
             staves: null,
             tool: null,
-            rastal: 4
+            staveHeight: null
         };
     },
 
@@ -148,10 +156,14 @@ var SongEditor = React.createClass({
      * Forces a complete re-annotation and rendering.
      */
     largerFn: function() {
-        if (this.state.rastal > 0) {
-            this.setState({
-                rastal: this.state.rastal - 1
-            });
+        var h = Math.round(this.state.staveHeight*100)/100;
+        for (var i = renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
+            if (renderUtil.rastalToHeight[i] > h) {
+                this.setState({
+                    staveHeight: renderUtil.rastalToHeight[i]
+                });
+                break;
+            }
         }
     },
 
@@ -161,10 +173,14 @@ var SongEditor = React.createClass({
      * Forces a complete re-annotation and rendering.
      */
     smallerFn: function() {
-        if (this.state.rastal < 8) {
-            this.setState({
-                rastal: this.state.rastal + 1
-            });
+        var h = Math.round(this.state.staveHeight*100)/100;
+        for (var i = 0; i < renderUtil.rastalToHeight.length; ++i) {
+            if (renderUtil.rastalToHeight[i] < h) {
+                this.setState({
+                    staveHeight: renderUtil.rastalToHeight[i]
+                });
+                break;
+            }
         }
     },
     

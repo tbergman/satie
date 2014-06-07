@@ -39,7 +39,7 @@ var Renderer = React.createClass({
     render: function() {
         PROFILER_ENABLED && console.time("render");
 
-        var fontSize = renderUtil.rastalToHeight[this.props.rastal];
+        var fontSize = this.props.staveHeight;
         var y = 0;
         var staves = this.props.staves;
 
@@ -75,10 +75,12 @@ var Renderer = React.createClass({
                             memo[memo.length - 1].push(obj);
                             return memo;
                         }, [[]]).map((s, idx) => <LineContainer
-                                rastal={this.props.rastal}
+                                staveHeight={this.props.staveHeight}
                                 generate={() => s.map(t => render(t))}
                                 idx={idx} key={idx} />)}
                     </g>;
+                } else {
+                    return null;
                 }
             })}
             {this.props.tool && this.props.tool.render(
@@ -104,10 +106,12 @@ var Renderer = React.createClass({
             if (stave.header) {
                 y += Header.getHeight(stave.header);
                 return true;
+            } else if (!stave.body) {
+                return true;
             }
 
             var cursor = this.cursorFromSnapshot(pointerData, stave) ||
-                    this.newCursor(y, renderUtil.rastalToHeight[props.rastal], true);
+                    this.newCursor(y, props.staveHeight, true);
 
             var exitCode;
             for (var i = cursor.start; i < stave.body.length;
@@ -157,6 +161,10 @@ var Renderer = React.createClass({
         var lyliteArr = [];
         var unresolved = [];
         staves.forEach((stave, sidx) => {
+            if (stave.staveHeight) {
+                lyliteArr.push("#(set-global-staff-size " + stave.staveHeight*renderUtil.ptPerMM + ")\n");
+                return;
+            }
             if (stave.header) {
                 lyliteArr.push("\\header {");
                 if (stave.header.title) {
@@ -381,8 +389,8 @@ var Renderer = React.createClass({
         this._svg_pt.y = event.clientY;
         var pt = this._svg_pt.matrixTransform(this._svg_elt.getScreenCTM().inverse());
         return {
-            x: pt.x / renderUtil.rastalToHeight[this.props.rastal] / FONT_SIZE_FACTOR - 0.15,
-            y: pt.y / renderUtil.rastalToHeight[this.props.rastal] / FONT_SIZE_FACTOR
+            x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
+            y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR
         };
     },
     handleMouseClick: function(event) {
@@ -472,7 +480,7 @@ var Renderer = React.createClass({
             this._cleanup && this._cleanup();
         }
 
-        if (this.props.rastal !== nextProps.rastal) {
+        if (this.props.staveHeight !== nextProps.staveHeight) {
             Bridge.removeAnnotations(staves);
             this.annotate(nextProps.staves, undefined, undefined, nextProps);
         }
@@ -480,10 +488,21 @@ var Renderer = React.createClass({
             delete this._cursor;
             this.annotate(nextProps.staves, undefined, undefined, nextProps);
         }
+
+        if (nextProps.staves) {
+            assert(nextProps.staveHeight, "must be defined");
+            _(nextProps.staves).find(s => s.staveHeight).staveHeight = nextProps.staveHeight;
+        }
     }
 });
 
 
+/**
+ * Contains a line. Exists for two reasons:
+ *  1. React prefers deeper trees to shallower trees.
+ *  2. We know, based on annotation, when a line needs to be updated
+ *     and when it does not need to be updated.
+ */
 var LineContainer = React.createClass({
     render: function() {
         return <g>{this.props.generate()}</g>;
@@ -493,7 +512,7 @@ var LineContainer = React.createClass({
         if (_dirty) {
             return true;
         }
-        if (nextProps.rastal !== this.props.rastal) {
+        if (nextProps.staveHeight !== this.props.staveHeight) {
             return true;
         }
         var ret = linesToUpdate[nextProps.idx];
@@ -502,13 +521,20 @@ var LineContainer = React.createClass({
     }
 });
 
-
+// Ratio between svg coordinate system and 1mm.
 var FONT_SIZE_FACTOR = 37.8;
 
+/**
+ * A bridge knows how to annotate and render a certain type of object
+ * such as a beam or a clef.
+ *
+ * See bridge.jsx
+ */
 var getBridgeForItem = item => {
     if (item._bridge) {
         return item._bridge;
     }
+
     var ret = _(bridges).find((bridge, name) => item[name]);
     item._bridge = ret;
     return ret;
@@ -523,10 +549,20 @@ var render = item => {
     return bridge.visible(item) && bridge.render(item);
 };
 
+/**
+ * Called at the end of begining of every line so that when a certain line
+ * needs to be updated, the cursor can be unfrozen from here instead of
+ * recalculating the cursor from the begining of the song.
+ */
 var snapshot = (cursor) => {
     _snapshots[cursor.line] = JSON.stringify(cursor);
 };
 
+/**
+ * Called at the begining of every beam. Called so that if the annotater has
+ * to be "backed up", it can do so without recalculating from the begining
+ * of the line.
+ */
 var beamCountIs = (beamCount) => {
     _beamBeatCount = beamCount;
 };

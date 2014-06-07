@@ -1,12 +1,16 @@
 %{
     var _ = require("underscore");
+    var util = require("./util.jsx");
 %}
 
-// calc.jison
 %lex
 %%
 
-\s+                   /* Skip whitespace. */
+// WHITESPACE MATTERS
+[0-9]+.[0-9]+         return 'NUMBER'
+
+// WHITESPACE DOESN'T MATTER
+\s+                   /* NONE */
 [0-9]+                return 'NUMBER'
 
 "<"                   return 'LT'
@@ -32,6 +36,7 @@
 "]"                   return 'BEAM_CLOSE'
 "|"                   return 'BAR_HINT'
 "~"                   return 'TIE'
+"#"                   return 'POUND'
 
 "-^"                  return 'articMarcato'
 "-+"                  return 'pluckedLeftHandPizzicato'
@@ -112,6 +117,8 @@
 "\time"               return 'SET_TIME'
 
 "\relative"           return 'RELATIVE'
+
+"set-global-staff-size" return 'SET_STAFF_SIZE'
 
 [a-zA-Z]+             return 'STRING'
 \"(?:[^"\\]|\\.)*\"   return 'STRING'
@@ -227,10 +234,18 @@ root
 
 parts
   : /*empty*/                          { $$ = []; }
+  | parts globalExpr                   { $$ = $1.concat($2); }
   | parts header                       { $$ = $1.concat({header: $2}); }
   | parts musicExpr                    { $$ = $1.concat({body: $2}); }
   | parts 'NEW' 'NEW_STAFF' musicExpr  { $$ = $1.concat({body: $4}); }
   | parts newStaffExpr                 { $$ = $1.concat($2); }
+  ;
+
+globalExpr
+  : 'POUND' 'SLUR_OPEN' 'SET_STAFF_SIZE' 'NUMBER' 'SLUR_CLOSE'
+        {
+            $$ = {staveHeight: parseFloat($4)/util.ptPerMM};
+        }
   ;
 
 header
