@@ -33,7 +33,7 @@ class NewPageBridge extends Bridge {
 var createNewPage = (obj, cursor, stave, idx) => {
     stave.body.splice(idx, 0, {newpage: true, _annotated: "createNewPage"});
     for (var i = idx + 1; i < stave.body.length; ++i) {
-        if (stave.body[i].newpage && stave.body[e]["_annotated"]) {
+        if (stave.body[i].newpage && stave.body[i]["_annotated"]) {
             stave.body.splice(i, 1);
             --i;
         }

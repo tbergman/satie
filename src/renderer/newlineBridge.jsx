@@ -32,6 +32,7 @@ class NewlineBridge extends Bridge {
     annotateImpl(obj, cursor, stave, idx) {
         obj._fontSize = cursor.fontSize;
         obj._lineSpacing = cursor.lineSpacing;
+        obj._pageSize = cursor.pageSize;
 
         cursor.x = cursor.initialX;
         cursor.y += cursor.lineSpacing;
@@ -69,7 +70,7 @@ class NewlineBridge extends Bridge {
     render(obj) {
         return <StaveLines
                 key={this.key(obj)}
-                width={renderUtil.mm(215.9 - 30, obj._fontSize)}
+                width={renderUtil.mm(obj._pageSize.width - 30, obj._fontSize)}
                 x={renderUtil.mm(15, obj._fontSize)}
                 y={this.y(obj) + obj._lineSpacing} />;
     }

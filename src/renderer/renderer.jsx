@@ -52,7 +52,12 @@ var Renderer = React.createClass({
         for (var i = 1; i < pageCount; ++i) {
             pages.push({from: pageStarts[i - 1], to: pageStarts[i], idx: i-1});
         }
-        pages.push({from: pageStarts[pageCount - 1], to: staves[2].body.length, idx: pageCount - 1});
+        pages.push({from: pageStarts[pageCount - 1], to: staves[3].body.length, idx: pageCount - 1});
+            // XXX: Robustness
+
+        var viewbox = "0 0 " +
+            8500*(this.props.pageSize.width/215.9) + " " +
+            11000*(this.props.pageSize.height/279.4);
 
         var ret = <div className="workspace" style={{top: this.props.top}}>
             {pages.map((page) => <div className="page" 
@@ -69,7 +74,7 @@ var Renderer = React.createClass({
                 onClick={this.handleMouseClick}
                 onMouseLeave={this.handleMouseLeave}
                 onMouseMove={this.handleMouseMove}
-                viewBox="0 0 8500 11000"
+                viewBox={viewbox}
                 width="100%">
             {staves.map((stave, idx) => {
                 if (stave.header) {
@@ -79,8 +84,8 @@ var Renderer = React.createClass({
                     y += Header.getHeight(stave.header);
                     return <Header
                         fontSize={fontSize*FONT_SIZE_FACTOR}
-                        middle={renderUtil.mm(215.9, fontSize)/2}
-                        right={renderUtil.mm(215.9 - 15, fontSize*0.75)}
+                        middle={renderUtil.mm(this.props.pageSize.width, fontSize)/2}
+                        right={renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75)}
                         key="HEADER"
                         model={stave.header} />;
                 } else if (stave.body) {
@@ -88,7 +93,7 @@ var Renderer = React.createClass({
                         {/* TODO: move to /annotate/ */}
                         {!page.from && <StaveLines
                             key={idx + "StaveLinesMain"}
-                            width={renderUtil.mm(215.9 - 45, fontSize)}
+                            width={renderUtil.mm(this.props.pageSize.width - 45, fontSize)}
                             x={renderUtil.mm(30, fontSize)}
                             y={stave.body[0]["$Bridge_y"]} />}
 
@@ -136,7 +141,7 @@ var Renderer = React.createClass({
             }
 
             var cursor = this.cursorFromSnapshot(pointerData, stave) ||
-                    this.newCursor(y, props.staveHeight, true);
+                    this.newCursor(y, props.staveHeight, true, props.pageSize);
 
             var exitCode;
             for (var i = cursor.start; i < stave.body.length;
@@ -188,6 +193,14 @@ var Renderer = React.createClass({
         staves.forEach((stave, sidx) => {
             if (stave.staveHeight) {
                 lyliteArr.push("#(set-global-staff-size " + stave.staveHeight*renderUtil.ptPerMM + ")\n");
+                return;
+            }
+            if (stave.pageSize) {
+                if (!stave.pageSize.lilypondName) {
+                    alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
+                    return;
+                }
+                lyliteArr.push("#(set-default-paper-size \"" + stave.pageSize.lilypondName + "\")\n");
                 return;
             }
             if (stave.header) {
@@ -244,7 +257,7 @@ var Renderer = React.createClass({
                 if (dynLine > 8.5 || dynLine < -2.5) {
                     return <g />;
                 }
-                var body = this.props.staves[2].body; // XXX: Make more robust!
+                var body = this.props.staves[3].body; // XXX: Make more robust!
                 for (var j = cursor.pageStarts[mouse.page]; j < body.length; ++j) {
                     var item = body[j];
                     if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
@@ -297,7 +310,7 @@ var Renderer = React.createClass({
             mouse: {x: 0, y: 0}
         };
     },
-    newCursor: function(start, fontSize, first) {
+    newCursor: function(start, fontSize, first, pageSize) {
         var initialX = renderUtil.mm(15, fontSize) + 1/4;
         var firstX = renderUtil.mm(first ? 30 : 15, fontSize) + 1/4;
         return {
@@ -310,9 +323,10 @@ var Renderer = React.createClass({
             initialX: initialX,
             line: 0,
             lineSpacing: 3.3,
-            maxX: renderUtil.mm(215.9 - 15, fontSize),
-            maxY: renderUtil.mm(292.1 - 15, fontSize),
+            maxX: renderUtil.mm(pageSize.width - 15, fontSize),
+            maxY: renderUtil.mm(pageSize.height - 15, fontSize),
             pageLines: [0],
+            pageSize: pageSize,
             pageStarts: [0],
             smallest: 10000,
             start: 0,
@@ -500,15 +514,16 @@ var Renderer = React.createClass({
 
     componentWillReceiveProps: function(nextProps) {
         var staves = this.props.staves;
-        if (staves !== nextProps.staves) {
-            _dirty = true;
-        }
 
         if (this.props.tool !== nextProps.tool) {
             this._cleanup && this._cleanup();
         }
 
-        if (this.props.staveHeight !== nextProps.staveHeight) {
+        if (this.props.staveHeight !== nextProps.staveHeight ||
+                this.props.pageSize !== nextProps.pageSize ||
+                staves !== nextProps.staves) {
+            _dirty = true;
+            delete this._cursor;
             Bridge.removeAnnotations(staves);
             this.annotate(nextProps.staves, undefined, undefined, nextProps);
         }
@@ -520,6 +535,7 @@ var Renderer = React.createClass({
         if (nextProps.staves) {
             assert(nextProps.staveHeight, "must be defined");
             _(nextProps.staves).find(s => s.staveHeight).staveHeight = nextProps.staveHeight;
+            _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
         }
     }
 });

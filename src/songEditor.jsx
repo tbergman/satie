@@ -23,15 +23,6 @@ var renderUtil = require("./renderer/util.jsx");
 var unittest = require("./unittest.jsx");
 
 var SongEditor = React.createClass({
-    propTypes: {
-        aspectRatio: React.PropTypes.number.isRequired
-    },
-    getDefaultProps: function() {
-        return {
-            aspectRatio: 8.5/11
-        };
-    },
-
     render: function() {
         if (!this.state.width) {
             // Still loading
@@ -43,11 +34,12 @@ var SongEditor = React.createClass({
         // Right now, the size of the sheet music is decided by the size
         // and shape of the viewer. In the future, it will be possible to
         // zoom in and out.
+        var aspectRatio = this.state.pageSize.width / this.state.pageSize.height;
         var width = this.state.width*0.8;
-        var height = width/this.props.aspectRatio;
+        var height = width/aspectRatio;
         if (height/this.state.height > 2) {
             height = (this.state.height - V_PADDING * 2)*2;
-            width = this.props.aspectRatio * height;
+            width = aspectRatio * height;
         }
 
         // The Ribbon is hidden for viewers with small screens (e.g., tablets),
@@ -64,6 +56,7 @@ var SongEditor = React.createClass({
             {/* THE RIBBON */}
             {showRibbon && <span className="pageHeader">
                 <Ribbon
+                    pageSizeFn={this.setPageSize}
                     session={this.props.session}
                     reloadFn={this.reload}
                     downloadFn={this.download}
@@ -79,6 +72,7 @@ var SongEditor = React.createClass({
                 height={height}
                 marginBottom={V_PADDING}
                 marginTop={V_PADDING}
+                pageSize={this.state.pageSize}
                 ref="renderer"
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
@@ -98,12 +92,17 @@ var SongEditor = React.createClass({
         if (!_(staves).any(s => s.staveHeight)) {
             staves.splice(0, 0, {staveHeight: renderUtil.rastalToHeight[4]})
         }
+        if (!_(staves).any(s => s.pageSize)) {
+            staves.splice(0, 0, {pageSize: this.state.pageSize})
+        }
         var staveHeight = _(staves).find(s => s.staveHeight).staveHeight;
+        var pageSize = _(staves).find(s => s.pageSize).pageSize;
 
         this.setState({
             song: song,
             staves: staves,
-            staveHeight: staveHeight
+            staveHeight: staveHeight,
+            pageSize: pageSize
         });
     },
 
@@ -130,11 +129,12 @@ var SongEditor = React.createClass({
 
     getInitialState: function() {
         return {
-            width: 0,
             height: 0,
+            pageSize: renderUtil.pageSizes[0],
+            staveHeight: null,
             staves: null,
             tool: null,
-            staveHeight: null
+            width: 0
         };
     },
 
@@ -177,6 +177,17 @@ var SongEditor = React.createClass({
                 break;
             }
         }
+    },
+
+    /**
+     * Set the page size.
+     *
+     * @param {size} a value from renderUtil.pageSizes
+     */
+    setPageSize: function(size) {
+        this.setState({
+            pageSize: size
+        });
     },
     
     /**

@@ -122,11 +122,13 @@
 "\relative"           return 'RELATIVE'
 
 "set-global-staff-size" return 'SET_STAFF_SIZE'
+"set-default-paper-size" return 'SET_PAPER_SIZE'
 
 [a-zA-Z]+             return 'STRING'
 \"(?:[^"\\]|\\.)*\"   return 'STRING'
 
 "'"                   return 'SINGLE_QUOTE'
+'"'                   return 'DOUBLE_QUOTE'
 ","                   return 'COMMA'
 
 <<EOF>>               return 'EOF'
@@ -249,6 +251,28 @@ globalExpr
         {
             $$ = {staveHeight: parseFloat($4)/util.ptPerMM};
         }
+  | 'POUND' 'SLUR_OPEN' 'SET_PAPER_SIZE' 'STRING' 'SLUR_CLOSE'
+        {
+            if ($4.length && $4[0] === '"') {
+                $4 = $4.substring(1);
+            }
+            if ($4.length && $4[$4.length - 1] === '"') {
+                $4 = $4.substring(0, $4.length - 1);
+            }
+
+            $$ = {pageSize: _.clone(util.lilypondSizes[$4])};
+            if ($$.pageSize && $$.pageSize.unit == "in") {
+                $$.pageSize.width = $$.pageSize.width * util.mmPerIn;
+                $$.pageSize.height = $$.pageSize.height * util.mmPerIn;
+                $$.pageSize.unit = "mm";
+            }
+            $$.pageSize.lilypondName = $4;
+        }
+  ;
+
+anyQuote
+  : 'SINGLE_QUOTE'                      {}
+  | 'DOUBLE_QUOTE'                      {}
   ;
 
 header
