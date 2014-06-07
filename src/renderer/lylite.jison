@@ -3,14 +3,15 @@
     var util = require("./util.jsx");
 %}
 
+%options flex
+%options flex
+
 %lex
 %%
 
-// WHITESPACE MATTERS
-[0-9]+.[0-9]+         return 'NUMBER'
 
-// WHITESPACE DOESN'T MATTER
 \s+                   /* NONE */
+[0-9]+\.[0-9]+       return 'NUMBER'
 [0-9]+                return 'NUMBER'
 
 "<"                   return 'LT'
