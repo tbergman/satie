@@ -29,11 +29,23 @@ var Dot = React.createClass({
     },
 
     render: function() {
-        return <circle
-            cx={this.getCX() + "em"}
-            cy={this.getCY() + "em"}
-            fill={this.props.stroke}
-            r={this.props.radius + "em"} />;
+        // See rationale for hidden rect in glyph.jsx
+        return <g>
+            <circle
+                data-selectioninfo={"dotted"}
+                cx={this.getCX() + "em"}
+                cy={this.getCY() + "em"}
+                fill={this.props.stroke}
+                r={this.props.radius + "em"} />
+            <rect
+                data-selectioninfo={"dotted"}
+                width={"0.3em"}
+                height={"0.3em"}
+                x={this.getCX() - 0.1 + "em"}
+                y={this.getCY() - 0.1 + "em"}
+                fill="transparent"
+                className="mn_handle" />
+        </g>;
     },
 
     getCYOffset: function() {

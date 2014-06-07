@@ -61,13 +61,15 @@ var Beam = React.createClass({
      * Beams are particularly slow to render.
      */
     shouldComponentUpdate: function(nextProps) {
-        var ret = this.props.line1 !== nextProps.line1 ||
-            this.props.line2 !== nextProps.line2 ||
-            this.props.width !== nextProps.width ||
-            this.props.strokeWidth !== nextProps.strokeWidth ||
-            this.props.direction !== nextProps.direction ||
-            this.props.tuplet !== nextProps.tuplet ||
+        var ret =
             this.props.beams !== nextProps.beams ||
+            this.props.direction !== nextProps.direction ||
+            this.props.line1 !== nextProps.line1 ||
+            this.props.line2 !== nextProps.line2 ||
+            this.props.strokeWidth !== nextProps.strokeWidth ||
+            this.props.tuplet !== nextProps.tuplet ||
+            this.props.tupletsTemporary !== nextProps.tupletsTemporary ||
+            this.props.width !== nextProps.width ||
             this.props.x !== nextProps.x ||
             this.props.y !== nextProps.y;
         return ret;
@@ -143,7 +145,8 @@ var Beam = React.createClass({
 
             // XXX: all tuplets are drawn as triplets.
             return <Glyph
-                fill={"black"}
+                selectioninfo={"beamTuplet"}
+                fill={this.props.tupletsTemporary ? "#A5A5A5" : "black"}
                 glyphName={"tuplet3"}
                 x={this.props.x + offset/2}
                 y={y} />;

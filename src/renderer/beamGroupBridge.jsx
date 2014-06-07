@@ -75,6 +75,7 @@ class BeamGroupBridge extends Bridge {
                 beams={beams}
                 generate={() => obj.beam.map(b => beamPitchBridge.render(b))}
                 scaleFactor={obj._fontSize*37.8 + "px"}
+                tupletsTemporary={obj.tupletsTemporary}
                 tuplet={obj._tuplet} />;
     }
     toLylite(obj, lylite, unresolved) {

@@ -62,7 +62,6 @@ var SongEditor = React.createClass({
         return <div className="global">
 
             {/* THE RIBBON */}
-
             {showRibbon && <span className="pageHeader">
                 <Ribbon
                     session={this.props.session}

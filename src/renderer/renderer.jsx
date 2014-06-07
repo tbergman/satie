@@ -55,7 +55,7 @@ var Renderer = React.createClass({
         pages.push({from: pageStarts[pageCount - 1], to: staves[2].body.length, idx: pageCount - 1});
 
         var ret = <div className="workspace" style={{top: this.props.top}}>
-            {pages.map((page) => <div className="page"
+            {pages.map((page) => <div className="page" 
                 key={"page" + page.idx}
                 style={{
                     width: this.props.width,
@@ -124,7 +124,6 @@ var Renderer = React.createClass({
 
     annotate: function(staves, pointerData, toolFn, props) {
         props = props || this.props;
-
         PROFILER_ENABLED && console.time("annotate");
 
         var y = 0;
@@ -254,7 +253,7 @@ var Renderer = React.createClass({
                                     item.clef ||
                                     item.pitch ||
                                     item.chord) &&
-                                Math.abs(dynX - item["$Bridge_x"]) < 0.27) {
+                                Math.abs(dynX - item["$Bridge_x"]) < 0.27 + (item.dots ? item.dots*0.2 : 0)) {
                             dynX = item["$Bridge_x"];
                             foundIdx = j;
                             foundObj = item;
@@ -418,7 +417,8 @@ var Renderer = React.createClass({
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
-            page: svg_elt.getAttribute("data-page")
+            page: svg_elt.getAttribute("data-page"),
+            selectionInfo: event.target.getAttribute("data-selectioninfo")
         };
     },
     handleMouseClick: function(event) {

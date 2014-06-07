@@ -87,6 +87,7 @@ var BeamGroup = React.createClass({
                 scaleFactor={props.scaleFactor}
                 stemWidth={0.035} 
                 tuplet={this.props.tuplet}
+                tupletsTemporary={this.props.tupletsTemporary}
                 width={lastP.x - firstP.x}
                 x={firstP.x /* should assert all in order */}
                 y={firstP.y /* should assert all are equal */} />

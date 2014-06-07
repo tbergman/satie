@@ -33,13 +33,38 @@ var Glyph = React.createClass({
     },
 
     render: function() {
-        return <text
+        var text = <text
                 x={this.props.x + "em"}
                 y={this.props.y + "em"}
                 fill={this.props.fill}
                 className="mn_">
             {SMuFL.getGlyphCode(this.props.glyphName)}
         </text>;
+
+        if (!this.props.selectioninfo) {
+            return text;
+        } else {
+            // Some information, such as the exact position of dots and triplets
+            // is computed in the primitives layer rather than the renderer layer.
+
+            // In order to pass information about the type of object being selected
+            // up to hover and click events, we set data-selectioninfo. Unfortunately,
+            // "pointer-events: visible" (and friends) consider the entire (much-larger)
+            // area of the glyph to be filled, ignoring transparency. As a workaround,
+            // we set "pointer-events: none" on the text, and create an invisible rectangle
+            // with data-selectioninfo.
+            return <g>
+                {text}
+                <rect
+                    data-selectioninfo={this.props.selectioninfo}
+                    width={"0.5em"}
+                    height={"0.5em"}
+                    x={this.props.x + "em"}
+                    y={this.props.y - 0.4 + "em"}
+                    fill="transparent"
+                    className="mn_handle" />
+                </g>;
+        }
     }
 });
 

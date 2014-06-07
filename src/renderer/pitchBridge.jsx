@@ -204,6 +204,9 @@ class PitchBridge extends Bridge {
             str = "< " + obj.chord.map(a => this._lyPitch(a)).join(" ") + " >";
         }
         str += obj.count;
+        if (obj.dots) {
+            _(obj.dots).times(d => str += ".");
+        }
         if (obj.tie) {
             str += "~";
         }
