@@ -15,6 +15,7 @@ var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var NewPageBridge = require("./newpageBridge.jsx");
 var NewlineBridge = require("./newlineBridge.jsx");
 var PitchBridge = require("./pitchBridge.jsx");
+var SelectionRect = require("./selectionRect.jsx");
 var SlurBridge = require("./slurBridge.jsx");
 var StaveLines = require("../primitives/staveLines.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
@@ -72,6 +73,8 @@ var Renderer = React.createClass({
                 ref={"svg" + page.idx}
                 height="100%"
                 onClick={this.handleMouseClick}
+                onMouseDown={this.handleMouseDown}
+                onMouseUp={this.handleMouseUp}
                 onMouseLeave={this.handleMouseLeave}
                 onMouseMove={this.handleMouseMove}
                 viewBox={viewbox}
@@ -117,6 +120,12 @@ var Renderer = React.createClass({
                     this.state.mouse,
                     _pointerData,
                     fontSize)}
+            {this.state.selectionRect && <SelectionRect
+                fontSize={fontSize}
+                x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
+                y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
+                width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
+                height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
         </svg>
         </div>)}
         </div>;
@@ -258,7 +267,7 @@ var Renderer = React.createClass({
                     return <g />;
                 }
                 var body = this.props.staves[3].body; // XXX: Make more robust!
-                for (var j = cursor.pageStarts[mouse.page]; j < body.length; ++j) {
+                for (var j = cursor.pageStarts[mouse.page]; j < body.length && !body[i].newpage; ++j) {
                     var item = body[j];
                     if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
                         if ((item.keySignature ||
@@ -303,6 +312,24 @@ var Renderer = React.createClass({
         };
 
         return _pointerData;
+    },
+    _elementsInBBox: function(box, mouse) {
+        var cursor = this._cursor;
+        var ret = [];
+
+        var body = this.props.staves[3].body; // XXX: Make more robust!
+        var inRange = (min, val, max) => min < val && val < max;
+
+        for (var i = cursor.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
+            var item = body[i];
+            if (inRange(box.top - 1, item["$Bridge_y"],
+                        box.bottom + 1) &&
+                    inRange(box.left, item["$Bridge_x"], box.right)) {
+                ret.push(item);
+            }
+        }
+
+        return ret;
     },
 
     getInitialState: function() {
@@ -452,7 +479,61 @@ var Renderer = React.createClass({
         }
         this.forceUpdate();
     },
+    handleMouseDown: function(event) {
+        if (event.button === 0) {
+            if (this.state.selection) {
+                this.state.selection.forEach(s => {
+                    delete s.selected;
+                });
+            }
+            var pos = this.getPositionForMouse(event);
+            _dirty = true;
+            this.setState({
+                selectionRect: {
+                    start: pos,
+                    end: pos
+                },
+                selection: false
+            });
+        }
+    },
+    handleMouseUp: function(event) {
+        if (event.button === 0) {
+            var rect = this.state.selectionRect;
+            var bbox = {
+                left: Math.min(rect.start.x, rect.end.x),
+                right: Math.max(rect.start.x, rect.end.x),
+                top: Math.min(rect.start.y, rect.end.y),
+                bottom: Math.max(rect.start.y, rect.end.y)
+            };
+            var selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
+            if (selection.length) {
+                selection.forEach(s => {
+                    s.selected = true;
+                });
+                _dirty = true;
+            }
+            this.setState({
+                selectionRect: null,
+                selection: selection
+            });
+        }
+    },
     handleMouseMove: function(event) {
+        if (this.state.selectionRect) {
+            this.setState({
+                selectionRect: {
+                    start: this.state.selectionRect.start,
+                    end: this.getPositionForMouse(event)
+                }
+            });
+            var rect = this.state.selectionRect;
+            var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
+            if (area > 1) {
+                this.props.setToolFn(null);
+            }
+            return;
+        }
         if (!this.props.tool) {
             if (this.state.mouse) {
                 this.setState({

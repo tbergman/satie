@@ -50,6 +50,8 @@ var Beam = React.createClass({
                         this.getX2() + "," + this.getY2(0, idx) + " " +
                         this.getX2() + "," + this.getY2(1, idx) + " " +
                         this.getX1() + "," + this.getY1(1, idx)}
+                    stroke={this.props.stroke}
+                    fill={this.props.stroke}
                     strokeWidth={0} />
             )}
         </svg>
@@ -66,6 +68,7 @@ var Beam = React.createClass({
             this.props.direction !== nextProps.direction ||
             this.props.line1 !== nextProps.line1 ||
             this.props.line2 !== nextProps.line2 ||
+            this.props.stroke !== nextProps.stroke ||
             this.props.strokeWidth !== nextProps.strokeWidth ||
             this.props.tuplet !== nextProps.tuplet ||
             this.props.tupletsTemporary !== nextProps.tupletsTemporary ||

@@ -132,15 +132,17 @@ var Note = React.createClass({
             {this.props.hasStem && <NoteStem
                 x={this.props.x}
                 y={this.props.y}
-                line={this.getStartingLine()}
-                width={0.035}
                 direction={direction}
+                line={this.getStartingLine()}
+                stroke={this.props.secondaryStroke}
+                width={0.035}
                 height={this.getStemHeight()}
                 notehead={this.props.notehead} />}
             {this.props.flag && <Flag
                 x={this.props.x}
                 y={this.props.y}
                 line={this.getHeightDeterminingLine()}
+                stroke={this.props.secondaryStroke}
                 flag={this.props.flag}
                 notehead={this.props.notehead}
                 direction={direction} />}

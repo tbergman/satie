@@ -51,6 +51,7 @@ var Flag = React.createClass({
                 this.getDirection()*fontOffset[1]/4 -
                 this.getFontOffset()[1]/4 -
                 this.getDirection()*this.props.stemHeight/4}
+            fill={this.props.stroke}
             glyphName={this.getGlyphName()} />;
     },
 

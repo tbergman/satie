@@ -151,7 +151,7 @@ class PitchBridge extends Bridge {
                     line={3}
                     key={this.key(obj)}
                     notehead={countToRest[obj.count]}
-                    stroke={obj.temporary ? "#A5A5A5" : "black"}
+                    stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
                     x={this.x(obj)}
                     y={this.y(obj)}>
                 {markings}
@@ -168,6 +168,7 @@ class PitchBridge extends Bridge {
                 line={obj._line}
                 notehead={countToNotehead[obj.count]}
                 scaleFactor={obj._fontSize*37.8 + "px"}
+                secondaryStroke={obj.selected ? "#75A1D0" : "black"}
                 strokes={getStrokes(obj)}
                 tieTo={obj._tieTo && this.x(obj._tieTo)}
                 x={this.x(obj)}
@@ -252,9 +253,9 @@ var getAccStrokes = (pitch) => {
 
 var getStrokes = (pitch) => {
     if (pitch.chord) {
-        return pitch.chord.map(c => c.temporary ? "#A5A5A5" : "black");
+        return pitch.chord.map(c => c.temporary ? "#A5A5A5" : (pitch.selected ? "#75A1D0" : "black"));
     }
-    return [pitch.temporary ? "#A5A5A5" : "black"];
+    return [pitch.temporary ? "#A5A5A5" : (pitch.selected ? "#75A1D0" : "black" )];
 };
 
 var clefOffsets = {

@@ -20,7 +20,8 @@ var Barline = React.createClass({
     },
     shouldComponentUpdate: function(nextProps) {
         return this.props.x !== nextProps.x ||
-            this.props.y !== nextProps.y;
+            this.props.y !== nextProps.y ||
+            this.props.stroke !== nextProps.stroke;
     },
 
     render: function() {
@@ -29,7 +30,8 @@ var Barline = React.createClass({
             x2={this.props.x + "em"}
             y1={this.props.y - 2/4 + "em"}
             y2={this.props.y + 2/4 + "em"}
-            stroke="black"
+            stroke={this.props.stroke || "black"}
+            fill={this.props.stroke || "black"}
             strokeWidth={"0.02em"} />;
     }
 });

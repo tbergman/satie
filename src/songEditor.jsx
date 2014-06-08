@@ -74,6 +74,7 @@ var SongEditor = React.createClass({
                 marginTop={V_PADDING}
                 pageSize={this.state.pageSize}
                 ref="renderer"
+                setToolFn={this.handleToolSet}
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
                 tool={this.state.tool}

@@ -30,7 +30,7 @@ class ClefBridge extends Bridge {
     render(obj) {
         return <Clef
             key={this.key(obj)}
-            stroke={obj.temporary ? "#A5A5A5" : "black"}
+            stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
             x={this.x(obj)} 
             y={this.y(obj)}
             clef={obj.clef} />;

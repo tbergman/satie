@@ -7,6 +7,7 @@
 
 var React = require('react');
 var _ = require("underscore");
+var assert = require("assert");
 
 var Beam = require("./beam.jsx");
 var Glyph = require("./glyph.jsx");
@@ -70,9 +71,22 @@ var BeamGroup = React.createClass({
             }
         });
 
+        var strokeColor;
+        var strokeEnabled = true;
+
         children.forEach((note, idx) => {
             note.props.direction = direction;
             note.props.stemHeight = getSH(direction, idx, getExtremeLine(note.props.line, direction));
+
+            assert(note.props.strokes.length);
+
+            if (strokeColor !== note.props.strokes[0] && strokeColor) {
+                strokeEnabled = false;
+            }
+
+            if (!strokeColor) {
+                strokeColor = note.props.strokes[0];
+            }
         });
 
         return <g>
@@ -86,6 +100,7 @@ var BeamGroup = React.createClass({
                 notehead2={lastP.notehead}
                 scaleFactor={props.scaleFactor}
                 stemWidth={0.035} 
+                stroke={strokeEnabled && strokeColor}
                 tuplet={this.props.tuplet}
                 tupletsTemporary={this.props.tupletsTemporary}
                 width={lastP.x - firstP.x}

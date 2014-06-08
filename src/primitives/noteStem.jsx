@@ -24,7 +24,8 @@ var NoteStem = React.createClass({
         return {
             x: 0,
             y: 0,
-            height: 3.5
+            height: 3.5,
+            stroke: "black"
         };
     },
 
@@ -37,7 +38,7 @@ var NoteStem = React.createClass({
                 this.getFontOffset()[1]/4 -
                 (this.props.line - 3)/4 -
                 this.getDirection()*this.getHeight()/4 + "em"}
-            stroke="black"
+            stroke={this.props.stroke}
             strokeWidth={this.props.width + "em"} />;
     },
 
