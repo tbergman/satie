@@ -141,6 +141,8 @@ class PitchBridge extends Bridge {
         return this.isBeam || !obj.inBeam;
     }
     render(obj) {
+        var Renderer = require("./renderer.jsx");
+
         var markings = (obj.accents || []).map((m, idx) =>
             <NoteMarking marking={m} key={idx} />
         );
@@ -167,7 +169,7 @@ class PitchBridge extends Bridge {
                 key={this.key(obj)}
                 line={obj._line}
                 notehead={countToNotehead[obj.count]}
-                scaleFactor={obj._fontSize*37.8 + "px"}
+                scaleFactor={obj._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
                 secondaryStroke={obj.selected ? "#75A1D0" : "black"}
                 strokes={getStrokes(obj)}
                 tieTo={obj._tieTo && this.x(obj._tieTo)}

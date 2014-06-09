@@ -57,8 +57,8 @@ var Renderer = React.createClass({
             // XXX: Robustness
 
         var viewbox = "0 0 " +
-            8500*(this.props.pageSize.width/215.9) + " " +
-            11000*(this.props.pageSize.height/279.4);
+            85000*(this.props.pageSize.width/215.9) + " " +
+            110000*(this.props.pageSize.height/279.4);
 
         var ret = <div className="workspace" style={{top: this.props.top}}>
             {pages.map((page) => <div className="page" 
@@ -721,7 +721,7 @@ var LineContainer = React.createClass({
 });
 
 // Ratio between svg coordinate system and 1mm.
-var FONT_SIZE_FACTOR = 37.8;
+var FONT_SIZE_FACTOR = 378;
 
 /**
  * A bridge knows how to annotate and render a certain type of object

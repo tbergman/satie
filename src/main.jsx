@@ -63,6 +63,8 @@ var Ripieno = React.createClass({
                 session={this.state.session}
                 loadSongs={this.loadSongs} />
 
+            <Redirect path="/index.html" to="/" />
+
             <NotFound handler={FourOhFour}
                 session={this.state.session} />
         </Locations>;

@@ -49,6 +49,8 @@ class SlurGroupBridge extends Bridge {
         return true;
     }
     render(obj) {
+        var Renderer = require("./renderer.jsx");
+
         if (!obj._notes.length) {
             return <g key={this.key(obj) + "_EMPTY"} />;
         }
@@ -65,7 +67,7 @@ class SlurGroupBridge extends Bridge {
                 line2={PitchBridge.getLine(last)}
                 width={this.x(last) - this.x(first)}
                 key={this.key(obj)}
-                scaleFactor={obj._fontSize*37.8 + "px"}>
+                scaleFactor={obj._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}>
         </Slur>;
     }
     toLylite(obj, lylite, unresolved) {

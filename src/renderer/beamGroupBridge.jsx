@@ -65,6 +65,8 @@ class BeamGroupBridge extends Bridge {
         return true;
     }
     render(obj) {
+        var Renderer = require("./renderer.jsx");
+
         var beams = 1;
         if (obj.beam.length) {
             // TODO: variable beams
@@ -74,7 +76,7 @@ class BeamGroupBridge extends Bridge {
                 key={this.key(obj)}
                 beams={beams}
                 generate={() => obj.beam.map(b => beamPitchBridge.render(b))}
-                scaleFactor={obj._fontSize*37.8 + "px"}
+                scaleFactor={obj._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
                 tupletsTemporary={obj.tupletsTemporary}
                 tuplet={obj._tuplet} />;
     }
