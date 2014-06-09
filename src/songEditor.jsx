@@ -56,14 +56,16 @@ var SongEditor = React.createClass({
             {/* THE RIBBON */}
             {showRibbon && <span className="pageHeader">
                 <Ribbon
-                    pageSizeFn={this.setPageSize}
-                    session={this.props.session}
-                    reloadFn={this.reload}
                     downloadFn={this.download}
-                    saveFn={this.save}
-                    openFn={this.open}
-                    onToolSet={this.handleToolSet}
+                    getSelectionFn={() => this.refs.renderer.getSelection()}
+                    transposeFn={(how) => this.refs.renderer.transpose(how)}
                     largerFn={this.largerFn}
+                    onToolSet={this.handleToolSet}
+                    openFn={this.open}
+                    pageSizeFn={this.setPageSize}
+                    reloadFn={this.reload}
+                    saveFn={this.save}
+                    session={this.props.session}
                     smallerFn={this.smallerFn} />
             </span>}
 

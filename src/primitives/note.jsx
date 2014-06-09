@@ -268,6 +268,9 @@ var Note = React.createClass({
             if (!isNaN(acc)) {
                 var glyphName;
                 switch(acc) {
+                    case 2:
+                        glyphName = "accidentalDoubleSharp";
+                        break;
                     case 1:
                         glyphName = "accidentalSharp";
                         break;
@@ -276,6 +279,9 @@ var Note = React.createClass({
                         break;
                     case -1:
                         glyphName = "accidentalFlat";
+                        break;
+                    case -2:
+                        glyphName = "accidentalDoubleFlat";
                         break;
                     default:
                         assert(0, "Not reached");

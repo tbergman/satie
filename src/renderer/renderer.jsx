@@ -138,6 +138,8 @@ var Renderer = React.createClass({
 
     annotate: function(staves, pointerData, toolFn, props) {
         props = props || this.props;
+        staves = staves || props.staves;
+
         PROFILER_ENABLED && console.time("annotate");
 
         var y = 0;
@@ -249,6 +251,76 @@ var Renderer = React.createClass({
         var lyliteStr = lyliteArr.join(" ");
         return lyliteStr;
     },
+    getSelection: function() {
+        return this.state.selection;
+    },
+    transpose: function(how) {
+        // The selection is guaranteed to be in song order.
+        var lastIdx = 0;
+        var body = this.props.staves[3].body; // XXX: Robustness
+        var accidentals = null;
+
+        this.state.selection.forEach(item => {
+            for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
+                if (body[i].keySignature) {
+                    accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
+                }
+            }
+
+            assert(body[i] === item, "The selection must be in song order.");
+            assert(accidentals, "A key signature must preceed any note.");
+
+            if (!item.pitch && !item.chord) {
+                return;
+            }
+
+            // For "inKey":
+            var noteToNum = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
+            var numToNote = "cdefgab";
+
+            // For "chromatic":
+            var noteToVal = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
+
+            (item.pitch ? [item] : item.chord).forEach(note => {
+                if (how.mode === "inKey") {
+                    var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
+                    var newNote = noteToNum[note.pitch] + how.letters;
+
+                    note.pitch = numToNote[(noteToNum[note.pitch] + how.letters + 7*7)%7];
+
+                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
+
+                    note.acc = accOffset + (accidentals[note.pitch] || 0);
+
+                    if (!note.acc) {
+                        delete note.acc;
+                    }
+                } else if (how.mode === "chromatic") {
+                    var letters = parseInt(how.interval[1]) - 1;
+                    var semitonesNeeded = parseInt(how.interval.split("_")[1]);
+
+                    var newNote = noteToNum[note.pitch] + letters;
+                    var newPitch = numToNote[(newNote + 7*7)%7];
+                    var semitonesDone = (noteToVal[newPitch] - noteToVal[note.pitch] + 12*12)%12;
+
+                    note.pitch = newPitch;
+                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7)
+                    note.acc = semitonesNeeded - semitonesDone + note.acc;
+                    if (!note.acc) {
+                        delete note.acc;
+                    }
+                }
+            });
+            delete item.selected;
+        });
+        _dirty = true;
+        this.setState({
+            selection: null
+        });
+        this.annotate();
+        return true;
+    },
+
     _getPointerData: function(mouse) {
         var cursor = this._cursor;
 
@@ -487,7 +559,9 @@ var Renderer = React.createClass({
                 });
             }
             var pos = this.getPositionForMouse(event);
-            _dirty = true;
+            if (this.state.selection && this.state.selection.length) {
+                _dirty = true; // Bottleneck: detect lines with selected content
+            }
             this.setState({
                 selectionRect: {
                     start: pos,
@@ -515,7 +589,7 @@ var Renderer = React.createClass({
             }
             this.setState({
                 selectionRect: null,
-                selection: selection
+                selection: selection.length ? selection : null
             });
         }
     },
