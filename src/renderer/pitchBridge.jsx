@@ -264,7 +264,44 @@ var clefOffsets = {
     treble: -3.5,
     bass: 2.5,
     alto: -0.5,
-    tenor: 0.5
+    tenor: 0.5,
+
+
+    gClef15mb: -3.5 + 3.5*2, 
+    gClef8vb: -3.5 + 3.5, 
+    gClef8va: -3.5 - 3.5, 
+    gClef15ma: -3.5 - 3.5*2, 
+    gClef8vbOld: -3.5 +3.5*2, 
+    gClef8vbCClef: -3.5 + 3.5, 
+    gClef8vbParens: -3.5 + 3.5, 
+
+    fClef15mb: 2.5 + 3.5*2, 
+    fClef8vb: 2.5 + 3.5, 
+    fClef8va: 2.5 - 3.5, 
+    fClef15ma: 2.5 - 3.5*2, 
+
+    cClef8vb: -0.5 +3.5*2,
+
+    unpitchedPercussionClef1: 0, 
+    unpitchedPercussionClef2: 0, 
+    semipitchedPercussionClef1: 0, 
+    semipitchedPercussionClef2: 0, 
+    "6stringTabClef": 0, 
+    "4stringTabClef": 0,
+    "bridgeClef": 0, 
+    "accdnDiatonicClef": 0,
+
+    "cClefTriangular": -0.5, 
+    "fClefTriangular": 2.5, 
+    "cClefTriangularToFClef": 2.5, 
+    "fClefTriangularToCClef": -0.5, 
+
+    "gClefReversed": -3.5, 
+    "gClefTurned": -3.5, 
+    "cClefReversed": -0.5, 
+    "fClefReversed": 2.5, 
+    "fClefTurned": 2.5, 
+
 };
 var pitchOffsets = {
     c: 0,

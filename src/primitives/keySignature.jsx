@@ -55,17 +55,30 @@ var KeySignature = React.createClass({
     getAccidentals: function() {
         if (!isNaN(this.props.sharpCount)) {
             return _(this.props.sharpCount).times(i => Object({
-                line: sharps[this.props.clef][i],
+                line: sharps[standardClef(this.props.clef)][i],
                 accidental: "accidentalSharp"
             }));
         } else if (!isNaN(this.props.flatCount)) {
             return _(this.props.flatCount).times(i => Object({
-                line: flats[this.props.clef][i],
+                line: flats[standardClef(this.props.clef)][i],
                 accidental: "accidentalFlat"
             }));
         }
     }
 });
+
+var standardClef = clef => {
+    if (clef.indexOf("gClef") === 0) {
+        return "treble";
+    }
+    if (clef.indexOf("cClef") === 0) {
+        return "bass";
+    }
+    if (clef.indexOf("fClef") === 0) {
+        return "alto";
+    }
+    return "treble";
+};
 
 // TODO: this almost looks like logic -- move to keySignatureBridge.jsx
 var sharps = {
