@@ -27,7 +27,6 @@ var Note = React.createClass({
     propTypes: {
         /* validated fully in NoteHead */
         notehead: React.PropTypes.any.isRequired,
-        stemWidth: React.PropTypes.number,
         stemHeight: React.PropTypes.number,
         dotted: React.PropTypes.any,
         accidentals: React.PropTypes.any
@@ -68,7 +67,6 @@ var Note = React.createClass({
             this.props.line !== nextProps.line ||
             this.props.notehead !== nextProps.notehead ||
             this.props.stemHeight !== nextProps.stemHeight ||
-            this.props.stemWidth !== nextProps.stemWidth ||
             this.props.tieTo !== nextProps.tieTo ||
             this.props.x !== nextProps.x ||
             this.props.y !== nextProps.y;
@@ -78,7 +76,6 @@ var Note = React.createClass({
             x: 0,
             y: 0,
             line: 3,
-            stemWidth: 0.035,
             dotted: false,
             hasStem: true,
             accidentals: undefined,
