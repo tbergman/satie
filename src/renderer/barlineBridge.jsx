@@ -47,49 +47,16 @@ class BarlineBridge extends Bridge {
             [
                 () => false,
                 (obj, cursor, stave, idx) => {
-                    obj._offset = 0;
-                    obj._newlineNext = (stave.body.length > idx + 1) && stave.body[idx + 1].newline;
+                    obj._newlineNext = (stave.body.length > idx + 1) &&
+                        (stave.body[idx + 1].newline || stave.body[idx + 1].newpage);
                     return true;
                 },
-                "The barline offset and newline attributes should always be recalculated"
-            ],
-
-            [
-                (obj, cursor) => obj._newlineNext || !cursor.lines[cursor.line - 1] ||
-                    !_(cursor.lines[cursor.line - 1].barlineX).any(x => Math.abs(x - cursor.x) < 0.2),
-                (obj, cursor, stave, idx) => {
-                    // With this extra space, shift over notes/rests in the bar
-                    var count = 0;
-                    for (var i = idx - 1; i >= 0 &&
-                            !stave.body[i].barline &&
-                            !stave.body[i].newline; --i) {
-                        if (stave.body[i].chord || stave.body[i].pitch) {
-                            ++count;
-                        }
-                    }
-
-                    var extraSpaceLeft = 0.5;
-                    obj._offset = extraSpaceLeft;
-                    var extraSpaceUnit = extraSpaceLeft / count;
-                    for (var i = idx - 1; i >= 0 &&
-                            !stave.body[i].barline &&
-                            !stave.body[i].newline; --i) {
-                        if (stave.body[i].chord || stave.body[i].pitch) {
-                            stave.body[i]["$PitchBridge_annotatedExtraWidth"] += extraSpaceUnit;
-                            extraSpaceLeft -= extraSpaceUnit;
-                            this.setX(stave.body[i], this.x(stave.body[i]) + extraSpaceLeft);
-                        }
-                    }
-                    return true;
-                },
-                "Barlines in adjacent staffs should not be aligned"
+                "Check for newlines"
             ]
         ];
     }
     annotateImpl(obj, cursor, stave, idx) {
-        cursor.barlineX.push(cursor.x);
-
-        cursor.x += (obj._newlineNext ? 0 : 0.5) + obj._offset;
+        cursor.x += (obj._newlineNext ? 0 : 0.3);
         cursor.beats = 0;
         ++cursor.bar;
         cursor.renderKey_eInBar = {};
@@ -100,7 +67,7 @@ class BarlineBridge extends Bridge {
         return <Barline
             stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
             key={this.key(obj)}
-            x={this.x(obj) + obj._offset}
+            x={this.x(obj)}
             y={this.y(obj)} />;
     }
     toLylite(obj, lylite) {

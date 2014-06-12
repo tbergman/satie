@@ -97,7 +97,49 @@ class NewlineBridge extends Bridge {
                     diff/l;
                 xOffset -= diff/l;
             }
-            this.setX(stave.body[i], this.x(stave.body[i]) + xOffset);
+            var newX = this.x(stave.body[i]) + xOffset;
+            if (stave.body[i].barline && (!stave.body[i + 1] || !stave.body[i + 1].newline)) {
+                if (cursor.lines[cursor.line - 1] && _(cursor.lines[cursor.line - 1].barlineX)
+                        .any(x => Math.abs(x - newX) < 0.15)) {
+                    // ADJUST BARLINE
+                    var offset = -0.2;
+                    newX += offset;
+                    var j;
+
+                    // ADJUST PRECEEDING BAR
+                    var noteCount = 0;
+                    for (j = i - 1; j >= 0 && !stave.body[j].barline; --j) {
+                        if (stave.body[j].pitch || stave.body[j].chord) {
+                            ++noteCount;
+                        }
+                    }
+                    var remaining = offset;
+                    for (j = i - 1; j >= 0 && !stave.body[j].barline; --j) {
+                        this.setX(stave.body[j], this.x(stave.body[j]) + remaining);
+                        if (stave.body[j].pitch || stave.body[j].chord) {
+                            remaining -= offset/noteCount;
+                        }
+                    }
+
+                    // ADJUST SUCCEEDING BAR
+                    noteCount = 0;
+                    for (j = i + 1; j < stave.body.length && !stave.body[j].barline; ++j) {
+                        if (stave.body[j].pitch || stave.body[j].chord) {
+                            ++noteCount;
+                        }
+                    }
+                    remaining = offset;
+                    for (j = i + 1; j < stave.body.length && !stave.body[j].barline; ++j) {
+                        this.setX(stave.body[j], this.x(stave.body[j]) + remaining);
+                        if (stave.body[j].pitch || stave.body[j].chord) {
+                            remaining -= offset/noteCount;
+                        }
+                    }
+                }
+
+                cursor.barlineX.push(newX);
+            }
+            this.setX(stave.body[i], newX);
         }
         return true;
     }
