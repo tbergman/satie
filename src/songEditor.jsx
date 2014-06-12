@@ -65,8 +65,10 @@ var SongEditor = React.createClass({
                     pageSizeFn={this.setPageSize}
                     reloadFn={this.reload}
                     saveFn={this.save}
+                    selection={this.state.selection}
                     session={this.props.session}
-                    smallerFn={this.smallerFn} />
+                    smallerFn={this.smallerFn}
+                    tool={this.state.tool} />
             </span>}
 
             {/* THE SHEET MUSIC */}
@@ -76,6 +78,8 @@ var SongEditor = React.createClass({
                 marginTop={V_PADDING}
                 pageSize={this.state.pageSize}
                 ref="renderer"
+                selection={this.state.selection}
+                setSelectionFn={s => this.setState({selection: s})}
                 setToolFn={this.handleToolSet}
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
@@ -134,6 +138,7 @@ var SongEditor = React.createClass({
         return {
             height: 0,
             pageSize: renderUtil.pageSizes[0],
+            selection: null,
             staveHeight: null,
             staves: null,
             tool: null,

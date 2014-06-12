@@ -262,7 +262,7 @@ var Renderer = React.createClass({
         return lyliteStr;
     },
     getSelection: function() {
-        return this.state.selection;
+        return this.props.selection;
     },
     transpose: function(how) {
         // The selection is guaranteed to be in song order.
@@ -270,7 +270,7 @@ var Renderer = React.createClass({
         var body = this.props.staves[3].body; // XXX: Robustness
         var accidentals = null;
 
-        this.state.selection.forEach(item => {
+        this.props.selection.forEach(item => {
             for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
                 if (body[i].keySignature) {
                     accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
@@ -574,13 +574,13 @@ var Renderer = React.createClass({
     },
     handleMouseDown: function(event) {
         if (event.button === 0) {
-            if (this.state.selection) {
-                this.state.selection.forEach(s => {
+            if (this.props.selection) {
+                this.props.selection.forEach(s => {
                     delete s.selected;
                 });
             }
             var pos = this.getPositionForMouse(event);
-            if (this.state.selection && this.state.selection.length) {
+            if (this.props.selection && this.props.selection.length) {
                 _dirty = true; // Bottleneck: detect lines with selected content
             }
             this.setState({
@@ -609,9 +609,9 @@ var Renderer = React.createClass({
                 _dirty = true;
             }
             this.setState({
-                selectionRect: null,
-                selection: selection.length ? selection : null
+                selectionRect: null
             });
+            this.props.setSelectionFn(selection.length ? selection : null);
         }
     },
     handleMouseMove: function(event) {
