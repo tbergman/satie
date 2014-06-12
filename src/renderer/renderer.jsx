@@ -713,6 +713,41 @@ var Renderer = React.createClass({
             _(nextProps.staves).find(s => s.staveHeight).staveHeight = nextProps.staveHeight;
             _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
         }
+    },
+
+    componentDidMount: function() {
+        var AccidentalTool = require("../tools/accidentalTool.jsx");
+        var DotTool = require("../tools/dotTool.jsx");
+        var NoteTool = require("../tools/noteTool.jsx");
+        var RestTool = require("../tools/restTool.jsx");
+        var TieTool = require("../tools/tieTool.jsx");
+
+        document.onkeypress = (event) => {
+            var keyCode = event.keyCode;
+            var key = String.fromCharCode(keyCode);
+            var keyToTool = {
+                '1': () => new NoteTool("noteWhole"),
+                '2': () => new NoteTool("noteHalfUp"),
+                '3': () => new NoteTool("noteQuarterUp"),
+                '4': () => new NoteTool("note8thUp"),
+                '5': () => new NoteTool("note16thUp"),
+                '6': () => new NoteTool("note32thUp"),
+                '7': () => new NoteTool("note64thUp"),
+                'r': () => new RestTool(),
+                '.': () => new DotTool(),
+                '~': () => new TieTool(),
+                '#': () => new AccidentalTool(1),
+                'b': () => new AccidentalTool(-1),
+                'n': () => new AccidentalTool(0)
+            };
+            var toolFn = keyToTool[key];
+            if (toolFn) {
+                this.props.setToolFn(toolFn());
+            }
+        };
+    },
+    componentWillUnmount: function() {
+        document.onkeypress = null;
     }
 });
 
