@@ -17,10 +17,13 @@ var saveAs = require("./thirdParty/fileSaver/FileSaver.js");
 
 var Renderer = require("./renderer/renderer.jsx");
 var Ribbon = require("./ribbon/ribbon.jsx");
+var RipienoHeader = require("./landing/ripienoHeader.jsx");
 var ajax = require("./util/ajax.jsx").untrusted;
 var lylite = require("./renderer/lylite.jison").parser;
 var renderUtil = require("./renderer/util.jsx");
 var unittest = require("./unittest.jsx");
+
+var Link = Router.Link;
 
 var SongEditor = React.createClass({
     render: function() {
@@ -52,6 +55,16 @@ var SongEditor = React.createClass({
                 this.props.session.user._id === this.state.song._owner);
 
         return <div className="global">
+            {this.props.session.state === "LoggedIn" ?
+                <div className="topLeftPageOverlay">
+                    <Link href="/library">
+                        <i className="fa fa-arrow-circle-o-left" />
+                        Library
+                    </Link>
+                </div> :
+
+                <RipienoHeader session={this.props.session} />
+            }
 
             {/* THE RIBBON */}
             {showRibbon && <span className="pageHeader">
@@ -84,7 +97,7 @@ var SongEditor = React.createClass({
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
                 tool={this.state.tool}
-                top={showRibbon ? 140 : 0}
+                top={showRibbon ? 140 : 44}
                 width={width} />}
 
         </div>;

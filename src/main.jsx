@@ -64,7 +64,8 @@ var Ripieno = React.createClass({
                 handler={SongEditor}
                 songs={this.state.songs}
                 session={this.state.session}
-                loadSongs={this.loadSongs} />
+                loadSongs={this.loadSongs}
+                loggedInFn={this.handleLoggedIn} />
 
             <Location path="/hellogl"
                 handler={HelloGL} />
