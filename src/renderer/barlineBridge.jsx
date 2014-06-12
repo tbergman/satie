@@ -65,7 +65,7 @@ class BarlineBridge extends Bridge {
     }
     render(obj) {
         return <Barline
-            stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
+            stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : null)}
             key={this.key(obj)}
             x={this.x(obj)}
             y={this.y(obj)} />;

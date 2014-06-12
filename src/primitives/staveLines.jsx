@@ -7,7 +7,7 @@ var _ = require("underscore");
 
 var Group = require("./group.jsx");
 var Line = require("./line.jsx");
-var Victoria = require("./victoria/hellogl.jsx");
+var SMuFL = require("./SMuFL.js");
 
 var StaveLines = React.createClass({
     getDefaultProps: function() {
@@ -24,8 +24,8 @@ var StaveLines = React.createClass({
                 x2={this.props.x + this.props.width}
                 y1={this.props.y - 0.25*(i - 2)}
                 y2={this.props.y - 0.25*(i - 2)}
-                stroke="#000000"
-                strokeWidth={0.02} />)}
+                stroke="#6A6A6A"
+                strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness/4} />)}
         </Group>;
     }
 });

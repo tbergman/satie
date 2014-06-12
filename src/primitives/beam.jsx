@@ -26,7 +26,6 @@ var Beam = React.createClass({
         line1: React.PropTypes.number.isRequired,
         line2: React.PropTypes.number.isRequired,
         width: React.PropTypes.number.isRequired,
-        strokeWidth: React.PropTypes.number.isRequired,
         direction: React.PropTypes.oneOf([1, -1]).isRequired,
         beams: React.PropTypes.number
     },
@@ -35,7 +34,6 @@ var Beam = React.createClass({
             x: 0,
             y: 0,
             line: 3,
-            strokeWidth: 0.14,
             beams: 1
         };
     },
@@ -86,7 +84,6 @@ var Beam = React.createClass({
             this.props.line1 !== nextProps.line1 ||
             this.props.line2 !== nextProps.line2 ||
             this.props.stroke !== nextProps.stroke ||
-            this.props.strokeWidth !== nextProps.strokeWidth ||
             this.props.tuplet !== nextProps.tuplet ||
             this.props.tupletsTemporary !== nextProps.tupletsTemporary ||
             this.props.width !== nextProps.width ||
@@ -133,7 +130,7 @@ var Beam = React.createClass({
             this.getDirection()*this.getFontOffset(this.props.notehead1)[1]/4 -
             (this.props.line1 - 3)/4 +
             this.getDirection()*idx*0.22 +
-            (incl || 0)*this.props.strokeWidth;
+            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     },
 
     getX2: function() {
@@ -148,7 +145,7 @@ var Beam = React.createClass({
             this.getDirection()*this.getFontOffset(this.props.notehead2)[1]/4 -
             (this.props.line2 - 3)/4 +
             this.getDirection()*idx*0.22 +
-            (incl || 0)*this.props.strokeWidth;
+            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     },
 
     /**

@@ -137,7 +137,6 @@ var Note = React.createClass({
                 direction={direction}
                 line={this.getStartingLine()}
                 stroke={this.props.secondaryStroke}
-                width={0.035}
                 height={this.getStemHeight()}
                 notehead={this.props.notehead} />,
             this.props.flag && <Flag

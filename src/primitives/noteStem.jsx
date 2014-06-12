@@ -13,12 +13,13 @@ var Line = require("./line.jsx");
 var SMuFL = require("./SMuFL.js");
 var getFontOffset = require("./getFontOffset.jsx");
 
+var stemThickness = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;
+
 var NoteStem = React.createClass({
     propTypes: {
         height: React.PropTypes.number.isRequired,
         direction: React.PropTypes.oneOf([1, -1]).isRequired,
         line: React.PropTypes.number.isRequired,
-        width: React.PropTypes.number.isRequired,
         notehead: React.PropTypes.string.isRequired
     },
     getDefaultProps: function() {
@@ -40,7 +41,7 @@ var NoteStem = React.createClass({
                 (this.props.line - 3)/4 -
                 this.getDirection()*this.getHeight()/4}
             stroke={this.props.stroke}
-            strokeWidth={this.props.width} />;
+            strokeWidth={stemThickness} />;
     },
 
     getHeight: function() {
@@ -51,7 +52,7 @@ var NoteStem = React.createClass({
     },
     getFontOffset: getFontOffset,
     getLineXOffset: function() {
-        return this.getDirection() * -this.props.width/2;
+        return this.getDirection() * -stemThickness/2;
     }
 });
 
