@@ -345,7 +345,7 @@ var getAccidentals = (pitch, cursor) => {
 var countToNotehead = {
     0.25: "noteheadDoubleWhole",
     0.5: "noteheadDoubleWhole",
-    1: "noteheadDoubleWhole",
+    1: "noteheadWhole",
     2: "noteheadHalf",
     4: "noteheadBlack",
     8: "noteheadBlack",
