@@ -10,6 +10,7 @@ var Router = require('react-router-component');
 var _ = require('underscore');
 
 var FourOhFour = require("./landing/fourOhFour.jsx");
+var HelloGL = require("./primitives/victoria/hellogl.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var Redirect = require("./util/redirect.jsx");
@@ -21,6 +22,8 @@ var unittest = require("./unittest.jsx");
 var Location = Router.Location;
 var Locations = Router.Locations;
 var NotFound = Router.NotFound;
+
+require("browserify-shader").extensions = ["fs", "vs"]
 
 require("./landing/landing.less");
 require("./main.less");
@@ -62,6 +65,9 @@ var Ripieno = React.createClass({
                 songs={this.state.songs}
                 session={this.state.session}
                 loadSongs={this.loadSongs} />
+
+            <Location path="/hellogl"
+                handler={HelloGL} />
 
             <Redirect path="/index.html" to="/" />
 

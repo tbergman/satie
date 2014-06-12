@@ -5,6 +5,7 @@
  */
 
 var React = require('react');
+var _ = require('underscore');
 
 var Glyph = require("./glyph.jsx");
 var SMuFL = require("./SMuFL.js");
@@ -32,7 +33,6 @@ var Clef = React.createClass({
             y: 0
         };
     },
-
     render: function() {
         return <Glyph
             x={this.props.x}

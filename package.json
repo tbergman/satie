@@ -17,7 +17,8 @@
     "uglifyjs": "~2.3.6",
     "watchify": "~0.10.1",
     "node-lessify": "~0.0.3",
-    "jisonify": "~1.0.4"
+    "jisonify": "~1.0.4",
+    "browserify-shader": "http://nettek.ca/browserify-shader.tar.gz"
   },
   "scripts": {
     "dev-server": "watchify -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
@@ -31,7 +32,8 @@
     "transform": [
       ["reactify", {"es6": true}],
       "node-lessify",
-      "jisonify"
+      "jisonify",
+      ["browserify-shader", {"extensions": ["vs", "fs"]}]
     ]
   }
 }

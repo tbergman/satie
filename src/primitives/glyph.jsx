@@ -7,7 +7,11 @@
 
 var React = require('react');
 
+var RenderableMixin = require("./renderable.jsx");
 var SMuFL = require("./SMuFL.js");
+var Victoria = require("./victoria/hellogl.jsx");
+
+var VGlyph = Victoria.VGlyph;
 
 require("./glyph.less");
 
@@ -32,7 +36,7 @@ var Glyph = React.createClass({
             this.props.glyphName !== nextProps.glyphName;
     },
 
-    render: function() {
+    renderSVG: function() {
         var text = <text
                 x={this.props.x + "em"}
                 y={this.props.y + "em"}
@@ -65,7 +69,21 @@ var Glyph = React.createClass({
                     className="mn_handle" />
                 </g>;
         }
-    }
+    },
+    renderGL: function() {
+        var fill = this.props.stroke || this.props.fill;
+        if (fill === "black" || !fill) {
+            fill = "#000000";
+        }
+
+        return <VGlyph
+            x={this.props.x}
+            y={this.props.y}
+            fill={fill}
+            stroke={fill}
+            glyphName={this.props.glyphName} />;
+    },
+    mixins: [RenderableMixin]
 });
 
 module.exports = Glyph;

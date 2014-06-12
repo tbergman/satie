@@ -8,6 +8,7 @@ var React = require('react');
 
 var Accidental = require("./accidental.jsx");
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
 var SMuFL = require("./SMuFL.js");
 
 var _ = require("underscore");
@@ -40,7 +41,7 @@ var KeySignature = React.createClass({
     },
 
     render: function() {
-        return <g>
+        return <Group>
             {this.getAccidentals().map((a, idx) => <Accidental
                 key={idx /* for React */}
                 x={this.props.x + idx/4}
@@ -48,7 +49,7 @@ var KeySignature = React.createClass({
                 line={a.line}
                 stroke={this.props.stroke}
                 accidental={a.accidental} />)}
-        </g>;
+        </Group>;
     },
 
     getAccidentals: function() {

@@ -9,6 +9,7 @@ var Accidental = require("./accidental.jsx");
 var Dot = require("./dot.jsx");
 var Flag = require("./flag.jsx");
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
 var NoteHead = require("./noteHead.jsx");
 var NoteMarking = require("./noteMarking.jsx");
 var NoteStem = require("./noteStem.jsx");
@@ -34,7 +35,7 @@ var Rest = React.createClass({
 
     render: function() {
         var line = this.props.line;
-        return <g>
+        return <Group>
             <Glyph
                 key={"r"}
                 x={this.props.x}
@@ -57,7 +58,7 @@ var Rest = React.createClass({
                 element.props.notehead = this.props.notehead;
                 return element;
             })}
-        </g>;
+        </Group>;
     },
 
     getDirection: function() {

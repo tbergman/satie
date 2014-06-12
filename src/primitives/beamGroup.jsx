@@ -11,6 +11,7 @@ var assert = require("assert");
 
 var Beam = require("./beam.jsx");
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
 var Note = require("./note.jsx");
 var SMuFL = require("./SMuFL.js");
 var getFontOffset = require("./getFontOffset.jsx");
@@ -89,8 +90,9 @@ var BeamGroup = React.createClass({
             }
         });
 
-        return <g>
-            <Beam
+        return <Group>
+            {[<Beam
+                key="beam"
                 beams={(props && props.beams) || 1}
                 direction={direction}
                 key={props.key}
@@ -105,9 +107,9 @@ var BeamGroup = React.createClass({
                 tupletsTemporary={this.props.tupletsTemporary}
                 width={lastP.x - firstP.x}
                 x={firstP.x /* should assert all in order */}
-                y={firstP.y /* should assert all are equal */} />
-            {children}
-        </g>;
+                y={firstP.y /* should assert all are equal */} />].concat(
+            children)}
+        </Group>;
     }
 });
 

@@ -9,6 +9,7 @@ var _ = require("underscore");
 
 var Accidental = require("./accidental.jsx");
 var Glyph = require("./glyph.jsx");
+var Line = require("./line.jsx");
 var SMuFL = require("./SMuFL.js");
 var getFontOffset = require("./getFontOffset.jsx");
 
@@ -25,21 +26,21 @@ var NoteStem = React.createClass({
             x: 0,
             y: 0,
             height: 3.5,
-            stroke: "black"
+            stroke: "#000000"
         };
     },
 
     render: function() {
-        return <line
-            x1={this.props.x + this.getFontOffset()[0]/4 + this.getLineXOffset() + "em"}
-            x2={this.props.x + this.getFontOffset()[0]/4 + this.getLineXOffset() + "em"}
-            y1={this.props.y - this.getFontOffset()[1]/4 - (this.props.line - 3)/4 + "em"}
+        return <Line
+            x1={this.props.x + this.getFontOffset()[0]/4 + this.getLineXOffset()}
+            x2={this.props.x + this.getFontOffset()[0]/4 + this.getLineXOffset()}
+            y1={this.props.y - this.getFontOffset()[1]/4 - (this.props.line - 3)/4}
             y2={this.props.y -
                 this.getFontOffset()[1]/4 -
                 (this.props.line - 3)/4 -
-                this.getDirection()*this.getHeight()/4 + "em"}
+                this.getDirection()*this.getHeight()/4}
             stroke={this.props.stroke}
-            strokeWidth={this.props.width + "em"} />;
+            strokeWidth={this.props.width} />;
     },
 
     getHeight: function() {

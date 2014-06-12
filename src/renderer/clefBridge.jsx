@@ -27,7 +27,7 @@ class ClefBridge extends Bridge {
         cursor.x += 0.6 + obj._annotatedSpacing/4;
         return true;
     }
-    render(obj) {
+    render(obj, engine) {
         return <Clef
             key={this.key(obj)}
             stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}

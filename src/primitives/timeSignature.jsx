@@ -7,6 +7,7 @@
 var React = require('react');
 
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
 var SMuFL = require("./SMuFL.js");
 
 var TimeSignature = React.createClass({
@@ -45,20 +46,22 @@ var TimeSignature = React.createClass({
             }
             console.warn("Cannot be represented with a common time signature!");
         }
-        return <g>
-            <TimeSignatureNumber
+        return <Group>
+            {[<TimeSignatureNumber
+                    key="num"
                     stroke={this.props.stroke}
                     x={this.props.x + this.numOffset()}
                     y={this.props.y - 1/4}>
                 {this.props.beats}
-            </TimeSignatureNumber>
+            </TimeSignatureNumber>,
             <TimeSignatureNumber
+                    key="den"
                     stroke={this.props.stroke}
                     x={this.props.x + this.denOffset()}
                     y={this.props.y + 1/4}>
                 {this.props.beatType}
-            </TimeSignatureNumber>
-        </g>;
+            </TimeSignatureNumber>]}
+        </Group>;
     },
 
     numOffset: function() {

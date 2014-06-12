@@ -6,6 +6,7 @@
  */
 
 var React = require('react');
+var Line = require("./line.jsx");
 
 var Barline = React.createClass({
     proptypes: {
@@ -25,14 +26,14 @@ var Barline = React.createClass({
     },
 
     render: function() {
-        return <line
-            x1={this.props.x + "em"}
-            x2={this.props.x + "em"}
-            y1={this.props.y - 2/4 + "em"}
-            y2={this.props.y + 2/4 + "em"}
-            stroke={this.props.stroke || "black"}
-            fill={this.props.stroke || "black"}
-            strokeWidth={"0.02em"} />;
+        return <Line
+            x1={this.props.x}
+            x2={this.props.x}
+            y1={this.props.y - 2/4}
+            y2={this.props.y + 2/4}
+            stroke={this.props.stroke || "#000000"}
+            fill={this.props.stroke || "#000000"}
+            strokeWidth={0.02} />;
     }
 });
 

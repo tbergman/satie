@@ -67,7 +67,7 @@ class NewlineBridge extends Bridge {
 
         return true;
     }
-    render(obj) {
+    render(obj, engine) {
         return <StaveLines
                 key={this.key(obj)}
                 width={renderUtil.mm(obj._pageSize.width - 30, obj._fontSize)}

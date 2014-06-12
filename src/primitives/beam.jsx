@@ -12,8 +12,13 @@ var React = require('react');
 var _ = require("underscore");
 
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
+var RenderableMixin = require("./renderable.jsx");
 var SMuFL = require("./SMuFL.js");
+var Victoria = require("./victoria/hellogl.jsx");
 var getFontOffset = require("./getFontOffset.jsx");
+
+var VRect = Victoria.VRect;
 
 var Beam = React.createClass({
     propTypes: {
@@ -35,8 +40,8 @@ var Beam = React.createClass({
         };
     },
 
-    render: function() {
-        return <g><svg
+    renderSVG: function() {
+        return <Group><svg
                 x={0}
                 y={0}
                 width={this.props.scaleFactor}
@@ -56,7 +61,19 @@ var Beam = React.createClass({
             )}
         </svg>
             {this.tuplet()}
-        </g>;
+        </Group>;
+    },
+
+    renderGL: function() {
+        return <Group>
+            {_(this.props.beams).times(idx => <VRect
+                key={idx}
+                x1={this.getX1()} x2={this.getX2()}
+                y1={this.getY1(0, idx)} y2={this.getY1(1, idx)}
+                fill={this.props.stroke}
+                skewx={0} skewY={this.getY1(1, idx) - this.getY2(1, idx)} />)}
+            {this.tuplet()}
+        </Group>;
     },
 
     /**
@@ -154,7 +171,9 @@ var Beam = React.createClass({
                 x={this.props.x + offset/2}
                 y={y} />;
         }
-    }
+    },
+
+    mixins: [RenderableMixin]
 });
 
 module.exports = Beam;

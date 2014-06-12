@@ -15,6 +15,7 @@ var Accidental = require("./accidental.jsx");
 var Dot = require("./dot.jsx");
 var Flag = require("./flag.jsx");
 var Glyph = require("./glyph.jsx");
+var Group = require("./group.jsx");
 var LedgerLine = require("./ledgerLine.jsx");
 var NoteHead = require("./noteHead.jsx");
 var NoteMarking = require("./noteMarking.jsx");
@@ -113,7 +114,7 @@ var Note = React.createClass({
                 }
             }
         }
-        return <g>
+        return <Group>
             {lines.map((line, idx) => [
                 <NoteHead
                     key={idx + "l"}
@@ -128,25 +129,26 @@ var Note = React.createClass({
                     stroke={this.props.strokes[0]}
                     x={this.props.x}
                     y={this.props.y}
-                    line={line} />)))}
-            {this.props.hasStem && <NoteStem
+                    line={line} />))).concat([
+            this.props.hasStem && <NoteStem
                 x={this.props.x}
                 y={this.props.y}
+                key="stem"
                 direction={direction}
                 line={this.getStartingLine()}
                 stroke={this.props.secondaryStroke}
                 width={0.035}
                 height={this.getStemHeight()}
-                notehead={this.props.notehead} />}
-            {this.props.flag && <Flag
+                notehead={this.props.notehead} />,
+            this.props.flag && <Flag
                 x={this.props.x}
                 y={this.props.y}
                 line={this.getHeightDeterminingLine()}
                 stroke={this.props.secondaryStroke}
                 flag={this.props.flag}
                 notehead={this.props.notehead}
-                direction={direction} />}
-            {this.props.children && this.props.children.map((element, idx) => {
+                direction={direction} />]).concat(
+            this.props.children && this.props.children.map((element, idx) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;
@@ -154,11 +156,11 @@ var Note = React.createClass({
                 element.props.idx = idx;
                 element.props.notehead = this.props.notehead;
                 return element;
-            })}
-            {this.accidentals()}
-            {this.ledgerLines()}
-            {this.tie()}
-        </g>;
+            })).concat(
+            this.accidentals()).concat(
+            this.ledgerLines()).concat(
+            this.tie())}
+        </Group>;
     },
 
     getDirection: function() {

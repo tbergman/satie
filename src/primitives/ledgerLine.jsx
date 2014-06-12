@@ -7,6 +7,7 @@
 var React = require('react');
 var _ = require("underscore");
 
+var Line = require("./line.jsx");
 var SMuFL = require("./SMuFL.js");
 
 var LedgerLine = React.createClass({
@@ -28,13 +29,13 @@ var LedgerLine = React.createClass({
         var sw = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
         var ne = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var xOffset = (ne[0] - sw[0])/4;
-        return <line
-            x1={this.props.x - 0.1 + "em"}
-            x2={this.props.x + xOffset + 0.1 + "em"}
-            y1={this.props.y - (this.props.line - 3)/4 + "em"}
-            y2={this.props.y - (this.props.line - 3)/4 + "em"}
-            stroke="black"
-            strokeWidth={0.055 + "em"} />;
+        return <Line
+            x1={this.props.x - 0.1}
+            x2={this.props.x + xOffset + 0.1}
+            y1={this.props.y - (this.props.line - 3)/4}
+            y2={this.props.y - (this.props.line - 3)/4}
+            stroke="#000000"
+            strokeWidth={0.055} />;
             // Ledger lines should be thicker than regular lines.
     }
 });

@@ -6,6 +6,12 @@ var React = require('react');
 var _ = require("underscore");
 var assert = require("assert");
 
+var Molasses = require("../primitives/molasses/molasses.jsx");
+var Victoria = require("../primitives/victoria/hellogl.jsx");
+
+var useGL = window.location.search.indexOf("engine=gl") !== -1;
+window.useGL = useGL;
+
 var BarlineBridge = require("./barlineBridge.jsx");
 var BeamBridge = require("./beamGroupBridge.jsx");
 var Bridge = require("./bridge.jsx");
@@ -21,6 +27,9 @@ var StaveLines = require("../primitives/staveLines.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 var renderUtil = require("./util.jsx");
 var unittest = require("../unittest.jsx");
+
+var RenderEngine = useGL ? Victoria : Molasses;
+var Group = useGL ? Victoria.VG : React.DOM.g;
 
 var bridges = {
     barline: new BarlineBridge(),
@@ -64,35 +73,36 @@ var Renderer = React.createClass({
             {pages.map((page, pidx) => <div className="page" 
                 key={"page" + page.idx}
                 style={{
+                    position: "relative",
                     width: this.props.width,
                     height: this.props.height,
                     marginTop: this.props.marginTop,
                     marginBottom: this.props.marginBottom}}>
-            <svg
-                data-page={page.idx}
-                ref={"svg" + page.idx}
-                height="100%"
+            <RenderEngine
                 onClick={this.handleMouseClick}
                 onMouseDown={this.handleMouseDown}
                 onMouseUp={this.handleMouseUp}
                 onMouseLeave={this.handleMouseLeave}
                 onMouseMove={this.handleMouseMove}
-                viewBox={viewbox}
-                width="100%">
+                page={page}
+                staves={staves}
+                renderFn={render}
+                widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
+                viewbox={viewbox}>
             {staves.map((stave, idx) => {
                 if (stave.header) {
                     if (page.from) {
                         return null;
                     }
                     y += Header.getHeight(stave.header);
-                    return <Header
+                    return !useGL && <Header
                         fontSize={fontSize*FONT_SIZE_FACTOR}
                         middle={renderUtil.mm(this.props.pageSize.width, fontSize)/2}
                         right={renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75)}
                         key="HEADER"
                         model={stave.header} />;
                 } else if (stave.body) {
-                    return <g key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
+                    return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                         {/* TODO: move to /annotate/ */}
                         {!page.from && <StaveLines
                             key={idx + "StaveLinesMain"}
@@ -110,7 +120,7 @@ var Renderer = React.createClass({
                                 staveHeight={this.props.staveHeight}
                                 generate={() => s.map(t => render(t))}
                                 idx={idx + pageLines[page.idx]} key={idx} />)}
-                    </g>;
+                    </Group>;
                 } else {
                     return null;
                 }
@@ -126,7 +136,7 @@ var Renderer = React.createClass({
                 y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
                 width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
                 height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
-        </svg>
+        </RenderEngine>
         </div>)}
         </div>;
 
@@ -336,7 +346,7 @@ var Renderer = React.createClass({
                 dynY = cursor.lines[i].y;
                 dynLine = Math.round((cursor.lines[i].y - mouse.y)/0.125)/2 + 3;
                 if (dynLine > 8.5 || dynLine < -2.5) {
-                    return <g />;
+                    return <Group />;
                 }
                 var body = this.props.staves[3].body; // XXX: Make more robust!
                 for (var j = cursor.pageStarts[mouse.page]; j < body.length && !body[i].newpage; ++j) {
@@ -522,6 +532,17 @@ var Renderer = React.createClass({
         return i + 1;
     },
     getPositionForMouse: function(event) {
+        if (useGL) {
+            var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
+            var rect = event.target.getBoundingClientRect();
+
+            return {
+                x: (event.clientX - rect.left) / event.target.clientWidth * widthInSpaces,
+                y: (event.clientY - rect.top) / event.target.clientWidth * widthInSpaces,
+                page: 0,
+                selectionInfo: null
+            };
+        }
         var svg_elt = event.target.farthestViewportElement || event.target;
         var svg_pt = svg_elt.createSVGPoint();
         svg_pt.x = event.clientX;
@@ -704,7 +725,7 @@ var Renderer = React.createClass({
  */
 var LineContainer = React.createClass({
     render: function() {
-        return <g>{this.props.generate()}</g>;
+        return <Group>{this.props.generate()}</Group>;
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
