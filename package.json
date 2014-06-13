@@ -7,7 +7,8 @@
     "react": "~0.10",
     "react-bootstrap": "~0.10.1",
     "underscore": "~1.6.0",
-    "react-router-component": "~0.18.3"
+    "react-router-component": "~0.18.3",
+    "es6-promise": ">= 1.0.0"
   },
   "devDependencies": {
     "browserify": "~4.1.5",

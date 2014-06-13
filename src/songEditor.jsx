@@ -37,7 +37,9 @@ var SongEditor = React.createClass({
         // Right now, the size of the sheet music is decided by the size
         // and shape of the viewer. In the future, it will be possible to
         // zoom in and out.
-        var aspectRatio = this.state.pageSize.width / this.state.pageSize.height;
+        var aspectRatio = this.state.song ? this.state.pageSize.width / this.state.pageSize.height : 1;
+            // Set to 1 to prevent divide by zero.
+
         var width = this.state.width*0.8;
         var height = width/aspectRatio;
         if (height/this.state.height > 2) {
@@ -105,9 +107,18 @@ var SongEditor = React.createClass({
 
 
     /**
-     * Given a song element (see song.d), render it.
+     * Update the state to match the active song. (see song.d)
      */
-    show: function(song) {
+    updateActiveSong: function(song) {
+        if (!song) {
+            this.setState({
+                song: null,
+                staves: null,
+                staveHeight: null
+                //pageSize: null -- BUG: restore after moving to Flux.
+            });
+            return;
+        }
         var staves = lylite.parse(song.src);
         if (!_(staves).any(s => s.staveHeight)) {
             staves.splice(0, 0, {staveHeight: renderUtil.rastalToHeight[4]})
@@ -124,27 +135,6 @@ var SongEditor = React.createClass({
             staveHeight: staveHeight,
             pageSize: pageSize
         });
-    },
-
-    /**
-     * Given a song id (from e.g., the URL), find it and render it.
-     * If it is not currently cached, requests it from the API.
-     */
-    showId: function(id, songs) {
-        songs = songs || this.props.songs;
-
-        var song = _(songs).findWhere({_id: id});
-        if (song) {
-            this.show(song);
-        } else {
-            ajax.getJSON("/api/song/" + id, (song, request) => {
-                if (request.status === 404) {
-                    this.navigate("/404");
-                    return;
-                }
-                this.show(song);
-            });
-        } 
     },
 
     getInitialState: function() {
@@ -253,11 +243,9 @@ var SongEditor = React.createClass({
         this.reload(); // better crash here than on loading the sheet music later
 
         this.state.song.src = this.refs.renderer.writeLylite();
-        ajax.putJSON("/api/song/" + this.state.song._id, {
-                data: this.state.song.src
-            }, (savedSong, request) => {
-                console.log("Saved!");
-            });
+        ("/api/song/_" + this.state.song._id).dispatch("PUT", {
+            data: this.state.song.src
+        });
     },
 
     /**
@@ -286,28 +274,24 @@ var SongEditor = React.createClass({
     },
 
     componentWillMount: function() {
-        if (!this.props.songs) {
-            // Cache songs from library
-            this.props.loadSongs();
-            return;
-        }
-
-        this.showId(this.props.songId);
+        ("/api/song/_" + this.props.songId).dispatch("SHOW");
     },
     componentDidMount: function() {
         window.addEventListener("resize", this.updateDimensions);
         this.updateDimensions();
     },
     componentWillReceiveProps: function(nextProps) {
-        if (!nextProps.songs) {
-            return;
+        if (nextProps.songId !== this.props.songId) {
+            ("/api/song/_" + nextProps.songId).dispatch("SHOW");
         }
-        this.showId(nextProps.songId, nextProps.songs);
-        if ((this.props.songId !== nextProps.songId) || nextProps.songs) {
-            this.showId(nextProps.songId, nextProps.songs);
+        if (nextProps.activeSong !== this.props.activeSong) {
+            this.updateActiveSong(nextProps.activeSong);
         }
     },
-    componentDidUnmount: function() {
+    componentWillUnmount: function() {
+        // This might have race-condition issues if we're replacing one
+        // song consumer with another!
+        ("/api/song/_" + this.props.songId).dispatch("HIDE");
         window.removeEventListener("resize", this.updateDimensions);
     },
 

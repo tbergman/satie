@@ -27,11 +27,13 @@ module.exports = {
     untrusted: {
         postJSON: _.partial(postJSON, false, "POST"),
         putJSON: _.partial(postJSON, false, "PUT"),
+        anyJSON: _.partial(postJSON, false),
         getJSON: _.partial(getJSON, false),
     },
     trusted: {
         postJSON: _.partial(postJSON, true, "POST"),
         putJSON: _.partial(postJSON, true, "PUT"),
+        anyJSON: _.partial(postJSON, true),
         getJSON: _.partial(getJSON, true)
     }
 };
