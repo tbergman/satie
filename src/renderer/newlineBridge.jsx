@@ -62,8 +62,8 @@ class NewlineBridge extends Bridge {
         cursor.lines[cursor.line].pageStarts = cursor.pageStarts;
         cursor.lines[cursor.line].keySignature = cursor.prevKeySignature;
 
-        var Renderer = require("./renderer.jsx");
-        Renderer.snapshot(cursor);
+        var SongEditorStore = require("../store/songEditor.jsx");
+        SongEditorStore.snapshot(cursor);
 
         return true;
     }

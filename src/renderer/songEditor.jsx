@@ -18,7 +18,7 @@ var saveAs = require("../thirdParty/fileSaver/FileSaver.js");
 var Renderer = require("./renderer.jsx");
 var Ribbon = require("../ribbon/ribbon.jsx");
 var RipienoHeader = require("../landing/ripienoHeader.jsx");
-var lylite = require("./lylite.jison").parser;
+var SongEditorStore = require("../store/songEditor.jsx");
 var renderUtil = require("./util.jsx");
 
 var Link = Router.Link;
@@ -35,7 +35,7 @@ var SongEditor = React.createClass({
         // Right now, the size of the sheet music is decided by the size
         // and shape of the viewer. In the future, it will be possible to
         // zoom in and out.
-        var aspectRatio = this.state.song ? this.state.pageSize.width / this.state.pageSize.height : 1;
+        var aspectRatio = this.state.staves ? this.state.pageSize.width / this.state.pageSize.height : 1;
             // Set to 1 to prevent divide by zero.
 
         var width = this.state.width*0.8;
@@ -51,8 +51,8 @@ var SongEditor = React.createClass({
         // slightly faster.
         var showRibbon = this.state.width > 910 &&
             this.props.session.user &&
-            (!this.state.song ||
-                this.props.session.user._id === this.state.song._owner);
+            (!this.state.staves ||
+                this.props.session.user._id === this.props.activeSong._owner);
 
         return <div className="global">
             {this.props.session.state === "LoggedIn" ?
@@ -69,31 +69,24 @@ var SongEditor = React.createClass({
             {/* THE RIBBON */}
             {showRibbon && <span className="pageHeader">
                 <Ribbon
+                    activeSong={this.activeSong}
                     downloadFn={this.download}
                     getSelectionFn={() => this.refs.renderer.getSelection()}
-                    transposeFn={(how) => this.refs.renderer.transpose(how)}
-                    largerFn={this.largerFn}
-                    onToolSet={this.handleToolSet}
                     openFn={this.open}
-                    pageSizeFn={this.setPageSize}
                     reloadFn={this.reload}
-                    saveFn={this.save}
                     selection={this.state.selection}
                     session={this.props.session}
-                    smallerFn={this.smallerFn}
                     tool={this.state.tool} />
             </span>}
 
             {/* THE SHEET MUSIC */}
-            {this.state.song && <Renderer
+            {this.state.staves && <Renderer
                 height={height}
                 marginBottom={V_PADDING}
                 marginTop={V_PADDING}
                 pageSize={this.state.pageSize}
                 ref="renderer"
                 selection={this.state.selection}
-                setSelectionFn={s => this.setState({selection: s})}
-                setToolFn={this.handleToolSet}
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
                 tool={this.state.tool}
@@ -103,102 +96,18 @@ var SongEditor = React.createClass({
         </div>;
     },
 
-
-    /**
-     * Update the state to match the active song. (see song.d)
-     */
-    updateActiveSong: function(song) {
-        if (!song) {
-            this.setState({
-                song: null,
-                staves: null,
-                staveHeight: null
-                //pageSize: null -- BUG: restore after moving to Flux.
-            });
-            return;
-        }
-        var staves = lylite.parse(song.src);
-        if (!_(staves).any(s => s.staveHeight)) {
-            staves.splice(0, 0, {staveHeight: renderUtil.rastalToHeight[4]})
-        }
-        if (!_(staves).any(s => s.pageSize)) {
-            staves.splice(0, 0, {pageSize: this.state.pageSize})
-        }
-        var staveHeight = _(staves).find(s => s.staveHeight).staveHeight;
-        var pageSize = _(staves).find(s => s.pageSize).pageSize;
-
-        this.setState({
-            song: song,
-            staves: staves,
-            staveHeight: staveHeight,
-            pageSize: pageSize
-        });
-    },
-
     getInitialState: function() {
         return {
             height: 0,
             pageSize: renderUtil.pageSizes[0],
-            selection: null,
-            staveHeight: null,
-            staves: null,
-            tool: null,
+            staves: SongEditorStore.staves(),
+            staveHeight: SongEditorStore.staveHeight(),
+            tool: SongEditorStore.tool(),
+            pageSize: SongEditorStore.pageSize(),
             width: 0
         };
     },
 
-    /**
-     * Called from the Ribbon. See tool.jsx
-     */
-    handleToolSet: function(tool) {
-        this.setState({tool: tool});
-    },
-
-    /**
-     * Decrease the rastal size by one (lower rastal numbers are larger).
-     *
-     * Forces a complete re-annotation and rendering.
-     */
-    largerFn: function() {
-        var h = Math.round(this.state.staveHeight*100)/100;
-        for (var i = renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
-            if (renderUtil.rastalToHeight[i] > h) {
-                this.setState({
-                    staveHeight: renderUtil.rastalToHeight[i]
-                });
-                break;
-            }
-        }
-    },
-
-    /**
-     * Decrease the rastal size by one (lower rastal numbers are larger).
-     *
-     * Forces a complete re-annotation and rendering.
-     */
-    smallerFn: function() {
-        var h = Math.round(this.state.staveHeight*100)/100;
-        for (var i = 0; i < renderUtil.rastalToHeight.length; ++i) {
-            if (renderUtil.rastalToHeight[i] < h) {
-                this.setState({
-                    staveHeight: renderUtil.rastalToHeight[i]
-                });
-                break;
-            }
-        }
-    },
-
-    /**
-     * Set the page size.
-     *
-     * @param {size} a value from renderUtil.pageSizes
-     */
-    setPageSize: function(size) {
-        this.setState({
-            pageSize: size
-        });
-    },
-    
     /**
      * Called whenever the window is resized, whether or not the node has actually
      * changed sizes.
@@ -241,7 +150,7 @@ var SongEditor = React.createClass({
         this.reload(); // better crash here than on loading the sheet music later
 
         this.state.song.src = this.refs.renderer.writeLylite();
-        ("/api/song/_" + this.state.song._id).dispatch("PUT", {
+        ("/api/song/_" + this.state.song._id).PUT({
             data: this.state.song.src
         });
     },
@@ -272,25 +181,36 @@ var SongEditor = React.createClass({
     },
 
     componentWillMount: function() {
-        ("/api/song/_" + this.props.songId).dispatch("SHOW");
+        ("/api/song/_" + this.props.songId).SHOW();
     },
     componentDidMount: function() {
+        SongEditorStore.addChangeListener(this._onChange);
+
         window.addEventListener("resize", this.updateDimensions);
         this.updateDimensions();
+        this._onChange();
     },
     componentWillReceiveProps: function(nextProps) {
         if (nextProps.songId !== this.props.songId) {
-            ("/api/song/_" + nextProps.songId).dispatch("SHOW");
-        }
-        if (nextProps.activeSong !== this.props.activeSong) {
-            this.updateActiveSong(nextProps.activeSong);
+            ("/api/song/_" + nextProps.songId).SHOW();
         }
     },
     componentWillUnmount: function() {
+        SongEditorStore.removeChangeListener(this._onChange);
+
         // This might have race-condition issues if we're replacing one
         // song consumer with another!
-        ("/api/song/_" + this.props.songId).dispatch("HIDE");
+        ("/api/song/_" + this.props.songId).HIDE();
         window.removeEventListener("resize", this.updateDimensions);
+    },
+    _onChange: function() {
+        this.setState({
+            pageSize: SongEditorStore.pageSize(),
+            selection: SongEditorStore.selection(),
+            staveHeight: SongEditorStore.staveHeight(),
+            staves: SongEditorStore.staves(),
+            tool: SongEditorStore.tool()
+        });
     },
 
     mixins: [Router.NavigatableMixin] // for this.navigate

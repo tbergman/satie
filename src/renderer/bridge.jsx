@@ -146,5 +146,49 @@ var removeAnnotations = (staves) => {
     }
 };
 
+/**
+ * A bridge knows how to annotate and render a certain type of object
+ * such as a beam or a clef.
+ *
+ * See bridge.jsx
+ */
+var getBridgeForItem = item => {
+    if (item._bridge) {
+        return item._bridge;
+    }
+
+    var ret = _(bridges).find((bridge, name) => item[name]);
+    item._bridge = ret;
+    return ret;
+};
+
+var bridges = {};
+_.defer(() => {
+    var BarlineBridge = require("../renderer/barlineBridge.jsx");
+    var BeamBridge = require("../renderer/beamGroupBridge.jsx");
+    var ClefBridge = require("../renderer/clefBridge.jsx");
+    var KeySignatureBridge = require("../renderer/keySignatureBridge.jsx");
+    var NewPageBridge = require("../renderer/newpageBridge.jsx");
+    var NewlineBridge = require("../renderer/newlineBridge.jsx");
+    var PitchBridge = require("../renderer/pitchBridge.jsx");
+    var SlurBridge = require("../renderer/slurBridge.jsx");
+    var TimeSignatureBridge = require("../renderer/timeSignatureBridge.jsx");
+    
+    _(bridges).extend({
+        barline: new BarlineBridge(),
+        beam: new BeamBridge(),
+        chord: new PitchBridge(),
+        clef: new ClefBridge(),
+        keySignature: new KeySignatureBridge(),
+        newpage: new NewPageBridge(),
+        newline: new NewlineBridge(),
+        pitch: new PitchBridge(),
+        slur: new SlurBridge(),
+        timeSignature: new TimeSignatureBridge()
+    });
+});
+
 module.exports = Bridge;
 module.exports.removeAnnotations = removeAnnotations;
+module.exports.getBridgeForItem = getBridgeForItem;
+module.exports.bridges = bridges;

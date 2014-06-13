@@ -45,14 +45,14 @@ class BeamGroupBridge extends Bridge {
         ];
     }
     annotateImpl(obj, cursor, stave, idx) {
-        var Renderer = require("./renderer.jsx");
+        var SongEditorStore = require("../store/songEditor.jsx");
 
         var mret = false;
         obj._fontSize = cursor.fontSize;
 
         var next = this.nextNote(stave, idx);
         obj._tuplet = next && next.tuplet;
-        Renderer.beamCountIs(cursor.beats);
+        SongEditorStore.beamCountIs(cursor.beats);
         if (!obj.beam.every(b => {
                 this.setX(b, cursor.x);
                 this.setY(b, cursor.y);

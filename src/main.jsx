@@ -79,7 +79,7 @@ var Ripieno = React.createClass({
     componentDidMount: function() {
         SessionStore.addChangeListener(this._onChange);
 
-        "/api/user/start_session".dispatch("GET");
+        "/api/user/start_session".GET();
     },
 
     componentWillUpdate: function(nextProps, nextState) {
@@ -103,7 +103,7 @@ var Ripieno = React.createClass({
             //  2. The page was loading. The user was always logged in.
 
             // Load all songs in a users library.
-            ("/api/song?userId=" + nextProps.session.user._id).dispatch("GET");
+            ("/api/song?userId=" + nextProps.session.user._id).GET();
         }
     },
     componentWillUnmount: function() {

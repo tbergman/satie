@@ -12,39 +12,19 @@ var Victoria = require("../primitives/victoria/hellogl.jsx");
 var useGL = window.location.search.indexOf("engine=gl") !== -1;
 window.useGL = useGL;
 
-var BarlineBridge = require("./barlineBridge.jsx");
-var BeamBridge = require("./beamGroupBridge.jsx");
 var Bridge = require("./bridge.jsx");
-var ClefBridge = require("./clefBridge.jsx");
 var Header = require("../primitives/header.jsx");
-var KeySignatureBridge = require("./keySignatureBridge.jsx");
-var NewPageBridge = require("./newpageBridge.jsx");
-var NewlineBridge = require("./newlineBridge.jsx");
-var PitchBridge = require("./pitchBridge.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-var SlurBridge = require("./slurBridge.jsx");
+var SongEditorStore = require("../store/songEditor.jsx");
 var StaveLines = require("../primitives/staveLines.jsx");
-var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 var renderUtil = require("./util.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;
 var Group = useGL ? Victoria.VG : React.DOM.g;
 
-var bridges = {
-    barline: new BarlineBridge(),
-    beam: new BeamBridge(),
-    chord: new PitchBridge(),
-    clef: new ClefBridge(),
-    keySignature: new KeySignatureBridge(),
-    newpage: new NewPageBridge(),
-    newline: new NewlineBridge(),
-    pitch: new PitchBridge(),
-    slur: new SlurBridge(),
-    timeSignature: new TimeSignatureBridge()
-};
-
 var PROFILER_ENABLED = window.location.search.indexOf("profile=1") !== -1;
-var LYLITE_DEBUG = window.location.search.indexOf("lyDebug=1") !== -1;
+
+var getCursor = () => SongEditorStore.cursor();
 
 var Renderer = React.createClass({
     render: function() {
@@ -55,8 +35,9 @@ var Renderer = React.createClass({
         var staves = this.props.staves;
 
         var pages = [];
-        var pageStarts = this._cursor.pageStarts;
-        var pageLines = this._cursor.pageLines;
+        var pageStarts = getCursor().pageStarts;
+        var pageLines = getCursor().pageLines;
+
         var pageCount = pageStarts.length;
         for (var i = 1; i < pageCount; ++i) {
             pages.push({from: pageStarts[i - 1], to: pageStarts[i], idx: i-1});
@@ -125,7 +106,7 @@ var Renderer = React.createClass({
                 }
             })}
             {!pidx && this.props.tool && this.props.tool.render(
-                    this._cursor,
+                    getCursor(),
                     this.state.mouse,
                     _pointerData,
                     fontSize)}
@@ -139,199 +120,19 @@ var Renderer = React.createClass({
         </div>)}
         </div>;
 
-        this.markClean();
+        SongEditorStore.handleAction({description: "HIDE /local/song",
+            resource: "dirty"});
 
         PROFILER_ENABLED && console.timeEnd("render");
         return ret;
     },
 
-    annotate: function(staves, pointerData, toolFn, props) {
-        props = props || this.props;
-        staves = staves || props.staves;
-
-        PROFILER_ENABLED && console.time("annotate");
-
-        var y = 0;
-        while (!staves.every((stave, sidx) => {
-            if (stave.header) {
-                y += Header.getHeight(stave.header);
-                return true;
-            } else if (!stave.body) {
-                return true;
-            }
-
-            var cursor = this.cursorFromSnapshot(pointerData, stave) ||
-                    this.newCursor(y, props.staveHeight, true, props.pageSize);
-
-            var exitCode;
-            for (var i = cursor.start; i < stave.body.length;
-                    i = this.nextIndex(i, exitCode, stave, cursor)) {
-
-                var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
-                        (pointerData && pointerData.obj && pointerData.obj.idx === i));
-
-                if (doCustomAction) {
-                    exitCode = toolFn(stave.body[i], cursor, stave, i);
-                    pointerData = undefined;
-                } else {
-                    exitCode = annotate(stave.body[i], cursor, stave, i);
-                }
-
-                if (!doCustomAction &&
-                        toolFn &&
-                        !pointerData &&
-                        stave.body[i].newline &&
-                        exitCode !== "line_created") {
-                    return true;
-                }
-
-                if (exitCode === "line_created" && toolFn) {
-                    // ... and so must everything else
-                    _dirty = true;
-                    toolFn = false;
-                }
-            }
-
-            NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
-
-            this._cursor = cursor;
-            y += 2.25;
-            return true;
-        })) { /* pass */ }
-
-        if (LYLITE_DEBUG) {
-            console.log(this.writeLylite(staves));
-        }
-
-        PROFILER_ENABLED && console.timeEnd("annotate");
-    },
-    writeLylite: function(staves) {
-        staves = staves || this.props.staves;
-
-        var lyliteArr = [];
-        var unresolved = [];
-        staves.forEach((stave, sidx) => {
-            if (stave.staveHeight) {
-                lyliteArr.push("#(set-global-staff-size " + stave.staveHeight*renderUtil.ptPerMM + ")\n");
-                return;
-            }
-            if (stave.pageSize) {
-                if (!stave.pageSize.lilypondName) {
-                    alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
-                    return;
-                }
-                lyliteArr.push("#(set-default-paper-size \"" + stave.pageSize.lilypondName + "\")\n");
-                return;
-            }
-            if (stave.header) {
-                lyliteArr.push("\\header {");
-                if (stave.header.title) {
-                    // XXX: XSS
-                    lyliteArr.push('title="' + stave.header.title + '"');
-                }
-                if (stave.header.composer) {
-                    // XXX: XSS
-                    lyliteArr.push('composer="' + stave.header.composer + '"');
-                }
-                lyliteArr.push("}\n");
-                return;
-            }
-
-            lyliteArr.push("\\new Staff {");
-
-            var body = stave.body;
-            for (var i = 0; i < body.length; ++i) {
-                var obj = body[i];
-                var bridge = getBridgeForItem(obj);
-                bridge.toLylite(obj, lyliteArr, unresolved);
-
-                for (var j = 0; j < unresolved.length; ++j) {
-                    var ret = unresolved[j](obj, lyliteArr, unresolved);
-
-                    if (ret) {
-                        unresolved.splice(j, 1);
-                        --j;
-                    }
-                }
-            }
-
-            lyliteArr.push("}\n");
-        });
-        var lyliteStr = lyliteArr.join(" ");
-        return lyliteStr;
-    },
     getSelection: function() {
         return this.props.selection;
     },
-    transpose: function(how) {
-        // The selection is guaranteed to be in song order.
-        var lastIdx = 0;
-        var body = this.props.staves[3].body; // XXX: Robustness
-        var accidentals = null;
-
-        this.props.selection.forEach(item => {
-            for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
-                if (body[i].keySignature) {
-                    accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
-                }
-            }
-
-            assert(body[i] === item, "The selection must be in song order.");
-            assert(accidentals, "A key signature must preceed any note.");
-
-            if (!item.pitch && !item.chord) {
-                return;
-            }
-
-            // For "inKey":
-            var noteToNum = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
-            var numToNote = "cdefgab";
-
-            // For "chromatic":
-            var noteToVal = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
-
-            (item.pitch ? [item] : item.chord).forEach(note => {
-                if (how.mode === "inKey") {
-                    var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
-                    var newNote = noteToNum[note.pitch] + how.letters;
-
-                    note.pitch = numToNote[(noteToNum[note.pitch] + how.letters + 7*7)%7];
-
-                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
-
-                    note.acc = accOffset + (accidentals[note.pitch] || 0);
-
-                    if (!note.acc) {
-                        delete note.acc;
-                    }
-                } else if (how.mode === "chromatic") {
-                    var letters = parseInt(how.interval[1]) - 1;
-                    var semitonesNeeded = parseInt(how.interval.split("_")[1]);
-
-                    var newNote = noteToNum[note.pitch] + letters;
-                    var newPitch = numToNote[(newNote + 7*7)%7];
-                    var semitonesDone = (noteToVal[newPitch] - noteToVal[note.pitch] + 12*12)%12;
-
-                    note.pitch = newPitch;
-                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7)
-                    note.acc = semitonesNeeded - semitonesDone + note.acc;
-                    if (!note.acc) {
-                        delete note.acc;
-                    }
-                }
-            });
-            delete item.selected;
-        });
-        _dirty = true;
-        this.setState({
-            selection: null
-        });
-        this.annotate();
-        return true;
-    },
 
     _getPointerData: function(mouse) {
-        var cursor = this._cursor;
+        var cursor = getCursor();
 
         var dynY = mouse.y;
         var dynX = mouse.x;
@@ -395,7 +196,7 @@ var Renderer = React.createClass({
         return _pointerData;
     },
     _elementsInBBox: function(box, mouse) {
-        var cursor = this._cursor;
+        var cursor = getCursor();
         var ret = [];
 
         var body = this.props.staves[3].body; // XXX: Make more robust!
@@ -412,123 +213,10 @@ var Renderer = React.createClass({
 
         return ret;
     },
-
     getInitialState: function() {
         return {
             mouse: {x: 0, y: 0}
         };
-    },
-    newCursor: function(start, fontSize, first, pageSize) {
-        var initialX = renderUtil.mm(15, fontSize) + 1/4;
-        var firstX = renderUtil.mm(first ? 30 : 15, fontSize) + 1/4;
-        return {
-            accidentals: {},
-            bar: 1,
-            barlineX: [],
-            beats: 0,
-            count: 4,
-            fontSize: fontSize,
-            initialX: initialX,
-            line: 0,
-            lineSpacing: 3.3,
-            maxX: renderUtil.mm(pageSize.width - 15, fontSize),
-            maxY: renderUtil.mm(pageSize.height - 15, fontSize),
-            pageLines: [0],
-            pageSize: pageSize,
-            pageStarts: [0],
-            smallest: 10000,
-            start: 0,
-            x: firstX,
-            y: renderUtil.mm(15, fontSize) + start,
-            lines: [
-                {
-                    all: [],
-                    accidentals: {},
-                    barlineX: [],
-                    beats: 0,
-                    x: firstX,
-                    y: renderUtil.mm(15, fontSize) + start
-                }
-            ]
-        };
-    },
-    cursorFromSnapshot: function(pointerData, stave) {
-        if (!pointerData) {
-            return null;
-        }
-
-        if (pointerData && _snapshots[pointerData.musicLine]) {
-            var cursor = JSON.parse(_snapshots[pointerData.musicLine]);
-            linesToUpdate[cursor.line] = true;
-            cursor.start = pointerData.idx;
-            while (cursor.start > 0 && !stave.body[cursor.start - 1].newline) {
-                --cursor.start;
-            }
-            return cursor;
-        } else {
-            // We don't store snapshots for the 0th line, but we still need
-            // to force it to be re-renderered.
-            linesToUpdate[0] = true;
-        }
-    },
-    nextIndex: function(i, exitCode, stave, cursor) {
-        switch(exitCode) {
-        case true:
-            // All of the pre-conditions of the object were met, and
-            // annotations have been added.
-            return i + 1;
-        case false:
-            // At least one of the pre-conditions of the object were
-            // not met and the entire document must be rerendered.
-            return cursor.start;
-        case "line_created":
-            // A line break was added somewhere to the current line
-            // The current line must be re-rendered...
-            var line = cursor.lines[cursor.line];
-            _(line).each((v, attrib) => {
-                cursor[attrib] = line[attrib];
-            });
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            --i;
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            break;
-        case "line":
-            // At least one of the pre-conditions of the object were
-            // not met and the entire line must be rerendered.
-            var line = cursor.lines[cursor.line];
-            _(line).each((v, attrib) => {
-                cursor[attrib] = line[attrib];
-            });
-            --i;
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            break;
-        case "beam":
-            // The beam needs to be re-rendered.
-            cursor.beats = _beamBeatCount;
-            --i;
-            while(i >= 0 && !stave.body[i].beam) {
-                --i;
-            }
-            cursor.x = stave.body[i]["$Bridge_x"];
-            --i;
-            break;
-        case -1:
-            // At least one of the pre-conditions of the object were
-            // not met and an item has been inserted in place of the
-            // current item.
-            i += exitCode;
-            break;
-        default:
-            assert(false, "Not reached");
-        }
-
-        return i + 1;
     },
     getPositionForMouse: function(event) {
         if (useGL) {
@@ -562,12 +250,7 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
-            this._cleanup && this._cleanup();
-            this.annotate(
-                this.props.staves,
-                data,
-                fn
-            );
+            "/local/tool/_action".SHOW({mouseData: data, fn: fn});
         }
         this.forceUpdate();
     },
@@ -580,15 +263,19 @@ var Renderer = React.createClass({
             }
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
-                _dirty = true; // Bottleneck: detect lines with selected content
+                // Bottleneck: detect lines with selected content
+                SongEditorStore.handleAction({description: "SHOW /local/song",
+                    resource: "dirty"});
             }
             this.setState({
                 selectionRect: {
                     start: pos,
                     end: pos
-                },
-                selection: false
+                }
             });
+            if (this.props.selection) {
+                SongEditorStore.handleAction({description: "HIDE /local/selection"});
+            }
         }
     },
     handleMouseUp: function(event) {
@@ -605,12 +292,16 @@ var Renderer = React.createClass({
                 selection.forEach(s => {
                     s.selected = true;
                 });
-                _dirty = true;
+                // Bottleneck: detect lines with selected content
+                SongEditorStore.handleAction({description: "SHOW /local/song",
+                    resource: "dirty"});
             }
             this.setState({
                 selectionRect: null
             });
-            this.props.setSelectionFn(selection.length ? selection : null);
+            if (selection.length) {
+                "/local/selection".SET(selection.length ? selection : null);
+            }
         }
     },
     handleMouseMove: function(event) {
@@ -624,7 +315,7 @@ var Renderer = React.createClass({
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
             if (area > 1) {
-                this.props.setToolFn(null);
+                "/local/tool".HIDE();
             }
             return;
         }
@@ -648,71 +339,16 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
-            if (this._cleanup) {
-                this._cleanup && this._cleanup();
-                this.forceUpdate();
-            }
+            SongEditorStore.handleAction({description: "SHOW /local/tool", resource: "hide"});
         } else if (fn) {
-            if (this._cleanup) {
-                this._cleanup();
-            }
-            this._cleanup = () => {
-                delete this._cleanup;
-                this.annotate(
-                    this.props.staves,
-                    data,
-                    this.props.tool.hidePreview.bind(this.props.tool));
-            };
-
-            this.annotate(
-                this.props.staves,
-                data,
-                fn
-            );
+            SongEditorStore.handleAction({description: "SHOW /local/tool", resource: "preview",
+                postData: {mouseData: data, fn: fn}});
         }
 
         this.setState({
             mouse: mouse
         });
     }, 16 /* 60 Hz */),
-    markClean: function() {
-        if (_dirty) {
-            _.defer(() => {
-                _dirty = false;
-            });
-        }
-    },
-
-    componentWillMount: function() {
-        this.annotate(this.props.staves);
-    },
-
-    componentWillReceiveProps: function(nextProps) {
-        var staves = this.props.staves;
-
-        if (this.props.tool !== nextProps.tool) {
-            this._cleanup && this._cleanup();
-        }
-
-        if (this.props.staveHeight !== nextProps.staveHeight ||
-                this.props.pageSize !== nextProps.pageSize ||
-                staves !== nextProps.staves) {
-            _dirty = true;
-            delete this._cursor;
-            Bridge.removeAnnotations(staves);
-            this.annotate(nextProps.staves, undefined, undefined, nextProps);
-        }
-        if (staves !== nextProps.staves) {
-            delete this._cursor;
-            this.annotate(nextProps.staves, undefined, undefined, nextProps);
-        }
-
-        if (nextProps.staves) {
-            assert(nextProps.staveHeight, "must be defined");
-            _(nextProps.staves).find(s => s.staveHeight).staveHeight = nextProps.staveHeight;
-            _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
-        }
-    },
 
     componentDidMount: function() {
         var AccidentalTool = require("../tools/accidentalTool.jsx");
@@ -730,7 +366,7 @@ var Renderer = React.createClass({
                 '3': () => new NoteTool("noteQuarterUp"),
                 '4': () => new NoteTool("note8thUp"),
                 '5': () => new NoteTool("note16thUp"),
-                '6': () => new NoteTool("note32thUp"),
+                '6': () => new NoteTool("note32ndUp"),
                 '7': () => new NoteTool("note64thUp"),
                 'r': () => new RestTool(),
                 '.': () => new DotTool(),
@@ -741,12 +377,18 @@ var Renderer = React.createClass({
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
-                this.props.setToolFn(toolFn());
+                "/local/tool".SET(toolFn());
             }
         };
+
+        SongEditorStore.addAnnotationListener(this.update);
     },
     componentWillUnmount: function() {
         document.onkeypress = null;
+        SongEditorStore.removeAnnotationListener(this.update);
+    },
+    update: function() {
+        this.forceUpdate;
     }
 });
 
@@ -763,73 +405,30 @@ var LineContainer = React.createClass({
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
-        if (_dirty) {
+        if (SongEditorStore.dirty()) {
             return true;
         }
         if (nextProps.staveHeight !== this.props.staveHeight) {
             return true;
         }
-        var ret = linesToUpdate[nextProps.idx];
-        delete linesToUpdate[nextProps.idx];
-        return ret;
+        if (SongEditorStore.lineDirty(nextProps.idx)) {
+            SongEditorStore.handleAction({description: "HIDE /local/song",
+                resource: "lineDirty", postData: nextProps.idx});
+            return true;
+        }
+        return false;
     }
 });
 
 // Ratio between svg coordinate system and 1mm.
 var FONT_SIZE_FACTOR = 378;
 
-/**
- * A bridge knows how to annotate and render a certain type of object
- * such as a beam or a clef.
- *
- * See bridge.jsx
- */
-var getBridgeForItem = item => {
-    if (item._bridge) {
-        return item._bridge;
-    }
-
-    var ret = _(bridges).find((bridge, name) => item[name]);
-    item._bridge = ret;
-    return ret;
-};
-
-var annotate = (item, cursor, stave, idx) => {
-    var bridge = getBridgeForItem(item);
-    return bridge.annotate(item, cursor, stave, idx);
-};
 var render = item => {
-    var bridge = getBridgeForItem(item);
+    var bridge = Bridge.getBridgeForItem(item);
     return bridge.visible(item) && bridge.render(item);
 };
 
-/**
- * Called at the end of begining of every line so that when a certain line
- * needs to be updated, the cursor can be unfrozen from here instead of
- * recalculating the cursor from the begining of the song.
- */
-var snapshot = (cursor) => {
-    _snapshots[cursor.line] = JSON.stringify(cursor);
-};
-
-/**
- * Called at the begining of every beam. Called so that if the annotater has
- * to be "backed up", it can do so without recalculating from the begining
- * of the line.
- */
-var beamCountIs = (beamCount) => {
-    _beamBeatCount = beamCount;
-};
-
-
-var linesToUpdate = {};
-var _snapshots = {};
-var _dirty;
-var _beamBeatCount;
 var _pointerData = {};
-
 
 module.exports = Renderer;
 module.exports.FONT_SIZE_FACTOR = FONT_SIZE_FACTOR;
-module.exports.beamCountIs = beamCountIs;
-module.exports.snapshot = snapshot;

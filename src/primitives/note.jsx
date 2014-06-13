@@ -137,6 +137,7 @@ var Note = React.createClass({
                 height={this.getStemHeight()}
                 notehead={this.props.notehead} />,
             this.props.flag && <Flag
+                key="flag"
                 x={this.props.x}
                 y={this.props.y}
                 line={this.getHeightDeterminingLine()}

@@ -59,7 +59,9 @@ class Dispatcher {
      * @param  {object} action The data from the action.
      */
     dispatch(action) {
-        console.log("Dispatch: ", action);
+        console.log(action.description + (action.resource ? " " + action.resource : "") +
+                (action.query ? " " + action.query : ""),
+                (action.postData ? [action.postData] : ""), [action]);
         _callbacks.forEach(function(callback) {
             _addPromise(callback, action);
         });
@@ -73,6 +75,20 @@ class Dispatcher {
 };
 
 var DispatcherInstance = new Dispatcher();
+
+var immediateActions = {
+    PUT: true,      // update the server (replace an existing item)
+    POST: true,     // update the server (create a new item)
+    SHOW: true,     // activate a local object
+    HIDE: true,     // deactivate a local object
+    SET: true       // change the value of a local object
+};
+
+var networkActions = {
+    GET: true,
+    POST: true,
+    PUT: true
+};
 
 String.prototype.dispatch = function(verb, postData) {
     assert(verb, "Verb must be defined");
@@ -98,11 +114,10 @@ String.prototype.dispatch = function(verb, postData) {
                 resource: resource,
                 query: query,
                 url: this,
-                respose: response,
                 response: response
             });
         });
-    } else if (verb === "PUT" || verb === "POST" || verb === "SHOW" || verb === "HIDE") {
+    } else if (verb in immediateActions) {
         DispatcherInstance.dispatch({
             description: verb + " " + root,
             resource: resource,
@@ -110,7 +125,7 @@ String.prototype.dispatch = function(verb, postData) {
             postData: postData
         });
 
-        if (verb === "PUT" || verb === "POST") {
+        if ((verb in networkActions) !this.indexOf("/api")) {
             ajax.anyJSON(verb, this, postData, (response, request) => {
                 DispatcherInstance.dispatch({
                     description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
@@ -118,12 +133,17 @@ String.prototype.dispatch = function(verb, postData) {
                     resource: resource,
                     query: query,
                     url: this,
-                    respose: response,
                     response: response
                 });
             });
         }
     }
 }
+String.prototype.SHOW = function(p) { this.dispatch("SHOW", p); }
+String.prototype.HIDE = function(p) { this.dispatch("HIDE", p); }
+String.prototype.PUT = function(p) { this.dispatch("PUT", p); }
+String.prototype.POST = function(p) { this.dispatch("POST", p); }
+String.prototype.GET = function(p) { this.dispatch("GET", p); }
+String.prototype.SET = function(p) { this.dispatch("SET", p); }
 
 module.exports = DispatcherInstance;
