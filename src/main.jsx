@@ -15,11 +15,8 @@ var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var Redirect = require("./util/redirect.jsx");
-var Renderer = require("./renderer/renderer.jsx");
 var SessionStore = require("./store/session.jsx");
-var SongEditor = require("./songEditor.jsx");
-var ajax = require("./util/ajax.jsx").untrusted;
-var unittest = require("./unittest.jsx");
+var SongEditor = require("./renderer/songEditor.jsx");
 
 var Location = Router.Location;
 var Locations = Router.Locations;
@@ -112,7 +109,10 @@ var Ripieno = React.createClass({
     componentWillUnmount: function() {
         SessionStore.removeChangeListener(this._onChange);
     },
+
     _onChange: function() {
+        // Responde to updates from SessionStore. This follow's Facebook's Flux
+        // architecture.
         var errors = SessionStore.errors();
         for (var i = this.props.errors.length; i < errors.length; ++i) {
             console.warn("Error:", errors[i]);
@@ -135,74 +135,6 @@ var futurePath = null;
 
 (() => {
     window.React = React; // for Chrome devtool extension
-    String.prototype.dispatch = function(verb, postData) {
-        assert(verb, "Verb must be defined");
-
-        var root = this;
-        var resource = null;
-        var query = null;
-
-        if (root.indexOf("?") !== -1) {
-            query = root.substr(root.indexOf("?") + 1);
-            root = root.substr(0, root.indexOf("?"));
-        }
-        if (root.indexOf("/_") !== -1) {
-            resource = root.substr(root.indexOf("/_") + 2);
-            root = root.substr(0, root.indexOf("/_"));
-        }
-
-        if (verb === "GET") {
-            ajax.getJSON(this, (response, request) => {
-                Dispatcher.dispatch({
-                    description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
-                    status: request.status,
-                    resource: resource,
-                    query: query,
-                    url: this,
-                    respose: response,
-                    response: response
-                });
-            });
-        } else if (verb === "PUT" || verb === "POST" || verb === "SHOW" || verb === "HIDE") {
-            Dispatcher.dispatch({
-                description: verb + " " + root,
-                resource: resource,
-                query: query,
-                postData: postData
-            });
-
-            if (verb === "PUT" || verb === "POST") {
-                ajax.anyJSON(verb, this, postData, (response, request) => {
-                    Dispatcher.dispatch({
-                        description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
-                        status: request.status,
-                        resource: resource,
-                        query: query,
-                        url: this,
-                        respose: response,
-                        response: response
-                    });
-                });
-            }
-        }
-    }
-    Object.deepFreeze = function (o) {
-        var prop, propKey;
-        Object.freeze(o); // First freeze the object.
-        for (propKey in o) {
-            prop = o[propKey];
-            if (!o.hasOwnProperty(propKey) || !(typeof prop === "object") || Object.isFrozen(prop)) {
-                // If the object is on the prototype, not an object, or is already frozen, 
-                // skip it. Note that this might leave an unfrozen reference somewhere in the
-                // object if there is an already frozen object containing an unfrozen object.
-                continue;
-            }
-
-            Object.deepFreeze(prop); // Recursively call deepFreeze.
-        }
-        return o;
-    }
-    unittest.runAll(); // this currently does not do anything
 
     React.renderComponent(
         <Ripieno />,

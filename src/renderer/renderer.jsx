@@ -26,7 +26,6 @@ var SlurBridge = require("./slurBridge.jsx");
 var StaveLines = require("../primitives/staveLines.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 var renderUtil = require("./util.jsx");
-var unittest = require("../unittest.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;
 var Group = useGL ? Victoria.VG : React.DOM.g;

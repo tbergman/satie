@@ -16,7 +16,6 @@ var Note = require("../primitives/note.jsx");
 var NoteMarking = require("../primitives/noteMarking.jsx");
 var Rest = require("../primitives/rest.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
-var unittest = require("../unittest.jsx");
 
 class PitchBridge extends Bridge {
     constructor(isBeam) {
@@ -498,52 +497,6 @@ var getDots = obj => isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
 var getCount = obj => obj.actualCount || obj.count;
 
 var getTuplet = obj => (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj.tuplet;
-
-
-unittest(() => {
-    // "Notes of equal duration require equal spacing for an entire system"
-});
-
-unittest(() => {
-    // "In certain cases, spacing should be adjusted to create an illusion of
-    // evenness. Adjacent stems 'back to back' can otherwise look too close
-    // together. Notes with stems away from each other can look too far apart."
-});
-
-unittest(() => {
-    // "Barlines on adjacent systems should not align. If barlines do coincide,
-    // systems containing like material look too similar and the eye is liable to
-    // skip a system"
-});
-
-unittest(() => {
-    // "The distances between characters should not be less than 1/2 stave-space"
-});
-
-unittest(() => {
-    // "Seperate the clef, key signature, time signature by 1 - 1.5 stave-spaces"
-});
-
-unittest(() => {
-    // With clef only and with clef and key signature:
-    //  - "2 1/2 spaces between a clef and a note with no accidentals"
-    //  - "1 1/2 spaces between a clef and a note with 1 accidental"
-    //  - "1 space between a clef and a note with more accidentals"
-});
-
-unittest(() => {
-    // With time signature:
-    //  - "2 spaces between TS and a note with no accidentals"
-    //  - "1 space beteen TS and a note with 1+ accidentals"
-});
-
-unittest(() => {
-    // "Where possible, note-spacing should remain unaffected
-    // by the addition of accidentals"
-    //
-    // Exception 1: Less than 1/2 space between notes
-    // Exception 2: Multiple accidentals
-});
 
 module.exports = PitchBridge;
 module.exports.countToHasStem = countToHasStem;

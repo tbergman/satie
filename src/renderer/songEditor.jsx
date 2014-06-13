@@ -13,15 +13,13 @@
 var React = require('react');
 var Router = require('react-router-component');
 var _ = require('underscore');
-var saveAs = require("./thirdParty/fileSaver/FileSaver.js");
+var saveAs = require("../thirdParty/fileSaver/FileSaver.js");
 
-var Renderer = require("./renderer/renderer.jsx");
-var Ribbon = require("./ribbon/ribbon.jsx");
-var RipienoHeader = require("./landing/ripienoHeader.jsx");
-var ajax = require("./util/ajax.jsx").untrusted;
-var lylite = require("./renderer/lylite.jison").parser;
-var renderUtil = require("./renderer/util.jsx");
-var unittest = require("./unittest.jsx");
+var Renderer = require("./renderer.jsx");
+var Ribbon = require("../ribbon/ribbon.jsx");
+var RipienoHeader = require("../landing/ripienoHeader.jsx");
+var lylite = require("./lylite.jison").parser;
+var renderUtil = require("./util.jsx");
 
 var Link = Router.Link;
 

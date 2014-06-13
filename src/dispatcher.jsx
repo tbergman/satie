@@ -14,6 +14,9 @@
  */
 
 var Promise = require('es6-promise').Promise;
+var assert = require("assert");
+
+var ajax = require("./util/ajax.jsx").untrusted;
 
 var _callbacks = [];
 var _promises = [];
@@ -69,4 +72,58 @@ class Dispatcher {
     }
 };
 
-module.exports = new Dispatcher();
+var DispatcherInstance = new Dispatcher();
+
+String.prototype.dispatch = function(verb, postData) {
+    assert(verb, "Verb must be defined");
+
+    var root = this;
+    var resource = null;
+    var query = null;
+
+    if (root.indexOf("?") !== -1) {
+        query = root.substr(root.indexOf("?") + 1);
+        root = root.substr(0, root.indexOf("?"));
+    }
+    if (root.indexOf("/_") !== -1) {
+        resource = root.substr(root.indexOf("/_") + 2);
+        root = root.substr(0, root.indexOf("/_"));
+    }
+
+    if (verb === "GET") {
+        ajax.getJSON(this, (response, request) => {
+            DispatcherInstance.dispatch({
+                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
+                status: request.status,
+                resource: resource,
+                query: query,
+                url: this,
+                respose: response,
+                response: response
+            });
+        });
+    } else if (verb === "PUT" || verb === "POST" || verb === "SHOW" || verb === "HIDE") {
+        DispatcherInstance.dispatch({
+            description: verb + " " + root,
+            resource: resource,
+            query: query,
+            postData: postData
+        });
+
+        if (verb === "PUT" || verb === "POST") {
+            ajax.anyJSON(verb, this, postData, (response, request) => {
+                DispatcherInstance.dispatch({
+                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
+                    status: request.status,
+                    resource: resource,
+                    query: query,
+                    url: this,
+                    respose: response,
+                    response: response
+                });
+            });
+        }
+    }
+}
+
+module.exports = DispatcherInstance;

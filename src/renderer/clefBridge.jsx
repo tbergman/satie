@@ -5,7 +5,6 @@
 var Bridge = require("./bridge.jsx");
 
 var Clef = require("../primitives/clef.jsx");
-var unittest = require("../unittest.jsx");
 
 class ClefBridge extends Bridge {
     prereqs() {
@@ -47,10 +46,6 @@ var createClef = (obj, cursor, stave, idx) => {
     stave.body.splice(idx, 0, {clef: (cursor.prevClef || "treble"), _annotated: "createClef"});
     return -1;
 };
-
-unittest(() => {
-    // Clef changes are 2/3 regular size.
-});
 
 module.exports = ClefBridge;
 module.exports.createClef = createClef;
