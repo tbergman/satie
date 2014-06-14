@@ -127,10 +127,6 @@ var Renderer = React.createClass({
         return ret;
     },
 
-    getSelection: function() {
-        return this.props.selection;
-    },
-
     _getPointerData: function(mouse) {
         var cursor = getCursor();
 

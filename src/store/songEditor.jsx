@@ -35,12 +35,20 @@ class SongEditorStore extends EventEmitter {
             case "SHOW /api/song":
                 var activeSong = SessionStore.activeSong();
                 if (activeSong !== _prevActiveSong) {
+                    this.clear();
                     this.reparse(activeSong);
                     this.emit(CHANGE_EVENT);
                 }
                 break;
             case "HIDE /api/song":
                 this.clear();
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "SHOW /local/song/forceUpdate":
+                this.clear();
+                var activeSong = SessionStore.activeSong();
+                this.reparse(activeSong);
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -220,6 +228,7 @@ class SongEditorStore extends EventEmitter {
                         toolFn &&
                         !pointerData &&
                         stave.body[i].newline &&
+                        !_dirty &&
                         exitCode !== "line_created") {
                     return true;
                 }
@@ -265,6 +274,7 @@ class SongEditorStore extends EventEmitter {
             while (i >= 0 && !stave.body[i].newline) {
                 --i;
             }
+            delete cursor.clef;
             break;
         case "line":
             // At least one of the pre-conditions of the object were
@@ -277,6 +287,7 @@ class SongEditorStore extends EventEmitter {
             while (i >= 0 && !stave.body[i].newline) {
                 --i;
             }
+            delete cursor.clef;
             break;
         case "beam":
             // The beam needs to be re-rendered.
@@ -341,6 +352,9 @@ class SongEditorStore extends EventEmitter {
                 _dirty = false;
             });
         }
+    }
+    markDirty() {
+        _dirty = true;
     }
 
     transpose(how) {
@@ -477,7 +491,7 @@ class SongEditorStore extends EventEmitter {
             var body = stave.body;
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                var bridge = getBridgeForItem(obj);
+                var bridge = Bridge.getBridgeForItem(obj);
                 bridge.toLylite(obj, lyliteArr, unresolved);
 
                 for (var j = 0; j < unresolved.length; ++j) {

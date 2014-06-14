@@ -69,9 +69,8 @@ var SongEditor = React.createClass({
             {/* THE RIBBON */}
             {showRibbon && <span className="pageHeader">
                 <Ribbon
-                    activeSong={this.activeSong}
+                    activeSong={this.props.activeSong}
                     downloadFn={this.download}
-                    getSelectionFn={() => this.refs.renderer.getSelection()}
                     openFn={this.open}
                     reloadFn={this.reload}
                     selection={this.state.selection}

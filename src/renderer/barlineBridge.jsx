@@ -30,7 +30,7 @@ class BarlineBridge extends Bridge {
 
             [
                 (obj, cursor, stave, idx) => {
-                    for (var i = idx - 1; i >= 0 && !stave.body[i].barline; ++i) {
+                    for (var i = idx - 1; i >= 0 && !stave.body[i].barline; --i) {
                         if (stave.body[i].pitch || stave.body[i].chord || stave.body[i].newline) {
                             return true;
                         }

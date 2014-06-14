@@ -125,7 +125,7 @@ String.prototype.dispatch = function(verb, postData) {
             postData: postData
         });
 
-        if ((verb in networkActions) !this.indexOf("/api")) {
+        if ((verb in networkActions) && !this.indexOf("/api")) {
             ajax.anyJSON(verb, this, postData, (response, request) => {
                 DispatcherInstance.dispatch({
                     description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),

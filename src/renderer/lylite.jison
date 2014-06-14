@@ -117,6 +117,9 @@
 "baritone"            return 'CLEF'
 "french"              return 'CLEF'
 
+"%{["                 return 'RIPIENO_EXT_OPEN'
+"]}%"                 return 'RIPIENO_EXT_CLOSE'
+
 "\time"               return 'SET_TIME'
 
 "\relative"           return 'RELATIVE'

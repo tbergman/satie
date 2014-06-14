@@ -8,10 +8,20 @@ var Clef = require("../primitives/clef.jsx");
 
 class ClefBridge extends Bridge {
     prereqs() {
-        return [];
+        return [
+            [
+                (obj, cursor) => obj.temporary || cursor.clef !== obj.clef || obj.clef === "detect",
+                (obj, cursor, stave, idx) => {
+                    console.log(cursor.clef, obj.clef);
+                    stave.body.splice(idx, 1);
+                    return -1;
+                },
+                "A clef must not be redundant."
+            ]
+        ]
     }
     annotateImpl(obj, cursor, stave, idx) {
-        cursor.clef = obj.clef;
+        obj._clef = cursor.clef = (obj.clef === "detect") ? cursor.prevClef : obj.clef;
         var next = this.next(stave, idx);
         if (next.pitch || next.chord) {
             if (next.acc) {
@@ -32,9 +42,10 @@ class ClefBridge extends Bridge {
             stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
             x={this.x(obj)} 
             y={this.y(obj)}
-            clef={obj.clef} />;
+            clef={obj._clef} />;
     }
     toLylite(obj, lylite) {
+        console.log(obj["_annotated"]);
         if (obj["_annotated"]) {
             return;
         }
@@ -43,7 +54,7 @@ class ClefBridge extends Bridge {
 }
 
 var createClef = (obj, cursor, stave, idx) => {
-    stave.body.splice(idx, 0, {clef: (cursor.prevClef || "treble"), _annotated: "createClef"});
+    stave.body.splice(idx, 0, {clef: (cursor.prevClef ? "detect" : "treble"), _annotated: "createClef"});
     return -1;
 };
 
