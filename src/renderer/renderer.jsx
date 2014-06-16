@@ -12,6 +12,7 @@ var Victoria = require("../primitives/victoria/hellogl.jsx");
 var useGL = window.location.search.indexOf("engine=gl") !== -1;
 window.useGL = useGL;
 
+var Barline = require("../primitives/barline.jsx");
 var Bridge = require("./bridge.jsx");
 var Header = require("../primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
@@ -116,6 +117,16 @@ var Renderer = React.createClass({
                 y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
                 width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
                 height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
+
+            {!pidx && this.props.visualCursor && <Group
+                        key={"visualCursorGroup"} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
+                    <Barline key="visualCursor"
+                        height={2/3}
+                        x={this.props.visualCursor.annotatedX}
+                        y={this.props.visualCursor.annotatedY}
+                        stroke={"#FF8C00"} />
+                </Group>}
+
         </RenderEngine>
         </div>)}
         </div>;

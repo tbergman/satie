@@ -11,13 +11,13 @@ var SMuFL = require("./SMuFL.js");
 
 var Barline = React.createClass({
     proptypes: {
-        x: React.PropTypes.number,
-        y: React.PropTypes.number
+        x: React.PropTypes.number.isRequired,
+        y: React.PropTypes.number.isRequired,
+        height: React.PropTypes.number.isRequired
     },
     getDefaultProps: function() {
         return {
-            x: 0,
-            y: 0
+            height: 2/4
         };
     },
     shouldComponentUpdate: function(nextProps) {
@@ -30,8 +30,8 @@ var Barline = React.createClass({
         return <Line
             x1={this.props.x}
             x2={this.props.x}
-            y1={this.props.y - 2/4}
-            y2={this.props.y + 2/4}
+            y1={this.props.y - this.props.height}
+            y2={this.props.y + this.props.height}
             stroke={this.props.stroke || "#2A2A2A"}
             fill={this.props.stroke || "#2A2A2A"}
             strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness/4} />;

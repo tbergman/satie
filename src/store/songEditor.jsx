@@ -165,6 +165,21 @@ class SongEditorStore extends EventEmitter {
                         break;
                 }
                 break;
+
+            case "POST /local/visualCursor":
+                _visualCursor = {
+                    bar: action.postData.bar,
+                    beat: action.postData.beat
+                };
+                this.annotate();
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "HIDE /local/visualCursor":
+                _visualCursor = 0;
+                this.emit(CHANGE_EVENT);
+                this.annotate();
+                break;
         }
         return true;
     }
@@ -176,6 +191,10 @@ class SongEditorStore extends EventEmitter {
         _pageSize = null;
         _tool = null;
         _selection = null;
+        _visualCursor = {
+            bar: 1,
+            beat: 1
+        };
     }
 
     reparse(activeSong) {
@@ -199,6 +218,8 @@ class SongEditorStore extends EventEmitter {
         PROFILER_ENABLED && console.time("annotate");
 
         var y = 0;
+        var annotatedVisualCursor = false;
+        var prevX;
         while (!staves.every((stave, sidx) => {
             if (stave.header) {
                 y += Header.getHeight(stave.header);
@@ -217,6 +238,8 @@ class SongEditorStore extends EventEmitter {
                 var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
                         (pointerData && pointerData.obj && pointerData.obj.idx === i));
 
+                var prevX = cursor.x;
+
                 if (doCustomAction) {
                     exitCode = toolFn(stave.body[i], cursor, stave, i);
                     pointerData = undefined;
@@ -231,6 +254,13 @@ class SongEditorStore extends EventEmitter {
                         !_dirty &&
                         exitCode !== "line_created") {
                     return true;
+                }
+
+                if (cursor.bar === _visualCursor.bar &&
+                        cursor.beats === _visualCursor.beat &&
+                        (stave.body[i].pitch || stave.body[i].chord)) {
+                    _visualCursor.annotatedX = prevX - 0.1;
+                    _visualCursor.annotatedY = cursor.y;
                 }
 
                 if (exitCode === "line_created" && toolFn) {
@@ -518,6 +548,9 @@ class SongEditorStore extends EventEmitter {
     get cursor() {
         return _cursor;
     }
+    get visualCursor() {
+        return _visualCursor;
+    }
     lineDirty(idx) {
         return _linesToUpdate[idx];
     }
@@ -579,6 +612,10 @@ var _selection = null;
 var _snapshots = {};
 var _staveHeight = null;
 var _staves = null;
+var _visualCursor = {
+    bar: 1,
+    beat: 1
+};
 var _tool = null;
 
 // Exposed for console debugging.

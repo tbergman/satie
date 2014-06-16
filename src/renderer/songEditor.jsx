@@ -90,6 +90,7 @@ var SongEditor = React.createClass({
                 staves={this.state.staves}
                 tool={this.state.tool}
                 top={showRibbon ? 140 : 44}
+                visualCursor={this.state.visualCursor}
                 width={width} />}
 
         </div>;
@@ -208,7 +209,8 @@ var SongEditor = React.createClass({
             selection: SongEditorStore.selection(),
             staveHeight: SongEditorStore.staveHeight(),
             staves: SongEditorStore.staves(),
-            tool: SongEditorStore.tool()
+            tool: SongEditorStore.tool(),
+            visualCursor: SongEditorStore.visualCursor()
         });
     },
 
