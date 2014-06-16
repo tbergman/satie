@@ -147,6 +147,7 @@ var Renderer = React.createClass({
         var foundObj = false;
         var foundIdx;
         var musicLine;
+        var cursorData;
         for (var i = cursor.pageLines[mouse.page]; i < cursor.lines.length; ++i) {
             if (mouse.y < cursor.lines[i].y + 8/4) {
                 musicLine = i;
@@ -158,6 +159,7 @@ var Renderer = React.createClass({
                 var body = this.props.staves[3].body; // XXX: Make more robust!
                 for (var j = cursor.pageStarts[mouse.page]; j < body.length && !body[i].newpage; ++j) {
                     var item = body[j];
+                    cursorData = item.cursorData;
                     if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
                         if ((item.keySignature ||
                                     item.timeSignature ||
@@ -178,6 +180,7 @@ var Renderer = React.createClass({
                                 line: dynLine,
                                 idx: j,
                                 musicLine: musicLine,
+                                cursorData: item.cursorData,
                                 obj: {
                                     placeholder: true,
                                     idx: j,
@@ -197,7 +200,8 @@ var Renderer = React.createClass({
             line: dynLine,
             obj: foundObj,
             idx: foundIdx,
-            musicLine: musicLine
+            musicLine: musicLine,
+            cursorData: cursorData
         };
 
         return _pointerData;
@@ -250,11 +254,17 @@ var Renderer = React.createClass({
         };
     },
     handleMouseClick: function(event) {
+        var mouse = this.getPositionForMouse(event);
+        var data = this._getPointerData(mouse);
+        if (data.cursorData) {
+            "/local/visualCursor".POST({
+                bar: data.cursorData.bar,
+                beat: data.cursorData.beat
+            });
+        }
         if (!this.props.tool) {
             return;
         }
-        var mouse = this.getPositionForMouse(event);
-        var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
             "/local/tool/_action".SHOW({mouseData: data, fn: fn});

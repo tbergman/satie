@@ -261,6 +261,11 @@ class SongEditorStore extends EventEmitter {
                     _visualCursor.annotatedObj = stave.body[i];
                 }
 
+                stave.body[i].cursorData = {
+                    bar: cursor.bar,
+                    beat: cursor.beats
+                };
+
                 if (exitCode === "line_created" && toolFn) {
                     // ... and so must everything else
                     _dirty = true;
