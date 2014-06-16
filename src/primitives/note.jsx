@@ -309,6 +309,7 @@ var Note = React.createClass({
             direction={-this.getDirection()}
             x={this.props.x + fullWidth/8 + 0.15}
             y={this.props.y}
+            key="tie_0"
             line1={this.getStartingLine()}
             line2={this.getStartingLine()}
             width={fullWidth*0.75}

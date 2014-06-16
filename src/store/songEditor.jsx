@@ -217,9 +217,9 @@ class SongEditorStore extends EventEmitter {
 
         PROFILER_ENABLED && console.time("annotate");
 
+        _visualCursor.annotatedObj = null;
+
         var y = 0;
-        var annotatedVisualCursor = false;
-        var prevX;
         while (!staves.every((stave, sidx) => {
             if (stave.header) {
                 y += Header.getHeight(stave.header);
@@ -238,8 +238,6 @@ class SongEditorStore extends EventEmitter {
                 var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
                         (pointerData && pointerData.obj && pointerData.obj.idx === i));
 
-                var prevX = cursor.x;
-
                 if (doCustomAction) {
                     exitCode = toolFn(stave.body[i], cursor, stave, i);
                     pointerData = undefined;
@@ -257,10 +255,10 @@ class SongEditorStore extends EventEmitter {
                 }
 
                 if (cursor.bar === _visualCursor.bar &&
-                        cursor.beats === _visualCursor.beat &&
-                        (stave.body[i].pitch || stave.body[i].chord)) {
-                    _visualCursor.annotatedX = prevX - 0.1;
-                    _visualCursor.annotatedY = cursor.y;
+                        cursor.beats >= _visualCursor.beat &&
+                        (stave.body[i].pitch || stave.body[i].chord) &&
+                        !_visualCursor.annotatedObj) {
+                    _visualCursor.annotatedObj = stave.body[i];
                 }
 
                 if (exitCode === "line_created" && toolFn) {
@@ -366,9 +364,11 @@ class SongEditorStore extends EventEmitter {
             lines: [
                 {
                     all: [],
-                    accidentals: {},
+                    accidentals: [],
+                    bar: 1,
                     barlineX: [],
                     beats: 0,
+                    line: 0,
                     x: firstX,
                     y: renderUtil.mm(15, fontSize) + start
                 }

@@ -118,12 +118,12 @@ var Renderer = React.createClass({
                 width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
                 height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
 
-            {!pidx && this.props.visualCursor && <Group
+            {!pidx && this.props.visualCursor && this.props.visualCursor.annotatedObj && <Group
                         key={"visualCursorGroup"} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Barline key="visualCursor"
                         height={2/3}
-                        x={this.props.visualCursor.annotatedX}
-                        y={this.props.visualCursor.annotatedY}
+                        x={this.props.visualCursor.annotatedObj["$Bridge_x"]}
+                        y={this.props.visualCursor.annotatedObj["$Bridge_y"]}
                         stroke={"#FF8C00"} />
                 </Group>}
 
@@ -321,7 +321,7 @@ var Renderer = React.createClass({
             });
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
-            if (area > 1) {
+            if (area > 1 && this.props.tool) {
                 "/local/tool".HIDE();
             }
             return;

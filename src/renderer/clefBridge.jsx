@@ -45,7 +45,6 @@ class ClefBridge extends Bridge {
             clef={obj._clef} />;
     }
     toLylite(obj, lylite) {
-        console.log(obj["_annotated"]);
         if (obj["_annotated"]) {
             return;
         }
