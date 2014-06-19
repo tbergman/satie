@@ -6,7 +6,7 @@ var EventEmitter = require('events').EventEmitter;
 var _ = require('underscore');
 var assert = require('assert');
 
-var Dispatcher = require("../dispatcher.jsx"); 
+var Dispatcher = require("./dispatcher.jsx"); 
 var deepFreeze = require("../util/deepFreeze.jsx");
 
 var Bridge = require("../renderer/bridge.jsx");
@@ -83,12 +83,12 @@ class SongEditorStore extends EventEmitter {
                     break;
                 }
                 _cleanup && _cleanup();
-                _tool = null;
+                _tool = action.postData;
                 this.emit(CHANGE_EVENT);
                 break;
             case "DELETE /local/tool":
                 _cleanup && _cleanup();
-                _tool = action.postData || null;
+                _tool = null;
                 this.emit(CHANGE_EVENT);
                 break;
 

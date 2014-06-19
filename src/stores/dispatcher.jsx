@@ -16,7 +16,7 @@
 var Promise = require('es6-promise').Promise;
 var assert = require("assert");
 
-var ajax = require("./util/ajax.jsx").untrusted;
+var ajax = require("../util/ajax.jsx").untrusted;
 
 var _callbacks = [];
 var _promises = [];

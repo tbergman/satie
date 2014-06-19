@@ -10,7 +10,6 @@ var Router = require('react-router-component');
 var _ = require('underscore');
 var assert = require('assert');
 
-var Dispatcher = require('./dispatcher.jsx'); 
 var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
@@ -21,8 +20,6 @@ var SongEditor = require("./renderer/songEditor.jsx");
 var Location = Router.Location;
 var Locations = Router.Locations;
 var NotFound = Router.NotFound;
-
-require("browserify-shader").extensions = ["fs", "vs"];
 
 require("./landing/landing.less");
 require("./main.less");
@@ -50,17 +47,17 @@ var Ripieno = React.createClass({
             {loggedIn ?
                 <Location path="/library*" 
                     handler={LibraryPage}
-                    songs={this.props.songs}
-                    session={this.props.session} /> :
+                    session={this.props.session}
+                    songs={this.props.songs} /> :
                 <Redirect path="/library*" to="/"
                     onRedirect={(path) => { futurePath = path; }} />}
 
-            {/* View or edit a song. No login required. */}
+            {/* View or edit a song. No login required to view. */}
             <Location path="/songs/:songId"
-                handler={SongEditor}
                 activeSong={this.props.activeSong}
-                songs={this.props.songs}
-                session={this.props.session} />
+                handler={SongEditor}
+                session={this.props.session}
+                songs={this.props.songs} />
 
             <Redirect path="/index.html" to="/" />
 
@@ -70,9 +67,9 @@ var Ripieno = React.createClass({
     },
     getDefaultProps: function() {
         return {
+            errors: SessionStore.errors(),
             session: SessionStore.session(),
-            songs: SessionStore.songs(),
-            errors: SessionStore.errors()
+            songs: SessionStore.songs()
         };
     },
 
