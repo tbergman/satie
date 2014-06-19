@@ -13,7 +13,7 @@
 var React = require('react');
 var Router = require('react-router-component');
 var _ = require('underscore');
-var saveAs = require("../thirdParty/fileSaver/FileSaver.js");
+var saveAs = require("../../third_party/fileSaver/FileSaver.js");
 
 var Renderer = require("./renderer.jsx");
 var Ribbon = require("../ribbon/ribbon.jsx");

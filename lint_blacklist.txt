@@ -1,1 +1,1 @@
-src/thirdParty/
+third_party/
