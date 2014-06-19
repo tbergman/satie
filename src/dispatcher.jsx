@@ -72,7 +72,7 @@ class Dispatcher {
                 console.warn("Exception occured in promise", err);
             });
     }
-};
+}
 
 var DispatcherInstance = new Dispatcher();
 
@@ -137,10 +137,11 @@ String.prototype.dispatch = function(verb, postData) {
             });
         }
     }
-}
-String.prototype.DELETE = function(p) { this.dispatch("DELETE", p); }
-String.prototype.PUT = function(p) { this.dispatch("PUT", p); }
-String.prototype.POST = function(p) { this.dispatch("POST", p); }
-String.prototype.GET = function(p) { this.dispatch("GET", p); }
+};
+
+String.prototype.DELETE = function(p) { this.dispatch("DELETE", p); };
+String.prototype.PUT = function(p) { this.dispatch("PUT", p); };
+String.prototype.POST = function(p) { this.dispatch("POST", p); };
+String.prototype.GET = function(p) { this.dispatch("GET", p); };
 
 module.exports = DispatcherInstance;

@@ -31,7 +31,7 @@ var Line = React.createClass({
             x1={this.props.x1 - this.props.strokeWidth/2}
             x2={this.props.x2 + this.props.strokeWidth/2}
             y1={this.props.y1 - this.props.strokeWidth/2}
-            y2={this.props.y2 + this.props.strokeWidth/2} />
+            y2={this.props.y2 + this.props.strokeWidth/2} />;
     },
     mixins: [RenderableMixin]
 });

@@ -10,7 +10,7 @@ class ClefBridge extends Bridge {
     prereqs() {
         return [
             [
-                (obj, cursor) => obj.temporary || cursor.clef !== obj.clef || obj.clef === "detect",
+                clefIsNotRedundant,
                 (obj, cursor, stave, idx) => {
                     console.log(cursor.clef, obj.clef);
                     stave.body.splice(idx, 1);
@@ -18,7 +18,7 @@ class ClefBridge extends Bridge {
                 },
                 "A clef must not be redundant."
             ]
-        ]
+        ];
     }
     annotateImpl(obj, cursor, stave, idx) {
         obj._clef = cursor.clef = (obj.clef === "detect") ? cursor.prevClef : obj.clef;
@@ -53,9 +53,17 @@ class ClefBridge extends Bridge {
 }
 
 var createClef = (obj, cursor, stave, idx) => {
-    stave.body.splice(idx, 0, {clef: (cursor.prevClef ? "detect" : "treble"), _annotated: "createClef"});
+    stave.body.splice(idx, 0, {
+        clef: (cursor.prevClef ? "detect" : "treble"),
+        _annotated: "createClef"
+    });
     return -1;
 };
+
+var clefIsNotRedundant = (obj, cursor) =>
+    obj.temporary ||
+    cursor.clef !== obj.clef ||
+    obj.clef === "detect";
 
 module.exports = ClefBridge;
 module.exports.createClef = createClef;

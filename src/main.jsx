@@ -22,7 +22,7 @@ var Location = Router.Location;
 var Locations = Router.Locations;
 var NotFound = Router.NotFound;
 
-require("browserify-shader").extensions = ["fs", "vs"]
+require("browserify-shader").extensions = ["fs", "vs"];
 
 require("./landing/landing.less");
 require("./main.less");

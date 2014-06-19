@@ -73,7 +73,10 @@ class KeySignatureBridge extends Bridge {
 }
 
 var createKeySignature = (obj, cursor, stave, idx) => {
-    stave.body.splice(idx, 0, {keySignature: cursor.prevKeySignature, _annotated: "createKeySignature"});
+    stave.body.splice(idx, 0, {
+        keySignature: cursor.prevKeySignature,
+        _annotated: "createKeySignature"
+    });
     return -1;
 };
 

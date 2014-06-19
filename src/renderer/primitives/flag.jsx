@@ -45,7 +45,9 @@ var Flag = React.createClass({
         return <Glyph
             x={this.props.x +
                 fontOffset[0]/4 +
-                ((this.props.direction === 1) ? this.getFontOffset()[0]/4 - this.props.stemWidth: 0)}
+                ((this.props.direction === 1) ?
+                    this.getFontOffset()[0]/4 - this.props.stemWidth :
+                    0)}
             y={this.props.y -
                 (this.props.line - 3)/4 -
                 this.getDirection()*fontOffset[1]/4 -

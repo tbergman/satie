@@ -22,7 +22,7 @@ var NoteMarking = React.createClass({
 
             console.assert(marking.indexOf("Above") === -1 &&
                 marking.indexOf("Below") === -1,
-                "Markings should specify direction instead of including Above or Below in marking name");
+                "Markings should specify direction property and omit name qualifier");
         },
         direction: React.PropTypes.oneOf([1, -1]),
         notehead: React.PropTypes.string.isRequired,

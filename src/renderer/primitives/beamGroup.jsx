@@ -77,7 +77,8 @@ var BeamGroup = React.createClass({
 
         children.forEach((note, idx) => {
             note.props.direction = direction;
-            note.props.stemHeight = getSH(direction, idx, getExtremeLine(note.props.line, direction));
+            note.props.stemHeight = getSH(direction, idx,
+                getExtremeLine(note.props.line, direction));
 
             assert(note.props.strokes.length);
 
@@ -92,7 +93,6 @@ var BeamGroup = React.createClass({
 
         return <Group>
             {[<Beam
-                key="beam"
                 beams={(props && props.beams) || 1}
                 direction={direction}
                 key={props.key}

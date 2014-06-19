@@ -35,8 +35,9 @@ var SongEditor = React.createClass({
         // Right now, the size of the sheet music is decided by the size
         // and shape of the viewer. In the future, it will be possible to
         // zoom in and out.
-        var aspectRatio = this.state.staves ? this.state.pageSize.width / this.state.pageSize.height : 1;
-            // Set to 1 to prevent divide by zero.
+        var aspectRatio = this.state.staves ?
+            this.state.pageSize.width / this.state.pageSize.height :
+            1; // Set to 1 to prevent divide by zero.
 
         var width = this.state.width*0.8;
         var height = width/aspectRatio;
@@ -99,7 +100,6 @@ var SongEditor = React.createClass({
     getInitialState: function() {
         return {
             height: 0,
-            pageSize: renderUtil.pageSizes[0],
             staves: SongEditorStore.staves(),
             staveHeight: SongEditorStore.staveHeight(),
             tool: SongEditorStore.tool(),

@@ -43,8 +43,11 @@ var Renderer = React.createClass({
         for (var i = 1; i < pageCount; ++i) {
             pages.push({from: pageStarts[i - 1], to: pageStarts[i], idx: i-1});
         }
-        pages.push({from: pageStarts[pageCount - 1], to: staves[3].body.length, idx: pageCount - 1});
-            // XXX: Robustness
+        pages.push({
+            from: pageStarts[pageCount - 1],
+            to: staves[3].body.length, // XXX: Robustness
+            idx: pageCount - 1
+        });
 
         var viewbox = "0 0 " +
             Math.round(85000*(this.props.pageSize.width/215.9)) + " " +
@@ -97,7 +100,8 @@ var Renderer = React.createClass({
                             }
                             memo[memo.length - 1].push(obj);
                             return memo;
-                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) => <LineContainer
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) =>
+                            <LineContainer
                                 staveHeight={this.props.staveHeight}
                                 generate={() => s.map(t => render(t))}
                                 idx={idx + pageLines[page.idx]} key={idx} />)}
@@ -116,10 +120,12 @@ var Renderer = React.createClass({
                 x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
                 y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
                 width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
-                height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
+                height={Math.abs(this.state.selectionRect.start.y -
+                        this.state.selectionRect.end.y)} />}
 
             {!pidx && this.props.visualCursor && this.props.visualCursor.annotatedObj && <Group
-                        key={"visualCursorGroup"} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
+                        key={"visualCursorGroup"}
+                        style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Barline key="visualCursor"
                         height={2/3}
                         x={this.props.visualCursor.annotatedObj["$Bridge_x"]}
@@ -157,7 +163,8 @@ var Renderer = React.createClass({
                     return <Group />;
                 }
                 var body = this.props.staves[3].body; // XXX: Make more robust!
-                for (var j = cursor.pageStarts[mouse.page]; j < body.length && !body[i].newpage; ++j) {
+                for (var j = cursor.pageStarts[mouse.page];
+                        j < body.length && !body[i].newpage; ++j) {
                     var item = body[j];
                     cursorData = item.cursorData;
                     if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
@@ -166,7 +173,8 @@ var Renderer = React.createClass({
                                     item.clef ||
                                     item.pitch ||
                                     item.chord) &&
-                                Math.abs(dynX - item["$Bridge_x"]) < 0.27 + (item.dots ? item.dots*0.2 : 0)) {
+                                Math.abs(dynX - item["$Bridge_x"]) < 0.27 +
+                                    (item.dots ? item.dots*0.2 : 0)) {
                             dynX = item["$Bridge_x"];
                             foundIdx = j;
                             foundObj = item;

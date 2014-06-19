@@ -126,7 +126,8 @@ class PitchBridge extends Bridge {
         obj._line = getLine(obj, cursor);
         
         if (!this.isBeam) {
-            cursor.beats = (cursor.beats || 0) + getBeats(getCount(obj), getDots(obj), getTuplet(obj));
+            cursor.beats = (cursor.beats || 0) +
+                getBeats(getCount(obj), getDots(obj), getTuplet(obj));
         }
 
         if (!this.isBeam && obj.inBeam) {
@@ -232,7 +233,8 @@ var log2 = Math.log(2);
 
 var getLine = (pitch, cursor) => {
     if (!cursor) {
-        assert(pitch["$PitchBridge_line"] !== undefined, "Must be first annotated in pitchBridge.jsx");
+        assert(pitch["$PitchBridge_line"] !== undefined,
+                "Must be first annotated in pitchBridge.jsx");
         return pitch["$PitchBridge_line"];
     }
     assert(cursor.clef, "A clef must be inserted before the first note");
@@ -266,7 +268,9 @@ var getAccStrokes = (pitch) => {
 
 var getStrokes = (pitch) => {
     if (pitch.chord) {
-        return pitch.chord.map(c => c.temporary ? "#A5A5A5" : (pitch.selected ? "#75A1D0" : "black"));
+        return pitch.chord.map(c => c.temporary ?
+                "#A5A5A5" :
+                (pitch.selected ? "#75A1D0" : "black"));
     }
     return [pitch.temporary ? "#A5A5A5" : (pitch.selected ? "#75A1D0" : "black" )];
 };

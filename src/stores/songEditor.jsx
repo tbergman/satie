@@ -82,7 +82,10 @@ class SongEditorStore extends EventEmitter {
                     }
                     break;
                 }
-                // otherwise, pass through
+                _cleanup && _cleanup();
+                _tool = null;
+                this.emit(CHANGE_EVENT);
+                break;
             case "DELETE /local/tool":
                 _cleanup && _cleanup();
                 _tool = action.postData || null;
@@ -117,7 +120,9 @@ class SongEditorStore extends EventEmitter {
                             break;
                         }
                     }
-                } else assert(false, "Not found");
+                } else {
+                    assert(false, "Not found");
+                }
                 _dirty = true;
                 _cursor = null;
                 _(_staves).find(s => s.staveHeight).staveHeight = _staveHeight;
@@ -448,7 +453,7 @@ class SongEditorStore extends EventEmitter {
                     var semitonesDone = (noteToVal[newPitch] - noteToVal[note.pitch] + 12*12)%12;
 
                     note.pitch = newPitch;
-                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7)
+                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
                     note.acc = semitonesNeeded - semitonesDone + note.acc;
                     if (!note.acc) {
                         delete note.acc;
@@ -502,7 +507,8 @@ class SongEditorStore extends EventEmitter {
         var unresolved = [];
         staves.forEach((stave, sidx) => {
             if (stave.staveHeight) {
-                lyliteArr.push("#(set-global-staff-size " + stave.staveHeight*renderUtil.ptPerMM + ")\n");
+                lyliteArr.push("#(set-global-staff-size " +
+                    stave.staveHeight*renderUtil.ptPerMM + ")\n");
                 return;
             }
             if (stave.pageSize) {
@@ -510,7 +516,8 @@ class SongEditorStore extends EventEmitter {
                     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
                     return;
                 }
-                lyliteArr.push("#(set-default-paper-size \"" + stave.pageSize.lilypondName + "\")\n");
+                lyliteArr.push("#(set-default-paper-size \"" +
+                    stave.pageSize.lilypondName + "\")\n");
                 return;
             }
             if (stave.header) {

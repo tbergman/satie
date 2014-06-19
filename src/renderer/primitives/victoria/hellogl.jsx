@@ -152,14 +152,14 @@ VGNode.prototype.inject = function(n) {
     this._parent = n;
     this.injected = true;
     n.injectChild(this, "children");
-}
+};
 VGNode.prototype.eject = function() {
     this._parent.ejectChild(this, "children");
     this._parent = null;
-}
+};
 VGNode.prototype.injectChild = function(child, type) {
     this[type].push(child);
-}
+};
 VGNode.prototype.ejectChild = function(child, type) {
     var found = false;
     for (var i = 0; i < this[type].length; ++i) {
@@ -170,7 +170,7 @@ VGNode.prototype.ejectChild = function(child, type) {
         }
     }
     assert(found);
-}
+};
 
 var VG = createComponent(
     'VG',
@@ -214,13 +214,15 @@ VGlyphNode.prototype.inject = function(n) {
     this._parent = n;
     this.injected = true;
     n.injectChild(this, "glyphs");
-}
+};
 VGlyphNode.prototype.eject = function() {
     this._parent.ejectChild(this, "glyphs");
     this._parent = null;
-}
+};
 
-pixmapData.glyphs.forEach((g, idx) => g.idx = idx);
+pixmapData.glyphs.forEach((g, idx) => {
+    g.idx = idx;
+});
 var idxByUnicode = _(pixmapData.glyphs).indexBy("code");
 
 var VGlyph = createComponent(
@@ -264,11 +266,11 @@ VRectNode.prototype.inject = function(n) {
     }
     this._parent = n;
     n.injectChild(this, "rects");
-}
+};
 VRectNode.prototype.eject = function() {
     this._parent.ejectChild(this, "rects");
     this._parent = null;
-}
+};
 
 var VRect = createComponent(
     'VRect',
@@ -312,11 +314,11 @@ VCircleNode.prototype.inject = function(n) {
     this._parent = n;
     this.injected = true;
     n.injectChild(this, "circles");
-}
+};
 VCircleNode.prototype.eject = function() {
     this._parent.ejectChild(this, "circles");
     this._parent = null;
-}
+};
 
 var VCircle = createComponent(
     'VCircle',
@@ -371,7 +373,8 @@ var HelloGL = createComponent(
         transaction.getReactMountReady().enqueue(this, this.componentDidMount);
 
         var idMarkup = DOMPropertyOperations.createMarkupForID(rootID);
-        return '<canvas ' + idMarkup + ' style="width: 100%; height: 100%; position: relative"><canvas>';
+        return '<canvas ' + idMarkup + ' style="' +
+            'width: 100%; height: 100%; position: relative"><canvas>';
     },
     
     fillAvailableSpace: function() {
@@ -517,7 +520,9 @@ var HelloGL = createComponent(
 
             gl.uniform4f(this.node.glyphUniforms.posInfo,
                 x/(this.stepsInWidth/2) + 0.0014*offset[0] - 1,
-                1 - y/(this.stepsInWidth/this.aspectRatio/2) + this.aspectRatio*(offsetY + startY - endY)*-4 + this.aspectRatio/8,
+                1 - y/(this.stepsInWidth/this.aspectRatio/2) +
+                    this.aspectRatio*(offsetY + startY - endY)*-4 +
+                    this.aspectRatio/8,
                 (endX - startX)/(this.stepsInWidth/2)*pixmapData.height/4,
                 (startY - endY)/(this.stepsInWidth/this.aspectRatio/2)*pixmapData.height/4);
 
@@ -676,12 +681,12 @@ var HelloGL = createComponent(
 
         var shaderProgram = gl.createProgram();
 
-        var vs = gl.createShader(gl.VERTEX_SHADER)
+        var vs = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vs, vsSRC()); 
         gl.compileShader(vs);
         gl.attachShader(shaderProgram, vs);
 
-        var fs = gl.createShader(gl.FRAGMENT_SHADER)
+        var fs = gl.createShader(gl.FRAGMENT_SHADER);
         gl.shaderSource(fs, fsSRC()); 
         gl.compileShader(fs);
         gl.attachShader(shaderProgram, fs);
@@ -711,7 +716,8 @@ function clearLoadingImages() {
 //
 // loadImageTexture
 //
-// Load the image at the passed url, place it in a new WebGLTexture object and return the WebGLTexture.
+// Load the image at the passed url, place it in a new WebGLTexture
+// object and return the WebGLTexture.
 //
 function loadImageTexture(ctx, url)
 {
@@ -720,7 +726,9 @@ function loadImageTexture(ctx, url)
     ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
     var image = new Image();
     g_loadingImages.push(image);
-    image.onload = function() { doLoadImageTexture(ctx, image, texture) }
+    image.onload = function() {
+        doLoadImageTexture(ctx, image, texture);
+    };
     image.src = url;
     return texture;
 }
