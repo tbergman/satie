@@ -79,15 +79,14 @@ var DispatcherInstance = new Dispatcher();
 var immediateActions = {
     PUT: true,      // update the server (replace an existing item)
     POST: true,     // update the server (create a new item)
-    SHOW: true,     // activate a local object
-    HIDE: true,     // deactivate a local object
-    SET: true       // change the value of a local object
+    DELETE: true    // deactivate a local object
 };
 
 var networkActions = {
     GET: true,
     POST: true,
-    PUT: true
+    PUT: true,
+    DELETE: true
 };
 
 String.prototype.dispatch = function(verb, postData) {
@@ -139,11 +138,9 @@ String.prototype.dispatch = function(verb, postData) {
         }
     }
 }
-String.prototype.SHOW = function(p) { this.dispatch("SHOW", p); }
-String.prototype.HIDE = function(p) { this.dispatch("HIDE", p); }
+String.prototype.DELETE = function(p) { this.dispatch("DELETE", p); }
 String.prototype.PUT = function(p) { this.dispatch("PUT", p); }
 String.prototype.POST = function(p) { this.dispatch("POST", p); }
 String.prototype.GET = function(p) { this.dispatch("GET", p); }
-String.prototype.SET = function(p) { this.dispatch("SET", p); }
 
 module.exports = DispatcherInstance;

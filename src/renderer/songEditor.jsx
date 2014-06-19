@@ -181,7 +181,7 @@ var SongEditor = React.createClass({
     },
 
     componentWillMount: function() {
-        ("/api/song/_" + this.props.songId).SHOW();
+        ("/local/song/show/_" + this.props.songId).PUT();
     },
     componentDidMount: function() {
         SongEditorStore.addChangeListener(this._onChange);
@@ -192,7 +192,7 @@ var SongEditor = React.createClass({
     },
     componentWillReceiveProps: function(nextProps) {
         if (nextProps.songId !== this.props.songId) {
-            ("/api/song/_" + nextProps.songId).SHOW();
+            ("/local/song/show/_" + nextProps.songId).PUT();
         }
     },
     componentWillUnmount: function() {
@@ -200,7 +200,7 @@ var SongEditor = React.createClass({
 
         // This might have race-condition issues if we're replacing one
         // song consumer with another!
-        ("/api/song/_" + this.props.songId).HIDE();
+        ("/local/song/show/_" + this.props.songId).DELETE();
         window.removeEventListener("resize", this.updateDimensions);
     },
     _onChange: function() {

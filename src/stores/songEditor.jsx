@@ -32,7 +32,7 @@ class SongEditorStore extends EventEmitter {
     handleAction(action) {
         switch(action.description) {
             case "GET /api/song":
-            case "SHOW /api/song":
+            case "PUT /local/song/show":
                 var activeSong = SessionStore.activeSong();
                 if (activeSong !== _prevActiveSong) {
                     this.clear();
@@ -40,65 +40,67 @@ class SongEditorStore extends EventEmitter {
                     this.emit(CHANGE_EVENT);
                 }
                 break;
-            case "HIDE /api/song":
+            case "DELETE /local/song/show":
                 this.clear();
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SHOW /local/song/forceUpdate":
+            case "PUT /local/song/forceUpdate":
                 this.clear();
                 var activeSong = SessionStore.activeSong();
                 this.reparse(activeSong);
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SHOW /local/tool":
-                switch(action.resource) {
-                    case "hide":
-                        if (_cleanup) {
-                            _cleanup();
-                            this.emit(ANNOTATE_EVENT);
-                        }
-                        break;
-                    case "preview":
-                    case "action":
-                        _cleanup && _cleanup();
-                        if (action.resource === "preview") {
-                            _cleanup = () => {
-                                _cleanup = null;
-                                this.annotate(
-                                    action.postData.mouseData,
-                                    _tool.hidePreview.bind(_tool));
+            case "PUT /local/tool":
+                if (action.resource) {
+                    switch(action.resource) {
+                        case "hide":
+                            if (_cleanup) {
+                                _cleanup();
                                 this.emit(ANNOTATE_EVENT);
-                            };
-                        }
-                        this.annotate(
-                            action.postData.mouseData,
-                            action.postData.fn);
+                            }
+                            break;
+                        case "preview":
+                        case "action":
+                            _cleanup && _cleanup();
+                            if (action.resource === "preview") {
+                                _cleanup = () => {
+                                    _cleanup = null;
+                                    this.annotate(
+                                        action.postData.mouseData,
+                                        _tool.hidePreview.bind(_tool));
+                                    this.emit(ANNOTATE_EVENT);
+                                };
+                            }
+                            this.annotate(
+                                action.postData.mouseData,
+                                action.postData.fn);
 
-                        this.emit(ANNOTATE_EVENT);
-                        break;
+                            this.emit(ANNOTATE_EVENT);
+                            break;
+                    }
+                    break;
                 }
-                break;
-            case "SET /local/tool":
-            case "HIDE /local/tool":
+                // otherwise, pass through
+            case "DELETE /local/tool":
                 _cleanup && _cleanup();
                 _tool = action.postData || null;
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SET /local/selection":
+            case "PUT /local/selection":
                 _selection = action.postData;
                 _dirty = true;
                 this.emit(CHANGE_EVENT);
                 break;
-            case "HIDE /local/selection":
+            case "DELETE /local/selection":
                 _selection = null;
                 _dirty = true;
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SHOW /local/staveHeight":
+            case "PUT /local/staveHeight":
                 var h = Math.round(_staveHeight*100)/100;
 
                 if (action.resource === "larger") {
@@ -124,7 +126,7 @@ class SongEditorStore extends EventEmitter {
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SET /local/pageSize":
+            case "PUT /local/pageSize":
                 _pageSize = action.postData;
                 _dirty = true;
                 _cursor = null;
@@ -134,7 +136,7 @@ class SongEditorStore extends EventEmitter {
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "SHOW /local/song":
+            case "PUT /local/song":
                 switch (action.resource) {
                     case "transpose":
                         this.transpose(action.postData);
@@ -151,7 +153,7 @@ class SongEditorStore extends EventEmitter {
                 }
                 break;
 
-            case "HIDE /local/song":
+            case "DELETE /local/song":
                 switch (action.resource) {
                     case "dirty":
                         _.defer(() => {
@@ -176,7 +178,7 @@ class SongEditorStore extends EventEmitter {
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "HIDE /local/visualCursor":
+            case "DELETE /local/visualCursor":
                 _visualCursor = 0;
                 this.emit(CHANGE_EVENT);
                 this.annotate();

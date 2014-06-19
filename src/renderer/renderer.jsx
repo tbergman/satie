@@ -131,7 +131,7 @@ var Renderer = React.createClass({
         </div>)}
         </div>;
 
-        SongEditorStore.handleAction({description: "HIDE /local/song",
+        SongEditorStore.handleAction({description: "DELETE /local/song",
             resource: "dirty"});
 
         PROFILER_ENABLED && console.timeEnd("render");
@@ -268,7 +268,7 @@ var Renderer = React.createClass({
         }
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
-            "/local/tool/_action".SHOW({mouseData: data, fn: fn});
+            "/local/tool/_action".PUT({mouseData: data, fn: fn});
         }
         this.forceUpdate();
     },
@@ -282,7 +282,7 @@ var Renderer = React.createClass({
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.handleAction({description: "SHOW /local/song",
+                SongEditorStore.handleAction({description: "PUT /local/song",
                     resource: "dirty"});
             }
             this.setState({
@@ -292,7 +292,7 @@ var Renderer = React.createClass({
                 }
             });
             if (this.props.selection) {
-                SongEditorStore.handleAction({description: "HIDE /local/selection"});
+                SongEditorStore.handleAction({description: "DELETE /local/selection"});
             }
         }
     },
@@ -311,14 +311,14 @@ var Renderer = React.createClass({
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.handleAction({description: "SHOW /local/song",
+                SongEditorStore.handleAction({description: "PUT /local/song",
                     resource: "dirty"});
             }
             this.setState({
                 selectionRect: null
             });
             if (selection.length) {
-                "/local/selection".SET(selection.length ? selection : null);
+                "/local/selection".PUT(selection.length ? selection : null);
             }
         }
     },
@@ -333,7 +333,7 @@ var Renderer = React.createClass({
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
             if (area > 1 && this.props.tool) {
-                "/local/tool".HIDE();
+                "/local/tool".DELETE();
             }
             return;
         }
@@ -357,9 +357,9 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
-            SongEditorStore.handleAction({description: "SHOW /local/tool", resource: "hide"});
+            SongEditorStore.handleAction({description: "PUT /local/tool", resource: "hide"});
         } else if (fn) {
-            SongEditorStore.handleAction({description: "SHOW /local/tool", resource: "preview",
+            SongEditorStore.handleAction({description: "PUT /local/tool", resource: "preview",
                 postData: {mouseData: data, fn: fn}});
         }
 
@@ -395,7 +395,7 @@ var Renderer = React.createClass({
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
-                "/local/tool".SET(toolFn());
+                "/local/tool".PUT(toolFn());
             }
         };
 
@@ -430,7 +430,7 @@ var LineContainer = React.createClass({
             return true;
         }
         if (SongEditorStore.lineDirty(nextProps.idx)) {
-            SongEditorStore.handleAction({description: "HIDE /local/song",
+            SongEditorStore.handleAction({description: "DELETE /local/song",
                 resource: "lineDirty", postData: nextProps.idx});
             return true;
         }
