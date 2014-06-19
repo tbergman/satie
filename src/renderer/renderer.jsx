@@ -6,18 +6,18 @@ var React = require('react');
 var _ = require("underscore");
 var assert = require("assert");
 
-var Molasses = require("../primitives/molasses/molasses.jsx");
-var Victoria = require("../primitives/victoria/hellogl.jsx");
+var Molasses = require("./primitives/molasses/molasses.jsx");
+var Victoria = require("./primitives/victoria/hellogl.jsx");
 
 var useGL = window.location.search.indexOf("engine=gl") !== -1;
 window.useGL = useGL;
 
-var Barline = require("../primitives/barline.jsx");
+var Barline = require("./primitives/barline.jsx");
 var Bridge = require("./bridge.jsx");
-var Header = require("../primitives/header.jsx");
+var Header = require("./primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-var SongEditorStore = require("../store/songEditor.jsx");
-var StaveLines = require("../primitives/staveLines.jsx");
+var SongEditorStore = require("../stores/songEditor.jsx");
+var StaveLines = require("./primitives/staveLines.jsx");
 var renderUtil = require("./util.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;

@@ -6,8 +6,8 @@ var React = require('react');
 var _ = require("underscore");
 var assert = require("assert");
 
-var Header = require("../../primitives/header.jsx");
-var StaveLines = require("../../primitives/staveLines.jsx");
+var Header = require("../header.jsx");
+var StaveLines = require("../staveLines.jsx");
 
 var Molasses = React.createClass({
     render: function() {

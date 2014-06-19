@@ -4,7 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
-var BeamGroup = require("../primitives/beamGroup.jsx");
+var BeamGroup = require("./primitives/beamGroup.jsx");
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var PitchBridge = require("./pitchBridge.jsx");
@@ -45,7 +45,7 @@ class BeamGroupBridge extends Bridge {
         ];
     }
     annotateImpl(obj, cursor, stave, idx) {
-        var SongEditorStore = require("../store/songEditor.jsx");
+        var SongEditorStore = require("../stores/songEditor.jsx");
 
         var mret = false;
         obj._fontSize = cursor.fontSize;

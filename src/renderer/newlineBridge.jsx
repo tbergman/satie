@@ -7,7 +7,7 @@ var Bridge = require("./bridge.jsx");
 var React = require("react");
 
 var NewPageBridge = require("./newpageBridge.jsx");
-var StaveLines = require("../primitives/staveLines.jsx");
+var StaveLines = require("./primitives/staveLines.jsx");
 var renderUtil = require("./util.jsx");
 
 var _ = require("underscore");
@@ -62,7 +62,7 @@ class NewlineBridge extends Bridge {
         cursor.lines[cursor.line].pageStarts = cursor.pageStarts;
         cursor.lines[cursor.line].keySignature = cursor.prevKeySignature;
 
-        var SongEditorStore = require("../store/songEditor.jsx");
+        var SongEditorStore = require("../stores/songEditor.jsx");
         SongEditorStore.snapshot(cursor);
 
         return true;

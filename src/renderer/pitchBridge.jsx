@@ -12,9 +12,9 @@ var BarlineBridge = require("./barlineBridge.jsx");
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var NewlineBridge = require("./newlineBridge.jsx");
-var Note = require("../primitives/note.jsx");
-var NoteMarking = require("../primitives/noteMarking.jsx");
-var Rest = require("../primitives/rest.jsx");
+var Note = require("./primitives/note.jsx");
+var NoteMarking = require("./primitives/noteMarking.jsx");
+var Rest = require("./primitives/rest.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 class PitchBridge extends Bridge {

@@ -4,11 +4,11 @@
 
 var Bridge = require("./bridge.jsx");
 
-var BeamGroup = require("../primitives/beamGroup.jsx");
+var BeamGroup = require("./primitives/beamGroup.jsx");
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var PitchBridge = require("./pitchBridge.jsx");
-var Slur = require("../primitives/slur.jsx");
+var Slur = require("./primitives/slur.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 class SlurGroupBridge extends Bridge {

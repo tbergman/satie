@@ -6,7 +6,7 @@ var Bridge = require("./bridge.jsx");
 
 var _ = require("underscore");
 
-var Barline = require("../primitives/barline.jsx");
+var Barline = require("./primitives/barline.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 
 class BarlineBridge extends Bridge {

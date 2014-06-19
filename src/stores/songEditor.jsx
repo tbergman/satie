@@ -10,11 +10,11 @@ var Dispatcher = require("../dispatcher.jsx");
 var deepFreeze = require("../util/deepFreeze.jsx");
 
 var Bridge = require("../renderer/bridge.jsx");
-var Header = require("../primitives/header.jsx");
+var Header = require("../renderer/primitives/header.jsx");
 var KeySignatureBridge = require("../renderer/keySignatureBridge.jsx");
 var NewlineBridge = require("../renderer/newlineBridge.jsx");
 var SessionStore = require("./session.jsx"); // must be registered before currentSong!!!
-var StaveLines = require("../primitives/staveLines.jsx");
+var StaveLines = require("../renderer/primitives/staveLines.jsx");
 var lylite = require("../renderer/lylite.jison").parser;
 var renderUtil = require("../renderer/util.jsx");
 

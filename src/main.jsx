@@ -15,7 +15,7 @@ var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var Redirect = require("./util/redirect.jsx");
-var SessionStore = require("./store/session.jsx");
+var SessionStore = require("./stores/session.jsx");
 var SongEditor = require("./renderer/songEditor.jsx");
 
 var Location = Router.Location;

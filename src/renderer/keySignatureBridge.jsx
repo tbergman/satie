@@ -7,7 +7,7 @@ var Bridge = require("./bridge.jsx");
 var _ = require("underscore");
 
 var ClefBridge = require("./clefBridge.jsx");
-var KeySignature = require("../primitives/keySignature.jsx");
+var KeySignature = require("./primitives/keySignature.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 var MAJOR = "\\major";

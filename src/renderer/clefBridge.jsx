@@ -4,7 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
-var Clef = require("../primitives/clef.jsx");
+var Clef = require("./primitives/clef.jsx");
 
 class ClefBridge extends Bridge {
     prereqs() {

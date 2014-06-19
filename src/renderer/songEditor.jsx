@@ -18,7 +18,7 @@ var saveAs = require("../../third_party/fileSaver/FileSaver.js");
 var Renderer = require("./renderer.jsx");
 var Ribbon = require("../ribbon/ribbon.jsx");
 var RipienoHeader = require("../landing/ripienoHeader.jsx");
-var SongEditorStore = require("../store/songEditor.jsx");
+var SongEditorStore = require("../stores/songEditor.jsx");
 var renderUtil = require("./util.jsx");
 
 var Link = Router.Link;

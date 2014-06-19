@@ -6,7 +6,7 @@ var Bridge = require("./bridge.jsx");
 
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
-var TimeSignature = require("../primitives/timeSignature.jsx");
+var TimeSignature = require("./primitives/timeSignature.jsx");
 
 class TimeSignatureBridge extends Bridge {
     prereqs() {

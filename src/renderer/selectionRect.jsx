@@ -6,7 +6,7 @@ var React = require('react');
 var _ = require("underscore");
 var assert = require("assert");
 
-var Group = require("../primitives/group.jsx");
+var Group = require("./primitives/group.jsx");
 
 require("./selectionRect.less");
 

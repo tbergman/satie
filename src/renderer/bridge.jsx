@@ -1,7 +1,7 @@
 /**
  * Subclasses of Bridges handle the gap between the abstract representation of
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
- * (which is done by components in ../primitives).
+ * (which is done by components in ./primitives).
  *
  * In particular, classes which extend Bridge provide three key methods:
  *   - prereqs: an array of prerequisites. Each prerequisite is an array with
