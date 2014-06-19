@@ -52,6 +52,16 @@ class BarlineBridge extends Bridge {
                     return true;
                 },
                 "Check for newlines"
+            ],
+
+            [
+                (obj, cursor, stave, idx) => !obj._newlineNext || (stave.body[idx - 1] &&
+                        stave.body[idx - 1].endMarker),
+                (obj, cursor, stave, idx) => {
+                    stave.body.splice(idx, 0, {endMarker: true});
+                    return -1;
+                },
+                "If followed by a newline, must be preceeded by and endline marker"
             ]
         ];
     }

@@ -169,7 +169,8 @@ class SongEditorStore extends EventEmitter {
             case "POST /local/visualCursor":
                 _visualCursor = {
                     bar: action.postData.bar,
-                    beat: action.postData.beat
+                    beat: action.postData.beat,
+                    endMarker: action.postData.endMarker
                 };
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -255,15 +256,18 @@ class SongEditorStore extends EventEmitter {
                 }
 
                 if (cursor.bar === _visualCursor.bar &&
-                        cursor.beats >= _visualCursor.beat &&
-                        (stave.body[i].pitch || stave.body[i].chord) &&
-                        !_visualCursor.annotatedObj) {
+                        ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
+                            cursor.beats === _visualCursor.beat) &&
+                        (((stave.body[i].pitch || stave.body[i].chord) &&
+                            !_visualCursor.endMarker) || (_visualCursor.endMarker &&
+                            stave.body[i].endMarker))) {
                     _visualCursor.annotatedObj = stave.body[i];
                 }
 
                 stave.body[i].cursorData = {
                     bar: cursor.bar,
-                    beat: cursor.beats
+                    beat: cursor.beats,
+                    endMarker: stave.body[i].endMarker
                 };
 
                 if (exitCode === "line_created" && toolFn) {

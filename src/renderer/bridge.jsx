@@ -167,6 +167,7 @@ _.defer(() => {
     var BarlineBridge = require("../renderer/barlineBridge.jsx");
     var BeamBridge = require("../renderer/beamGroupBridge.jsx");
     var ClefBridge = require("../renderer/clefBridge.jsx");
+    var EndMarkerBridge = require("../renderer/endMarkerBridge.jsx");
     var KeySignatureBridge = require("../renderer/keySignatureBridge.jsx");
     var NewPageBridge = require("../renderer/newpageBridge.jsx");
     var NewlineBridge = require("../renderer/newlineBridge.jsx");
@@ -179,6 +180,7 @@ _.defer(() => {
         beam: new BeamBridge(),
         chord: new PitchBridge(),
         clef: new ClefBridge(),
+        endMarker: new EndMarkerBridge(),
         keySignature: new KeySignatureBridge(),
         newpage: new NewPageBridge(),
         newline: new NewlineBridge(),

@@ -109,12 +109,25 @@ class PitchBridge extends Bridge {
                     return BeamGroupBridge.createBeam(obj, cursor, stave, idx, b);
                 },
                 "Beams should be automatically created when applicable"
+            ],
+
+            [
+                (obj, cursor, stave, idx) => stave.body[idx + 1],
+                (obj, cursor, stave, idx) => {
+                    stave.body.splice(idx + 1, 0, {endMarker: true});
+                    return true;
+                },
+                "The document must end with a marker."
             ]
         ];
     }
 
     annotateImpl(obj, cursor, stave, idx) {
         obj._line = getLine(obj, cursor);
+        
+        if (!this.isBeam) {
+            cursor.beats = (cursor.beats || 0) + getBeats(getCount(obj), getDots(obj), getTuplet(obj));
+        }
 
         if (!this.isBeam && obj.inBeam) {
             this._handleTie(obj, cursor, stave, idx);
@@ -125,7 +138,6 @@ class PitchBridge extends Bridge {
         this.setX(obj, cursor.x);
         obj._fontSize = cursor.fontSize;
         cursor.x += this.getWidth(obj, cursor);
-        cursor.beats = (cursor.beats || 0) + getBeats(getCount(obj), getDots(obj), getTuplet(obj));
         obj._acc = getAccidentals(obj, cursor);
         return true;
     }

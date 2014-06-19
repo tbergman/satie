@@ -259,7 +259,8 @@ var Renderer = React.createClass({
         if (data.cursorData) {
             "/local/visualCursor".POST({
                 bar: data.cursorData.bar,
-                beat: data.cursorData.beat
+                beat: data.cursorData.beat,
+                endMarker: data.cursorData.endMarker
             });
         }
         if (!this.props.tool) {
