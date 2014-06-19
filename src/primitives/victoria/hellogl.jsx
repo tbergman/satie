@@ -668,7 +668,7 @@ var HelloGL = createComponent(
 
         ////////////////
 
-        this.node.spiritTexture = loadImageTexture(gl, "/bravura48.png");
+        this.node.spiritTexture = loadImageTexture(gl, "/res/bravura48.png");
         this.node.gl = gl;
     },
     newProgram: function(vsSRC, fsSRC) {
