@@ -225,7 +225,9 @@ class SongEditorStore extends EventEmitter {
 
         PROFILER_ENABLED && console.time("annotate");
 
-        _visualCursor.annotatedObj = null;
+        if (!pointerData) {
+            _visualCursor.annotatedObj = null;
+        }
 
         var y = 0;
         while (!staves.every((stave, sidx) => {
@@ -265,7 +267,7 @@ class SongEditorStore extends EventEmitter {
                     return true;
                 }
 
-                if (cursor.bar === _visualCursor.bar &&
+                if (!doCustomAction && cursor.bar === _visualCursor.bar &&
                         ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
                             cursor.beats === _visualCursor.beat) &&
                         (((stave.body[i].pitch || stave.body[i].chord) &&
