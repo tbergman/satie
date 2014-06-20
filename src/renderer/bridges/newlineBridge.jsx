@@ -7,32 +7,16 @@ var Bridge = require("./bridge.jsx");
 var React = require("react");
 
 var NewPageBridge = require("./newpageBridge.jsx");
-var StaveLines = require("./primitives/staveLines.jsx");
-var renderUtil = require("./util.jsx");
+var StaveLines = require("../primitives/staveLines.jsx");
+var renderUtil = require("../util.jsx");
 
 var _ = require("underscore");
 
 class NewlineBridge extends Bridge {
-    prereqs() {
-        return [
-            [
-                (obj, cursor) => cursor.y + cursor.lineSpacing < cursor.maxY,
-                NewPageBridge.createNewPage,
-                "Pages should not overflow"
-            ],
-            [
-                // This requirement should be last so that it only happens once
-                // per line.
-                (obj, cursor) => cursor.maxX - cursor.x <= 0.01,
-                this.justify.bind(this),
-                "Notes should be full justfied within a line."
-            ]
-        ];
-    }
-    annotateImpl(obj, cursor, stave, idx) {
-        obj._fontSize = cursor.fontSize;
-        obj._lineSpacing = cursor.lineSpacing;
-        obj._pageSize = cursor.pageSize;
+    annotateImpl(cursor, stave, idx) {
+        this._fontSize = cursor.fontSize;
+        this._lineSpacing = cursor.lineSpacing;
+        this._pageSize = cursor.pageSize;
 
         cursor.x = cursor.initialX;
         cursor.y += cursor.lineSpacing;
@@ -62,19 +46,19 @@ class NewlineBridge extends Bridge {
         cursor.lines[cursor.line].pageStarts = cursor.pageStarts;
         cursor.lines[cursor.line].keySignature = cursor.prevKeySignature;
 
-        var SongEditorStore = require("../stores/songEditor.jsx");
+        var SongEditorStore = require("../../stores/songEditor.jsx");
         SongEditorStore.snapshot(cursor);
 
         return true;
     }
-    render(obj, engine) {
+    render() {
         return <StaveLines
-                key={this.key(obj)}
-                width={renderUtil.mm(obj._pageSize.width - 30, obj._fontSize)}
-                x={renderUtil.mm(15, obj._fontSize)}
-                y={this.y(obj) + obj._lineSpacing} />;
+                key={this.key()}
+                width={renderUtil.mm(this._pageSize.width - 30, this._fontSize)}
+                x={renderUtil.mm(15, this._fontSize)}
+                y={this.y() + this._lineSpacing} />;
     }
-    justify(obj, cursor, stave, idx) {
+    justify(cursor, stave, idx) {
         var diff = cursor.maxX - cursor.x;
         var l = 0;
         for (var i = idx - 1; i >= 0; --i) {
@@ -92,12 +76,12 @@ class NewlineBridge extends Bridge {
                 break;
             }
             if (stave.body[i].pitch || stave.body[i].chord) {
-                stave.body[i]["$PitchBridge_annotatedExtraWidth"] =
-                    (stave.body[i]["$PitchBridge_annotatedExtraWidth"] || 0) +
+                stave.body[i].annotatedExtraWidth =
+                    (stave.body[i].annotatedExtraWidth || 0) +
                     diff/l;
                 xOffset -= diff/l;
             }
-            var newX = this.x(stave.body[i]) + xOffset;
+            var newX = stave.body[i].x() + xOffset;
             if (stave.body[i].barline && (!stave.body[i + 1] || !stave.body[i + 1].newline)) {
                 if (cursor.lines[cursor.line - 1] && _(cursor.lines[cursor.line - 1].barlineX)
                         .any(x => Math.abs(x - newX) < 0.15)) {
@@ -115,7 +99,7 @@ class NewlineBridge extends Bridge {
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && !stave.body[j].barline; --j) {
-                        this.setX(stave.body[j], this.x(stave.body[j]) + remaining);
+                        stave.body[j].setX(stave.body[j].x() + remaining);
                         if (stave.body[j].pitch || stave.body[j].chord) {
                             remaining -= offset/noteCount;
                         }
@@ -130,7 +114,7 @@ class NewlineBridge extends Bridge {
                     }
                     remaining = offset;
                     for (j = i + 1; j < stave.body.length && !stave.body[j].barline; ++j) {
-                        this.setX(stave.body[j], this.x(stave.body[j]) + remaining);
+                        stave.body[j].setX(stave.body[j].x() + remaining);
                         if (stave.body[j].pitch || stave.body[j].chord) {
                             remaining -= offset/noteCount;
                         }
@@ -139,20 +123,20 @@ class NewlineBridge extends Bridge {
 
                 cursor.barlineX.push(newX);
             }
-            this.setX(stave.body[i], newX);
+            stave.body[i].setX(newX);
         }
         return true;
     }
-    toLylite(obj, lylite) {
+    toLylite(lylite) {
         lylite.push("\n");
     }
 }
 
-var createNewline = (obj, cursor, stave, idx) => {
+var createNewline = (cursor, stave, idx) => {
     var l = 0;
     var fidx = idx;
     for (fidx = idx; fidx >=0; --fidx) {
-        delete stave.body[fidx]["$PitchBridge_annotatedExtraWidth"];
+        stave.body[fidx].annotatedExtraWidth = undefined;
         if (stave.body[fidx].barline) {
             break;
         }
@@ -171,7 +155,8 @@ var createNewline = (obj, cursor, stave, idx) => {
             }
         }
     }
-    stave.body.splice(fidx + 1, 0, {newline: true, _annotated: "createNewline"});
+    stave.body.splice(fidx + 1, 0,
+        new NewlineBridge({newline: true, _annotated: "createNewline"}));
     removeNextNewline(cursor, stave, fidx + 2);
     return "line_created";
 };
@@ -218,6 +203,24 @@ var semiJustify = (cursor, stave, idx) => {
         }
     }
 };
+
+NewlineBridge.prototype.prereqs = [
+    [
+        function(cursor) {
+            return cursor.y + cursor.lineSpacing < cursor.maxY; },
+        NewPageBridge.createNewPage,
+        "Pages should not overflow"
+    ],
+    [
+        // This requirement should be last so that it only happens once
+        // per line.
+        function(cursor) {
+            return cursor.maxX - cursor.x <= 0.01; },
+        function(cursor, stave, idx) {
+            return this.justify(cursor, stave, idx); },
+        "Notes should be full justfied within a line."
+    ]
+];
 
 module.exports = NewlineBridge;
 module.exports.createNewline = createNewline;

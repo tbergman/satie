@@ -9,10 +9,10 @@ var assert = require('assert');
 var Dispatcher = require("./dispatcher.jsx"); 
 var deepFreeze = require("../util/deepFreeze.jsx");
 
-var Bridge = require("../renderer/bridge.jsx");
+var Bridge = require("../renderer/bridges/bridge.jsx");
 var Header = require("../renderer/primitives/header.jsx");
-var KeySignatureBridge = require("../renderer/keySignatureBridge.jsx");
-var NewlineBridge = require("../renderer/newlineBridge.jsx");
+var KeySignatureBridge = require("../renderer/bridges/keySignatureBridge.jsx");
+var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
 var SessionStore = require("./session.jsx"); // must be registered before currentSong!!!
 var StaveLines = require("../renderer/primitives/staveLines.jsx");
 var lylite = require("../renderer/lylite.jison").parser;
@@ -240,8 +240,11 @@ class SongEditorStore extends EventEmitter {
                     this.newCursor(y, _staveHeight, true, _pageSize);
 
             var exitCode;
+            var operations = 0;
             for (var i = cursor.start; i < stave.body.length;
                     i = this.nextIndex(i, exitCode, stave, cursor)) {
+
+                ++operations;
 
                 var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
                         (pointerData && pointerData.obj && pointerData.obj.idx === i));
@@ -250,7 +253,7 @@ class SongEditorStore extends EventEmitter {
                     exitCode = toolFn(stave.body[i], cursor, stave, i);
                     pointerData = undefined;
                 } else {
-                    exitCode = annotate(stave.body[i], cursor, stave, i);
+                    exitCode = stave.body[i].annotate(cursor, stave, i);
                 }
 
                 if (!doCustomAction &&
@@ -285,6 +288,8 @@ class SongEditorStore extends EventEmitter {
             }
 
             NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
+
+            PROFILER_ENABLED && console.log("Annotation efficiency:" + (operations / stave.body.length));
 
             _cursor = cursor;
             y += 2.25;
@@ -340,7 +345,7 @@ class SongEditorStore extends EventEmitter {
             while(i >= 0 && !stave.body[i].beam) {
                 --i;
             }
-            cursor.x = stave.body[i]["$Bridge_x"];
+            cursor.x = stave.body[i].x();
             --i;
             break;
         case -1:
@@ -539,8 +544,7 @@ class SongEditorStore extends EventEmitter {
             var body = stave.body;
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                var bridge = Bridge.getBridgeForItem(obj);
-                bridge.toLylite(obj, lyliteArr, unresolved);
+                obj.toLylite(lyliteArr, unresolved);
 
                 for (var j = 0; j < unresolved.length; ++j) {
                     var ret = unresolved[j](obj, lyliteArr, unresolved);
@@ -595,11 +599,6 @@ class SongEditorStore extends EventEmitter {
         this.on(ANNOTATE_EVENT, callback); 
     }
 }
-
-var annotate = (item, cursor, stave, idx) => {
-    var bridge = Bridge.getBridgeForItem(item);
-    return bridge.annotate(item, cursor, stave, idx);
-};
 
 /**
  * Called at the end of begining of every line so that when a certain line

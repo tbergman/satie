@@ -13,7 +13,6 @@ var useGL = window.location.search.indexOf("engine=gl") !== -1;
 window.useGL = useGL;
 
 var Barline = require("./primitives/barline.jsx");
-var Bridge = require("./bridge.jsx");
 var Header = require("./primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 var SongEditorStore = require("../stores/songEditor.jsx");
@@ -70,7 +69,6 @@ var Renderer = React.createClass({
                 onMouseMove={this.handleMouseMove}
                 page={page}
                 staves={staves}
-                renderFn={render}
                 widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
                 viewbox={viewbox}>
             {staves.map((stave, idx) => {
@@ -103,7 +101,7 @@ var Renderer = React.createClass({
                         }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) =>
                             <LineContainer
                                 staveHeight={this.props.staveHeight}
-                                generate={() => s.map(t => render(t))}
+                                generate={() => s.map(item => item.visible() && item.render())}
                                 idx={idx + pageLines[page.idx]} key={idx} />)}
                     </Group>;
                 } else {
@@ -305,7 +303,7 @@ var Renderer = React.createClass({
         }
     },
     handleMouseUp: function(event) {
-        if (event.button === 0) {
+        if (event.button === 0 && this.state.selectionRect) {
             var rect = this.state.selectionRect;
             var bbox = {
                 left: Math.min(rect.start.x, rect.end.x),
@@ -448,11 +446,6 @@ var LineContainer = React.createClass({
 
 // Ratio between svg coordinate system and 1mm.
 var FONT_SIZE_FACTOR = 378;
-
-var render = item => {
-    var bridge = Bridge.getBridgeForItem(item);
-    return bridge.visible(item) && bridge.render(item);
-};
 
 var _pointerData = {};
 

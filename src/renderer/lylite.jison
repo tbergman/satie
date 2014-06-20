@@ -1,6 +1,13 @@
 %{
     var _ = require("underscore");
     var util = require("./util.jsx");
+
+    var BarlineBridge = require("./bridges/barlineBridge.jsx");
+    var ClefBridge = require("./bridges/clefBridge.jsx");
+    var KeySignatureBridge = require("./bridges/keySignatureBridge.jsx");
+    var PitchBridge = require("./bridges/pitchBridge.jsx");
+    var NewlineBridge = require("./bridges/newlineBridge.jsx");
+    var NewPageBridge = require("./bridges/newpageBridge.jsx");
 %}
 
 %options flex
@@ -328,7 +335,7 @@ partElements
   ;
 
 partElement
-  : 'SET_CLEF' 'clef'                    { $$ = {clef: $2}; }
+  : 'SET_CLEF' 'clef'                    { $$ = new ClefBridge({clef: $2}); }
   | 'SET_CLEF' 'STRING'
         {
             if ($1 === "G") {
@@ -343,19 +350,22 @@ partElement
         {
             assert(parseInt($2, 0), "Numerator must be non-null");
             assert(parseInt($4, 0), "Denominator must be non-null");
-            $$ = {timeSignature: {beats: $2, beatType: $4} };
+            $$ = new TimeSignatureBridge({timeSignature: {beats: $2, beatType: $4} });
         }
   | relativeMode                         { $$ = $1; }
-  | completePitchOrChord                 { $$ = $1; }
+  | completePitchOrChord                 { $$ = new PitchBridge(false, $1); }
   | tupletMode                           { $$ = $1; }
-  | 'PAGE_BREAK'                         { $$ = {append: [{barline: true}, {newpage: true}, {newline: true}]}; }
+  | 'PAGE_BREAK'                         { $$ = {append: [
+        new BarlineBridge({barline: true}),
+        new NewPageBridge({newpage: true}),
+        new NewlineBridge({newline: true})]}; }
   | 'SLUR_OPEN' partElements 'SLUR_CLOSE'
         {
             $$ = {appendSlur: [{slur: $2.length + 1}].concat($2)}
         }
   | 'SET_KEY' 'STRING' 'KEY_MODE'
         {
-            $$ = {keySignature: {pitch: parsePitch($2), mode: $3}};
+            $$ = new KeySignatureBridge({keySignature: {pitch: parsePitch($2), mode: $3}});
         }
   | 'BEAM_OPEN'
         {

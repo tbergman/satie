@@ -7,7 +7,7 @@ var Bridge = require("./bridge.jsx");
 var _ = require("underscore");
 
 var ClefBridge = require("./clefBridge.jsx");
-var KeySignature = require("./primitives/keySignature.jsx");
+var KeySignature = require("../primitives/keySignature.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 var MAJOR = "\\major";
@@ -17,66 +17,66 @@ var isPitch = (k, name, acc) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
 
 class KeySignatureBridge extends Bridge {
-    prereqs() {
-        return [
-            [
-                (obj, cursor) => cursor.clef,
-                ClefBridge.createClef,
-                "A clef must exist on each line."
-            ]
-        ];
-    }
-    annotateImpl(obj, cursor, stave, idx) {
-        obj._clef = cursor.clef;
+    annotateImpl(cursor, stave, idx) {
+        this._clef = cursor.clef;
         var next = this.next(stave, idx);
         if (next.pitch || next.chord) {
             if (next.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                obj._annotatedSpacing = 2.5;
+                this._annotatedSpacing = 2.5;
             } else {
-                obj._annotatedSpacing = 1.5;
+                this._annotatedSpacing = 1.5;
             }
         } else {
-            obj._annotatedSpacing = 1;
+            this._annotatedSpacing = 1;
         }
-        var c = getSharpCount(obj.keySignature) || getFlatCount(obj.keySignature);
+        var c = getSharpCount(this.keySignature) || getFlatCount(this.keySignature);
         if (c) {
-            cursor.x += obj._annotatedSpacing/4 + 0.4*c;
+            cursor.x += this._annotatedSpacing/4 + 0.4*c;
         }
-        cursor.keySignature = obj.keySignature;
+        cursor.keySignature = this.keySignature;
         cursor.accidentals = getAccidentals(cursor.keySignature);
         return true;
     }
-    render(obj) {
+    render() {
         return <KeySignature
-            key={this.key(obj)}
-            stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
-            x={this.x(obj)}
-            y={this.y(obj)}
-            clef={obj._clef}
-            sharpCount={getSharpCount(obj.keySignature)}
-            flatCount={getFlatCount(obj.keySignature)} />;
+            key={this.key()}
+            stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black")}
+            x={this.x()}
+            y={this.y()}
+            clef={this._clef}
+            sharpCount={getSharpCount(this.keySignature)}
+            flatCount={getFlatCount(this.keySignature)} />;
     }
-    toLylite(obj, lylite) {
-        if (obj["_annotated"]) {
+    toLylite(lylite) {
+        if (this["_annotated"]) {
             return;
         }
 
         var acc = "";
-        if (obj.keySignature.acc === -1) {
+        if (this.keySignature.acc === -1) {
             acc = "es";
-        } else if (obj.keySignature.acc === 1) {
+        } else if (this.keySignature.acc === 1) {
             acc = "is";
         }
-        lylite.push("\\key " + obj.keySignature.pitch.pitch + acc + " " + obj.keySignature.mode);
+        lylite.push("\\key " + this.keySignature.pitch.pitch + acc + " " + this.keySignature.mode);
     }
 }
 
-var createKeySignature = (obj, cursor, stave, idx) => {
-    stave.body.splice(idx, 0, {
+KeySignatureBridge.prototype.prereqs = [
+    [
+        function (cursor) {
+            return cursor.clef; },
+        ClefBridge.createClef,
+        "A clef must exist on each line."
+    ]
+];
+
+var createKeySignature = (cursor, stave, idx) => {
+    stave.body.splice(idx, 0, new KeySignatureBridge ({
         keySignature: cursor.prevKeySignature,
         _annotated: "createKeySignature"
-    });
+    }));
     return -1;
 };
 

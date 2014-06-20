@@ -10,189 +10,91 @@ var assert = require("assert");
 
 var BarlineBridge = require("./barlineBridge.jsx");
 var ClefBridge = require("./clefBridge.jsx");
+var EndMarkerBridge = require("./endMarkerBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var NewlineBridge = require("./newlineBridge.jsx");
-var Note = require("./primitives/note.jsx");
-var NoteMarking = require("./primitives/noteMarking.jsx");
-var Rest = require("./primitives/rest.jsx");
+var Note = require("../primitives/note.jsx");
+var NoteMarking = require("../primitives/noteMarking.jsx");
+var Rest = require("../primitives/rest.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 class PitchBridge extends Bridge {
-    constructor(isBeam) {
-        super();
+    constructor(isBeam, spec) {
+        super(spec);
         this.isBeam = isBeam;
     }
 
-    prereqs() {
-        return [
-            [
-                (obj, cursor) => cursor.clef,
-                ClefBridge.createClef,
-                "A clef must exist on each line."
-            ],
-
-            [
-                (obj, cursor) => cursor.keySignature,
-                KeySignatureBridge.createKeySignature,
-                "A key signature must exist on each line."
-            ],
-
-            [
-                (obj, cursor) => cursor.timeSignature,
-                TimeSignatureBridge.createTS,
-                "A time signature must exist on the first line of every page."
-            ],
-
-            [
-                (obj, cursor) => obj.count,
-                (obj, cursor) => {
-                    assert(cursor.count, "Never null -- starts at 4");
-                    obj.count = cursor.count;
-                    return true;
-                },
-                "A note's duration, when unspecified, is set by the previous note"
-            ],
-
-            [
-                (obj, cursor) => getCount(obj) === cursor.count,
-                (obj, cursor) => {
-                    cursor.count = getCount(obj);
-                    return true;
-                },
-                "Updated the cursor to reflect the current note's duration"
-            ],
-
-            [
-                (obj, cursor) => cursor.smallest <= getBeats(getCount(obj), 0),
-                (obj, cursor) => {
-                    cursor.smallest = getBeats(getCount(obj), 0);
-                    return "line";
-                },
-                "All notes, chords, and rests throughout a line must have the same spacing"
-            ],
-
-            [
-                (obj, cursor) => (!this.isBeam && obj.inBeam /* don't check twice */) ||
-                    (cursor.beats + getBeats(getCount(obj), getDots(obj), getTuplet(obj)) <=
-                        getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats),
-                BarlineBridge.createBarline,
-                "The number of beats in a bar must not exceed that specified by the time signature"
-            ],
-
-            [
-                () => false, // re-calculate it every time
-                (obj, cursor, stave, idx) => {
-                    obj._annotatedExtraWidth = (Math.log(getBeats(
-                                    getCount(obj), getDots(obj), getTuplet(obj))) -
-                            Math.log(cursor.smallest))/log2/3;
-                    return true;
-                },
-                "Each note's width has a linear component proportional to the log of its duration"
-            ],
-
-            [
-                (obj, cursor) => (!this.isBeam && obj.inBeam /* don't check twice*/) ||
-                    (cursor.x + this.getWidth(obj, cursor) <= cursor.maxX),
-                NewlineBridge.createNewline,
-                "The width of a line must not exceed that specified by the page layout"
-            ],
-
-            [
-                cannotBeBeamed,
-                (obj, cursor, stave, idx) => {
-                    var b = beamable(obj, cursor, stave, idx);
-                    var BeamGroupBridge = require("./beamGroupBridge.jsx");
-
-                    b.forEach(function(b) {
-                        b.inBeam = true;
-                    });
-                    return BeamGroupBridge.createBeam(obj, cursor, stave, idx, b);
-                },
-                "Beams should be automatically created when applicable"
-            ],
-
-            [
-                (obj, cursor, stave, idx) => stave.body[idx + 1],
-                (obj, cursor, stave, idx) => {
-                    stave.body.splice(idx + 1, 0, {endMarker: true});
-                    return true;
-                },
-                "The document must end with a marker."
-            ]
-        ];
-    }
-
-    annotateImpl(obj, cursor, stave, idx) {
-        obj._line = getLine(obj, cursor);
+    annotateImpl(cursor, stave, idx) {
+        this._line = getLine(this, cursor);
         
-        if (!this.isBeam) {
+        if (!cursor.isBeam) {
             cursor.beats = (cursor.beats || 0) +
-                getBeats(getCount(obj), getDots(obj), getTuplet(obj));
+                getBeats(getCount(this), getDots(this), getTuplet(this));
         }
 
-        if (!this.isBeam && obj.inBeam) {
-            this._handleTie(obj, cursor, stave, idx);
+        if (!cursor.isBeam && this.inBeam) {
+            this._handleTie(cursor, stave, idx);
             return true;
-        } else if (!obj.inBeam) {
-            this._handleTie(obj, cursor, stave, idx);
+        } else if (!this.inBeam) {
+            this._handleTie(cursor, stave, idx);
         }
-        this.setX(obj, cursor.x);
-        obj._fontSize = cursor.fontSize;
-        cursor.x += this.getWidth(obj, cursor);
-        obj._acc = getAccidentals(obj, cursor);
+        this.setX(cursor.x);
+        this._fontSize = cursor.fontSize;
+        cursor.x += this.getWidth(cursor);
+        this._acc = getAccidentals(this, cursor);
         return true;
     }
-    _handleTie(obj, cursor, stave, idx) {
-        if (obj.tie) {
-            obj._tieTo = this.nextNote(stave, idx);
+    _handleTie(cursor, stave, idx) {
+        if (this.tie) {
+            this._tieTo = this.nextNote(stave, idx);
         } else {
-            obj._tieTo = null;
+            this._tieTo = null;
         }
     }
-    visible(obj) {
-        return this.isBeam || !obj.inBeam;
+    visible() {
+        return !this.inBeam;
     }
-    render(obj) {
-        var Renderer = require("./renderer.jsx");
+    render(isBeam) {
+        var Renderer = require("../renderer.jsx");
 
-        var markings = (obj.accents || []).map((m, idx) =>
+        var markings = (this.accents || []).map((m, idx) =>
             <NoteMarking marking={m} key={idx} />
         );
 
-        if (obj.pitch === "r") {
+        if (this.pitch === "r") {
             return <Rest
-                    dotted={obj.dots}
+                    dotted={this.dots}
                     line={3}
-                    key={this.key(obj)}
-                    notehead={countToRest[obj.count]}
-                    stroke={obj.temporary ? "#A5A5A5" : (obj.selected ? "#75A1D0" : "black")}
-                    x={this.x(obj)}
-                    y={this.y(obj)}>
+                    key={this.key()}
+                    notehead={countToRest[this.count]}
+                    stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black")}
+                    x={this.x()}
+                    y={this.y()}>
                 {markings}
             </Rest>;
         }
 
         return <Note
-                accStrokes={getAccStrokes(obj)}
-                accidentals={obj._acc}
-                dotted={obj.dots}
-                flag={!this.isBeam && (obj.count in countToFlag) && countToFlag[obj.count]}
-                hasStem={countToHasStem[obj.count]}
-                key={this.key(obj)}
-                line={obj._line}
-                notehead={countToNotehead[obj.count]}
-                scaleFactor={obj._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
-                secondaryStroke={obj.selected ? "#75A1D0" : "black"}
-                strokes={getStrokes(obj)}
-                tieTo={obj._tieTo && this.x(obj._tieTo)}
-                x={this.x(obj)}
-                y={this.y(obj)}>
+                accStrokes={getAccStrokes(this)}
+                accidentals={this._acc}
+                dotted={this.dots}
+                flag={!isBeam && (this.count in countToFlag) && countToFlag[this.count]}
+                hasStem={countToHasStem[this.count]}
+                key={this.key()}
+                line={this._line}
+                notehead={countToNotehead[this.count]}
+                scaleFactor={this._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
+                secondaryStroke={this.selected ? "#75A1D0" : "black"}
+                strokes={getStrokes(this)}
+                tieTo={this._tieTo && this._tieTo.x()}
+                x={this.x()}
+                y={this.y()}>
             {markings}
         </Note>;
     }
 
-    getWidth(obj, cursor) {
-        return 0.56 + (obj._annotatedExtraWidth || 0);
+    getWidth(cursor) {
+        return 0.56 + (this.annotatedExtraWidth || 0);
     }
 
     _lyPitch(pitch) {
@@ -211,18 +113,18 @@ class PitchBridge extends Bridge {
         return str;
     }
 
-    toLylite(obj, lylite) {
+    toLylite(lylite) {
         var str;
-        if (obj.pitch) {
+        if (this.pitch) {
             str = this._lyPitch(obj);
-        } else if (obj.chord) {
-            str = "< " + obj.chord.map(a => this._lyPitch(a)).join(" ") + " >";
+        } else if (this.chord) {
+            str = "< " + this.chord.map(a => this._lyPitch(a)).join(" ") + " >";
         }
-        str += obj.count;
-        if (obj.dots) {
-            _(obj.dots).times(d => str += ".");
+        str += this.count;
+        if (this.dots) {
+            _(this.dots).times(d => str += ".");
         }
-        if (obj.tie) {
+        if (this.tie) {
             str += "~";
         }
         lylite.push(str);
@@ -427,17 +329,19 @@ var countToIsBeamable = {
     1024: true
 };
 
-var cannotBeBeamed = (obj, cursor, stave, idx) => obj.inBeam || !beamable(obj, cursor, stave, idx);
+var cannotBeBeamed = function(cursor, stave, idx) {
+    return this.inBeam || !beamable(cursor, stave, idx);
+}
 
-var beamable = (obj, cursor, stave, idx) => {
+var beamable = (cursor, stave, idx) => {
     // TODO: give a better algorithm
     // This has lots of corner cases that don't work (it's for a demo!)
     var beamable = [];
     var count = getCount(stave.body[idx]);
     var rcount = 1/parseInt(cursor.count);
     var c = 0;
-    var hasTimeValue = (obj) => obj.pitch || obj.chord;
-    var isRest = (obj) => obj.pitch === "r";
+    var hasTimeValue = (other) => other.pitch || other.chord;
+    var isRest = (other) => other.pitch === "r";
     var prev;
 
     var beats = cursor.beats;
@@ -513,6 +417,114 @@ var getDots = obj => isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
 var getCount = obj => obj.actualCount || obj.count;
 
 var getTuplet = obj => (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj.tuplet;
+
+PitchBridge.prototype.prereqs = [
+    [
+        function(cursor) {
+            return cursor.clef },
+        ClefBridge.createClef,
+        "A clef must exist on each line."
+    ],
+
+    [
+        function(cursor) {
+            return cursor.keySignature },
+        KeySignatureBridge.createKeySignature,
+        "A key signature must exist on each line."
+    ],
+
+    [
+        function (cursor) {
+            return cursor.timeSignature },
+        TimeSignatureBridge.createTS,
+        "A time signature must exist on the first line of every page."
+    ],
+
+    [
+        function (cursor) {
+            return this.count },
+        function (cursor) {
+            assert(cursor.count, "Never null -- starts at 4");
+            this.count = cursor.count;
+            return true;
+        },
+        "A note's duration, when unspecified, is set by the previous note"
+    ],
+
+    [
+        function (cursor) {
+            return getCount(this) === cursor.count },
+        function (cursor) {
+            cursor.count = getCount(this);
+            return true;
+        },
+        "Updated the cursor to reflect the current note's duration"
+    ],
+
+    [
+        function(cursor) {
+            return cursor.smallest <= getBeats(getCount(this), 0) },
+        function (cursor) {
+            cursor.smallest = getBeats(getCount(this), 0);
+            return "line";
+        },
+        "All notes, chords, and rests throughout a line must have the same spacing"
+    ],
+
+    [
+        function(cursor) {
+            return (!cursor.isBeam && this.inBeam /* don't check twice */) ||
+            (cursor.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
+                getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats) },
+        BarlineBridge.createBarline,
+        "The number of beats in a bar must not exceed that specified by the time signature"
+    ],
+
+    [
+        function() {
+            return false; }, // re-calculate it every time
+        function(cursor, stave, idx) {
+            this.annotatedExtraWidth = (Math.log(getBeats(
+                            getCount(this), getDots(this), getTuplet(this))) -
+                    Math.log(cursor.smallest))/log2/3;
+            return true;
+        },
+        "Each note's width has a linear component proportional to the log of its duration"
+    ],
+
+    [
+        function (cursor) {
+            return (!cursor.isBeam && this.inBeam /* don't check twice*/) ||
+                (cursor.x + this.getWidth(cursor) <= cursor.maxX) },
+        NewlineBridge.createNewline,
+        "The width of a line must not exceed that specified by the page layout"
+    ],
+
+    [
+        cannotBeBeamed,
+        function (cursor, stave, idx) {
+            var b = beamable(cursor, stave, idx);
+            var BeamGroupBridge = require("./beamGroupBridge.jsx");
+
+            b.forEach(function(b) {
+                b.inBeam = true;
+            });
+            return BeamGroupBridge.createBeam(cursor, stave, idx, b);
+        },
+        "Beams should be automatically created when applicable"
+    ],
+
+    [
+        function (cursor, stave, idx) {
+            return stave.body[idx + 1] },
+        function (cursor, stave, idx) {
+            stave.body.splice(idx + 1, 0,
+                new EndMarkerBridge({endMarker: true}));
+            return true;
+        },
+        "The document must end with a marker."
+    ]
+];
 
 module.exports = PitchBridge;
 module.exports.countToHasStem = countToHasStem;
