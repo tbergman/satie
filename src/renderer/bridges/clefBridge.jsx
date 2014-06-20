@@ -43,7 +43,7 @@ var clefIsNotRedundant = function(cursor) {
     return this.temporary ||
         cursor.clef !== this.clef ||
         this.clef === "detect";
-}
+};
 
 var createClef = function(cursor, stave, idx) {
     stave.body.splice(idx, 0, new ClefBridge({

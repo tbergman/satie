@@ -289,7 +289,8 @@ class SongEditorStore extends EventEmitter {
 
             NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
 
-            PROFILER_ENABLED && console.log("Annotation efficiency:" + (operations / stave.body.length));
+            PROFILER_ENABLED && console.log("Annotation efficiency:" +
+                    (operations / stave.body.length));
 
             _cursor = cursor;
             y += 2.25;

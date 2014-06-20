@@ -331,7 +331,7 @@ var countToIsBeamable = {
 
 var cannotBeBeamed = function(cursor, stave, idx) {
     return this.inBeam || !beamable(cursor, stave, idx);
-}
+};
 
 var beamable = (cursor, stave, idx) => {
     // TODO: give a better algorithm
@@ -421,28 +421,28 @@ var getTuplet = obj => (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj
 PitchBridge.prototype.prereqs = [
     [
         function(cursor) {
-            return cursor.clef },
+            return cursor.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ],
 
     [
         function(cursor) {
-            return cursor.keySignature },
+            return cursor.keySignature; },
         KeySignatureBridge.createKeySignature,
         "A key signature must exist on each line."
     ],
 
     [
         function (cursor) {
-            return cursor.timeSignature },
+            return cursor.timeSignature; },
         TimeSignatureBridge.createTS,
         "A time signature must exist on the first line of every page."
     ],
 
     [
         function (cursor) {
-            return this.count },
+            return this.count; },
         function (cursor) {
             assert(cursor.count, "Never null -- starts at 4");
             this.count = cursor.count;
@@ -453,7 +453,7 @@ PitchBridge.prototype.prereqs = [
 
     [
         function (cursor) {
-            return getCount(this) === cursor.count },
+            return getCount(this) === cursor.count; },
         function (cursor) {
             cursor.count = getCount(this);
             return true;
@@ -463,7 +463,7 @@ PitchBridge.prototype.prereqs = [
 
     [
         function(cursor) {
-            return cursor.smallest <= getBeats(getCount(this), 0) },
+            return cursor.smallest <= getBeats(getCount(this), 0); },
         function (cursor) {
             cursor.smallest = getBeats(getCount(this), 0);
             return "line";
@@ -475,7 +475,7 @@ PitchBridge.prototype.prereqs = [
         function(cursor) {
             return (!cursor.isBeam && this.inBeam /* don't check twice */) ||
             (cursor.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
-                getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats) },
+                getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats); },
         BarlineBridge.createBarline,
         "The number of beats in a bar must not exceed that specified by the time signature"
     ],
@@ -495,7 +495,7 @@ PitchBridge.prototype.prereqs = [
     [
         function (cursor) {
             return (!cursor.isBeam && this.inBeam /* don't check twice*/) ||
-                (cursor.x + this.getWidth(cursor) <= cursor.maxX) },
+                (cursor.x + this.getWidth(cursor) <= cursor.maxX); },
         NewlineBridge.createNewline,
         "The width of a line must not exceed that specified by the page layout"
     ],
@@ -516,7 +516,7 @@ PitchBridge.prototype.prereqs = [
 
     [
         function (cursor, stave, idx) {
-            return stave.body[idx + 1] },
+            return stave.body[idx + 1]; },
         function (cursor, stave, idx) {
             stave.body.splice(idx + 1, 0,
                 new EndMarkerBridge({endMarker: true}));
