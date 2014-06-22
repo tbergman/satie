@@ -76,14 +76,13 @@ BarlineBridge.prototype.prereqs = [
 
     [
         function(cursor, stave, idx) {
-            return !this.newlineNext || (stave.body[idx - 1] &&
-                stave.body[idx - 1].endMarker); },
+            return stave.body[idx - 1].endMarker; },
         function(cursor, stave, idx) {
             stave.body.splice(idx, 0,
                 new EndMarkerBridge({endMarker: true}));
             return -1;
         },
-        "If followed by a newline, must be preceeded by and endline marker"
+        "If followed by a newline or underfilled, must be preceeded by and endline marker"
     ]
 ];
 

@@ -99,8 +99,10 @@ class Bridge {
     }
 
     // Convienience
-    nextNote(stave, idx) {
-        return _(stave.body.slice(idx + 1)).find(p => p.pitch || p.chord);
+    nextNote(stave, idx, inBar) {
+        var ret = _(stave.body.slice(idx + 1)).find(p => p.pitch || p.chord || (p.barline && inBar));
+        if (ret && ret.barline) return false;
+        return ret;
     }
     prevNote(stave, idx) {
         return _(stave.body.reverse().slice(idx + 1)).find(p => p.pitch || p.chord);

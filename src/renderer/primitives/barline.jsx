@@ -13,11 +13,13 @@ var Barline = React.createClass({
     proptypes: {
         x: React.PropTypes.number.isRequired,
         y: React.PropTypes.number.isRequired,
-        height: React.PropTypes.number.isRequired
+        height: React.PropTypes.number.isRequired,
+        strokeWidth: React.PropTypes.number.isRequired
     },
     getDefaultProps: function() {
         return {
-            height: 2/4
+            height: 2/4,
+            strokeWidth: SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness/4
         };
     },
     shouldComponentUpdate: function(nextProps) {
@@ -28,13 +30,14 @@ var Barline = React.createClass({
 
     render: function() {
         return <Line
+            className={this.props.className}
             x1={this.props.x}
             x2={this.props.x}
             y1={this.props.y - this.props.height}
             y2={this.props.y + this.props.height}
             stroke={this.props.stroke || "#2A2A2A"}
             fill={this.props.stroke || "#2A2A2A"}
-            strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness/4} />;
+            strokeWidth={this.props.strokeWidth} />;
     }
 });
 

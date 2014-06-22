@@ -13,6 +13,7 @@ var VRect = Victoria.VRect;
 var Line = React.createClass({
     renderSVG: function() {
         return <line
+            className={this.props.className}
             x1={this.props.x1 + "em"}
             x2={this.props.x2 + "em"}
             y1={this.props.y1 + "em"}

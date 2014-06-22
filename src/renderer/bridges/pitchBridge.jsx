@@ -28,8 +28,7 @@ class PitchBridge extends Bridge {
         this._line = getLine(this, cursor);
         
         if (!cursor.isBeam) {
-            cursor.beats = (cursor.beats || 0) +
-                getBeats(getCount(this), getDots(this), getTuplet(this));
+            cursor.beats = (cursor.beats || 0) + this.getBeats();
         }
 
         if (!cursor.isBeam && this.inBeam) {
@@ -116,7 +115,7 @@ class PitchBridge extends Bridge {
     toLylite(lylite) {
         var str;
         if (this.pitch) {
-            str = this._lyPitch(obj);
+            str = this._lyPitch(this);
         } else if (this.chord) {
             str = "< " + this.chord.map(a => this._lyPitch(a)).join(" ") + " >";
         }
@@ -128,6 +127,10 @@ class PitchBridge extends Bridge {
             str += "~";
         }
         lylite.push(str);
+    }
+
+    getBeats() {
+        return getBeats(getCount(this), getDots(this), getTuplet(this));
     }
 }
 

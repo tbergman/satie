@@ -4,6 +4,7 @@
 
     var BarlineBridge = require("./bridges/barlineBridge.jsx");
     var ClefBridge = require("./bridges/clefBridge.jsx");
+    var EndMarkerBridge = require("./bridges/endMarkerBridge.jsx");
     var KeySignatureBridge = require("./bridges/keySignatureBridge.jsx");
     var PitchBridge = require("./bridges/pitchBridge.jsx");
     var NewlineBridge = require("./bridges/newlineBridge.jsx");
@@ -312,7 +313,11 @@ headerElement
   ;
 
 musicExpr
-  : 'LBRACE' partElements 'RBRACE'     { $$ = $2; }
+  : 'LBRACE' partElements 'RBRACE'
+        {
+            $2.push(new EndMarkerBridge({endMarker: true}));
+            $$ = $2;
+        }
   | relativeMode
   ;
 

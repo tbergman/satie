@@ -88,6 +88,9 @@ class BeamGroupBridge extends Bridge {
         }
 
     }
+    getBeats() {
+        return this.beam[0].getBeats();
+    }
 }
 BeamGroupBridge.prototype.prereqs = [
     [

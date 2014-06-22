@@ -54,6 +54,7 @@ class SongEditorStore extends EventEmitter {
 
             case "PUT /local/tool":
                 if (action.resource) {
+                    var tool = _tool;
                     switch(action.resource) {
                         case "hide":
                             if (_cleanup) {
@@ -69,7 +70,7 @@ class SongEditorStore extends EventEmitter {
                                     _cleanup = null;
                                     this.annotate(
                                         action.postData.mouseData,
-                                        _tool.hidePreview.bind(_tool));
+                                        tool.hidePreview.bind(tool));
                                     this.emit(ANNOTATE_EVENT);
                                 };
                             }
@@ -173,20 +174,134 @@ class SongEditorStore extends EventEmitter {
                 }
                 break;
 
-            case "POST /local/visualCursor":
-                _visualCursor = {
-                    bar: action.postData.bar,
-                    beat: action.postData.beat,
-                    endMarker: action.postData.endMarker
-                };
-                this.annotate();
-                this.emit(CHANGE_EVENT);
-                break;
-
             case "DELETE /local/visualCursor":
-                _visualCursor = 0;
-                this.emit(CHANGE_EVENT);
-                this.annotate();
+                if (action.resource === "ptr") {
+                    // Remove the item directly before the cursor.
+                    var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+                    var EraseTool = require("../tools/eraseTool.jsx");
+                    var i;
+                    for (i = 0; i < _staves[3].body.length; ++i) {
+                        if (_staves[3].body[i] === _visualCursor.annotatedObj) {
+                            --i;
+                            break;
+                        }
+                    }
+                    if (i === _staves[3].body.length) {
+                        console.log("Not found");
+                        break;
+                    }
+                    while(i >= 0 && !_staves[3].body[i].pitch &&
+                            !_staves[3].body[i].chord &&
+                            !_staves[3].body[i].barline) {
+                        --i;
+                    }
+                    var obj = _staves[3].body[i];
+                    if (obj) {
+                        var tool = new EraseTool();
+                        _visualCursor.beat -= (obj.getBeats ? obj.getBeats() : 0);
+                        this.annotate(
+                            {
+                                obj: obj,
+                                musicLine: _visualCursor.annotatedLine,
+                                idx: i
+                            },
+                            tool.splice.bind(tool, false));
+                        this.emit(ANNOTATE_EVENT);
+                    }
+                } else {
+                    _visualCursor = 0;
+                    this.emit(CHANGE_EVENT);
+                    this.annotate();
+                    break;
+                }
+
+                break;
+            case "POST /local/visualCursor":
+                switch (action.resource) {
+                    case "ptr":
+                        var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+                        assert(_visualCursor && _visualCursor.annotatedObj);
+                        var prevObj = null;
+                        var prevIdx;
+                        for (var i = 0; i < _staves[3].body.length; ++i) {
+                            if (_staves[3].body[i] === _visualCursor.annotatedObj) {
+                                prevObj = _staves[3].body[i - 1];
+                                prevIdx = i - 1;
+                                if (prevObj.beam) {
+                                    prevObj = _staves[3].body[i - 2];
+                                }
+                            }
+                        }
+                        this.annotate(
+                            {
+                                obj: prevObj,
+                                musicLine: _visualCursor.annotatedLine,
+                                idx: prevIdx
+                            },
+                            _tool.visualCursorAction(action.postData));
+                        this.emit(ANNOTATE_EVENT);
+                        break;
+                        
+                    case undefined:
+                    case null:
+                    case false:
+                        if (action.postData.bar) {
+                            _visualCursor = {
+                                bar: action.postData.bar,
+                                beat: action.postData.beat,
+                                endMarker: action.postData.endMarker
+                            };
+                        } else if (action.postData.step) {
+                            if (!_visualCursor || !_visualCursor.annotatedObj) {
+                                break;
+                            }
+                            var obj = _visualCursor.annotatedObj;
+                            for (var i = 0; i < _staves[3].body.length; ++i) {
+                                if (_staves[3].body[i] === obj) {
+                                    var cd = _staves[3].body[i].cursorData;
+                                    var throughBar = false;
+                                    while (_staves[3].body[i += action.postData.step]) {
+                                        if (!_staves[3].body[i]) {
+                                            break;
+                                        }
+                                        if (_staves[3].body[i].barline) {
+                                            throughBar = true;
+                                        }
+                                        if (_staves[3].body[i].newline) {
+                                            // TODO: we don't need to update all the lines
+                                            _dirty = true;
+                                        }
+                                        if (_visualCursor.endMarker && action.postData.step === 1) {
+                                            _visualCursor = {
+                                                beat: 0,
+                                                bar: _visualCursor.bar + 1
+                                            };
+                                            break;
+                                        } else if (cd.bar !== _staves[3].body[i].cursorData.bar ||
+                                                cd.beat !== _staves[3].body[i].cursorData.beat) {
+                                            _visualCursor = JSON.parse(JSON.stringify(
+                                                _staves[3].body[i].cursorData));
+
+                                            // If we're walking through a bar, make up for that.
+                                            if (throughBar) {
+                                                if (action.postData.step < 0) {
+                                                    _visualCursor.endMarker = true;
+                                                } else {
+                                                    _visualCursor.beat = 0;
+                                                    _visualCursor.bar++;
+                                                }
+                                            }
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        this.annotate();
+                        this.emit(ANNOTATE_EVENT);
+                        break;
+                }
                 break;
         }
         return true;
@@ -201,7 +316,7 @@ class SongEditorStore extends EventEmitter {
         _selection = null;
         _visualCursor = {
             bar: 1,
-            beat: 1
+            beat: 0
         };
     }
 
@@ -227,6 +342,7 @@ class SongEditorStore extends EventEmitter {
 
         if (!pointerData) {
             _visualCursor.annotatedObj = null;
+            _visualCursor.annotatedLine = null;
         }
 
         var y = 0;
@@ -251,6 +367,23 @@ class SongEditorStore extends EventEmitter {
                 var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
                         (pointerData && pointerData.obj && pointerData.obj.idx === i));
 
+                if (!pointerData && cursor.bar === _visualCursor.bar &&
+                        ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
+                            cursor.beats === _visualCursor.beat) &&
+                        (((stave.body[i].pitch || stave.body[i].chord) &&
+                            !_visualCursor.endMarker) || (_visualCursor.endMarker &&
+                            stave.body[i].endMarker))) {
+                    _visualCursor.annotatedObj = stave.body[i];
+                    _visualCursor.annotatedLine = cursor.line;
+                }
+
+                stave.body[i].cursorData = {
+                    bar: cursor.bar,
+                    beat: cursor.beats,
+                        // TODO: Move into the bridge layer
+                    endMarker: stave.body[i].endMarker
+                };
+
                 if (doCustomAction) {
                     exitCode = toolFn(stave.body[i], cursor, stave, i);
                     pointerData = undefined;
@@ -267,26 +400,16 @@ class SongEditorStore extends EventEmitter {
                     return true;
                 }
 
-                if (!doCustomAction && cursor.bar === _visualCursor.bar &&
-                        ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
-                            cursor.beats === _visualCursor.beat) &&
-                        (((stave.body[i].pitch || stave.body[i].chord) &&
-                            !_visualCursor.endMarker) || (_visualCursor.endMarker &&
-                            stave.body[i].endMarker))) {
-                    _visualCursor.annotatedObj = stave.body[i];
-                }
-
-                stave.body[i].cursorData = {
-                    bar: cursor.bar,
-                    beat: cursor.beats,
-                    endMarker: stave.body[i].endMarker
-                };
-
                 if (exitCode === "line_created" && toolFn) {
                     // ... and so must everything else
                     _dirty = true;
                     toolFn = false;
                 }
+            }
+            if (cursor.bar === 1 && !cursor.beats && !_visualCursor.endMarker) {
+                _visualCursor.endMarker = true;
+                y = 0;
+                return false;
             }
 
             NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
@@ -576,6 +699,14 @@ class SongEditorStore extends EventEmitter {
     get visualCursor() {
         return _visualCursor;
     }
+    set visualCursorIs(visualCursor) {
+        _visualCursor = {
+            bar: visualCursor.bar,
+            beat: visualCursor.beat,
+            endMarker: visualCursor.endMarker
+        };
+        // Does not emit.
+    }
     lineDirty(idx) {
         return _linesToUpdate[idx];
     }
@@ -599,7 +730,7 @@ class SongEditorStore extends EventEmitter {
     } 
 
     removeAnnotationListener(callback) { 
-        this.on(ANNOTATE_EVENT, callback); 
+        this.removeListener(ANNOTATE_EVENT, callback); 
     }
 }
 
@@ -634,7 +765,7 @@ var _staveHeight = null;
 var _staves = null;
 var _visualCursor = {
     bar: 1,
-    beat: 1
+    beat: 0
 };
 var _tool = null;
 

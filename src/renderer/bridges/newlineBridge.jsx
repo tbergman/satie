@@ -38,6 +38,7 @@ class NewlineBridge extends Bridge {
 
         cursor.lines[cursor.line].accidentals = [];
         cursor.lines[cursor.line].all = [];
+        cursor.lines[cursor.line].bar = cursor.bar;
         cursor.lines[cursor.line].barlineX = [];
         cursor.lines[cursor.line].beats = 0;
         cursor.lines[cursor.line].x = cursor.x;

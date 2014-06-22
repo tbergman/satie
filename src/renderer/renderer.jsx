@@ -121,14 +121,16 @@ var Renderer = React.createClass({
                 height={Math.abs(this.state.selectionRect.start.y -
                         this.state.selectionRect.end.y)} />}
 
-            {!pidx && this.props.visualCursor && this.props.visualCursor.annotatedObj && <Group
+            {!pidx && this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
                         key={"visualCursorGroup"}
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Barline key="visualCursor"
-                        height={2/3}
-                        x={this.props.visualCursor.annotatedObj["$Bridge_x"]}
-                        y={this.props.visualCursor.annotatedObj["$Bridge_y"]}
-                        stroke={"#FF8C00"} />
+                        className="visualCursor"
+                        height={2/4 + 0.1}
+                        x={this.state.visualCursor.annotatedObj["$Bridge_x"] - 0.1}
+                        y={this.state.visualCursor.annotatedObj["$Bridge_y"]}
+                        stroke={"#008CFF"}
+                        strokeWidth={0.04} />
                 </Group>}
 
         </RenderEngine>
@@ -232,7 +234,8 @@ var Renderer = React.createClass({
     },
     getInitialState: function() {
         return {
-            mouse: {x: 0, y: 0}
+            mouse: {x: 0, y: 0},
+            visualCursor: SongEditorStore.visualCursor()
         };
     },
     getPositionForMouse: function(event) {
@@ -262,7 +265,8 @@ var Renderer = React.createClass({
     handleMouseClick: function(event) {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
-        if (data.cursorData) {
+        // No tool is also known as the "select" tool.
+        if (!this.props.tool && data.cursorData) {
             "/local/visualCursor".POST({
                 bar: data.cursorData.bar,
                 beat: data.cursorData.beat,
@@ -381,9 +385,34 @@ var Renderer = React.createClass({
         var RestTool = require("../tools/restTool.jsx");
         var TieTool = require("../tools/tieTool.jsx");
 
+        // Handle backspace and arrows
+        document.onkeydown = (event) => {
+            var keyCode = event.keyCode || event.charCode || 0;
+            switch(keyCode) {
+                case 8: // backspace
+                    event.preventDefault(); // don't navigate backwards
+                    if (this.props.tool) {
+                        this.props.tool.handleKeyPressEvent("backspace", event);
+                    }
+                    break;
+                case 37: // left arrow
+                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                    "/local/visualCursor".POST({step: -1});
+                    break;
+                case 39: // right arrow
+                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                    "/local/visualCursor".POST({step: 1});
+                    break;
+            }
+        }
+
+        // Handle other keys
         document.onkeypress = (event) => {
-            var keyCode = event.keyCode;
+            var keyCode = event.keyCode || event.charCode || 0;
+
             var key = String.fromCharCode(keyCode);
+
+            // Tools
             var keyToTool = {
                 '1': () => new NoteTool("noteWhole"),
                 '2': () => new NoteTool("noteHalfUp"),
@@ -395,13 +424,15 @@ var Renderer = React.createClass({
                 'r': () => new RestTool(),
                 '.': () => new DotTool(),
                 '~': () => new TieTool(),
-                '#': () => new AccidentalTool(1),
-                'b': () => new AccidentalTool(-1),
-                'n': () => new AccidentalTool(0)
+                '=': () => new AccidentalTool(1),
+                '-': () => new AccidentalTool(-1),
+                '0': () => new AccidentalTool(0)
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
                 "/local/tool".PUT(toolFn());
+            } else if (this.props.tool) {
+                this.props.tool.handleKeyPressEvent(key, event);
             }
         };
 
@@ -409,10 +440,13 @@ var Renderer = React.createClass({
     },
     componentWillUnmount: function() {
         document.onkeypress = null;
+        document.onkeydown = null;
         SongEditorStore.removeAnnotationListener(this.update);
     },
     update: function() {
-        this.forceUpdate;
+        this.setState({
+            visualCursor: SongEditorStore.visualCursor()
+        });
     }
 });
 
@@ -429,18 +463,15 @@ var LineContainer = React.createClass({
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
-        if (SongEditorStore.dirty()) {
-            return true;
-        }
-        if (nextProps.staveHeight !== this.props.staveHeight) {
-            return true;
-        }
-        if (SongEditorStore.lineDirty(nextProps.idx)) {
+        var songDirty = SongEditorStore.dirty();
+        var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
+        var lineDirty = SongEditorStore.lineDirty(nextProps.idx);
+
+        if (lineDirty) {
             SongEditorStore.handleAction({description: "DELETE /local/song",
                 resource: "lineDirty", postData: nextProps.idx});
-            return true;
         }
-        return false;
+        return songDirty || heightChanged || lineDirty;
     }
 });
 
