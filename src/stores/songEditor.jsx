@@ -13,7 +13,6 @@ var Bridge = require("../renderer/bridges/bridge.jsx");
 var Header = require("../renderer/primitives/header.jsx");
 var KeySignatureBridge = require("../renderer/bridges/keySignatureBridge.jsx");
 var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
-var SessionStore = require("./session.jsx"); // must be registered before currentSong!!!
 var StaveLines = require("../renderer/primitives/staveLines.jsx");
 var lylite = require("../renderer/lylite.jison").parser;
 var renderUtil = require("../renderer/util.jsx");
@@ -21,6 +20,10 @@ var renderUtil = require("../renderer/util.jsx");
 var CHANGE_EVENT = 'change'; 
 var ANNOTATE_EVENT = 'annotate'; 
 var PROFILER_ENABLED = window.location.search.indexOf("profile=1") !== -1;
+
+///
+var SessionStore = require("./session.jsx"); // must be registered before SongEditorStore!!!
+var PlaybackStore = require("./playback.jsx"); // must be registered before SongEditorStore!!!
 
 class SongEditorStore extends EventEmitter {
     constructor() {
@@ -276,7 +279,6 @@ class SongEditorStore extends EventEmitter {
                                                 beat: 0,
                                                 bar: _visualCursor.bar + 1
                                             };
-                                            break;
                                         } else if (cd.bar !== _staves[3].body[i].cursorData.bar ||
                                                 cd.beat !== _staves[3].body[i].cursorData.beat) {
                                             _visualCursor = JSON.parse(JSON.stringify(
@@ -289,6 +291,11 @@ class SongEditorStore extends EventEmitter {
                                                 } else {
                                                     _visualCursor.beat = 0;
                                                     _visualCursor.bar++;
+                                                }
+
+                                                if (action.postData.skipThroughBars) {
+                                                    throughBar = false;
+                                                    continue;
                                                 }
                                             }
                                             break;
@@ -535,6 +542,8 @@ class SongEditorStore extends EventEmitter {
     }
 
     transpose(how) {
+        var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+
         // The selection is guaranteed to be in song order.
         var lastIdx = 0;
         var body = _staves[3].body; // XXX: Robustness
@@ -559,7 +568,7 @@ class SongEditorStore extends EventEmitter {
             var numToNote = "cdefgab";
 
             // For "chromatic":
-            var noteToVal = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
+            var noteToVal = PitchBridge.chromaticScale;
 
             (item.pitch ? [item] : item.chord).forEach(note => {
                 if (how.mode === "inKey") {

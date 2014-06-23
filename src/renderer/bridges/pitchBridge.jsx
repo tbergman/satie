@@ -132,6 +132,14 @@ class PitchBridge extends Bridge {
     getBeats() {
         return getBeats(getCount(this), getDots(this), getTuplet(this));
     }
+
+    get midiNote() {
+        if (this.pitch) {
+            var base = chromaticScale[this.pitch] + 48;
+            return base + (this.octave || 0)*12 + (this.acc || 0);
+        }
+        return this.chord.map(m => this.midiNote.call(m));
+    }
 }
 
 var log2 = Math.log(2);
@@ -336,6 +344,8 @@ var cannotBeBeamed = function(cursor, stave, idx) {
     return this.inBeam || !beamable(cursor, stave, idx);
 };
 
+var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
+
 var beamable = (cursor, stave, idx) => {
     // TODO: give a better algorithm
     // This has lots of corner cases that don't work (it's for a demo!)
@@ -537,3 +547,4 @@ module.exports.countToRest = countToRest;
 module.exports.getCount = getCount;
 module.exports.getLine = getLine;
 module.exports.getPitch = getPitch;
+module.exports.chromaticScale = chromaticScale;
