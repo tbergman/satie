@@ -97,14 +97,10 @@ var SongEditor = React.createClass({
     },
 
     getInitialState: function() {
-        return {
+        return _.extend({
             height: 0,
-            staves: SongEditorStore.staves(),
-            staveHeight: SongEditorStore.staveHeight(),
-            tool: SongEditorStore.tool(),
-            pageSize: SongEditorStore.pageSize(),
             width: 0
-        };
+        }, this.storeState());
     },
 
     /**
@@ -203,13 +199,16 @@ var SongEditor = React.createClass({
         window.removeEventListener("resize", this.updateDimensions);
     },
     _onChange: function() {
-        this.setState({
+        this.setState(this.storeState());
+    },
+    storeState: function() {
+        return {
             pageSize: SongEditorStore.pageSize(),
             selection: SongEditorStore.selection(),
             staveHeight: SongEditorStore.staveHeight(),
             staves: SongEditorStore.staves(),
             tool: SongEditorStore.tool()
-        });
+        };
     },
 
     mixins: [Router.NavigatableMixin] // for this.navigate

@@ -38,9 +38,11 @@ class SongEditorStore extends EventEmitter {
             case "PUT /local/song/show":
                 var activeSong = SessionStore.activeSong();
                 if (activeSong !== _prevActiveSong) {
+                    _dirty = true;
                     this.clear();
                     this.reparse(activeSong);
                     this.emit(CHANGE_EVENT);
+                    this.emit(ANNOTATE_EVENT);
                 }
                 break;
             case "DELETE /local/song/show":
@@ -274,7 +276,8 @@ class SongEditorStore extends EventEmitter {
                                             // TODO: we don't need to update all the lines
                                             _dirty = true;
                                         }
-                                        if (_visualCursor.endMarker && action.postData.step === 1) {
+                                        if (_visualCursor.endMarker &&
+                                                action.postData.step === 1) {
                                             _visualCursor = {
                                                 beat: 0,
                                                 bar: _visualCursor.bar + 1

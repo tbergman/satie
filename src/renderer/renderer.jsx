@@ -404,7 +404,7 @@ var Renderer = React.createClass({
                     "/local/visualCursor".POST({step: 1});
                     break;
             }
-        }
+        };
 
         // Handle other keys
         document.onkeypress = (event) => {

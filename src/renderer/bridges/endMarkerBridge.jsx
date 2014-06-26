@@ -1,5 +1,8 @@
 /**
- * A marker for the end of lines.
+ * A marker for the end of lines and bars.
+ *
+ * It's to help with positioning and other logic.
+ * It is not rendered.
  *
  * @jsx React.DOM
  */
@@ -42,6 +45,21 @@ EndMarkerBridge.prototype.prereqs = [
             return -1;
         },
         "End markers must only exist at the end of a line, document, or unfilled bar"
+    ],
+    [
+        function(cursor, stave, idx) {
+            return stave.body[idx + 1] || stave.body[idx - 1].barline === "double";
+        },
+        function(cursor, stave, idx) {
+            if (stave.body[idx - 1].barline) {
+                stave.body[idx - 1].barline = "double";
+                return "line";
+            } else {
+                var BarlineBridge = require("./barlineBridge.jsx");
+                return BarlineBridge.createBarline(cursor, stave, idx, "double");
+            }
+        },
+        "Double barlines terminate a piece."
     ]
 ];
 

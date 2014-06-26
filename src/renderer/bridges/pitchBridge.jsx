@@ -77,6 +77,8 @@ class PitchBridge extends Bridge {
                 accStrokes={getAccStrokes(this)}
                 accidentals={this._acc}
                 dotted={this.dots}
+                direction={isNaN(this.forceMiddleNoteDirection) ? undefined :
+                    this.forceMiddleNoteDirection}
                 flag={!isBeam && (this.count in countToFlag) && countToFlag[this.count]}
                 hasStem={countToHasStem[this.count]}
                 key={this.key()}
@@ -129,8 +131,8 @@ class PitchBridge extends Bridge {
         lylite.push(str);
     }
 
-    getBeats() {
-        return getBeats(getCount(this), getDots(this), getTuplet(this));
+    getBeats(pc) {
+        return getBeats(getCount(this) || pc, getDots(this), getTuplet(this));
     }
 
     get midiNote() {
@@ -144,7 +146,9 @@ class PitchBridge extends Bridge {
 
 var log2 = Math.log(2);
 
-var getLine = (pitch, cursor) => {
+var getLine = (pitch, cursor, options) => {
+    options = options || {};
+
     if (!cursor) {
         assert(pitch["$PitchBridge_line"] !== undefined,
                 "Must be first annotated in pitchBridge.jsx");
@@ -152,12 +156,22 @@ var getLine = (pitch, cursor) => {
     }
     assert(cursor.clef, "A clef must be inserted before the first note");
     if (pitch.chord) {
-        return pitch.chord.map(p => getLine(p, cursor));
+        return pitch.chord
+            .filter(p => !options.filterTemporary || !p.temporary)
+            .map(p => getLine(p, cursor));
     }
     if (pitch.pitch === "r") {
         return 3;
     }
     return clefOffsets[cursor.clef] + (pitch.octave || 0)*3.5 + pitchOffsets[pitch.pitch];
+};
+
+var getAverageLine = (pitch, cursor) => {
+    var line = getLine(pitch, cursor, {filterTemporary: true});
+    if (!isNaN(line)) {
+        return line;
+    }
+    return line.reduce((memo, l) => memo + l, 0)/line.length;
 };
 
 var getPitch = (line, cursor) => {
@@ -345,6 +359,9 @@ var cannotBeBeamed = function(cursor, stave, idx) {
 };
 
 var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
+
+var noteNames = ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
+    "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
 var beamable = (cursor, stave, idx) => {
     // TODO: give a better algorithm
@@ -536,8 +553,67 @@ PitchBridge.prototype.prereqs = [
             return true;
         },
         "The document must end with a marker."
+    ],
+
+    [
+        function (cursor, stave, idx) {
+            return false;
+        },
+        decideMiddleLineStemDirection,
+        "Middle note directions are set by surrounding notes"
     ]
+        
 ];
+
+function decideMiddleLineStemDirection(cursor, stave, idx) {
+    var thisLine = getAverageLine(this, cursor);
+    if (thisLine !== 3) {
+        this.forceMiddleNoteDirection = false;
+        return true;
+    }
+    var prevLine = (stave.body[idx - 1] && (stave.body[idx - 1].pitch ||
+            stave.body[idx - 1].chord)) ? getAverageLine(stave.body[idx - 1], cursor) : null;
+    var nextLine = (stave.body[idx + 1] && (stave.body[idx + 1].pitch ||
+            stave.body[idx + 1].chord)) ? getAverageLine(stave.body[idx + 1], cursor) : null;
+
+    if ((nextLine !== null) && cursor.beats + this.getBeats() + stave.body[idx + 1]
+            .getBeats(getCount(this)) > cursor.timeSignature.beats) {
+        // Barlines aren't inserted yet.
+        nextLine = null;
+    }
+
+    if (stave.body[idx - 1] && stave.body[idx - 1].forceMiddleNoteDirection) {
+        prevLine -= stave.body[idx - 1].forceMiddleNoteDirection;
+    }
+
+    var check;
+    if (prevLine === null && nextLine === null) {
+        this.forceMiddleNoteDirection = -1;
+    } else if (prevLine === null) {
+        check = nextLine;
+    } else if (nextLine === null) {
+        check = prevLine;
+    } else {
+        var startsAt = cursor.beats; 
+        var endsAt = cursor.beats + this.getBeats();
+
+        if (Math.floor(startsAt) === Math.floor(endsAt)) {
+            check = nextLine;
+        } else if (Math.floor(startsAt) !== startsAt) {
+            // XXX: ASSUMES no divisions mid-beat
+            check = prevLine;
+        } else if (startsAt >= cursor.timeSignature.beats/2) {
+            // XXX: ASSUMES 4/4 !!!
+            check = nextLine;
+        } else {
+            check = prevLine;
+        }
+    }
+
+    this.forceMiddleNoteDirection = (check === undefined || check >= 3) ? -1 : 1;
+
+    return true;
+}
 
 module.exports = PitchBridge;
 module.exports.countToHasStem = countToHasStem;
@@ -548,3 +624,4 @@ module.exports.getCount = getCount;
 module.exports.getLine = getLine;
 module.exports.getPitch = getPitch;
 module.exports.chromaticScale = chromaticScale;
+module.exports.noteNames = noteNames;

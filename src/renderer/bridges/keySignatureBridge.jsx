@@ -99,6 +99,8 @@ var getSharpCount = (keySignature) => {
             return 6;
         } else if (isPitch(k, "c", 1)) {
             return 7;
+        } else if (isPitch(k, "g", 1)) {
+            return 7; // + fx
         }
     } else if (keySignature.mode === MINOR) {
         if (isPitch(k, "a")) {
@@ -117,6 +119,8 @@ var getSharpCount = (keySignature) => {
             return 6;
         } else if (isPitch(k, "a", 1)) {
             return 7;
+        } else if (isPitch(k, "e", 1)) {
+            return 7; // + fx
         }
     } else {
         assert(0, "Not reached");
@@ -142,6 +146,8 @@ var getFlatCount = (keySignature) => {
             return 6;
         } else if (isPitch(k, "c", -1)) {
             return 7;
+        } else if (isPitch(k, "f", -1)) {
+            return 7; // + bbb
         }
     } else if (keySignature.mode === MINOR) {
         if (isPitch(k, "d")) {
@@ -158,6 +164,8 @@ var getFlatCount = (keySignature) => {
             return 6;
         } else if (isPitch(k, "a", -1)) {
             return 7;
+        } else if (isPitch(k, "d", -1)) {
+            return 7; // + bbb
         }
     } else {
         assert(0, "Not reached");

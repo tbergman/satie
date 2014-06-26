@@ -14,6 +14,7 @@ var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var Redirect = require("./util/redirect.jsx");
+var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
 var SongEditor = require("./renderer/songEditor.jsx");
 
@@ -58,6 +59,17 @@ var Ripieno = React.createClass({
                 handler={SongEditor}
                 session={this.props.session}
                 songs={this.props.songs} />
+
+            {/* Scales promo. No login required to view. */}
+            <Location path="/scales/:keyName/:type"
+                handler={ScalesPage}
+                session={this.props.session} />
+            <Location path="/scales/:keyName/:type/*"
+                handler={ScalesPage}
+                session={this.props.session} />
+
+            <Redirect path="/scales" to="/scales/g/major" />
+            <Redirect path="/scales/" to="/scales/g/major" />
 
             <Redirect path="/index.html" to="/" />
 

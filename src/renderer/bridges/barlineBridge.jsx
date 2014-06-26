@@ -21,6 +21,7 @@ class BarlineBridge extends Bridge {
     }
     render() {
         return <Barline
+            barline={this.barline}
             stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : null)}
             key={this.key()}
             x={this.x()}
@@ -34,6 +35,10 @@ class BarlineBridge extends Bridge {
 BarlineBridge.prototype.prereqs = [
     [
         function (cursor, stave, idx) {
+            if (this.barline === "double") {
+                // Whether it actually can be a double barline is checked elsewhere.
+                return true;
+            }
             for (var i = idx - 1; i >= 0 && !stave.body[i].newline; --i) {
                 if (stave.body[i].pitch || stave.body[i].chord) {
                     return true;
@@ -50,6 +55,10 @@ BarlineBridge.prototype.prereqs = [
 
     [
         function(cursor, stave, idx) {
+            if (this.barline === "double") {
+                // Whether it actually can be a double barline is checked elsewhere.
+                return true;
+            }
             for (var i = idx - 1; i >= 0 && !stave.body[i].barline; --i) {
                 if (stave.body[i].pitch || stave.body[i].chord || stave.body[i].newline) {
                     return true;
@@ -71,7 +80,7 @@ BarlineBridge.prototype.prereqs = [
                 (stave.body[idx + 1].newline || stave.body[idx + 1].newpage);
             return true;
         },
-        "Check for newlines"
+        "Barlines followed by newlines do not have any right padding"
     ],
 
     [
@@ -83,22 +92,36 @@ BarlineBridge.prototype.prereqs = [
             return -1;
         },
         "If followed by a newline or underfilled, must be preceeded by and endline marker"
+    ],
+
+    [
+        function(cursor, stave, idx) {
+            return this.barline !== "double" || !stave.body[idx + 2];
+        },
+        function(cursor, stave, idx) {
+            // It's no longer a double barline.
+            this.barline = true;
+            return -1;
+        },
+        "Double barlines only exist at the end of a piece."
     ]
 ];
 
-var createBarline = (cursor, stave, idx) => {
+var createBarline = (cursor, stave, idx, mode) => {
+    mode = mode || true;
+
     if (stave.body[idx].beam) {
         stave.body.splice(idx, 1);
         for (var j = idx; j < stave.body.length && stave.body[j].inBeam; ++j) {
             delete stave.body[j].inBeam;
             if (stave.body[j] === this) {
-                stave.body.splice(j, 0, {barline: true});
+                stave.body.splice(j, 0, {barline: mode});
                 ++j;
             }
         }
         return "line";
     }
-    stave.body.splice(idx, 0, new BarlineBridge({barline: true}));
+    stave.body.splice(idx, 0, new BarlineBridge({barline: mode}));
     return -1;
 };
 

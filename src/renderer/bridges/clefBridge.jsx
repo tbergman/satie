@@ -64,5 +64,30 @@ ClefBridge.prototype.prereqs = [
     ]
 ];
 
+var standardClefs = [
+    {
+        name: "treble",
+        glyph: "gClef",
+        x: -0.4,
+        y: 0.4
+    }, {
+        name: "bass",
+        glyph: "fClef",
+        x: -0.4,
+        y: 0.1
+    }, {
+        name: "tenor",
+        glyph: "cClef",
+        x: -0.4,
+        y: 0.0
+    }, {
+        name: "alto",
+        glyph: "cClef",
+        x: -0.4,
+        y: 0.2
+    }
+];
+
 module.exports = ClefBridge;
 module.exports.createClef = createClef;
+module.exports.standardClefs = standardClefs;

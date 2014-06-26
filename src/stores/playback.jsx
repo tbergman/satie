@@ -48,7 +48,6 @@ class PlaybackStore extends EventEmitter {
                 if (action.resource === "togglePlay") {
                     _playing = !_playing;
                     if (_playing) {
-                        console.log("ST");
                         _timeoutId = window.setTimeout(this.continuePlay.bind(this), 0);
                     } else {
                         window.clearTimeout(_timeoutId);

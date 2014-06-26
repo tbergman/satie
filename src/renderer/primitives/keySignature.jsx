@@ -68,15 +68,19 @@ var KeySignature = React.createClass({
 });
 
 var standardClef = clef => {
-    if (clef.indexOf("gClef") === 0) {
+    if (clef.indexOf("gClef") === 0 || clef.indexOf("treble") !== -1) {
         return "treble";
     }
-    if (clef.indexOf("cClef") === 0) {
+    if (clef.indexOf("cClef") === 0 || clef.indexOf("bass") !== -1) {
         return "bass";
     }
-    if (clef.indexOf("fClef") === 0) {
+    if (clef.indexOf("fClef") === 0 || clef.indexOf("alto") !== -1) {
         return "alto";
     }
+    if (clef.indexOf("tenor") !== -1) {
+        return "tenor";
+    }
+    console.warn("Invalid clef?");
     return "treble";
 };
 

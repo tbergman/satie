@@ -135,7 +135,7 @@
 "set-global-staff-size" return 'SET_STAFF_SIZE'
 "set-default-paper-size" return 'SET_PAPER_SIZE'
 
-[a-zA-Z]+             return 'STRING'
+[a-zA-Z\u266d]+             return 'STRING'
 \"(?:[^"\\]|\\.)*\"   return 'STRING'
 
 "'"                   return 'SINGLE_QUOTE'
