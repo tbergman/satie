@@ -8,7 +8,9 @@ var assert = require("assert");
 
 var Group = require("./primitives/group.jsx");
 
-require("./selectionRect.less");
+if (typeof window !== "undefined") {
+    require("./selectionRect.less");
+}
 
 var SelectionRect = React.createClass({
     render: function() {

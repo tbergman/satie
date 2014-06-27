@@ -4,7 +4,7 @@
 
 var RenderableMixin = {
     render: function() {
-        if (window.useGL) {
+        if (global.useGL) {
             return this.renderGL();
         } else {
             return this.renderSVG();

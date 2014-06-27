@@ -9,13 +9,18 @@ var assert = require("assert");
 var Dispatcher = require("./dispatcher.jsx"); 
 var SessionStore = require("./session.jsx"); // must be registered before PlaybackStore!
 
-var MIDI = require("midi/js/MIDI/Plugin.js");
-MIDI = _(MIDI).extend({
-    audioDetect: require("midi/js/MIDI/AudioDetect.js"),
-    loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
-    Player: require("midi/js/MIDI/Player.js")
-});
-window.MIDI = MIDI;
+var enabled = (typeof window !== "undefined");
+
+var MIDI;
+if (enabled) {
+    MIDI = require("midi/js/MIDI/Plugin.js");
+    MIDI = _(MIDI).extend({
+        audioDetect: require("midi/js/MIDI/AudioDetect.js"),
+        loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
+        Player: require("midi/js/MIDI/Player.js")
+    });
+    global.MIDI = MIDI;
+}
 
 var CHANGE_EVENT = 'change'; 
 
@@ -26,15 +31,17 @@ class PlaybackStore extends EventEmitter {
         _pianoLoaded = false;
         _playing = false;
 
-        MIDI.loadPlugin({
-            soundfontUrl: "/res/soundfonts/",
-            instrument: "acoustic_grand_piano",
-            callback: () => {
-                _pianoLoaded = true;
-                MIDI.setVolume(0, 127);
-                this.emit(CHANGE_EVENT);
-            }
-        });
+        if (enabled) { 
+            MIDI.loadPlugin({
+                soundfontUrl: "/res/soundfonts/",
+                instrument: "acoustic_grand_piano",
+                callback: () => {
+                    _pianoLoaded = true;
+                    MIDI.setVolume(0, 127);
+                    this.emit(CHANGE_EVENT);
+                }
+            });
+        }
     }
 
     handleAction(action) {
@@ -48,9 +55,9 @@ class PlaybackStore extends EventEmitter {
                 if (action.resource === "togglePlay") {
                     _playing = !_playing;
                     if (_playing) {
-                        _timeoutId = window.setTimeout(this.continuePlay.bind(this), 0);
+                        _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                     } else {
-                        window.clearTimeout(_timeoutId);
+                        global.clearTimeout(_timeoutId);
                     }
 
                     this.emit(CHANGE_EVENT);
@@ -71,25 +78,27 @@ class PlaybackStore extends EventEmitter {
 
         // XXX: assuming 4/4 for now 
 
-        for (var i = 0; i < body.length; ++i) {
-            var obj = body[i];
-            foundIdx = foundIdx || (visualCursor.annotatedObj === obj);
-            if (foundIdx && obj.pitch || obj.chord) {
-                var midiNote = obj.midiNote();
-                var beats = obj.getBeats();
-                delay = beats*timePerBeat;
-                MIDI.noteOn(0, midiNote, 127, 0);
-                MIDI.noteOff(0, midiNote, delay);
-                break;
+        if (enabled) { 
+            for (var i = 0; i < body.length; ++i) {
+                var obj = body[i];
+                foundIdx = foundIdx || (visualCursor.annotatedObj === obj);
+                if (foundIdx && obj.pitch || obj.chord) {
+                    var midiNote = obj.midiNote();
+                    var beats = obj.getBeats();
+                    delay = beats*timePerBeat;
+                    MIDI.noteOn(0, midiNote, 127, 0);
+                    MIDI.noteOff(0, midiNote, delay);
+                    break;
+                }
             }
         }
 
         if (delay) {
-            window.setTimeout(() => _playing && "/local/visualCursor".POST({
+            global.setTimeout(() => _playing && "/local/visualCursor".POST({
                 step: 1,
                 skipThroughBars: true
             }), delay*1000 - 10);
-            _timeoutId = window.setTimeout(this.continuePlay.bind(this), delay*1000);
+            _timeoutId = global.setTimeout(this.continuePlay.bind(this), delay*1000);
         } else {
             _playing = false;
             this.emit(CHANGE_EVENT);
@@ -127,8 +136,10 @@ var hit = function(note, velocity, duration) {
     if (note instanceof Array) {
         note.map(n => hit(n, velocity, duration));
     } else {
-        MIDI.noteOn(0, note, velocity || 127, 0);
-        MIDI.noteOff(0, note, duration || 0.5);
+        if (enabled) {
+            MIDI.noteOn(0, note, velocity || 127, 0);
+            MIDI.noteOff(0, note, duration || 0.5);
+        }
     }
 };
 

@@ -33,8 +33,8 @@ var pixmapData = require("./bravura48PixmapData.json");
 
 var BLANK_PROPS = {};
 
-window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-    window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+global.requestAnimationFrame = global.requestAnimationFrame || global.mozRequestAnimationFrame ||
+    global.webkitRequestAnimationFrame || global.msRequestAnimationFrame;
 
 function createComponent(name) {
     var VictoriaComponent = function() {};
@@ -424,8 +424,8 @@ var HelloGL = createComponent(
     paint: function() {
         var gl = this.node.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        window.CS = window.CS || 0;
-        if (window.CS++ < 100) {
+        global.CS = global.CS || 0;
+        if (global.CS++ < 100) {
             gl.bindTexture(gl.TEXTURE_2D, this.node.spiritTexture);
         }
 
@@ -763,8 +763,8 @@ module.exports = React.createClass({
         var canvas = this.getDOMNode();
         var r = canvas.getBoundingClientRect();
 
-        canvas.width = Math.round(canvas.clientWidth*window.devicePixelRatio);
-        canvas.height = Math.round(canvas.clientHeight*window.devicePixelRatio);
+        canvas.width = Math.round(canvas.clientWidth*global.devicePixelRatio);
+        canvas.height = Math.round(canvas.clientHeight*global.devicePixelRatio);
         this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
         this.refs.glContext.fillAvailableSpace();
     },
@@ -778,7 +778,7 @@ module.exports = React.createClass({
     },
 
     componentDidMount: function() {
-        window.addEventListener("resize", this.updateDimensions);
+        global.addEventListener("resize", this.updateDimensions);
         this.updateDimensions();
         this.refs.glContext.paint();
 
@@ -794,7 +794,7 @@ module.exports = React.createClass({
     },
 
     componentWillUnmount: function() {
-        window.removeEventListener("resize", this.updateDimensions);
+        global.removeEventListener("resize", this.updateDimensions);
     }
 });
 module.exports.VG = VG;

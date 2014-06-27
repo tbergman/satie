@@ -9,8 +9,9 @@ var assert = require("assert");
 var Molasses = require("./primitives/molasses/molasses.jsx");
 var Victoria = require("./primitives/victoria/hellogl.jsx");
 
-var useGL = window.location.search.indexOf("engine=gl") !== -1;
-window.useGL = useGL;
+var isBrowser = typeof window !== "undefined";
+var useGL = isBrowser && global.location.search.indexOf("engine=gl") !== -1;
+global.useGL = useGL;
 
 var Barline = require("./primitives/barline.jsx");
 var Header = require("./primitives/header.jsx");
@@ -22,7 +23,7 @@ var renderUtil = require("./util.jsx");
 var RenderEngine = useGL ? Victoria : Molasses;
 var Group = useGL ? Victoria.VG : React.DOM.g;
 
-var PROFILER_ENABLED = window.location.search.indexOf("profile=1") !== -1;
+var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 var getCursor = () => SongEditorStore.cursor();
 

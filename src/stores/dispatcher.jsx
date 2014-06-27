@@ -21,6 +21,9 @@ var ajax = require("../util/ajax.jsx").untrusted;
 var _callbacks = [];
 var _promises = [];
 
+var isBrowser = typeof window !== "undefined";
+var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
+
 /**
  * Add a promise to the queue of callback invocation promises.
  * @param {function} callback The Store's registered callback.
@@ -59,7 +62,8 @@ class Dispatcher {
      * @param  {object} action The data from the action.
      */
     dispatch(action) {
-        console.log(action.description + (action.resource ? " " + action.resource : "") +
+        FLUX_DEBUG && console.log(action.description +
+                (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
                 (action.postData ? [action.postData] : ""), [action]);
         _callbacks.forEach(function(callback) {

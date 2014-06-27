@@ -13,7 +13,10 @@
 var React = require('react');
 var Router = require('react-router-component');
 var _ = require('underscore');
-var saveAs = require("../../third_party/fileSaver/FileSaver.js");
+var saveAs;
+if (typeof window !== "undefined") {
+    saveAs = require("../../third_party/fileSaver/FileSaver.js");
+}
 
 var Renderer = require("./renderer.jsx");
 var Ribbon = require("../ribbon/ribbon.jsx");
@@ -181,7 +184,7 @@ var SongEditor = React.createClass({
     componentDidMount: function() {
         SongEditorStore.addChangeListener(this._onChange);
 
-        window.addEventListener("resize", this.updateDimensions);
+        global.addEventListener("resize", this.updateDimensions);
         this.updateDimensions();
         this._onChange();
     },
@@ -196,7 +199,7 @@ var SongEditor = React.createClass({
         // This might have race-condition issues if we're replacing one
         // song consumer with another!
         ("/local/song/show/_" + this.props.songId).DELETE();
-        window.removeEventListener("resize", this.updateDimensions);
+        global.removeEventListener("resize", this.updateDimensions);
     },
     _onChange: function() {
         this.setState(this.storeState());

@@ -17,9 +17,11 @@ var StaveLines = require("../renderer/primitives/staveLines.jsx");
 var lylite = require("../renderer/lylite.jison").parser;
 var renderUtil = require("../renderer/util.jsx");
 
+var isBrowser = typeof window !== "undefined";
+
 var CHANGE_EVENT = 'change'; 
 var ANNOTATE_EVENT = 'annotate'; 
-var PROFILER_ENABLED = window.location.search.indexOf("profile=1") !== -1;
+var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 ///
 var SessionStore = require("./session.jsx"); // must be registered before SongEditorStore!!!
@@ -424,7 +426,7 @@ class SongEditorStore extends EventEmitter {
 
             NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
 
-            PROFILER_ENABLED && console.log("Annotation efficiency:" +
+            PROFILER_ENABLED && console.log("Annotation efficiency: " +
                     (operations / stave.body.length));
 
             _cursor = cursor;
@@ -782,6 +784,6 @@ var _visualCursor = {
 var _tool = null;
 
 // Exposed for console debugging.
-window.SongEditorStore = module.exports = new SongEditorStore();
+global.SongEditorStore = module.exports = new SongEditorStore();
 module.exports.beamCountIs = beamCountIs;
 module.exports.snapshot = snapshot;

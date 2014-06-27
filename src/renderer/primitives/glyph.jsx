@@ -13,7 +13,9 @@ var Victoria = require("./victoria/hellogl.jsx");
 
 var VGlyph = Victoria.VGlyph;
 
-require("./glyph.less");
+if (typeof window !== "undefined") {
+    require("./glyph.less");
+}
 
 var Glyph = React.createClass({
     propTypes: {
