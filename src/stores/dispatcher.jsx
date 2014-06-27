@@ -44,6 +44,7 @@ var _addPromise = function(callback, payload) {
  */
 var _clearPromises = function() {
     _promises = [];
+    inAction = false;
 };
 
 class Dispatcher {
@@ -62,23 +63,33 @@ class Dispatcher {
      * @param  {object} action The data from the action.
      */
     dispatch(action) {
-        FLUX_DEBUG && console.log(action.description +
+        (FLUX_DEBUG || inAction) && console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
                 (action.postData ? [action.postData] : ""), [action]);
+
+        if (inAction) {
+            assert(false, "Queueing an action during an action is a violation of Flux");
+        }
+
         _callbacks.forEach(function(callback) {
             _addPromise(callback, action);
         });
+
+        this.inAction = true;
         Promise
             .all(_promises)
             .then(_clearPromises)
             .catch((err) => {
+                inAction = false;
                 console.warn("Exception occured in promise", err);
             });
     }
 }
 
 var DispatcherInstance = new Dispatcher();
+
+var inAction = false;
 
 var immediateActions = {
     PUT: true,      // update the server (replace an existing item)

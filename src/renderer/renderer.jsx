@@ -36,8 +36,9 @@ var Renderer = React.createClass({
         var staves = this.props.staves;
 
         var pages = [];
-        var pageStarts = getCursor().pageStarts;
-        var pageLines = getCursor().pageLines;
+        var cursor = getCursor();
+        var pageStarts = cursor.pageStarts;
+        var pageLines = cursor.pageLines;
 
         var pageCount = pageStarts.length;
         for (var i = 1; i < pageCount; ++i) {
@@ -72,6 +73,8 @@ var Renderer = React.createClass({
                 staves={staves}
                 widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
                 viewbox={viewbox}>
+            {/* Using staves is an anti-pattern. Ideally, we would have a getBridges()
+                method in SongEditorStore or something. */}
             {staves.map((stave, idx) => {
                 if (stave.header) {
                     if (page.from) {
@@ -110,7 +113,7 @@ var Renderer = React.createClass({
                 }
             })}
             {!pidx && this.props.tool && this.props.tool.render(
-                    getCursor(),
+                    cursor,
                     this.state.mouse,
                     _pointerData,
                     fontSize)}
@@ -138,8 +141,7 @@ var Renderer = React.createClass({
         </div>)}
         </div>;
 
-        SongEditorStore.handleAction({description: "DELETE /local/song",
-            resource: "dirty"});
+        SongEditorStore.rendererIsClean();
 
         PROFILER_ENABLED && console.timeEnd("render");
         return ret;
@@ -293,8 +295,7 @@ var Renderer = React.createClass({
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.handleAction({description: "PUT /local/song",
-                    resource: "dirty"});
+                SongEditorStore.rendererIsDirty();
             }
             this.setState({
                 selectionRect: {
@@ -303,7 +304,7 @@ var Renderer = React.createClass({
                 }
             });
             if (this.props.selection) {
-                SongEditorStore.handleAction({description: "DELETE /local/selection"});
+                "/local/selection".DELETE();
             }
         }
     },
@@ -322,8 +323,7 @@ var Renderer = React.createClass({
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.handleAction({description: "PUT /local/song",
-                    resource: "dirty"});
+                SongEditorStore.rendererIsDirty();
             }
             this.setState({
                 selectionRect: null
@@ -368,8 +368,10 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
+            // DONT DO THIS: this goes against Flux so we can get our precious 60 Hz.
             SongEditorStore.handleAction({description: "PUT /local/tool", resource: "hide"});
         } else if (fn) {
+            // DONT DO THIS: this goes against Flux so we can get our precious 60 Hz.
             SongEditorStore.handleAction({description: "PUT /local/tool", resource: "preview",
                 postData: {mouseData: data, fn: fn}});
         }

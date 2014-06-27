@@ -783,7 +783,30 @@ var _visualCursor = {
 };
 var _tool = null;
 
+var rendererIsClean = () => {
+    // Mark entire score as clean.
+    // NOT a Flux method.
+    _.defer(() => {
+        _dirty = false;
+    });
+};
+
+var rendererLineIsClean = (line) => {
+    // Mark a given line as clean.
+    // NOT a Flux method.
+    _linesToUpdate[line] = true;
+};
+
+var rendererIsDirty = () => {
+    // Mark entire score as dirty, so everything has to be re-rendered.
+    // NOT a Flux method.
+    _dirty = true;
+};
+
 // Exposed for console debugging.
 global.SongEditorStore = module.exports = new SongEditorStore();
 module.exports.beamCountIs = beamCountIs;
 module.exports.snapshot = snapshot;
+module.exports.rendererIsClean = rendererIsClean;
+module.exports.rendererIsDirty = rendererIsDirty;
+module.exports.rendererLineIsClean = rendererLineIsClean;
