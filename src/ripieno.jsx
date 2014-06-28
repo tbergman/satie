@@ -10,9 +10,13 @@ var Router = require('react-router-component');
 var _ = require('underscore');
 var assert = require('assert');
 
+var AboutPage = require("./landing/about.jsx");
+var BlogPage = require("./landing/blog.jsx");
+var DiscoverPage = require("./landing/discover.jsx");
 var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
+var ProductPage = require("./landing/products.jsx");
 var Redirect = require("./util/redirect.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
@@ -55,6 +59,29 @@ var Ripieno = React.createClass({
                     songs={this.props.songs} /> :
                 <Redirect path="/library*" to="/"
                     onRedirect={(path) => { futurePath = path; }} />}
+
+            {/* See songs from other users. No login required to view. */}
+            <Location path="/discover*"
+                handler={DiscoverPage}
+                session={this.props.session} />
+
+            {/* See songs from other users. No login required to view. */}
+            <Location path="/products"
+                handler={ProductPage}
+                session={this.props.session} />
+
+            {/* The blog. No login required to view. */}
+            <Location path="/blog/:post"
+                handler={BlogPage}
+                session={this.props.session} />
+            <Location path="/blog*"
+                handler={BlogPage}
+                session={this.props.session} />
+
+            {/* The blog. No login required to view. */}
+            <Location path="/about"
+                handler={AboutPage}
+                session={this.props.session} />
 
             {/* View or edit a song. No login required to view. */}
             <Location path="/songs/:songId"
