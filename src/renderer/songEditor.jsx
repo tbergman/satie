@@ -179,7 +179,7 @@ var SongEditor = React.createClass({
     },
 
     componentWillMount: function() {
-        ("/local/song/show/_" + this.props.songId).PUT();
+        _.defer(() => ("/local/song/show/_" + this.props.songId).PUT());
     },
     componentDidMount: function() {
         SongEditorStore.addChangeListener(this._onChange);

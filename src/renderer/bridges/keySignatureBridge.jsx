@@ -5,10 +5,10 @@
 var Bridge = require("./bridge.jsx");
 
 var _ = require("underscore");
+var assert = require("assert");
 
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignature = require("../primitives/keySignature.jsx");
-var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 var MAJOR = "\\major";
 var MINOR = "\\minor";
@@ -73,8 +73,9 @@ KeySignatureBridge.prototype.prereqs = [
 ];
 
 var createKeySignature = (cursor, stave, idx) => {
-    stave.body.splice(idx, 0, new KeySignatureBridge ({
-        keySignature: cursor.prevKeySignature,
+    stave.body.splice(idx, 0, new KeySignatureBridge({
+        keySignature: cursor.prevKeySignature ||
+            {pitch: {pitch: "c"}, acc: 0, mode: MAJOR},
         _annotated: "createKeySignature"
     }));
     return -1;

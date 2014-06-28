@@ -14,6 +14,7 @@ var useGL = isBrowser && global.location.search.indexOf("engine=gl") !== -1;
 global.useGL = useGL;
 
 var Barline = require("./primitives/barline.jsx");
+var Brace = require("./primitives/brace.jsx");
 var Header = require("./primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 var SongEditorStore = require("../stores/songEditor.jsx");
@@ -90,11 +91,16 @@ var Renderer = React.createClass({
                 } else if (stave.body) {
                     return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                         {/* TODO: move to /annotate/ */}
+                        {stave.pianoStaff && <Brace
+                            x={renderUtil.mm(30, fontSize)}
+                            fontSize={fontSize*FONT_SIZE_FACTOR}
+                            idx={idx}
+                            staves={staves} />}
                         {!page.from && <StaveLines
                             key={idx + "StaveLinesMain"}
                             width={renderUtil.mm(this.props.pageSize.width - 45, fontSize)}
                             x={renderUtil.mm(30, fontSize)}
-                            y={stave.body[0]["$Bridge_y"]} />}
+                            y={stave.body[0].y()} />}
 
                         {stave.body.slice(page.from, page.to).reduce((memo, obj) => {
                             if (obj.newline) {

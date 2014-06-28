@@ -12,6 +12,9 @@ var KeySignatureBridge = require("./keySignatureBridge.jsx");
 
 class BarlineBridge extends Bridge {
     annotateImpl(cursor, stave, idx) {
+        if (stave.pianoStaff) {
+            this.onPianoStaff = true;
+        };
         cursor.x += (this.newlineNext ? 0 : 0.3);
         cursor.beats = 0;
         ++cursor.bar;
@@ -24,8 +27,9 @@ class BarlineBridge extends Bridge {
             barline={this.barline}
             stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : null)}
             key={this.key()}
+            height={this.onPianoStaff ? 1.15 : 2/4}
             x={this.x()}
-            y={this.y()} />;
+            y={this.y() + (this.onPianoStaff ? 1.3/2 : 0)} />;
     }
     toLylite(lylite) {
         lylite.push("|");

@@ -43,6 +43,7 @@ var Glyph = React.createClass({
                 x={this.props.x + "em"}
                 y={this.props.y + "em"}
                 fill={this.props.fill}
+                transform={this.props.transform}
                 className="mn_">
             {SMuFL.getGlyphCode(this.props.glyphName)}
         </text>;

@@ -13,7 +13,6 @@ var Bridge = require("../renderer/bridges/bridge.jsx");
 var Header = require("../renderer/primitives/header.jsx");
 var KeySignatureBridge = require("../renderer/bridges/keySignatureBridge.jsx");
 var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
-var StaveLines = require("../renderer/primitives/staveLines.jsx");
 var lylite = require("../renderer/lylite.jison").parser;
 var renderUtil = require("../renderer/util.jsx");
 
@@ -347,8 +346,8 @@ class SongEditorStore extends EventEmitter {
         this.annotate();
     }
 
-    annotate(pointerData, toolFn) {
-        var staves = _staves;
+    annotate(pointerData, toolFn, staves, pageSize) {
+        staves = staves || _staves;
 
         PROFILER_ENABLED && console.time("annotate");
 
@@ -367,7 +366,7 @@ class SongEditorStore extends EventEmitter {
             }
 
             var cursor = this.cursorFromSnapshot(pointerData, stave) ||
-                    this.newCursor(y, _staveHeight, true, _pageSize);
+                    this.newCursor(y, _staveHeight, true, pageSize || _pageSize);
 
             var exitCode;
             var operations = 0;

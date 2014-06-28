@@ -9,6 +9,7 @@
     var PitchBridge = require("./bridges/pitchBridge.jsx");
     var NewlineBridge = require("./bridges/newlineBridge.jsx");
     var NewPageBridge = require("./bridges/newpageBridge.jsx");
+    var TimeSignatureBridge = require("./bridges/timeSignatureBridge.jsx");
 %}
 
 %options flex
@@ -36,6 +37,7 @@
 
 "\new"                return 'NEW'
 "Staff"               return 'NEW_STAFF'
+"PianoStaff"          return 'NEW_PIANO_STAFF'
 
 "\("                  return 'PH_SLUR_OPEN'
 "\)"                  return 'PH_SLUR_CLOSE'
@@ -254,6 +256,10 @@ parts
   | parts header                       { $$ = $1.concat({header: $2}); }
   | parts musicExpr                    { $$ = $1.concat({body: $2}); }
   | parts 'NEW' 'NEW_STAFF' musicExpr  { $$ = $1.concat({body: $4}); }
+  | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
+        {
+            $$ = $1.concat($4);
+        }
   | parts newStaffExpr                 { $$ = $1.concat($2); }
   ;
 
@@ -284,6 +290,18 @@ globalExpr
 anyQuote
   : 'SINGLE_QUOTE'                      {}
   | 'DOUBLE_QUOTE'                      {}
+  ;
+
+pianoStaff
+  : LT LT parts GT GT
+        {
+            $$ = $3;
+            $$.forEach(function(s, idx) {
+                if (idx + 1 !== $$.length) {
+                    s.pianoStaff = true;
+                }
+            }.bind(this));
+        }
   ;
 
 header

@@ -34,7 +34,7 @@ if (typeof window !== "undefined") {
 var Ripieno = React.createClass({
     render: function() {
         // Nothing is rendered until a session has started.
-        if (!this.props.session) {
+        if (!this.props.session.state) {
             return <i />;
         }
 
@@ -53,7 +53,14 @@ var Ripieno = React.createClass({
             {/* Managing and creating new songs */}
             {/* Currenly you can only see your own library */}
             {loggedIn ?
-                <Location path="/library*" 
+                <Location path="/library" 
+                    handler={LibraryPage}
+                    session={this.props.session}
+                    songs={this.props.songs} /> :
+                <Redirect path="/library*" to="/"
+                    onRedirect={(path) => { futurePath = path; }} />}
+            {loggedIn ?
+                <Location path="/library/:subpage" 
                     handler={LibraryPage}
                     session={this.props.session}
                     songs={this.props.songs} /> :

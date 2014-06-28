@@ -60,7 +60,7 @@ var Barline = React.createClass({
                     y={this.props.y - this.props.height - 0.1 + "em"}
                     stroke="#FFFFFF"
                     fill="#FFFFFF"
-                    height={this.props.height*2 + 0.2+ "em"}
+                    height={this.props.height*2 + 0.2 + "em"}
                     width="400em" />]}
             </Group>;
         }
