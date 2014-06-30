@@ -9,7 +9,7 @@
         "underscore": "~1.6.0",
         "react-router-component": "~0.18.3",
         "es6-promise": ">= 1.0.0",
-        "midi": "https://github.com/mudcube/MIDI.js/archive/master.tar.gz"
+        "midi": "http://nettek.ca/midi-0.3.0.tgz"
     },
     "devDependencies": {
         "browserify": "~4.1.5",

@@ -264,6 +264,15 @@ class SongEditorStore extends EventEmitter {
                             var obj = _visualCursor.annotatedObj;
                             for (var i = 0; i < _staves[3].body.length; ++i) {
                                 if (_staves[3].body[i] === obj) {
+                                    if ((!_staves[3].body[i + 1] ||
+                                                _staves[3].body[i + 1].barline === "double") &&
+                                            action.postData.loopThroughEnd) {
+                                        _visualCursor = {
+                                            beat: 0,
+                                            bar: 1
+                                        };
+                                        break;
+                                    }
                                     var cd = _staves[3].body[i].cursorData;
                                     var throughBar = false;
                                     while (_staves[3].body[i += action.postData.step]) {

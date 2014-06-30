@@ -36,8 +36,10 @@ class PlaybackStore extends EventEmitter {
                 MIDI.loadPlugin({
                     soundfontUrl: "/res/soundfonts/",
                     instrument: "acoustic_grand_piano",
+                    soundManagerUrl: "/res/soundmanager2.js",
+                    soundManagerSwfUrl: '/res/soundManager2_swf/',
                     callback: () => {
-                        console.log("LOADED MIDI");
+                        console.log("LOADED MIDI", MIDI.api);
                         _pianoLoaded = true;
                         MIDI.setVolume(0, 127);
                         this.emit(CHANGE_EVENT);
@@ -60,10 +62,14 @@ class PlaybackStore extends EventEmitter {
                     if (_playing) {
                         _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                     } else {
-                        global.clearTimeout(_timeoutId);
+                        (this._remainingActions || []).forEach(m => {
+                            m();
+                        });
                     }
 
                     this.emit(CHANGE_EVENT);
+                } else if (_playing && action.postData && !action.postData.step) {
+                    _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                 }
                 break;
         }
@@ -74,6 +80,21 @@ class PlaybackStore extends EventEmitter {
         var SongEditorStore = require("./songEditor.jsx");
         var MAX_DELAY = 9999999999999999;
         var anyDelay = MAX_DELAY;
+        var delays = [];
+        (this._remainingActions || []).forEach(m => {
+            m();
+        });
+        this._remainingActions = [];
+
+        var aobj = SongEditorStore.visualCursor().annotatedObj;
+        if (aobj && aobj.endMarker) {
+            "/local/visualCursor".POST({
+                step: 1,
+                skipThroughBars: true,
+                loopThroughEnd: true
+            });
+        }
+
         for (var h = 0; h < SongEditorStore.cursorCount(); ++h) {
             if (!SongEditorStore.staves()[h].body) {
                 continue;
@@ -94,28 +115,52 @@ class PlaybackStore extends EventEmitter {
                             visualCursor.bar === obj.cursorData.bar);
                     if (foundIdx && (obj.pitch || obj.chord)) {
                         var beats = obj.getBeats();
-                        delay = beats*timePerBeat;
                         (obj.pitch ? [obj.midiNote()] : obj.midiNote()).map(midiNote => {
-                            MIDI.noteOn(0, midiNote, 127, 0);
-                            MIDI.noteOff(0, midiNote, delay);
+                            var a = MIDI.noteOn(0, midiNote, 127, delay);
+                            MIDI.noteOff(0, midiNote, delay + beats*timePerBeat);
+                            if (MIDI.noteOn === MIDI.Flash.noteOn) {
+                                this._remainingActions.push(() =>
+                                    global.clearInterval(a));
+                            } else {
+                                this._remainingActions.push(() => a.stop());
+                            }
                         });
-                        break;
+                        delay += beats*timePerBeat;
+                        delays.push(delay);
                     }
                 }
             }
-            anyDelay = Math.min(delay, anyDelay);
         }
 
-        if (anyDelay !== MAX_DELAY && anyDelay) {
-            global.setTimeout(() => _playing && "/local/visualCursor".POST({
-                step: 1,
-                skipThroughBars: true
-            }), anyDelay*1000 - 10);
-            _timeoutId = global.setTimeout(this.continuePlay.bind(this), anyDelay*1000);
-        } else {
-            _playing = false;
-            this.emit(CHANGE_EVENT);
-        }
+        var delayMap = [];
+        var lastIdx;
+        delays.forEach((delay, idx) => {
+            if (delayMap[delay]) {
+                return;
+            }
+            delayMap[delay] = true;
+            lastIdx = idx;
+
+            var to = global.setTimeout(() => {
+                if (!_playing) {
+                    return;
+                }
+                if (idx === lastIdx) {
+                    global.setTimeout(() => {
+                        _playing = false;
+                        this.emit(CHANGE_EVENT);
+                    });
+                }
+                "/local/visualCursor".POST({
+                    step: 1,
+                    skipThroughBars: true
+                });
+            }, delay*1000 - 10);
+
+            this._remainingActions.push(() => {
+                window.clearTimeout(to);
+            });
+        });
     }
 
     /** 
