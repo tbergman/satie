@@ -131,7 +131,7 @@ class SongEditorStore extends EventEmitter {
                     assert(false, "Not found");
                 }
                 _dirty = true;
-                _cursor = null;
+                _cursors = null;
                 _(_staves).find(s => s.staveHeight).staveHeight = _staveHeight;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
@@ -141,7 +141,7 @@ class SongEditorStore extends EventEmitter {
             case "PUT /local/pageSize":
                 _pageSize = action.postData;
                 _dirty = true;
-                _cursor = null;
+                _cursors = null;
                 _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
@@ -283,8 +283,17 @@ class SongEditorStore extends EventEmitter {
                                                 beat: 0,
                                                 bar: _visualCursor.bar + 1
                                             };
+                                            break;
                                         } else if (cd.bar !== _staves[3].body[i].cursorData.bar ||
                                                 cd.beat !== _staves[3].body[i].cursorData.beat) {
+
+                                            if (action.postData.skipThroughBars) {
+                                                while (_staves[3].body[i + 1] &&
+                                                        (_staves[3].body[i].endMarker ||
+                                                        _staves[3].body[i].barline)) {
+                                                    ++i;
+                                                }
+                                            }
                                             _visualCursor = JSON.parse(JSON.stringify(
                                                 _staves[3].body[i].cursorData));
 
@@ -295,11 +304,6 @@ class SongEditorStore extends EventEmitter {
                                                 } else {
                                                     _visualCursor.beat = 0;
                                                     _visualCursor.bar++;
-                                                }
-
-                                                if (action.postData.skipThroughBars) {
-                                                    throughBar = false;
-                                                    continue;
                                                 }
                                             }
                                             break;
@@ -351,9 +355,14 @@ class SongEditorStore extends EventEmitter {
 
         PROFILER_ENABLED && console.time("annotate");
 
+        var vcStave = 0;
+        var vcBar = 0;
+        var vcBeat = 0;
+
         if (!pointerData) {
             _visualCursor.annotatedObj = null;
             _visualCursor.annotatedLine = null;
+            _cursors = [];
         }
 
         var y = 0;
@@ -364,7 +373,7 @@ class SongEditorStore extends EventEmitter {
             } else if (!stave.body) {
                 return true;
             }
-
+        
             var cursor = this.cursorFromSnapshot(pointerData, stave) ||
                     this.newCursor(y, _staveHeight, true, pageSize || _pageSize);
 
@@ -384,8 +393,15 @@ class SongEditorStore extends EventEmitter {
                         (((stave.body[i].pitch || stave.body[i].chord) &&
                             !_visualCursor.endMarker) || (_visualCursor.endMarker &&
                             stave.body[i].endMarker))) {
-                    _visualCursor.annotatedObj = stave.body[i];
-                    _visualCursor.annotatedLine = cursor.line;
+
+                    if (vcStave === sidx || cursor.bar > vcBar || (vcBar === cursor.bar &&
+                            cursor.beats > vcBeat)) {
+                        vcStave = sidx;
+                        vcBar = cursor.bar;
+                        vcBeat = cursor.beats;
+                        _visualCursor.annotatedObj = stave.body[i];
+                        _visualCursor.annotatedLine = cursor.line;
+                    }
                 }
 
                 stave.body[i].cursorData = {
@@ -428,7 +444,8 @@ class SongEditorStore extends EventEmitter {
             PROFILER_ENABLED && console.log("Annotation efficiency: " +
                     (operations / stave.body.length));
 
-            _cursor = cursor;
+            _cursors.length = sidx;
+            _cursors[sidx] = cursor;
             y += 2.25;
             return true;
         })) { /* pass */ }
@@ -498,8 +515,16 @@ class SongEditorStore extends EventEmitter {
         return i + 1;
     }
     newCursor(start, fontSize, first, pageSize) {
+        // TODO: fontSize logic belongs in render.jsx
+        // XXX: Indent should be 30. See also renderer.jsx
+        var noMargin = false;
+        if (typeof window !== "undefined" &&
+                window.location.href.indexOf("/scales/") !== -1) {
+            // XXX: HACK!!!
+            noMargin = true;
+        }
         var initialX = renderUtil.mm(15, fontSize) + 1/4;
-        var firstX = renderUtil.mm(first ? 30 : 15, fontSize) + 1/4;
+        var firstX = renderUtil.mm(first && !noMargin ? 30 : 15, fontSize) + 1/4;
         return {
             accidentals: {},
             bar: 1,
@@ -549,63 +574,69 @@ class SongEditorStore extends EventEmitter {
         var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
 
         // The selection is guaranteed to be in song order.
-        var lastIdx = 0;
-        var body = _staves[3].body; // XXX: Robustness
-        var accidentals = null;
+        for (var staveIdx = 0; staveIdx < _staves.length; ++staveIdx) {
+            var lastIdx = 0;
+            var body = _staves[staveIdx].body;
+            var accidentals = null;
 
-        _selection.forEach(item => {
-            for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
-                if (body[i].keySignature) {
-                    accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
-                }
+            if (!body) {
+                continue;
             }
 
-            assert(body[i] === item, "The selection must be in song order.");
-            assert(accidentals, "A key signature must preceed any note.");
-
-            if (!item.pitch && !item.chord) {
-                return;
-            }
-
-            // For "inKey":
-            var noteToNum = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
-            var numToNote = "cdefgab";
-
-            // For "chromatic":
-            var noteToVal = PitchBridge.chromaticScale;
-
-            (item.pitch ? [item] : item.chord).forEach(note => {
-                if (how.mode === "inKey") {
-                    var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
-                    var newNote = noteToNum[note.pitch] + how.letters;
-
-                    note.pitch = numToNote[(noteToNum[note.pitch] + how.letters + 7*7)%7];
-
-                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
-
-                    note.acc = accOffset + (accidentals[note.pitch] || 0);
-
-                    if (!note.acc) {
-                        delete note.acc;
-                    }
-                } else if (how.mode === "chromatic") {
-                    var letters = parseInt(how.interval[1]) - 1;
-                    var semitonesNeeded = parseInt(how.interval.split("_")[1]);
-
-                    var newNote = noteToNum[note.pitch] + letters;
-                    var newPitch = numToNote[(newNote + 7*7)%7];
-                    var semitonesDone = (noteToVal[newPitch] - noteToVal[note.pitch] + 12*12)%12;
-
-                    note.pitch = newPitch;
-                    note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
-                    note.acc = semitonesNeeded - semitonesDone + note.acc;
-                    if (!note.acc) {
-                        delete note.acc;
+            _selection.forEach(item => {
+                for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
+                    if (body[i].keySignature) {
+                        accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
                     }
                 }
+
+                assert(body[i] === item, "The selection must be in song order.");
+                assert(accidentals, "A key signature must preceed any note.");
+
+                if (!item.pitch && !item.chord) {
+                    return;
+                }
+
+                // For "inKey":
+                var noteToNum = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
+                var numToNote = "cdefgab";
+
+                // For "chromatic":
+                var noteToVal = PitchBridge.chromaticScale;
+
+                (item.pitch ? [item] : item.chord).forEach(note => {
+                    if (how.mode === "inKey") {
+                        var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
+                        var newNote = noteToNum[note.pitch] + how.letters;
+
+                        note.pitch = numToNote[(noteToNum[note.pitch] + how.letters + 7*7)%7];
+
+                        note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
+
+                        note.acc = accOffset + (accidentals[note.pitch] || 0);
+
+                        if (!note.acc) {
+                            delete note.acc;
+                        }
+                    } else if (how.mode === "chromatic") {
+                        var letters = parseInt(how.interval[1]) - 1;
+                        var semitonesNeeded = parseInt(how.interval.split("_")[1]);
+
+                        var newNote = noteToNum[note.pitch] + letters;
+                        var newPitch = numToNote[(newNote + 7*7)%7];
+                        var semitonesDone = (noteToVal[newPitch] - noteToVal[note.pitch] + 12*12)%12;
+
+                        note.pitch = newPitch;
+                        note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
+                        note.acc = semitonesNeeded - semitonesDone + note.acc;
+                        if (!note.acc) {
+                            delete note.acc;
+                        }
+                    }
+                });
+                delete item.selected;
             });
-            delete item.selected;
-        });
+        }
         _dirty = true;
         _selection = null;
         this.annotate();
@@ -706,8 +737,21 @@ class SongEditorStore extends EventEmitter {
     get dirty() {
         return _dirty;
     }
-    get cursor() {
-        return _cursor;
+    cursor(idx) {
+        if (idx === undefined) {
+            console.warn("Calling cursor without an index is deprecated.");
+            console.trace();
+        }
+        if (idx === undefined || idx.first) {
+            var idx = 0;
+            while (!_cursors[idx] && idx < _cursors.length) {
+                ++idx;
+            }
+        }
+        return _cursors[idx];
+    }
+    get cursorCount() {
+        return _cursors.length;
     }
     get visualCursor() {
         return _visualCursor;
@@ -766,7 +810,7 @@ var beamCountIs = (beamCount) => {
 };
 
 var _beamBeatCount = 0;
-var _cursor = null;
+var _cursors = null;
 var _cleanup = null;
 var _dirty = false;
 var _linesToUpdate = {};

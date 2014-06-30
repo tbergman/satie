@@ -80,10 +80,10 @@ var Clef = React.createClass({
     },
     render: function() {
         return <Glyph
-            x={this.props.x}
+            x={this.props.x - (this.props.isChange ? 0.2 : 0)}
             y={this.props.y - (this.getLine() - 3)/4}
             fill={this.props.stroke}
-            glyphName={this.getSign()} />;
+            glyphName={this.getSign() + (this.props.isChange ? "Change" : "")} />;
     },
 
     clefToLine: clefToLine,

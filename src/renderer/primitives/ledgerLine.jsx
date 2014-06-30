@@ -30,8 +30,8 @@ var LedgerLine = React.createClass({
         var ne = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var xOffset = (ne[0] - sw[0])/4;
         return <Line
-            x1={this.props.x - 0.1}
-            x2={this.props.x + xOffset + 0.1}
+            x1={this.props.x - 0.08}
+            x2={this.props.x + xOffset + 0.08}
             y1={this.props.y - (this.props.line - 3)/4}
             y2={this.props.y - (this.props.line - 3)/4}
             stroke="#000000"

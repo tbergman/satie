@@ -26,7 +26,8 @@ var Group = useGL ? Victoria.VG : React.DOM.g;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-var getCursor = () => SongEditorStore.cursor();
+var getCursor = (idx) => SongEditorStore.cursor(idx);
+var getCursorCount = () => SongEditorStore.cursorCount();
 
 var Renderer = React.createClass({
     render: function() {
@@ -37,9 +38,20 @@ var Renderer = React.createClass({
         var staves = this.props.staves;
 
         var pages = [];
-        var cursor = getCursor();
+        var firstStaveIdx = 0;
+        while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
+            ++firstStaveIdx;
+        }
+        var cursor = getCursor(firstStaveIdx);
         var pageStarts = cursor.pageStarts;
         var pageLines = cursor.pageLines;
+
+        var noMargin = false;
+        if (typeof window !== "undefined" &&
+                window.location.href.indexOf("/scales/") !== -1) {
+            // XXX: HACK!!!
+            noMargin = true;
+        }
 
         var pageCount = pageStarts.length;
         for (var i = 1; i < pageCount; ++i) {
@@ -47,13 +59,15 @@ var Renderer = React.createClass({
         }
         pages.push({
             from: pageStarts[pageCount - 1],
-            to: staves[3].body.length, // XXX: Robustness
+            to: staves[firstStaveIdx].body.length,
             idx: pageCount - 1
         });
 
         var viewbox = "0 0 " +
             Math.round(85000*(this.props.pageSize.width/215.9)) + " " +
             Math.round(110000*(this.props.pageSize.height/279.4));
+
+        var isPianoStaff = staves[3].pianoStaff;
 
         var ret = <div className="workspace" style={{top: this.props.top}}>
             {pages.map((page, pidx) => <div className="page" 
@@ -92,14 +106,14 @@ var Renderer = React.createClass({
                     return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                         {/* TODO: move to /annotate/ */}
                         {stave.pianoStaff && <Brace
-                            x={renderUtil.mm(30, fontSize)}
+                            x={renderUtil.mm(noMargin ? 15 : 30, fontSize)}
                             fontSize={fontSize*FONT_SIZE_FACTOR}
                             idx={idx}
                             staves={staves} />}
                         {!page.from && <StaveLines
                             key={idx + "StaveLinesMain"}
-                            width={renderUtil.mm(this.props.pageSize.width - 45, fontSize)}
-                            x={renderUtil.mm(30, fontSize)}
+                            width={renderUtil.mm(this.props.pageSize.width - (noMargin ? 30 : 45), fontSize)}
+                            x={renderUtil.mm(noMargin ? 15 : 30, fontSize)}
                             y={stave.body[0].y()} />}
 
                         {stave.body.slice(page.from, page.to).reduce((memo, obj) => {
@@ -118,11 +132,13 @@ var Renderer = React.createClass({
                     return null;
                 }
             })}
-            {!pidx && this.props.tool && this.props.tool.render(
-                    cursor,
+            {!pidx && this.props.tool && staves.map((stave,idx) => stave.body &&
+                this.props.tool.render(
+                    getCursor(idx),
                     this.state.mouse,
                     _pointerData,
-                    fontSize)}
+                    fontSize,
+                    idx))}
             {this.state.selectionRect && <SelectionRect
                 fontSize={fontSize}
                 x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
@@ -136,9 +152,10 @@ var Renderer = React.createClass({
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Barline key="visualCursor"
                         className="visualCursor"
-                        height={2/4 + 0.1}
+                        height={2/4 + 0.1 + (isPianoStaff ? 1.2 : 0)}
                         x={this.state.visualCursor.annotatedObj["$Bridge_x"] - 0.1}
-                        y={this.state.visualCursor.annotatedObj["$Bridge_y"]}
+                        y={this.state.visualCursor.annotatedObj["$Bridge_y"] +
+                            (isPianoStaff ? 1.15 : 0)}
                         stroke={"#008CFF"}
                         strokeWidth={0.04} />
                 </Group>}
@@ -154,8 +171,6 @@ var Renderer = React.createClass({
     },
 
     _getPointerData: function(mouse) {
-        var cursor = getCursor();
-
         var dynY = mouse.y;
         var dynX = mouse.x;
         var dynLine = 3;
@@ -163,53 +178,60 @@ var Renderer = React.createClass({
         var foundIdx;
         var musicLine;
         var cursorData;
-        for (var i = cursor.pageLines[mouse.page]; i < cursor.lines.length; ++i) {
-            if (mouse.y < cursor.lines[i].y + 8/4) {
-                musicLine = i;
-                dynY = cursor.lines[i].y;
-                dynLine = Math.round((cursor.lines[i].y - mouse.y)/0.125)/2 + 3;
-                if (dynLine > 8.5 || dynLine < -2.5) {
-                    return <Group />;
-                }
-                var body = this.props.staves[3].body; // XXX: Make more robust!
-                for (var j = cursor.pageStarts[mouse.page];
-                        j < body.length && !body[i].newpage; ++j) {
-                    var item = body[j];
-                    cursorData = item.cursorData;
-                    if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
-                        if ((item.keySignature ||
-                                    item.timeSignature ||
-                                    item.clef ||
-                                    item.pitch ||
-                                    item.chord) &&
-                                Math.abs(dynX - item["$Bridge_x"]) < 0.27 +
-                                    (item.dots ? item.dots*0.2 : 0)) {
-                            dynX = item["$Bridge_x"];
-                            foundIdx = j;
-                            foundObj = item;
-                            break;
-                        } else if (dynX < item["$Bridge_x"] || j === body.length - 1) {
-                            if (dynX < item["$Bridge_x"]) {
-                                j -= 1;
-                            }
-                            _pointerData = {
-                                mouse: mouse,
-                                line: dynLine,
-                                idx: j,
-                                musicLine: musicLine,
-                                cursorData: item.cursorData,
-                                obj: {
-                                    placeholder: true,
-                                    idx: j,
-                                    item: item,
-                                    musicLine: musicLine
+        for (var h = 0; h < getCursorCount(); ++h) {
+            var cursor = getCursor(h);
+            if (!cursor) {
+                continue;
+            }
+            for (var i = cursor.pageLines[mouse.page]; i < cursor.lines.length; ++i) {
+                if (mouse.y < cursor.lines[i].y + 8/4) {
+                    musicLine = i;
+                    dynY = cursor.lines[i].y;
+                    dynLine = Math.round((cursor.lines[i].y - mouse.y)/0.125)/2 + 3;
+                    if (dynLine > 8.5 || dynLine < -2.5) {
+                        break;
+                    }
+                    var body = this.props.staves[h].body; // XXX: Make more robust!
+                    for (var j = cursor.pageStarts[mouse.page];
+                            j < body.length && !body[i].newpage; ++j) {
+                        var item = body[j];
+                        cursorData = item.cursorData;
+                        if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
+                            if ((item.keySignature ||
+                                        item.timeSignature ||
+                                        item.clef ||
+                                        item.pitch ||
+                                        item.chord) &&
+                                    Math.abs(dynX - item["$Bridge_x"]) < 0.27 +
+                                        (item.dots ? item.dots*0.2 : 0)) {
+                                dynX = item["$Bridge_x"];
+                                foundIdx = j;
+                                foundObj = item;
+                                break;
+                            } else if (dynX < item["$Bridge_x"] ||
+                                    (j === body.length - 1 && h === getCursorCount() - 1)) {
+                                if (dynX < item["$Bridge_x"]) {
+                                    j -= 1;
                                 }
-                            };
-                            return _pointerData;
+                                _pointerData = {
+                                    mouse: mouse,
+                                    line: dynLine,
+                                    idx: j,
+                                    musicLine: musicLine,
+                                    cursorData: item.cursorData,
+                                    obj: {
+                                        placeholder: true,
+                                        idx: j,
+                                        item: item,
+                                        musicLine: musicLine
+                                    }
+                                };
+                                return _pointerData;
+                            }
                         }
                     }
+                    break;
                 }
-                break;
             }
         }
         _pointerData = {
@@ -224,18 +246,23 @@ var Renderer = React.createClass({
         return _pointerData;
     },
     _elementsInBBox: function(box, mouse) {
-        var cursor = getCursor();
         var ret = [];
 
-        var body = this.props.staves[3].body; // XXX: Make more robust!
-        var inRange = (min, val, max) => min < val && val < max;
+        for (var h = 0; h < getCursorCount(); ++h) {
+            var cursor = getCursor(h);
+            if (!cursor) {
+                continue;
+            }
+            var body = this.props.staves[3].body; // XXX: Make more robust!
+            var inRange = (min, val, max) => min < val && val < max;
 
-        for (var i = cursor.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
-            var item = body[i];
-            if (inRange(box.top - 1, item["$Bridge_y"],
-                        box.bottom + 1) &&
-                    inRange(box.left, item["$Bridge_x"], box.right)) {
-                ret.push(item);
+            for (var i = cursor.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
+                var item = body[i];
+                if (inRange(box.top - 1, item["$Bridge_y"],
+                            box.bottom + 1) &&
+                        inRange(box.left, item["$Bridge_x"], box.right)) {
+                    ret.push(item);
+                }
             }
         }
 

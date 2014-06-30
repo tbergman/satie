@@ -184,6 +184,12 @@ var removeNextNewline = (cursor, stave, idx) => {
  * comfortably.
  */
 var semiJustify = (cursor, stave, idx) => {
+    var fullJustify = false;
+    if (typeof window !== "undefined" &&
+            window.location.href.indexOf("/scales/") !== -1) {
+        // XXX: HACK!!!
+        fullJustify = true;
+    }
     var n = 0;
     for (var i = idx; i >= 0 && !stave.body[i].newline; --i) {
         if (stave.body[i].pitch || stave.body[i].chord) {
@@ -191,11 +197,16 @@ var semiJustify = (cursor, stave, idx) => {
         }
     }
     if (n) {
-        var lw = cursor.maxX - 3 - stave.body[idx]["$Bridge_x"];
+        var lw = cursor.maxX - 3 - stave.body[idx].x();
         var nw = lw/n;
-        var weight = renderUtil.sigmoid((nw - cursor.maxX/2)/20)*2/3;
-        nw = (1 - weight)*nw;
-        lw = nw * n;
+        if (fullJustify) {
+            lw = cursor.maxX - stave.body[idx].x();
+            nw = lw/n;
+        } else {
+            var weight = renderUtil.sigmoid((nw - cursor.maxX/2)/20)*2/3;
+            nw = (1 - weight)*nw;
+            lw = nw * n;
+        }
         for (var i = idx; i >= 0 && !stave.body[i].newline; --i) {
             if (stave.body[i].pitch || stave.body[i].chord) {
                 lw -= nw;

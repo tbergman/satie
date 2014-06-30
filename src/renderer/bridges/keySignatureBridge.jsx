@@ -32,7 +32,7 @@ class KeySignatureBridge extends Bridge {
         }
         var c = getSharpCount(this.keySignature) || getFlatCount(this.keySignature);
         if (c) {
-            cursor.x += this._annotatedSpacing/4 + 0.4*c;
+            cursor.x += this._annotatedSpacing/4 + 0.26*c;
         }
         cursor.keySignature = this.keySignature;
         cursor.accidentals = getAccidentals(cursor.keySignature);

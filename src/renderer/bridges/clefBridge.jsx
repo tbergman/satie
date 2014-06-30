@@ -8,6 +8,7 @@ var Clef = require("../primitives/clef.jsx");
 
 class ClefBridge extends Bridge {
     annotateImpl(cursor, stave, idx) {
+        this._isChange = cursor.clef;
         this._clef = cursor.clef = (this.clef === "detect") ? cursor.prevClef : this.clef;
         var next = this.next(stave, idx);
         if (next.pitch || next.chord) {
@@ -20,8 +21,15 @@ class ClefBridge extends Bridge {
         } else {
             this._annotatedSpacing = 1.25;
         }
-        cursor.x += 0.6 + this._annotatedSpacing/4;
+        if (this._isChange) {
+            cursor.x += -0.01 + this._annotatedSpacing/4;
+        } else {
+            cursor.x += 0.6 + this._annotatedSpacing/4;
+        }
         return true;
+    }
+    visible() {
+        return false !== this.isVisible;
     }
     render() {
         return <Clef
@@ -29,6 +37,7 @@ class ClefBridge extends Bridge {
             stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black")}
             x={this.x()} 
             y={this.y()}
+            isChange={this._isChange}
             clef={this._clef} />;
     }
     toLylite(lylite) {
@@ -40,6 +49,11 @@ class ClefBridge extends Bridge {
 }
 
 var clefIsNotRedundant = function(cursor) {
+    // XXX HACK {
+    if (false === this.isVisible) {
+        return true;
+    }
+    // }
     return this.temporary ||
         cursor.clef !== this.clef ||
         this.clef === "detect";
@@ -61,6 +75,15 @@ ClefBridge.prototype.prereqs = [
             return -1;
         },
         "A clef must not be redundant."
+    ],
+    [
+        function(cursor) {
+            return !cursor.timeSignature || cursor.beats < cursor.timeSignature.beats; },
+        function(cursor, stave, idx) {
+            var BarlineBridge = require("./barlineBridge.jsx");
+            return BarlineBridge.createBarline(cursor, stave, idx);
+        },
+        "Barlines should be before clefs when either is possible"
     ]
 ];
 
