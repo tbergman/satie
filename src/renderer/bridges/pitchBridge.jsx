@@ -39,8 +39,11 @@ class PitchBridge extends Bridge {
         }
         this.setX(cursor.x);
         this._fontSize = cursor.fontSize;
-        cursor.x += this.getWidth(cursor);
         this._acc = getAccidentals(this, cursor);
+        (this.chord || [this.pitch]).map((pitch) => {
+            cursor.accidentals[pitch.pitch] = this._acc;
+        });
+        cursor.x += this.getWidth(cursor);
         return true;
     }
     _handleTie(cursor, stave, idx) {
@@ -94,8 +97,19 @@ class PitchBridge extends Bridge {
         </Note>;
     }
 
+    getAccWidth(cursor) {
+        var accWidth = 0;
+        var acc = getAccidentals(this, cursor);
+        if (acc) {
+            var acc = (acc instanceof Array) ? acc : [acc];
+            var max = acc.reduce((memo, t) => Math.max(Math.abs(t||0), memo), 0);
+            var accWidth = max*0.15;
+        }
+        return Math.max(0, accWidth - 0.3);
+    }
+
     getWidth(cursor) {
-        return 0.59 + (this.annotatedExtraWidth || 0);
+        return 0.62 + (this.annotatedExtraWidth || 0);
     }
 
     _lyPitch(pitch) {
@@ -141,6 +155,16 @@ class PitchBridge extends Bridge {
             return base + (this.octave || 0)*12 + (this.acc || 0);
         }
         return this.chord.map(m => this.midiNote.call(m));
+    }
+
+    containsAccidental(cursor) {
+        var nonAccidentals = KeySignatureBridge.getAccidentals(cursor.keySignature);
+        var pitches = this.chord || [this];
+        for (var i = 0; i < pitches.length; ++i) {
+            if (!nonAccidentals[pitches[i].pitch] && pitches[i].acc) {
+                return true;
+            }
+        }
     }
 }
 
@@ -280,7 +304,6 @@ var getAccidentals = (pitch, cursor) => {
         return 0; // natural
     }
 
-    cursor.accidentals[pitch.pitch] = actual;
     return actual;
 };
 

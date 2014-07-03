@@ -15,7 +15,7 @@ class BarlineBridge extends Bridge {
         if (stave.pianoStaff) {
             this.onPianoStaff = true;
         };
-        cursor.x += (this.newlineNext ? 0 : 0.3);
+        cursor.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
         cursor.beats = 0;
         ++cursor.bar;
         cursor.renderKey_eInBar = {};
@@ -85,6 +85,21 @@ BarlineBridge.prototype.prereqs = [
             return true;
         },
         "Barlines followed by newlines do not have any right padding"
+    ],
+
+    [
+        function() { return false; },
+        function(cursor, stave, idx) {
+            var next = this.next(stave, idx);
+            var PitchBridge = require("./pitchBridge.jsx");
+            if (next instanceof PitchBridge && next.containsAccidental(cursor)) {
+                this.annotatedAccidentalSpacing = 0.4;
+            } else {
+                this.annotatedAccidentalSpacing = 0;
+            }
+            return true;
+        },
+        "Barlines followed by newlines have additional padding"
     ],
 
     [
