@@ -17,9 +17,9 @@ var isPitch = (k, name, acc) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
 
 class KeySignatureBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
-        this._clef = cursor.clef;
-        var next = this.next(stave, idx);
+    annotateImpl(ctx) {
+        this._clef = ctx.clef;
+        var next = ctx.next();
         if (next.pitch || next.chord) {
             if (next.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
@@ -32,10 +32,10 @@ class KeySignatureBridge extends Bridge {
         }
         var c = getSharpCount(this.keySignature) || getFlatCount(this.keySignature);
         if (c) {
-            cursor.x += this._annotatedSpacing/4 + 0.26*c;
+            ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
-        cursor.keySignature = this.keySignature;
-        cursor.accidentals = getAccidentals(cursor.keySignature);
+        ctx.keySignature = this.keySignature;
+        ctx.accidentals = getAccidentals(ctx.keySignature);
         return true;
     }
     render() {
@@ -65,16 +65,16 @@ class KeySignatureBridge extends Bridge {
 
 KeySignatureBridge.prototype.prereqs = [
     [
-        function (cursor) {
-            return cursor.clef; },
+        function (ctx) {
+            return ctx.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ]
 ];
 
-var createKeySignature = (cursor, stave, idx) => {
-    stave.body.splice(idx, 0, new KeySignatureBridge({
-        keySignature: cursor.prevKeySignature ||
+var createKeySignature = (ctx) => {
+    ctx.body.splice(ctx.idx, 0, new KeySignatureBridge({
+        keySignature: ctx.prevKeySignature ||
             {pitch: {pitch: "c"}, acc: 0, mode: MAJOR},
         _annotated: "createKeySignature"
     }));

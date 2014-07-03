@@ -6,9 +6,9 @@
  * In particular, classes which extend Bridge provide three key items:
  *   - prereqs: an array of prerequisites. Each prerequisite is an array with
  *      the following:
- *        1. a function which accepts a cursor and returns true if the
+ *        1. a function which accepts a ctx and returns true if the
  *           precondition is satisfied and false otherwise.
- *        2. a function which accepts a cursor, stave, and idx and performs
+ *        2. a function which accepts a ctx, stave, and idx and performs
  *           actions which make the precondition true. The exit code is one
  *           of the following:
  *
@@ -45,26 +45,26 @@ var assert = require("assert");
 var _ = require("underscore");
 
 class Bridge {
-    annotate(cursor, stave, idx) {
+    annotate(ctx) {
         if (!this.inBeam) {
-            this.setX(cursor.x);
-            this.setY(cursor.y);
+            this.setX(ctx.x);
+            this.setY(ctx.y);
         }
         for (var i = 0; i < this.prereqs.length; ++i) {
-            if (!this.prereqs[i][0 /* condition */].call(this, cursor, stave, idx)) {
-                var exitCode = this.prereqs[i][1 /* correction */].call(this, cursor, stave, idx);
+            if (!this.prereqs[i][0 /* condition */].call(this, ctx)) {
+                var exitCode = this.prereqs[i][1 /* correction */].call(this, ctx);
                 if (exitCode !== true) {
                     return exitCode;
                 }
             }
         }
 
-        var ret = this.annotateImpl(cursor, stave, idx);
+        var ret = this.annotateImpl(ctx);
         if (ret !== true) {
             return ret;
         }
 
-        this._key = this._keyForCursor(cursor);
+        this._key = this._generateKey(ctx);
         return ret;
     }
 
@@ -78,17 +78,17 @@ class Bridge {
         this.name = Object.getPrototypeOf(this).constructor.name;
     }
 
-    _keyForCursor(cursor) {
-        cursor.renderKey_eInBar = cursor.renderKey_eInBar || {};
-        cursor.renderKey_eInBar[this.name] = cursor.renderKey_eInBar[this.name] + 1 || 1;
-        return cursor.bar + "_" + cursor.renderKey_eInBar[this.name] + this.name;
+    _generateKey(ctx) {
+        ctx.renderKey_eInBar = ctx.renderKey_eInBar || {};
+        ctx.renderKey_eInBar[this.name] = ctx.renderKey_eInBar[this.name] + 1 || 1;
+        return ctx.bar + "_" + ctx.renderKey_eInBar[this.name] + this.name;
     }
 
     key() {
         return this._key;
     }
 
-    annotateImpl(cursor, stave, idx) {
+    annotateImpl(ctx) {
         assert(false, "Not implemented");
     }
     visible() {
@@ -98,32 +98,6 @@ class Bridge {
         assert(false, "Not implemented");
     }
 
-    // Convienience
-    nextNote(stave, idx, inBar) {
-        var ret = _(stave.body.slice(idx + 1))
-            .find(p => p.pitch || p.chord || (p.barline && inBar));
-        if (ret && ret.barline) {
-            return false;
-        }
-        return ret;
-    }
-    prevNote(stave, idx) {
-        return _(stave.body.reverse().slice(idx + 1)).find(p => p.pitch || p.chord);
-    }
-    next(stave, idx) {
-        var ret = stave.body[idx + 1] || {};
-        if (ret.beam) {
-            return this.next(stave, idx + 1);
-        }
-        return ret;
-    }
-    prev(stave, idx) {
-        var ret = stave.body[idx - 1] || {};
-        if (ret.beam) {
-            return this.prev(stave, idx - 1);
-        }
-        return ret;
-    }
     x() {
         return this._x;
     }

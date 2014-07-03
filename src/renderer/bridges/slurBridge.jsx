@@ -12,16 +12,16 @@ var Slur = require("./primitives/slur.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 class SlurGroupBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
+    annotateImpl(ctx) {
         var n = [];
         this._beam = undefined;
-        this._fontSize = cursor.fontSize;
-        for (var i = idx; i < stave.body.length && n.length < this.slur; ++i) {
-            if (stave.body[i].beam) {
-                this._beam = stave.body[i];
+        this._fontSize = ctx.fontSize;
+        for (var i = ctx.idx; i < ctx.body.length && n.length < this.slur; ++i) {
+            if (ctx.body[i].beam) {
+                this._beam = ctx.body[i];
             }
-            if (stave.body[i].pitch || stave.body[i].chord) {
-                n.push(stave.body[i]);
+            if (ctx.body[i].pitch || ctx.body[i].chord) {
+                n.push(ctx.body[i]);
             }
         }
         this._notes = n;
@@ -74,19 +74,19 @@ class SlurGroupBridge extends Bridge {
 
 SlurGroupBridge.prototype.prereqs = [
     [
-        function(cursor) { return cursor.clef; },
+        function(ctx) { return ctx.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ],
 
     [
-        function(cursor) { return cursor.keySignature; },
+        function(ctx) { return ctx.keySignature; },
         KeySignatureBridge.createKeySignature,
         "A key signature must exist on each line."
     ],
 
     [
-        function(cursor) { return cursor.timeSignature; },
+        function(ctx) { return ctx.timeSignature; },
         TimeSignatureBridge.createTS,
         "A time signature must exist on the first line of every page."
     ]

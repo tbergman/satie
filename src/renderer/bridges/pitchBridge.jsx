@@ -24,31 +24,31 @@ class PitchBridge extends Bridge {
         this.isBeam = isBeam;
     }
 
-    annotateImpl(cursor, stave, idx) {
-        this._line = getLine(this, cursor);
+    annotateImpl(ctx) {
+        this._line = getLine(this, ctx);
         
-        if (!cursor.isBeam) {
-            cursor.beats = (cursor.beats || 0) + this.getBeats();
+        if (!ctx.isBeam) {
+            ctx.beats = (ctx.beats || 0) + this.getBeats();
         }
 
-        if (!cursor.isBeam && this.inBeam) {
-            this._handleTie(cursor, stave, idx);
+        if (!ctx.isBeam && this.inBeam) {
+            this._handleTie(ctx);
             return true;
         } else if (!this.inBeam) {
-            this._handleTie(cursor, stave, idx);
+            this._handleTie(ctx);
         }
-        this.setX(cursor.x);
-        this._fontSize = cursor.fontSize;
-        this._acc = getAccidentals(this, cursor);
+        this.setX(ctx.x);
+        this._fontSize = ctx.fontSize;
+        this._acc = getAccidentals(this, ctx);
         (this.chord || [this.pitch]).map((pitch) => {
-            cursor.accidentals[pitch.pitch] = this._acc;
+            ctx.accidentals[pitch.pitch] = pitch.acc;
         });
-        cursor.x += this.getWidth(cursor);
+        ctx.x += this.getWidth(ctx);
         return true;
     }
-    _handleTie(cursor, stave, idx) {
+    _handleTie(ctx) {
         if (this.tie) {
-            this._tieTo = this.nextNote(stave, idx);
+            this._tieTo = ctx.next(obj => obj.pitch || obj.chord);
         } else {
             this._tieTo = null;
         }
@@ -97,9 +97,9 @@ class PitchBridge extends Bridge {
         </Note>;
     }
 
-    getAccWidth(cursor) {
+    getAccWidth(ctx) {
         var accWidth = 0;
-        var acc = getAccidentals(this, cursor);
+        var acc = getAccidentals(this, ctx);
         if (acc) {
             var acc = (acc instanceof Array) ? acc : [acc];
             var max = acc.reduce((memo, t) => Math.max(Math.abs(t||0), memo), 0);
@@ -108,7 +108,7 @@ class PitchBridge extends Bridge {
         return Math.max(0, accWidth - 0.3);
     }
 
-    getWidth(cursor) {
+    getWidth(ctx) {
         return 0.62 + (this.annotatedExtraWidth || 0);
     }
 
@@ -157,8 +157,8 @@ class PitchBridge extends Bridge {
         return this.chord.map(m => this.midiNote.call(m));
     }
 
-    containsAccidental(cursor) {
-        var nonAccidentals = KeySignatureBridge.getAccidentals(cursor.keySignature);
+    containsAccidental(ctx) {
+        var nonAccidentals = KeySignatureBridge.getAccidentals(ctx.keySignature);
         var pitches = this.chord || [this];
         for (var i = 0; i < pitches.length; ++i) {
             if (!nonAccidentals[pitches[i].pitch] && pitches[i].acc) {
@@ -170,42 +170,42 @@ class PitchBridge extends Bridge {
 
 var log2 = Math.log(2);
 
-var getLine = (pitch, cursor, options) => {
+var getLine = (pitch, ctx, options) => {
     options = options || {};
 
-    if (!cursor) {
+    if (!ctx) {
         assert(pitch["$PitchBridge_line"] !== undefined,
                 "Must be first annotated in pitchBridge.jsx");
         return pitch["$PitchBridge_line"];
     }
-    assert(cursor.clef, "A clef must be inserted before the first note");
+    assert(ctx.clef, "A clef must be inserted before the first note");
     if (pitch.chord) {
         return pitch.chord
             .filter(p => !options.filterTemporary || !p.temporary)
-            .map(p => getLine(p, cursor));
+            .map(p => getLine(p, ctx));
     }
     if (pitch.pitch === "r") {
         return 3;
     }
-    return clefOffsets[cursor.clef] + (pitch.octave || 0)*3.5 + pitchOffsets[pitch.pitch];
+    return clefOffsets[ctx.clef] + (pitch.octave || 0)*3.5 + pitchOffsets[pitch.pitch];
 };
 
-var getAverageLine = (pitch, cursor) => {
-    var line = getLine(pitch, cursor, {filterTemporary: true});
+var getAverageLine = (pitch, ctx) => {
+    var line = getLine(pitch, ctx, {filterTemporary: true});
     if (!isNaN(line)) {
         return line;
     }
     return line.reduce((memo, l) => memo + l, 0)/line.length;
 };
 
-var getPitch = (line, cursor) => {
-    assert(cursor.clef, "A clef must be inserted before the first note");
-    var pitch = offsetToPitch[((line - clefOffsets[cursor.clef]) % 3.5 + 3.5) % 3.5];
-    var acc = cursor.accidentals[pitch];
+var getPitch = (line, ctx) => {
+    assert(ctx.clef, "A clef must be inserted before the first note");
+    var pitch = offsetToPitch[((line - clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
+    var acc = ctx.accidentals[pitch];
 
     return {
-        pitch: offsetToPitch[((line - clefOffsets[cursor.clef]) % 3.5 + 3.5) % 3.5],
-        octave: Math.floor((line - clefOffsets[cursor.clef])/3.5),
+        pitch: offsetToPitch[((line - clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5],
+        octave: Math.floor((line - clefOffsets[ctx.clef])/3.5),
         acc: acc
     };
 };
@@ -288,19 +288,19 @@ var offsetToPitch = {
     3: "b"
 };
 
-var getAccidentals = (pitch, cursor) => {
+var getAccidentals = (pitch, ctx) => {
     if (pitch.chord) {
-        return pitch.chord.map(p => getAccidentals(p, cursor));
+        return pitch.chord.map(p => getAccidentals(p, ctx));
     }
 
     var actual = pitch.acc;
-    var target = cursor.accidentals[pitch.pitch];
+    var target = ctx.accidentals[pitch.pitch];
     if (actual === target) {
         return undefined; // no accidental
     }
 
     if (!actual) {
-        delete cursor.accidentals[pitch.pitch];
+        delete ctx.accidentals[pitch.pitch];
         return 0; // natural
     }
 
@@ -377,8 +377,8 @@ var countToIsBeamable = {
     1024: true
 };
 
-var cannotBeBeamed = function(cursor, stave, idx) {
-    return this.inBeam || !beamable(cursor, stave, idx);
+var cannotBeBeamed = function(ctx) {
+    return this.inBeam || !beamable(ctx);
 };
 
 var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
@@ -386,54 +386,54 @@ var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
 var noteNames = ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
     "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
-var beamable = (cursor, stave, idx) => {
+var beamable = (ctx) => {
     // TODO: give a better algorithm
     // This has lots of corner cases that don't work (it's for a demo!)
     var beamable = [];
-    var count = getCount(stave.body[idx]);
-    var rcount = 1/parseInt(cursor.count);
+    var count = getCount(ctx.curr());
+    var rcount = 1/parseInt(ctx.count);
     var c = 0;
     var hasTimeValue = (other) => other.pitch || other.chord;
     var isRest = (other) => other.pitch === "r";
     var prev;
 
-    var beats = cursor.beats;
+    var beats = ctx.beats;
 
-    for (var i = idx; i < stave.body.length; ++i) {
-        if (hasTimeValue(stave.body[i])) {
-            if (stave.body[i].inBeam) {
+    for (var i = ctx.idx; i < ctx.body.length; ++i) {
+        if (hasTimeValue(ctx.body[i])) {
+            if (ctx.body[i].inBeam) {
                 break;
             }
-            if (cursor.timeSignature.beatType === 4 &&
-                    cursor.timeSignature.beats === 4 && rcount <= 2 &&
-                    rcount + 1/parseInt(getCount(stave.body[i])) >= 2) {
+            if (ctx.timeSignature.beatType === 4 &&
+                    ctx.timeSignature.beats === 4 && rcount <= 2 &&
+                    rcount + 1/parseInt(getCount(ctx.body[i])) >= 2) {
                 break;
             }
-            if (isRest(stave.body[i])) {
+            if (isRest(ctx.body[i])) {
                 break;
             }
 
-            beats += getBeats(getCount(stave.body[i]), getDots(stave.body[i]), 
-                        getTuplet(stave.body[i]));
+            beats += getBeats(getCount(ctx.body[i]), getDots(ctx.body[i]), 
+                        getTuplet(ctx.body[i]));
 
-            if (beats > getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats) {
+            if (beats > getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats) {
                 break;
 
             }
 
             if (prev && prev.tuplet) {
-                if (!stave.body[i].tuplet) {
+                if (!ctx.body[i].tuplet) {
                     break;
                 }
-                if (stave.body[i].tuplet.num !== prev.tuplet.num) {
+                if (ctx.body[i].tuplet.num !== prev.tuplet.num) {
                     break;
                 }
-                if (stave.body[i].tuplet.den !== prev.tuplet.den) {
+                if (ctx.body[i].tuplet.den !== prev.tuplet.den) {
                     break;
                 }
             }
-            if (countToIsBeamable[getCount(stave.body[i]) || count]) {
-                beamable = beamable.concat(stave.body[i]);
+            if (countToIsBeamable[getCount(ctx.body[i]) || count]) {
+                beamable = beamable.concat(ctx.body[i]);
             } else {
                 break;
             }
@@ -441,8 +441,8 @@ var beamable = (cursor, stave, idx) => {
                 break;
             }
 
-            prev = stave.body[i];
-            rcount += 1/parseInt(getCount(stave.body[i]));
+            prev = ctx.body[i];
+            rcount += 1/parseInt(getCount(ctx.body[i]));
         }
     }
     if (beamable.length > 1) {
@@ -473,62 +473,62 @@ var getTuplet = obj => (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj
 
 PitchBridge.prototype.prereqs = [
     [
-        function(cursor) {
-            return cursor.clef; },
+        function(ctx) {
+            return ctx.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ],
 
     [
-        function(cursor) {
-            return cursor.keySignature; },
+        function(ctx) {
+            return ctx.keySignature; },
         KeySignatureBridge.createKeySignature,
         "A key signature must exist on each line."
     ],
 
     [
-        function (cursor) {
-            return cursor.timeSignature; },
+        function (ctx) {
+            return ctx.timeSignature; },
         TimeSignatureBridge.createTS,
         "A time signature must exist on the first line of every page."
     ],
 
     [
-        function (cursor) {
+        function (ctx) {
             return this.count; },
-        function (cursor) {
-            assert(cursor.count, "Never null -- starts at 4");
-            this.count = cursor.count;
+        function (ctx) {
+            assert(ctx.count, "Never null -- starts at 4");
+            this.count = ctx.count;
             return true;
         },
         "A note's duration, when unspecified, is set by the previous note"
     ],
 
     [
-        function (cursor) {
-            return getCount(this) === cursor.count; },
-        function (cursor) {
-            cursor.count = getCount(this);
+        function (ctx) {
+            return getCount(this) === ctx.count; },
+        function (ctx) {
+            ctx.count = getCount(this);
             return true;
         },
-        "Updated the cursor to reflect the current note's duration"
+        "Updated the ctx to reflect the current note's duration"
     ],
 
     [
-        function(cursor) {
-            return cursor.smallest <= getBeats(getCount(this), 0); },
-        function (cursor) {
-            cursor.smallest = getBeats(getCount(this), 0);
+        function(ctx) {
+            return ctx.smallest <= getBeats(getCount(this), 0); },
+        function (ctx) {
+            ctx.smallest = getBeats(getCount(this), 0);
             return "line";
         },
         "All notes, chords, and rests throughout a line must have the same spacing"
     ],
 
     [
-        function(cursor) {
-            return (!cursor.isBeam && this.inBeam /* don't check twice */) ||
-            (cursor.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
-                getBeats(cursor.timeSignature.beatType) * cursor.timeSignature.beats); },
+        function(ctx) {
+            return (!ctx.isBeam && this.inBeam /* don't check twice */) ||
+            (ctx.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
+                getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats); },
         BarlineBridge.createBarline,
         "The number of beats in a bar must not exceed that specified by the time signature"
     ],
@@ -536,42 +536,42 @@ PitchBridge.prototype.prereqs = [
     [
         function() {
             return false; }, // re-calculate it every time
-        function(cursor, stave, idx) {
+        function(ctx) {
             this.annotatedExtraWidth = (Math.log(getBeats(
                             getCount(this), getDots(this), getTuplet(this))) -
-                    Math.log(cursor.smallest))/log2/3;
+                    Math.log(ctx.smallest))/log2/3;
             return true;
         },
         "Each note's width has a linear component proportional to the log of its duration"
     ],
 
     [
-        function (cursor) {
-            return (!cursor.isBeam && this.inBeam /* don't check twice*/) ||
-                (cursor.x + this.getWidth(cursor) <= cursor.maxX); },
+        function (ctx) {
+            return (!ctx.isBeam && this.inBeam /* don't check twice*/) ||
+                (ctx.x + this.getWidth(ctx) <= ctx.maxX); },
         NewlineBridge.createNewline,
         "The width of a line must not exceed that specified by the page layout"
     ],
 
     [
         cannotBeBeamed,
-        function (cursor, stave, idx) {
-            var b = beamable(cursor, stave, idx);
+        function (ctx) {
+            var b = beamable(ctx);
             var BeamGroupBridge = require("./beamGroupBridge.jsx");
 
             b.forEach(function(b) {
                 b.inBeam = true;
             });
-            return BeamGroupBridge.createBeam(cursor, stave, idx, b);
+            return BeamGroupBridge.createBeam(ctx, b);
         },
         "Beams should be automatically created when applicable"
     ],
 
     [
-        function (cursor, stave, idx) {
-            return stave.body[idx + 1]; },
-        function (cursor, stave, idx) {
-            stave.body.splice(idx + 1, 0,
+        function (ctx) {
+            return ctx.next(); },
+        function (ctx) {
+            ctx.body.splice(ctx.idx + 1, 0,
                 new EndMarkerBridge({endMarker: true}));
             return true;
         },
@@ -579,7 +579,7 @@ PitchBridge.prototype.prereqs = [
     ],
 
     [
-        function (cursor, stave, idx) {
+        function (ctx) {
             return false;
         },
         decideMiddleLineStemDirection,
@@ -588,25 +588,25 @@ PitchBridge.prototype.prereqs = [
         
 ];
 
-function decideMiddleLineStemDirection(cursor, stave, idx) {
-    var thisLine = getAverageLine(this, cursor);
+function decideMiddleLineStemDirection(ctx) {
+    var thisLine = getAverageLine(this, ctx);
     if (thisLine !== 3) {
         this.forceMiddleNoteDirection = false;
         return true;
     }
-    var prevLine = (stave.body[idx - 1] && (stave.body[idx - 1].pitch ||
-            stave.body[idx - 1].chord)) ? getAverageLine(stave.body[idx - 1], cursor) : null;
-    var nextLine = (stave.body[idx + 1] && (stave.body[idx + 1].pitch ||
-            stave.body[idx + 1].chord)) ? getAverageLine(stave.body[idx + 1], cursor) : null;
+    var prevLine = (ctx.prev() && (ctx.prev().pitch ||
+            ctx.prev().chord)) ? getAverageLine(ctx.prev(), ctx) : null;
+    var nextLine = (ctx.next() && (ctx.next().pitch ||
+            ctx.next().chord)) ? getAverageLine(ctx.next(), ctx) : null;
 
-    if ((nextLine !== null) && cursor.beats + this.getBeats() + stave.body[idx + 1]
-            .getBeats(getCount(this)) > cursor.timeSignature.beats) {
+    if ((nextLine !== null) && ctx.beats + this.getBeats() + ctx.next()
+            .getBeats(getCount(this)) > ctx.timeSignature.beats) {
         // Barlines aren't inserted yet.
         nextLine = null;
     }
 
-    if (stave.body[idx - 1] && stave.body[idx - 1].forceMiddleNoteDirection) {
-        prevLine -= stave.body[idx - 1].forceMiddleNoteDirection;
+    if (ctx.prev() && ctx.prev().forceMiddleNoteDirection) {
+        prevLine -= ctx.prev().forceMiddleNoteDirection;
     }
 
     var check;
@@ -617,15 +617,15 @@ function decideMiddleLineStemDirection(cursor, stave, idx) {
     } else if (nextLine === null) {
         check = prevLine;
     } else {
-        var startsAt = cursor.beats; 
-        var endsAt = cursor.beats + this.getBeats();
+        var startsAt = ctx.beats; 
+        var endsAt = ctx.beats + this.getBeats();
 
         if (Math.floor(startsAt) === Math.floor(endsAt)) {
             check = nextLine;
         } else if (Math.floor(startsAt) !== startsAt) {
             // XXX: ASSUMES no divisions mid-beat
             check = prevLine;
-        } else if (startsAt >= cursor.timeSignature.beats/2) {
+        } else if (startsAt >= ctx.timeSignature.beats/2) {
             // XXX: ASSUMES 4/4 !!!
             check = nextLine;
         } else {

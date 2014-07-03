@@ -7,10 +7,10 @@ var Bridge = require("./bridge.jsx");
 var Clef = require("../primitives/clef.jsx");
 
 class ClefBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
-        this._isChange = cursor.clef;
-        this._clef = cursor.clef = (this.clef === "detect") ? cursor.prevClef : this.clef;
-        var next = this.next(stave, idx);
+    annotateImpl(ctx) {
+        this._isChange = ctx.clef;
+        this._clef = ctx.clef = (this.clef === "detect") ? ctx.prevClef : this.clef;
+        var next = ctx.next();
         if (next.pitch || next.chord) {
             if (next.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
@@ -22,9 +22,9 @@ class ClefBridge extends Bridge {
             this._annotatedSpacing = 1.25;
         }
         if (this._isChange) {
-            cursor.x += -0.01 + this._annotatedSpacing/4;
+            ctx.x += -0.01 + this._annotatedSpacing/4;
         } else {
-            cursor.x += 0.6 + this._annotatedSpacing/4;
+            ctx.x += 0.6 + this._annotatedSpacing/4;
         }
         return true;
     }
@@ -48,20 +48,20 @@ class ClefBridge extends Bridge {
     }
 }
 
-var clefIsNotRedundant = function(cursor) {
+var clefIsNotRedundant = function(ctx) {
     // XXX HACK {
     if (false === this.isVisible) {
         return true;
     }
     // }
     return this.temporary ||
-        cursor.clef !== this.clef ||
+        ctx.clef !== this.clef ||
         this.clef === "detect";
 };
 
-var createClef = function(cursor, stave, idx) {
-    stave.body.splice(idx, 0, new ClefBridge({
-        clef: (cursor.prevClef ? "detect" : "treble"),
+var createClef = function(ctx) {
+    ctx.body.splice(ctx.idx, 0, new ClefBridge({
+        clef: (ctx.prevClef ? "detect" : "treble"),
         _annotated: "createClef"
     }));
     return -1;
@@ -70,18 +70,18 @@ var createClef = function(cursor, stave, idx) {
 ClefBridge.prototype.prereqs = [
     [
         clefIsNotRedundant,
-        function (cursor, stave, idx) {
-            stave.body.splice(idx, 1);
+        function (ctx) {
+            ctx.body.splice(ctx.idx, 1);
             return -1;
         },
         "A clef must not be redundant."
     ],
     [
-        function(cursor) {
-            return !cursor.timeSignature || cursor.beats < cursor.timeSignature.beats; },
-        function(cursor, stave, idx) {
+        function(ctx) {
+            return !ctx.timeSignature || ctx.beats < ctx.timeSignature.beats; },
+        function(ctx) {
             var BarlineBridge = require("./barlineBridge.jsx");
-            return BarlineBridge.createBarline(cursor, stave, idx);
+            return BarlineBridge.createBarline(ctx);
         },
         "Barlines should be before clefs when either is possible"
     ]

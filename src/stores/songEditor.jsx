@@ -10,6 +10,7 @@ var Dispatcher = require("./dispatcher.jsx");
 var deepFreeze = require("../util/deepFreeze.jsx");
 
 var Bridge = require("../renderer/bridges/bridge.jsx");
+var Context = require("./context.jsx");
 var Header = require("../renderer/primitives/header.jsx");
 var KeySignatureBridge = require("../renderer/bridges/keySignatureBridge.jsx");
 var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
@@ -138,7 +139,7 @@ class SongEditorStore extends EventEmitter {
                     assert(false, "Not found");
                 }
                 _dirty = true;
-                _cursors = null;
+                _ctxs = null;
                 _(_staves).find(s => s.staveHeight).staveHeight = _staveHeight;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
@@ -148,7 +149,7 @@ class SongEditorStore extends EventEmitter {
             case "PUT /local/pageSize":
                 _pageSize = action.postData;
                 _dirty = true;
-                _cursors = null;
+                _ctxs = null;
                 _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
@@ -189,7 +190,7 @@ class SongEditorStore extends EventEmitter {
 
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
-                    // Remove the item directly before the cursor.
+                    // Remove the item directly before the ctx.
                     var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
                     var EraseTool = require("../tools/eraseTool.jsx");
                     var i;
@@ -280,7 +281,7 @@ class SongEditorStore extends EventEmitter {
                                         };
                                         break;
                                     }
-                                    var cd = _staves[3].body[i].cursorData;
+                                    var cd = _staves[3].body[i].ctxData;
                                     var throughBar = false;
                                     while (_staves[3].body[i += action.postData.step]) {
                                         if (!_staves[3].body[i]) {
@@ -300,8 +301,8 @@ class SongEditorStore extends EventEmitter {
                                                 bar: _visualCursor.bar + 1
                                             };
                                             break;
-                                        } else if (cd.bar !== _staves[3].body[i].cursorData.bar ||
-                                                cd.beat !== _staves[3].body[i].cursorData.beat) {
+                                        } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
+                                                cd.beat !== _staves[3].body[i].ctxData.beat) {
 
                                             if (action.postData.skipThroughBars) {
                                                 while (_staves[3].body[i + 1] &&
@@ -311,7 +312,7 @@ class SongEditorStore extends EventEmitter {
                                                 }
                                             }
                                             _visualCursor = JSON.parse(JSON.stringify(
-                                                _staves[3].body[i].cursorData));
+                                                _staves[3].body[i].ctxData));
 
                                             // If we're walking through a bar, make up for that.
                                             if (throughBar) {
@@ -378,7 +379,7 @@ class SongEditorStore extends EventEmitter {
         if (!pointerData) {
             _visualCursor.annotatedObj = null;
             _visualCursor.annotatedLine = null;
-            _cursors = [];
+            _ctxs = [];
         }
 
         var y = 0;
@@ -390,54 +391,60 @@ class SongEditorStore extends EventEmitter {
                 return true;
             }
         
-            var cursor = this.cursorFromSnapshot(pointerData, stave) ||
-                    this.newCursor(y, _staveHeight, true, pageSize || _pageSize);
+            var ctx =
+                    this.ctxFromSnapshot(pointerData, stave) ||
+                        new Context({
+                            start: y,
+                            fontSize: this.staveHeight(),
+                            first: true,
+                            pageSize: pageSize || _pageSize,
+                            stave: stave
+                        });
 
             var exitCode;
             var operations = 0;
-            for (var i = cursor.start; i < stave.body.length;
-                    i = this.nextIndex(i, exitCode, stave, cursor)) {
+            for (ctx.begin(); !ctx.atEnd(); ctx.idx = ctx.nextIndex(exitCode)) {
 
                 ++operations;
 
-                var doCustomAction = pointerData && (stave.body[i] === pointerData.obj ||
-                        (pointerData && pointerData.obj && pointerData.obj.idx === i));
+                var doCustomAction = pointerData && (stave.body[ctx.idx] === pointerData.obj ||
+                        (pointerData && pointerData.obj && pointerData.obj.idx === ctx.idx));
 
-                if (!pointerData && cursor.bar === _visualCursor.bar &&
+                if (!pointerData && ctx.bar === _visualCursor.bar &&
                         ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
-                            cursor.beats === _visualCursor.beat) &&
-                        (((stave.body[i].pitch || stave.body[i].chord) &&
+                            ctx.beats === _visualCursor.beat) &&
+                        (((stave.body[ctx.idx].pitch || stave.body[ctx.idx].chord) &&
                             !_visualCursor.endMarker) || (_visualCursor.endMarker &&
-                            stave.body[i].endMarker))) {
+                            stave.body[ctx.idx].endMarker))) {
 
-                    if (vcStave === sidx || cursor.bar > vcBar || (vcBar === cursor.bar &&
-                            cursor.beats > vcBeat)) {
+                    if (vcStave === sidx || ctx.bar > vcBar || (vcBar === ctx.bar &&
+                            ctx.beats > vcBeat)) {
                         vcStave = sidx;
-                        vcBar = cursor.bar;
-                        vcBeat = cursor.beats;
-                        _visualCursor.annotatedObj = stave.body[i];
-                        _visualCursor.annotatedLine = cursor.line;
+                        vcBar = ctx.bar;
+                        vcBeat = ctx.beats;
+                        _visualCursor.annotatedObj = stave.body[ctx.idx];
+                        _visualCursor.annotatedLine = ctx.line;
                     }
                 }
 
-                stave.body[i].cursorData = {
-                    bar: cursor.bar,
-                    beat: cursor.beats,
+                stave.body[ctx.idx].ctxData = {
+                    bar: ctx.bar,
+                    beat: ctx.beats,
                         // TODO: Move into the bridge layer
-                    endMarker: stave.body[i].endMarker
+                    endMarker: stave.body[ctx.idx].endMarker
                 };
 
                 if (doCustomAction) {
-                    exitCode = toolFn(stave.body[i], cursor, stave, i);
+                    exitCode = toolFn(stave.body[ctx.idx], ctx);
                     pointerData = undefined;
                 } else {
-                    exitCode = stave.body[i].annotate(cursor, stave, i);
+                    exitCode = stave.body[ctx.idx].annotate(ctx);
                 }
 
                 if (!doCustomAction &&
                         toolFn &&
                         !pointerData &&
-                        stave.body[i].newline &&
+                        stave.body[ctx.idx].newline &&
                         !_dirty &&
                         exitCode !== "line_created") {
                     return true;
@@ -449,130 +456,25 @@ class SongEditorStore extends EventEmitter {
                     toolFn = false;
                 }
             }
-            if (cursor.bar === 1 && !cursor.beats && !_visualCursor.endMarker) {
+            if (ctx.bar === 1 && !ctx.beats && !_visualCursor.endMarker) {
                 _visualCursor.endMarker = true;
                 y = 0;
                 return false;
             }
 
-            NewlineBridge.semiJustify(cursor, stave, stave.body.length - 1);
+            ctx.idx = stave.body.length - 1;
+            NewlineBridge.semiJustify(ctx);
 
             PROFILER_ENABLED && console.log("Annotation efficiency: " +
                     (operations / stave.body.length));
 
-            _cursors.length = sidx;
-            _cursors[sidx] = cursor;
+            _ctxs.length = sidx;
+            _ctxs[sidx] = ctx;
             y += 2.25;
             return true;
         })) { /* pass */ }
 
         PROFILER_ENABLED && console.timeEnd("annotate");
-    }
-
-    nextIndex(i, exitCode, stave, cursor) {
-        switch(exitCode) {
-        case true:
-            // All of the pre-conditions of the object were met, and
-            // annotations have been added.
-            return i + 1;
-        case false:
-            // At least one of the pre-conditions of the object were
-            // not met and the entire document must be rerendered.
-            return cursor.start;
-        case "line_created":
-            // A line break was added somewhere to the current line
-            // The current line must be re-rendered...
-            var line = cursor.lines[cursor.line];
-            _(line).each((v, attrib) => {
-                cursor[attrib] = line[attrib];
-            });
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            --i;
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            delete cursor.clef;
-            break;
-        case "line":
-            // At least one of the pre-conditions of the object were
-            // not met and the entire line must be rerendered.
-            var line = cursor.lines[cursor.line];
-            _(line).each((v, attrib) => {
-                cursor[attrib] = line[attrib];
-            });
-            --i;
-            while (i >= 0 && !stave.body[i].newline) {
-                --i;
-            }
-            delete cursor.clef;
-            break;
-        case "beam":
-            // The beam needs to be re-rendered.
-            cursor.beats = _beamBeatCount;
-            --i;
-            while(i >= 0 && !stave.body[i].beam) {
-                --i;
-            }
-            cursor.x = stave.body[i].x();
-            --i;
-            break;
-        case -1:
-            // At least one of the pre-conditions of the object were
-            // not met and an item has been inserted in place of the
-            // current item.
-            i += exitCode;
-            break;
-        default:
-            assert(false, "Not reached");
-        }
-
-        return i + 1;
-    }
-    newCursor(start, fontSize, first, pageSize) {
-        // TODO: fontSize logic belongs in render.jsx
-        // XXX: Indent should be 30. See also renderer.jsx
-        var noMargin = false;
-        if (typeof window !== "undefined" &&
-                window.location.href.indexOf("/scales/") !== -1) {
-            // XXX: HACK!!!
-            noMargin = true;
-        }
-        var initialX = renderUtil.mm(15, fontSize) + 1/4;
-        var firstX = renderUtil.mm(first && !noMargin ? 30 : 15, fontSize) + 1/4;
-        return {
-            accidentals: {},
-            bar: 1,
-            barlineX: [],
-            beats: 0,
-            count: 4,
-            fontSize: fontSize,
-            initialX: initialX,
-            line: 0,
-            lineSpacing: 3.3,
-            maxX: renderUtil.mm(pageSize.width - 15, fontSize),
-            maxY: renderUtil.mm(pageSize.height - 15, fontSize),
-            pageLines: [0],
-            pageSize: pageSize,
-            pageStarts: [0],
-            smallest: 10000,
-            start: 0,
-            x: firstX,
-            y: renderUtil.mm(15, fontSize) + start,
-            lines: [
-                {
-                    all: [],
-                    accidentals: [],
-                    bar: 1,
-                    barlineX: [],
-                    beats: 0,
-                    line: 0,
-                    x: firstX,
-                    y: renderUtil.mm(15, fontSize) + start
-                }
-            ]
-        };
     }
 
     markClean() {
@@ -588,7 +490,7 @@ class SongEditorStore extends EventEmitter {
 
     downloadLegacyAudio() {
         var data = [];
-        for (var h = 0; h < this.cursorCount(); ++h) {
+        for (var h = 0; h < this.ctxCount(); ++h) {
             if (!this.staves()[h].body) {
                 continue;
             }
@@ -692,19 +594,22 @@ class SongEditorStore extends EventEmitter {
         return true;
     }
 
-    cursorFromSnapshot(pointerData, stave) {
+    ctxFromSnapshot(pointerData, stave) {
         if (!pointerData) {
             return null;
         }
 
         if (pointerData && _snapshots[pointerData.musicLine]) {
-            var cursor = JSON.parse(_snapshots[pointerData.musicLine]);
-            _linesToUpdate[cursor.line] = true;
-            cursor.start = pointerData.idx;
-            while (cursor.start > 0 && !stave.body[cursor.start - 1].newline) {
-                --cursor.start;
+            var ctx = new Context({
+                snapshot: _snapshots[pointerData.musicLine],
+                stave: stave
+            });
+            _linesToUpdate[ctx.line] = true;
+            ctx.start = pointerData.idx;
+            while (ctx.start > 0 && !stave.body[ctx.start - 1].newline) {
+                --ctx.start;
             }
-            return cursor;
+            return ctx;
         } else {
             // We don't store snapshots for the 0th line, but we still need
             // to force it to be re-renderered.
@@ -786,21 +691,21 @@ class SongEditorStore extends EventEmitter {
     get dirty() {
         return _dirty;
     }
-    cursor(idx) {
+    ctx(idx) {
         if (idx === undefined) {
-            console.warn("Calling cursor without an index is deprecated.");
+            console.warn("Calling ctx without an index is deprecated.");
             console.trace();
         }
         if (idx === undefined || idx.first) {
             var idx = 0;
-            while (!_cursors[idx] && idx < _cursors.length) {
+            while (!_ctxs[idx] && idx < _ctxs.length) {
                 ++idx;
             }
         }
-        return _cursors[idx];
+        return _ctxs[idx];
     }
-    get cursorCount() {
-        return _cursors.length;
+    get ctxCount() {
+        return _ctxs.length;
     }
     get visualCursor() {
         return _visualCursor;
@@ -842,11 +747,11 @@ class SongEditorStore extends EventEmitter {
 
 /**
  * Called at the end of begining of every line so that when a certain line
- * needs to be updated, the cursor can be unfrozen from here instead of
- * recalculating the cursor from the begining of the song.
+ * needs to be updated, the ctx can be unfrozen from here instead of
+ * recalculating the ctx from the begining of the song.
  */
-var snapshot = (cursor) => {
-    _snapshots[cursor.line] = JSON.stringify(cursor);
+var snapshot = (ctx) => {
+    _snapshots[ctx.line] = ctx.snapshot();
 };
 
 /**
@@ -859,7 +764,7 @@ var beamCountIs = (beamCount) => {
 };
 
 var _beamBeatCount = 0;
-var _cursors = null;
+var _ctxs = null;
 var _cleanup = null;
 var _dirty = false;
 var _linesToUpdate = {};

@@ -9,8 +9,8 @@ var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var TimeSignature = require("../primitives/timeSignature.jsx");
 
 class TimeSignatureBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
-        var next = this.next(stave, idx);
+    annotateImpl(ctx) {
+        var next = ctx.next();
         if (next.pitch || next.chord) {
             if (next.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
@@ -22,8 +22,8 @@ class TimeSignatureBridge extends Bridge {
             this._annotatedSpacing = 1.25;
         }
 
-        cursor.x += 0.7 + this._annotatedSpacing/4;
-        cursor.timeSignature = this.actualTS || this.timeSignature;
+        ctx.x += 0.7 + this._annotatedSpacing/4;
+        ctx.timeSignature = this.actualTS || this.timeSignature;
         return true;
     }
     render() {
@@ -45,8 +45,8 @@ class TimeSignatureBridge extends Bridge {
     }
 }
 
-var createTS = (cursor, stave, idx) => {
-    stave.body.splice(idx, 0, new TimeSignatureBridge({
+var createTS = (ctx) => {
+    ctx.body.splice(ctx.idx, 0, new TimeSignatureBridge({
         timeSignature: {
             beats: 4, 
             beatType: 4,
@@ -57,15 +57,15 @@ var createTS = (cursor, stave, idx) => {
 
 TimeSignatureBridge.prototype.prereqs = [
     [
-        function (cursor) {
-            return cursor.clef; },
+        function (ctx) {
+            return ctx.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ],
 
     [
-        function (cursor) {
-            return cursor.keySignature; },
+        function (ctx) {
+            return ctx.keySignature; },
         KeySignatureBridge.createKeySignature,
         "A key signature must exist on each line."
     ]

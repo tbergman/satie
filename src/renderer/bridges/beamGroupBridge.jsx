@@ -13,21 +13,21 @@ var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 var beamPitchBridge = new PitchBridge(true);
 
 class BeamGroupBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
+    annotateImpl(ctx) {
         var SongEditorStore = require("../../stores/songEditor.jsx");
 
         var mret = false;
-        this._fontSize = cursor.fontSize;
+        this._fontSize = ctx.fontSize;
 
-        var next = this.nextNote(stave, idx);
+        var next = ctx.next(obj => obj.pitch || obj.chord);
         this._tuplet = next && next.tuplet;
-        SongEditorStore.beamCountIs(cursor.beats);
+        SongEditorStore.beamCountIs(ctx.beats);
         if (!this.beam.every(b => {
-                b.setX(cursor.x);
-                b.setY(cursor.y);
-                cursor.isBeam = true;
-                var ret = b.annotate(cursor, stave, idx, true);
-                cursor.isBeam = undefined;
+                b.setX(ctx.x);
+                b.setY(ctx.y);
+                ctx.isBeam = true;
+                var ret = b.annotate(ctx);
+                ctx.isBeam = undefined;
                 mret = ret;
                 return (mret === true);
             })) {
@@ -94,40 +94,40 @@ class BeamGroupBridge extends Bridge {
 }
 BeamGroupBridge.prototype.prereqs = [
     [
-        function(cursor) {
-            return cursor.clef; },
+        function(ctx) {
+            return ctx.clef; },
         ClefBridge.createClef,
         "A clef must exist on each line."
     ],
 
     [
-        function(cursor) {
-            return cursor.keySignature; },
+        function(ctx) {
+            return ctx.keySignature; },
         KeySignatureBridge.createKeySignature,
         "A key signature must exist on each line."
     ],
 
     [
-        function(cursor) {
-            return cursor.timeSignature; },
+        function(ctx) {
+            return ctx.timeSignature; },
         TimeSignatureBridge.createTS,
         "A time signature must exist on the first line of every page."
     ],
 
     [
-        function(cursor) {
+        function(ctx) {
             return this.beam.length > 1; },
-        function(cursor, stave, idx) {
+        function(ctx) {
             this.beam.forEach(o => delete o.inBeam);
-            stave.body.splice(idx, 1);
+            ctx.body.splice(ctx.idx, 1);
             return -1;
         },
         "A beam must have at least two notes"
     ]
 ];
 
-var createBeam = (cursor, stave, idx, beam) => {
-    stave.body.splice(idx, 0, new BeamGroupBridge(
+var createBeam = (ctx, beam) => {
+    ctx.body.splice(ctx.idx, 0, new BeamGroupBridge(
         {beam: beam, _annotated: "createBeam"}));
     return -1;
 };

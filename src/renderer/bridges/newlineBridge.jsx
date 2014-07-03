@@ -13,42 +13,42 @@ var renderUtil = require("../util.jsx");
 var _ = require("underscore");
 
 class NewlineBridge extends Bridge {
-    annotateImpl(cursor, stave, idx) {
-        this._fontSize = cursor.fontSize;
-        this._lineSpacing = cursor.lineSpacing;
-        this._pageSize = cursor.pageSize;
+    annotateImpl(ctx) {
+        this._fontSize = ctx.fontSize;
+        this._lineSpacing = ctx.lineSpacing;
+        this._pageSize = ctx.pageSize;
 
-        cursor.x = cursor.initialX;
-        cursor.y += cursor.lineSpacing;
-        cursor.prevClef = cursor.clef;
-        cursor.prevKeySignature = cursor.keySignature;
-        cursor.smallest = 10000;
-        delete cursor.clef;
-        delete cursor.keySignature;
+        ctx.x = ctx.initialX;
+        ctx.y += ctx.lineSpacing;
+        ctx.prevClef = ctx.clef;
+        ctx.prevKeySignature = ctx.keySignature;
+        ctx.smallest = 10000;
+        delete ctx.clef;
+        delete ctx.keySignature;
 
         ////////////////////////////////////////
-        ++cursor.line;
+        ++ctx.line;
         ////////////////////////////////////////
 
-        if (!cursor.lines[cursor.line]) {
-            cursor.lines[cursor.line] = {
-                line: cursor.line,
+        if (!ctx.lines[ctx.line]) {
+            ctx.lines[ctx.line] = {
+                line: ctx.line,
             };
         }
 
-        cursor.lines[cursor.line].accidentals = [];
-        cursor.lines[cursor.line].all = [];
-        cursor.lines[cursor.line].bar = cursor.bar;
-        cursor.lines[cursor.line].barlineX = [];
-        cursor.lines[cursor.line].beats = 0;
-        cursor.lines[cursor.line].x = cursor.x;
-        cursor.lines[cursor.line].y = cursor.y;
-        cursor.lines[cursor.line].pageLines = cursor.pageLines;
-        cursor.lines[cursor.line].pageStarts = cursor.pageStarts;
-        cursor.lines[cursor.line].keySignature = cursor.prevKeySignature;
+        ctx.lines[ctx.line].accidentals = [];
+        ctx.lines[ctx.line].all = [];
+        ctx.lines[ctx.line].bar = ctx.bar;
+        ctx.lines[ctx.line].barlineX = [];
+        ctx.lines[ctx.line].beats = 0;
+        ctx.lines[ctx.line].x = ctx.x;
+        ctx.lines[ctx.line].y = ctx.y;
+        ctx.lines[ctx.line].pageLines = ctx.pageLines;
+        ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
+        ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
 
         var SongEditorStore = require("../../stores/songEditor.jsx");
-        SongEditorStore.snapshot(cursor);
+        SongEditorStore.snapshot(ctx);
 
         return true;
     }
@@ -59,32 +59,32 @@ class NewlineBridge extends Bridge {
                 x={renderUtil.mm(15, this._fontSize)}
                 y={this.y() + this._lineSpacing} />;
     }
-    justify(cursor, stave, idx) {
-        var diff = cursor.maxX - cursor.x;
+    justify(ctx) {
+        var diff = ctx.maxX - ctx.x;
         var l = 0;
-        for (var i = idx - 1; i >= 0; --i) {
-            if (stave.body[i].pitch || stave.body[i].chord) {
+        for (var i = ctx.idx - 1; i >= 0; --i) {
+            if (ctx.body[i].pitch || ctx.body[i].chord) {
                 ++l;
             }
-            if (stave.body[i].newline) {
+            if (ctx.body[i].newline) {
                 break;
             }
         }
         diff -= 0.001; // adjust for bad floating point arithmetic
         var xOffset = diff;
-        for (var i = idx - 1; i >= 0; --i) {
-            if (stave.body[i].newline) {
+        for (var i = ctx.idx - 1; i >= 0; --i) {
+            if (ctx.body[i].newline) {
                 break;
             }
-            if (stave.body[i].pitch || stave.body[i].chord) {
-                stave.body[i].annotatedExtraWidth =
-                    (stave.body[i].annotatedExtraWidth || 0) +
+            if (ctx.body[i].pitch || ctx.body[i].chord) {
+                ctx.body[i].annotatedExtraWidth =
+                    (ctx.body[i].annotatedExtraWidth || 0) +
                     diff/l;
                 xOffset -= diff/l;
             }
-            var newX = stave.body[i].x() + xOffset;
-            if (stave.body[i].barline && (!stave.body[i + 1] || !stave.body[i + 1].newline)) {
-                if (cursor.lines[cursor.line - 1] && _(cursor.lines[cursor.line - 1].barlineX)
+            var newX = ctx.body[i].x() + xOffset;
+            if (ctx.body[i].barline && (!ctx.body[i + 1] || !ctx.body[i + 1].newline)) {
+                if (ctx.lines[ctx.line - 1] && _(ctx.lines[ctx.line - 1].barlineX)
                         .any(x => Math.abs(x - newX) < 0.15)) {
                     // ADJUST BARLINE
                     var offset = -0.2;
@@ -93,38 +93,38 @@ class NewlineBridge extends Bridge {
 
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
-                    for (j = i - 1; j >= 0 && !stave.body[j].barline; --j) {
-                        if (stave.body[j].pitch || stave.body[j].chord) {
+                    for (j = i - 1; j >= 0 && !ctx.body[j].barline; --j) {
+                        if (ctx.body[j].pitch || ctx.body[j].chord) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
-                    for (j = i - 1; j >= 0 && !stave.body[j].barline; --j) {
-                        stave.body[j].setX(stave.body[j].x() + remaining);
-                        if (stave.body[j].pitch || stave.body[j].chord) {
+                    for (j = i - 1; j >= 0 && !ctx.body[j].barline; --j) {
+                        ctx.body[j].setX(ctx.body[j].x() + remaining);
+                        if (ctx.body[j].pitch || ctx.body[j].chord) {
                             remaining -= offset/noteCount;
                         }
                     }
 
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
-                    for (j = i + 1; j < stave.body.length && !stave.body[j].barline; ++j) {
-                        if (stave.body[j].pitch || stave.body[j].chord) {
+                    for (j = i + 1; j < ctx.body.length && !ctx.body[j].barline; ++j) {
+                        if (ctx.body[j].pitch || ctx.body[j].chord) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
-                    for (j = i + 1; j < stave.body.length && !stave.body[j].barline; ++j) {
-                        stave.body[j].setX(stave.body[j].x() + remaining);
-                        if (stave.body[j].pitch || stave.body[j].chord) {
+                    for (j = i + 1; j < ctx.body.length && !ctx.body[j].barline; ++j) {
+                        ctx.body[j].setX(ctx.body[j].x() + remaining);
+                        if (ctx.body[j].pitch || ctx.body[j].chord) {
                             remaining -= offset/noteCount;
                         }
                     }
                 }
 
-                cursor.barlineX.push(newX);
+                ctx.barlineX.push(newX);
             }
-            stave.body[i].setX(newX);
+            ctx.body[i].setX(newX);
         }
         return true;
     }
@@ -133,43 +133,43 @@ class NewlineBridge extends Bridge {
     }
 }
 
-var createNewline = (cursor, stave, idx) => {
+var createNewline = (ctx) => {
     var l = 0;
-    var fidx = idx;
-    for (fidx = idx; fidx >=0; --fidx) {
-        stave.body[fidx].annotatedExtraWidth = undefined;
-        if (stave.body[fidx].barline) {
+    var fidx = ctx.idx;
+    for (; fidx >=0; --fidx) {
+        ctx.body[fidx].annotatedExtraWidth = undefined;
+        if (ctx.body[fidx].barline) {
             break;
         }
     }
-    if (stave.body[fidx + 1].newpage) {
+    if (ctx.body[fidx + 1].newpage) {
         return true;
     }
-    for (var i = idx + 1; i < stave.body.length; ++i) {
-        if (stave.body[i]._annotated) {
-            if (stave.body[i].newline ||
-                    stave.body[i].clef ||
-                    stave.body[i].timeSignature ||
-                    stave.body[i].keySignature) {
-                stave.body.splice(i, 1);
+    for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
+        if (ctx.body[i]._annotated) {
+            if (ctx.body[i].newline ||
+                    ctx.body[i].clef ||
+                    ctx.body[i].timeSignature ||
+                    ctx.body[i].keySignature) {
+                ctx.body.splice(i, 1);
                 --i;
             }
         }
     }
-    stave.body.splice(fidx + 1, 0,
+    ctx.body.splice(fidx + 1, 0,
         new NewlineBridge({newline: true, _annotated: "createNewline"}));
-    removeNextNewline(cursor, stave, fidx + 2);
+    removeNextNewline(ctx, fidx + 2);
     return "line_created";
 };
 
-var removeNextNewline = (cursor, stave, idx) => {
-    for (var i = idx; i < stave.body.length; ++i) {
-        if (stave.body[i].newline) {
-            stave.body.splice(i, 1);
-            for (var j = i; j < stave.body.length && !stave.body[j].beam &&
-                    !stave.body[j].pitch && !stave.body[j].chord; ++j) {
-                if (stave.body[j]._annotated) {
-                    stave.body.splice(j, 1);
+var removeNextNewline = (ctx, start) => {
+    for (var i = start; i < ctx.body.length; ++i) {
+        if (ctx.body[i].newline) {
+            ctx.body.splice(i, 1);
+            for (var j = i; j < ctx.body.length && !ctx.body[j].beam &&
+                    !ctx.body[j].pitch && !ctx.body[j].chord; ++j) {
+                if (ctx.body[j]._annotated) {
+                    ctx.body.splice(j, 1);
                     --j;
                 }
             }
@@ -183,7 +183,7 @@ var removeNextNewline = (cursor, stave, idx) => {
  * Given an incomplete line ending at idx, spreads out the line
  * comfortably.
  */
-var semiJustify = (cursor, stave, idx) => {
+var semiJustify = (ctx) => {
     var fullJustify = false;
     if (typeof window !== "undefined" &&
             window.location.href.indexOf("/scales/") !== -1) {
@@ -191,45 +191,45 @@ var semiJustify = (cursor, stave, idx) => {
         fullJustify = true;
     }
     var n = 0;
-    for (var i = idx; i >= 0 && !stave.body[i].newline; --i) {
-        if (stave.body[i].pitch || stave.body[i].chord) {
+    for (var i = ctx.idx; i >= 0 && !ctx.body[i].newline; --i) {
+        if (ctx.body[i].pitch || ctx.body[i].chord) {
             ++n;
         }
     }
     if (n) {
-        var lw = cursor.maxX - 3 - stave.body[idx].x();
+        var lw = ctx.maxX - 3 - ctx.curr().x();
         var nw = lw/n;
         if (fullJustify) {
-            lw = cursor.maxX - stave.body[idx].x();
+            lw = ctx.maxX - ctx.curr().x();
             nw = lw/n;
         } else {
-            var weight = renderUtil.sigmoid((nw - cursor.maxX/2)/20)*2/3;
+            var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
             nw = (1 - weight)*nw;
             lw = nw * n;
         }
-        for (var i = idx; i >= 0 && !stave.body[i].newline; --i) {
-            if (stave.body[i].pitch || stave.body[i].chord) {
+        for (var i = ctx.idx; i >= 0 && !ctx.body[i].newline; --i) {
+            if (ctx.body[i].pitch || ctx.body[i].chord) {
                 lw -= nw;
             }
-            stave.body[i]["$Bridge_x"] += lw;
+            ctx.body[i]["$Bridge_x"] += lw;
         }
     }
 };
 
 NewlineBridge.prototype.prereqs = [
     [
-        function(cursor) {
-            return cursor.y + cursor.lineSpacing < cursor.maxY; },
+        function(ctx) {
+            return ctx.y + ctx.lineSpacing < ctx.maxY; },
         NewPageBridge.createNewPage,
         "Pages should not overflow"
     ],
     [
         // This requirement should be last so that it only happens once
         // per line.
-        function(cursor) {
-            return cursor.maxX - cursor.x <= 0.01; },
-        function(cursor, stave, idx) {
-            return this.justify(cursor, stave, idx); },
+        function(ctx) {
+            return ctx.maxX - ctx.x <= 0.01; },
+        function(ctx) {
+            return this.justify(ctx); },
         "Notes should be full justfied within a line."
     ]
 ];

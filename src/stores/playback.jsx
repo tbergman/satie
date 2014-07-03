@@ -137,7 +137,7 @@ class PlaybackStore extends EventEmitter {
         var foundLegacyStart = false;
         var startTime = MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < SongEditorStore.cursorCount(); ++h) {
+        for (var h = 0; h < SongEditorStore.ctxCount(); ++h) {
             var body = SongEditorStore.staves()[h].body;
             if (!body) {
                 continue;
@@ -153,8 +153,8 @@ class PlaybackStore extends EventEmitter {
             if (enabled) { 
                 for (var i = 0; i < body.length; ++i) {
                     var obj = body[i];
-                    foundIdx = foundIdx || (visualCursor.beat === obj.cursorData.beat &&
-                            visualCursor.bar === obj.cursorData.bar);
+                    foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
+                            visualCursor.bar === obj.ctxData.bar);
                     if (foundIdx && USING_LEGACY_AUDIO && !foundLegacyStart) {
                         audio5js.seek(seek);
                         audio5js.play();

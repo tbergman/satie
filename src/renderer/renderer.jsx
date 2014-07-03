@@ -26,8 +26,8 @@ var Group = useGL ? Victoria.VG : React.DOM.g;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-var getCursor = (idx) => SongEditorStore.cursor(idx);
-var getCursorCount = () => SongEditorStore.cursorCount();
+var getCtx = (idx) => SongEditorStore.ctx(idx);
+var getCtxCount = () => SongEditorStore.ctxCount();
 
 var Renderer = React.createClass({
     render: function() {
@@ -42,9 +42,9 @@ var Renderer = React.createClass({
         while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
             ++firstStaveIdx;
         }
-        var cursor = getCursor(firstStaveIdx);
-        var pageStarts = cursor.pageStarts;
-        var pageLines = cursor.pageLines;
+        var ctx = getCtx(firstStaveIdx);
+        var pageStarts = ctx.pageStarts;
+        var pageLines = ctx.pageLines;
 
         var noMargin = false;
         if (typeof window !== "undefined" &&
@@ -134,7 +134,7 @@ var Renderer = React.createClass({
             })}
             {!pidx && this.props.tool && staves.map((stave,idx) => stave.body &&
                 this.props.tool.render(
-                    getCursor(idx),
+                    getCtx(idx),
                     this.state.mouse,
                     _pointerData,
                     fontSize,
@@ -177,25 +177,25 @@ var Renderer = React.createClass({
         var foundObj = false;
         var foundIdx;
         var musicLine;
-        var cursorData;
-        for (var h = 0; h < getCursorCount(); ++h) {
-            var cursor = getCursor(h);
-            if (!cursor) {
+        var ctxData;
+        for (var h = 0; h < getCtxCount(); ++h) {
+            var ctx = getCtx(h);
+            if (!ctx) {
                 continue;
             }
-            for (var i = cursor.pageLines[mouse.page]; i < cursor.lines.length; ++i) {
-                if (mouse.y < cursor.lines[i].y + 8/4) {
+            for (var i = ctx.pageLines[mouse.page]; i < ctx.lines.length; ++i) {
+                if (mouse.y < ctx.lines[i].y + 8/4) {
                     musicLine = i;
-                    dynY = cursor.lines[i].y;
-                    dynLine = Math.round((cursor.lines[i].y - mouse.y)/0.125)/2 + 3;
+                    dynY = ctx.lines[i].y;
+                    dynLine = Math.round((ctx.lines[i].y - mouse.y)/0.125)/2 + 3;
                     if (dynLine > 8.5 || dynLine < -2.5) {
                         break;
                     }
                     var body = this.props.staves[h].body; // XXX: Make more robust!
-                    for (var j = cursor.pageStarts[mouse.page];
+                    for (var j = ctx.pageStarts[mouse.page];
                             j < body.length && !body[i].newpage; ++j) {
                         var item = body[j];
-                        cursorData = item.cursorData;
+                        ctxData = item.ctxData;
                         if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
                             if ((item.keySignature ||
                                         item.timeSignature ||
@@ -209,7 +209,7 @@ var Renderer = React.createClass({
                                 foundObj = item;
                                 break;
                             } else if (dynX < item["$Bridge_x"] ||
-                                    (j === body.length - 1 && h === getCursorCount() - 1)) {
+                                    (j === body.length - 1 && h === getCtxCount() - 1)) {
                                 if (dynX < item["$Bridge_x"]) {
                                     j -= 1;
                                 }
@@ -218,7 +218,7 @@ var Renderer = React.createClass({
                                     line: dynLine,
                                     idx: j,
                                     musicLine: musicLine,
-                                    cursorData: item.cursorData,
+                                    ctxData: item.ctxData,
                                     obj: {
                                         placeholder: true,
                                         idx: j,
@@ -240,7 +240,7 @@ var Renderer = React.createClass({
             obj: foundObj,
             idx: foundIdx,
             musicLine: musicLine,
-            cursorData: cursorData
+            ctxData: ctxData
         };
 
         return _pointerData;
@@ -248,15 +248,15 @@ var Renderer = React.createClass({
     _elementsInBBox: function(box, mouse) {
         var ret = [];
 
-        for (var h = 0; h < getCursorCount(); ++h) {
-            var cursor = getCursor(h);
-            if (!cursor) {
+        for (var h = 0; h < getCtxCount(); ++h) {
+            var ctx = getCtx(h);
+            if (!ctx) {
                 continue;
             }
             var body = this.props.staves[3].body; // XXX: Make more robust!
             var inRange = (min, val, max) => min < val && val < max;
 
-            for (var i = cursor.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
+            for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
                 var item = body[i];
                 if (inRange(box.top - 1, item["$Bridge_y"],
                             box.bottom + 1) &&
@@ -302,11 +302,11 @@ var Renderer = React.createClass({
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
-        if (!this.props.tool && data.cursorData) {
+        if (!this.props.tool && data.ctxData) {
             "/local/visualCursor".POST({
-                bar: data.cursorData.bar,
-                beat: data.cursorData.beat,
-                endMarker: data.cursorData.endMarker
+                bar: data.ctxData.bar,
+                beat: data.ctxData.beat,
+                endMarker: data.ctxData.endMarker
             });
         }
         if (!this.props.tool) {
