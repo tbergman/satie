@@ -10,7 +10,7 @@ var Audio5js = require("audio5");
 var Dispatcher = require("./dispatcher.jsx"); 
 var SessionStore = require("./session.jsx"); // must be registered before PlaybackStore!
 
-var USING_LEGACY_AUDIO = !global.AudioContext && typeof window !== "undefined" || true;
+var USING_LEGACY_AUDIO = !global.AudioContext && typeof window !== "undefined";
 var _legacyAudioReady = false;
 
 var enabled = (typeof window !== "undefined");
