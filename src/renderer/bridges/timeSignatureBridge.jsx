@@ -46,13 +46,12 @@ class TimeSignatureBridge extends Bridge {
 }
 
 var createTS = (ctx) => {
-    ctx.body.splice(ctx.idx, 0, new TimeSignatureBridge({
+    return ctx.insertBefore(new TimeSignatureBridge({
         timeSignature: {
             beats: 4, 
             beatType: 4,
             commonRepresentation: true
         }, _annotated: "createTS"}));
-    return -1;
 };
 
 TimeSignatureBridge.prototype.prereqs = [

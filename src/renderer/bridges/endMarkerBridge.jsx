@@ -35,7 +35,7 @@ EndMarkerBridge.prototype.prereqs = [
                     ctx.body[ctx.idx + 2].newpage)); },
         function(ctx) {
             var SongEditor = require("../../stores/songEditor.jsx");
-            ctx.body.splice(ctx.idx, 1);
+            ctx.eraseCurrent();
             var visualCursor = SongEditor.visualCursor();
             if (visualCursor.endMarker && visualCursor.bar === ctx.bar) {
                 visualCursor.bar++;

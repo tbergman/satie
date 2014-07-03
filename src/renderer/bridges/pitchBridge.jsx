@@ -571,9 +571,8 @@ PitchBridge.prototype.prereqs = [
         function (ctx) {
             return ctx.next(); },
         function (ctx) {
-            ctx.body.splice(ctx.idx + 1, 0,
+            return ctx.insertAfter(
                 new EndMarkerBridge({endMarker: true}));
-            return true;
         },
         "The document must end with a marker."
     ],

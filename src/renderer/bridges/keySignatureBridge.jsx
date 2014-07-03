@@ -73,12 +73,11 @@ KeySignatureBridge.prototype.prereqs = [
 ];
 
 var createKeySignature = (ctx) => {
-    ctx.body.splice(ctx.idx, 0, new KeySignatureBridge({
+    return ctx.insertBefore(new KeySignatureBridge({
         keySignature: ctx.prevKeySignature ||
             {pitch: {pitch: "c"}, acc: 0, mode: MAJOR},
         _annotated: "createKeySignature"
     }));
-    return -1;
 };
 
 var getSharpCount = (keySignature) => {

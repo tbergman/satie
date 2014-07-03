@@ -12,8 +12,6 @@ var renderUtil = require("../renderer/util.jsx");
 
 class Context {
     constructor(opts) {
-        //start, fontSize, first, pageSize, stave) {
-        //
         if (opts.snapshot) {
             var s = JSON.parse(opts.snapshot);
             _.forEach(s, (val, key) => {
@@ -66,6 +64,11 @@ class Context {
         this.idx = -1;
     }
 
+    /**
+     * Return a string identifying the current state of the cursor.
+     * Used to avoid re-annotating everything when only a line or a set
+     * of lines have changed.
+     */
     get snapshot() {
         var stave = this.stave;
         this.stave = null;
@@ -76,12 +79,24 @@ class Context {
         return ret;
     }
 
+    /**
+     * Start iterating through the stave.
+     * For use in the SongEditor store.
+     */
     begin() {
         this.idx = this.start;
     }
+    /**
+     * Iteration condition.
+     * For use in the SongEditor store.
+     */
     atEnd() {
         return this.idx >= this.body.length;
     }
+    /**
+     * Based on a return code, continue iterating through the stave.
+     * For use in the SongEditor store.
+     */
     nextIndex(exitCode) {
         var i = this.idx;
 
@@ -163,6 +178,19 @@ class Context {
     }
     get prev() {
         return this.body[this.idx - 1];
+    }
+
+    eraseCurrent() {
+        this.body.splice(this.idx, 1);
+        return -1;
+    }
+    insertBefore(obj) {
+        this.body.splice(this.idx, 0, obj);
+        return -1;
+    }
+    insertAfter(obj) {
+        this.body.splice(this.idx + 1, 0, obj);
+        return true;
     }
 }
 

@@ -119,7 +119,7 @@ BeamGroupBridge.prototype.prereqs = [
             return this.beam.length > 1; },
         function(ctx) {
             this.beam.forEach(o => delete o.inBeam);
-            ctx.body.splice(ctx.idx, 1);
+            ctx.eraseCurrent();
             return -1;
         },
         "A beam must have at least two notes"
@@ -127,9 +127,8 @@ BeamGroupBridge.prototype.prereqs = [
 ];
 
 var createBeam = (ctx, beam) => {
-    ctx.body.splice(ctx.idx, 0, new BeamGroupBridge(
+    return ctx.insertBefore(new BeamGroupBridge(
         {beam: beam, _annotated: "createBeam"}));
-    return -1;
 };
 
 module.exports = BeamGroupBridge;

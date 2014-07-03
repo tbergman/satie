@@ -60,20 +60,16 @@ var clefIsNotRedundant = function(ctx) {
 };
 
 var createClef = function(ctx) {
-    ctx.body.splice(ctx.idx, 0, new ClefBridge({
+    return ctx.insertBefore(new ClefBridge({
         clef: (ctx.prevClef ? "detect" : "treble"),
         _annotated: "createClef"
     }));
-    return -1;
 };
 
 ClefBridge.prototype.prereqs = [
     [
         clefIsNotRedundant,
-        function (ctx) {
-            ctx.body.splice(ctx.idx, 1);
-            return -1;
-        },
+        (ctx) => ctx.eraseCurrent(),
         "A clef must not be redundant."
     ],
     [

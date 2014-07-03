@@ -50,10 +50,7 @@ BarlineBridge.prototype.prereqs = [
             }
             return false;
         },
-        function(ctx) {
-            ctx.body.splice(ctx.idx, 1);
-            return -1;
-        },
+        (ctx) => ctx.eraseCurrent(),
         "At least one note must exist before a barline on every line"
     ],
 
@@ -70,10 +67,7 @@ BarlineBridge.prototype.prereqs = [
             }
             return false;
         },
-        function(ctx) {
-            ctx.body.splice(ctx.idx, 1);
-            return -1;
-        },
+        (ctx) => ctx.eraseCurrent(),
         "At least one note must exist between barlines"
     ],
 
@@ -107,9 +101,7 @@ BarlineBridge.prototype.prereqs = [
         function(ctx) {
             return ctx.prev().endMarker; },
         function(ctx) {
-            ctx.body.splice(ctx.idx, 0,
-                new EndMarkerBridge({endMarker: true}));
-            return -1;
+            return ctx.insertBefore(new EndMarkerBridge({endMarker: true}));
         },
         "If followed by a newline or underfilled, must be preceeded by and endline marker"
     ],
@@ -131,7 +123,7 @@ var createBarline = (ctx, mode) => {
     mode = mode || true;
 
     if (ctx.curr().beam) {
-        ctx.body.splice(ctx.idx, 1);
+        ctx.eraseCurrent();
         for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
             delete ctx.body[j].inBeam;
             if (ctx.body[j] === this) {
@@ -141,8 +133,7 @@ var createBarline = (ctx, mode) => {
         }
         return "line";
     }
-    ctx.body.splice(ctx.idx, 0, new BarlineBridge({barline: mode}));
-    return -1;
+    return ctx.insertBefore(new BarlineBridge({barline: mode}));
 };
 
 module.exports = BarlineBridge;
