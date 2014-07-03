@@ -6,8 +6,12 @@ var EventEmitter = require('events').EventEmitter;
 var _ = require("underscore");
 var assert = require("assert");
 
+var Audio5js = require("audio5");
 var Dispatcher = require("./dispatcher.jsx"); 
 var SessionStore = require("./session.jsx"); // must be registered before PlaybackStore!
+
+var USING_LEGACY_AUDIO = !global.AudioContext && typeof window !== "undefined" || true;
+var _legacyAudioReady = false;
 
 var enabled = (typeof window !== "undefined");
 
@@ -24,12 +28,33 @@ if (enabled) {
 
 var CHANGE_EVENT = 'change'; 
 
+var audio5js;
+
 class PlaybackStore extends EventEmitter {
     constructor() {
         Dispatcher.register(this.handleAction.bind(this));
 
         _pianoLoaded = false;
         _playing = false;
+
+        if (USING_LEGACY_AUDIO) {
+            var store = this;
+            _.defer(() => {
+                window.audio5js = audio5js = new Audio5js({
+                    swf_path: "/node_modules/audio5/swf/audio5js.swf",
+                    throw_errors: true,
+                    ready: function(player) {
+                        this.on("canplay", function() {
+                            _legacyAudioReady = true;
+                            store.emit(CHANGE_EVENT);
+                        });
+                        if (this.pending) {
+                            this.pending();
+                        }
+                    }
+                });
+            });
+        }
 
         if (enabled) { 
             _.defer(() => {
@@ -72,6 +97,19 @@ class PlaybackStore extends EventEmitter {
                     _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                 }
                 break;
+            case "POST /api/synth DONE":
+                if (action.response.cb === "" + module.exports.latestID) {
+                    var play = function() {
+                        audio5js.load("/api/synth/mp3?tmpRef=" + action.response.tmpRef);
+                    }
+                    if (audio5js.ready) {
+                        play();
+                    } else {
+                        audio5js.pending = play;
+                    }
+                }
+                this.emit(CHANGE_EVENT);
+                break;
         }
         return true;
     }
@@ -95,11 +133,15 @@ class PlaybackStore extends EventEmitter {
             });
         }
 
+        var seek = 0;
+        var foundLegacyStart = false;
+        var startTime = MIDI.Player.ctx.currentTime + 0.01;
+
         for (var h = 0; h < SongEditorStore.cursorCount(); ++h) {
-            if (!SongEditorStore.staves()[h].body) {
+            var body = SongEditorStore.staves()[h].body;
+            if (!body) {
                 continue;
             }
-            var body = SongEditorStore.staves()[h].body;
             var visualCursor = SongEditorStore.visualCursor();
             var delay = 0;
             var bpm = 120;
@@ -113,26 +155,42 @@ class PlaybackStore extends EventEmitter {
                     var obj = body[i];
                     foundIdx = foundIdx || (visualCursor.beat === obj.cursorData.beat &&
                             visualCursor.bar === obj.cursorData.bar);
+                    if (foundIdx && USING_LEGACY_AUDIO && !foundLegacyStart) {
+                        audio5js.seek(seek);
+                        audio5js.play();
+                        foundLegacyStart = true;
+                        this._remainingActions.push(() => {
+                            audio5js.pause();
+                        });
+                    }
+                    
                     if (foundIdx && (obj.pitch || obj.chord)) {
                         var beats = obj.getBeats();
-                        (obj.pitch ? [obj.midiNote()] : obj.midiNote()).map(midiNote => {
-                            var a = MIDI.noteOn(0, midiNote, 127, delay);
-                            MIDI.noteOff(0, midiNote, delay + beats*timePerBeat);
-                            if (MIDI.noteOn === MIDI.Flash.noteOn) {
-                                this._remainingActions.push(() =>
-                                    global.clearInterval(a));
-                            } else {
-                                this._remainingActions.push(() => a.stop());
-                            }
-                        });
+                        if (!USING_LEGACY_AUDIO) {
+                            (obj.pitch ? [obj.midiNote()] : obj.midiNote()).forEach(midiNote => {
+                                var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
+                                MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
+                                if (MIDI.noteOn === MIDI.Flash.noteOn) {
+                                    this._remainingActions.push(() =>
+                                        global.clearInterval(a));
+                                } else {
+                                    this._remainingActions.push(() => a.stop());
+                                }
+                            });
+                        }
                         delay += beats*timePerBeat;
                         delays.push(delay);
+                    }
+
+                    if (obj.pitch || obj.chord) {
+                        var beats = obj.getBeats();
+                        seek += beats*timePerBeat;
                     }
                 }
             }
         }
 
-        var delayMap = [];
+        var delayMap = {};
         var lastIdx;
         delays.forEach((delay, idx) => {
             if (delayMap[delay]) {
@@ -182,7 +240,7 @@ class PlaybackStore extends EventEmitter {
     }
 
     get ready() {
-        return _pianoLoaded;
+        return _pianoLoaded && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
 }
 
@@ -203,5 +261,7 @@ var hit = function(note, velocity, duration) {
 
 module.exports = new PlaybackStore();
 module.exports.hit = hit;
+module.exports.USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
+module.exports.latestID = 0;
 
 window.PlaybackStore = module.exports;

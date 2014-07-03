@@ -26,6 +26,10 @@ var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") 
 var SessionStore = require("./session.jsx"); // must be registered before SongEditorStore!!!
 var PlaybackStore = require("./playback.jsx"); // must be registered before SongEditorStore!!!
 
+var latestID = 0;
+
+var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
+
 class SongEditorStore extends EventEmitter {
     constructor() {
         this.clear();
@@ -38,6 +42,9 @@ class SongEditorStore extends EventEmitter {
             case "GET /api/song":
             case "PUT /local/song/show":
                 var activeSong = SessionStore.activeSong();
+                if (USING_LEGACY_AUDIO) {
+                    _.defer(this.downloadLegacyAudio.bind(this));
+                }
                 if (activeSong !== _prevActiveSong) {
                     _dirty = true;
                     this.clear();
@@ -577,6 +584,39 @@ class SongEditorStore extends EventEmitter {
     }
     markDirty() {
         _dirty = true;
+    }
+
+    downloadLegacyAudio() {
+        var data = [];
+        for (var h = 0; h < this.cursorCount(); ++h) {
+            if (!this.staves()[h].body) {
+                continue;
+            }
+            var body = this.staves()[h].body;
+            var delay = 0;
+            var bpm = 120;
+            var timePerBeat = 60/bpm;
+
+            // XXX: assuming 4/4 for now 
+
+            for (var i = 0; i < body.length; ++i) {
+                var obj = body[i];
+                if (obj.pitch || obj.chord) {
+                    var beats = obj.getBeats();
+                    (obj.pitch ? [obj.midiNote()] : obj.midiNote()).map(midiNote => {
+                        data.push(delay +
+                                " NOTE_ON " + midiNote + " 127");
+                        data.push((delay + beats*timePerBeat - 0.019) +
+                                " NOTE_OFF " + midiNote + " 0");
+                    });
+                    delay += beats*timePerBeat;
+                }
+            }
+        }
+        "/api/synth".POST({
+            data: data,
+            cb: "" + ++PlaybackStore.latestID
+        });
     }
 
     transpose(how) {

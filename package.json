@@ -22,7 +22,8 @@
         "jisonify": "~1.0.4",
         "browserify-shader": "http://nettek.ca/browserify-shader.tar.gz",
         "mocha": "*",
-        "mochify": "*"
+        "mochify": "*",
+        "audio5": "*"
     },
     "scripts": {
         "dev-server": "watchify -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
