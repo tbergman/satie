@@ -15,6 +15,7 @@ global.useGL = useGL;
 
 var Barline = require("./primitives/barline.jsx");
 var Brace = require("./primitives/brace.jsx");
+var Group = require("./primitives/group.jsx");
 var Header = require("./primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 var SongEditorStore = require("../stores/songEditor.jsx");
@@ -22,7 +23,6 @@ var StaveLines = require("./primitives/staveLines.jsx");
 var renderUtil = require("./util.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;
-var Group = useGL ? Victoria.VG : React.DOM.g;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
@@ -46,13 +46,6 @@ var Renderer = React.createClass({
         var pageStarts = ctx.pageStarts;
         var pageLines = ctx.pageLines;
 
-        var noMargin = false;
-        if (typeof window !== "undefined" &&
-                global.location.href.indexOf("/scales/") !== -1) {
-            // XXX: HACK!!!
-            noMargin = true;
-        }
-
         var pageCount = pageStarts.length;
         for (var i = 1; i < pageCount; ++i) {
             pages.push({from: pageStarts[i - 1], to: pageStarts[i], idx: i-1});
@@ -67,7 +60,9 @@ var Renderer = React.createClass({
             Math.round(85000*(this.props.pageSize.width/215.9)) + " " +
             Math.round(110000*(this.props.pageSize.height/279.4));
 
-        var isPianoStaff = staves[3].pianoStaff;
+        // XXX: Currently we only support single and double staves.
+        // isPianoStaff is set to true when there is at least 2 staves.
+        var isPianoStaff = staves.reduce((memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
 
         var ret = <div className="workspace" style={{top: this.props.top}}>
             {pages.map((page, pidx) => <div className="page" 
@@ -104,18 +99,6 @@ var Renderer = React.createClass({
                         model={stave.header} />;
                 } else if (stave.body) {
                     return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                        {/* TODO: move to /annotate/ */}
-                        {stave.pianoStaff && <Brace
-                            x={renderUtil.mm(noMargin ? 15 : 30, fontSize)}
-                            fontSize={fontSize*FONT_SIZE_FACTOR}
-                            idx={idx}
-                            staves={staves} />}
-                        {!page.from && <StaveLines
-                            key={idx + "StaveLinesMain"}
-                            width={renderUtil.mm(this.props.pageSize.width - (noMargin ? 30 : 45), fontSize)}
-                            x={renderUtil.mm(noMargin ? 15 : 30, fontSize)}
-                            y={stave.body[0].y()} />}
-
                         {stave.body.slice(page.from, page.to).reduce((memo, obj) => {
                             if (obj.newline) {
                                 memo.push([]);
@@ -191,7 +174,7 @@ var Renderer = React.createClass({
                     if (dynLine > 8.5 || dynLine < -2.5) {
                         break;
                     }
-                    var body = this.props.staves[h].body; // XXX: Make more robust!
+                    var body = this.props.staves[h].body;
                     for (var j = ctx.pageStarts[mouse.page];
                             j < body.length && !body[i].newpage; ++j) {
                         var item = body[j];
@@ -253,7 +236,7 @@ var Renderer = React.createClass({
             if (!ctx) {
                 continue;
             }
-            var body = this.props.staves[3].body; // XXX: Make more robust!
+            var body = this.props.staves[h].body;
             var inRange = (min, val, max) => min < val && val < max;
 
             for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
@@ -401,10 +384,10 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
-            // DONT DO THIS: this goes against Flux so we can get our precious 60 Hz.
+            // Skip the dispatcher and unneeded stores (potentially dangerous!)
             SongEditorStore.handleAction({description: "PUT /local/tool", resource: "hide"});
         } else if (fn) {
-            // DONT DO THIS: this goes against Flux so we can get our precious 60 Hz.
+            // Skip the dispatcher and unneeded stores (potentially dangerous!)
             SongEditorStore.handleAction({description: "PUT /local/tool", resource: "preview",
                 postData: {mouseData: data, fn: fn}});
         }

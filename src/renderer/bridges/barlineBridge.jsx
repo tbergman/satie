@@ -86,8 +86,12 @@ BarlineBridge.prototype.prereqs = [
         function() { return false; },
         function(ctx) {
             if (ctx.next().isNote()) {
+                // XXX: Also check that notes are on the same beat!
+                // e.g., | C/////
+                //       | C/C#// will add spacing, but it shouldn't!
                 this.annotatedAccidentalSpacing = 0.2*
-                    (ctx.next().containsAccidental(ctx) ? 1 : 0);
+                    (_.any(ctx.next().intersects.filter(l => l.isNote()),
+                           n => n.containsAccidental(ctx)) ? 1 : 0);
             } else {
                 this.annotatedAccidentalSpacing = 0;
             }

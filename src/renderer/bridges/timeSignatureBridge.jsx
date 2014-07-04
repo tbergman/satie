@@ -12,7 +12,7 @@ class TimeSignatureBridge extends Bridge {
     annotateImpl(ctx) {
         var next = ctx.next();
         if (next.pitch || next.chord) {
-            if (next.acc) {
+            if (next.containsAccidental(ctx)) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {

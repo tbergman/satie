@@ -403,13 +403,14 @@ class SongEditorStore extends EventEmitter {
              * other than the first line.
              */
             var dirty = _dirty;
-            var context = this.ctxFromSnapshot(pointerData, stave) ||
+            var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
                     new Context({
                         top: y,
                         fontSize: this.staveHeight(),
                         isFirstLine: true,
                         pageSize: pageSize || _pageSize,
-                        stave: stave
+                        staves: staves,
+                        staveIdx: sidx
                     });
 
             /**
@@ -565,7 +566,7 @@ class SongEditorStore extends EventEmitter {
         return true;
     }
 
-    ctxFromSnapshot(pointerData, stave) {
+    ctxFromSnapshot(pointerData, staves, idx) {
         if (!pointerData) {
             return null;
         }
@@ -573,7 +574,8 @@ class SongEditorStore extends EventEmitter {
         if (pointerData && _snapshots[pointerData.musicLine]) {
             var ctx = new Context({
                 snapshot: _snapshots[pointerData.musicLine],
-                stave: stave
+                staves: stave,
+                staveIdx: idx
             });
             _linesToUpdate[ctx.line] = true;
             ctx.start = pointerData.idx;

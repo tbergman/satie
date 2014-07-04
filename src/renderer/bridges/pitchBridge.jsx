@@ -140,8 +140,8 @@ class PitchBridge extends Bridge {
         lylite.push(str);
     }
 
-    getBeats(pc) {
-        return getBeats(getCount(this) || pc, getDots(this), getTuplet(this));
+    getBeats(inheritedCount) {
+        return getBeats(getCount(this) || inheritedCount, getDots(this), getTuplet(this));
     }
 
     get midiNote() {

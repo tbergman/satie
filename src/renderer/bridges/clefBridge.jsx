@@ -4,6 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
+var BeginBridge = require("./beginBridge.jsx");
 var Clef = require("../primitives/clef.jsx");
 
 class ClefBridge extends Bridge {
@@ -71,6 +72,14 @@ ClefBridge.prototype.prereqs = [
         clefIsNotRedundant,
         (ctx) => ctx.eraseCurrent(),
         "A clef must not be redundant."
+    ],
+    [
+        function(ctx) {
+            return ctx.idx !== 0; },
+        function(ctx) {
+            return BeginBridge.createBegin(ctx);
+        },
+        "Songs begin with BeginBridges."
     ],
     [
         function(ctx) {

@@ -13,7 +13,6 @@ var renderUtil = require("../renderer/util.jsx");
 class Context {
     constructor(opts) {
         assert(opts instanceof Object, "opts is a required field");
-        assert(opts.stave instanceof Object, "opts.stave is a required field");
 
         opts.firstLine = opts.firstLine || true;
         opts.fontSize = opts.fontSize || 7;
@@ -72,9 +71,14 @@ class Context {
             ];
         }
 
-        this.stave = opts.stave;
+        this.stave = opts.stave || opts.staves[opts.staveIdx];
+        assert(this.stave instanceof Object, "either opts.stave or opts.staveIdx&stave are required");
+        this.staveIdx = opts.staveIdx;
+        this.staves = opts.staves;
         this.body = this.stave.body;
         this.idx = -1;
+
+        this.calculateIntersections();
     }
 
     /**
@@ -84,12 +88,84 @@ class Context {
      */
     get snapshot() {
         var stave = this.stave;
+        var staves = this.staves;
         this.stave = null;
+        this.staves = null;
         this.body = null;
         var ret = JSON.stringify(this);
         this.stave = stave;
+        this.staves = staves;
         this.body = stave.body;
         return ret;
+    }
+
+    calculateIntersections() {
+        // XXX FIXME: Intersections will be incorrect if an incomplete bar exists!
+        var genIterators =
+            () => this.staves
+                .filter(s => s.body)
+                .map(s => {return {
+                    idx: 0,
+                    body: s.body,
+                    beat: 0,
+                    doIf: (act, cond) => {if (cond()) { return act() };}
+                }});
+
+        for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+            iterators.forEach(s => s.doIf(
+                () => {
+                    s.body[s.idx].intersects = [];
+                    ++s.idx;
+                },
+                () => s.idx < s.body.length));
+        }
+        
+        var actives = [];
+        var beat = 0;
+        for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+            var allNewActives = [];
+            iterators
+                .map((s, sidx) => s.doIf(
+                    () => {
+                        if (beat === s.beat) {
+                            var newActives = [];
+                            do {
+                                ++s.idx;
+                                if (!s.body[s.idx]) {
+                                    break;
+                                }
+                                newActives.push(s.body[s.idx]);
+                                allNewActives.push(s.body[s.idx]);
+                                if (s.body[s.idx].beam) {
+                                    ++s.idx;
+                                    continue;
+                                }
+                            } while(s.body[s.idx] && !s.body[s.idx].getBeats);
+                            actives = actives.concat(newActives.map(a => {
+                                return {obj: a, expires: s.beat};
+                            }));
+                            if (s.body[s.idx]) {
+                                s.beat = s.beat + s.body[s.idx].getBeats();
+                            } else {
+                                s.beat = undefined;
+                            }
+                        }
+                    },
+                    () => s.idx < s.body.length))
+                .filter(s => s);
+
+            var increment = iterators
+                .map(s => s.beat)
+                .filter(s => s !== null && !isNaN(s))
+                .sort((a, b) => a - b);
+
+            beat = increment[0]; // lowest
+
+            actives.forEach(a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
+
+            actives = actives
+                .filter(a => a.expires > beat);
+        }
     }
 
     /**
@@ -281,6 +357,9 @@ class Context {
         };
     }
 
+    /**
+     * ITEMS ON THE CURRENT STAVE
+     */
     get curr() {
         return this.body[this.idx];
     }
@@ -361,6 +440,19 @@ class Context {
         assert(idx > this.idx, "Otherwise, use 'insertPast'");
         this.body.splice(idx, 0, obj);
         return true;
+    }
+
+    /**
+     * STAVES
+     */
+    get currStave() {
+        return this.stave;
+    }
+    get nextStave() {
+        return this.staves[this.staveIdx + 1];
+    }
+    get prevStave() {
+        return this.staves[this.staveIdx - 1];
     }
 }
 

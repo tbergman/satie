@@ -23,27 +23,20 @@ var Brace = React.createClass({
         var fontSize = this.props.fontSize;
         var idx = this.props.idx;
 
-        if (!staves[idx].pianoStaff || !staves[idx + 1]) {
-            return <Group />;
-        }
-
-        var y = staves[idx].body[0].y();
-        var y2 = staves[idx + 1].body[0].y();
-
         var s = 3.31;
         return <Group>
             {[<Glyph transform={"scale(" + s + "," + s + ")" +
                     "translate(" + -this.props.fontSize*this.props.x*(1-1/s) + "," +
-                        -(1-1/s)*this.props.fontSize*(y + y2)/2 + ")"}
+                        -(1-1/s)*this.props.fontSize*(this.props.y + this.props.y2)/2 + ")"}
                 key={0}
                 x={this.props.x - 1/8}
-                y={(y + y2)/2 + 2/4}
+                y={(this.props.y + this.props.y2)/2 + 2/4}
                 glyphName={"brace"} />,
             <Barline
                 height={1.64}
                 key={1}
                 x={this.props.x}
-                y={y + (1.63 - 2/4)} />]}
+                y={this.props.y + (1.63 - 2/4)} />]}
         </Group>;
     }
 });

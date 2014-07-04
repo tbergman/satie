@@ -8,11 +8,11 @@ var Victoria = require("./victoria/hellogl.jsx");
 
 var VG = Victoria.VG;
 
-function Group(a, b) {
+function Group(a, b, c) {
     if (global.useGL) {
-        return VG(a, b);
+        return VG(a, b, c);
     } else {
-        return React.DOM.g(a, b);
+        return React.DOM.g(a, b, c);
     }
 }
 
