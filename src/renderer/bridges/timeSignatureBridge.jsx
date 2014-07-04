@@ -46,7 +46,7 @@ class TimeSignatureBridge extends Bridge {
 }
 
 var createTS = (ctx) => {
-    return ctx.insertBefore(new TimeSignatureBridge({
+    return ctx.insertPast(new TimeSignatureBridge({
         timeSignature: {
             beats: 4, 
             beatType: 4,

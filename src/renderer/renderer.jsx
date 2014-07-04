@@ -48,7 +48,7 @@ var Renderer = React.createClass({
 
         var noMargin = false;
         if (typeof window !== "undefined" &&
-                window.location.href.indexOf("/scales/") !== -1) {
+                global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
             noMargin = true;
         }
@@ -415,6 +415,12 @@ var Renderer = React.createClass({
     }, 16 /* 60 Hz */),
 
     componentDidMount: function() {
+        if (isBrowser) {
+            this.setupBrowserListeners();
+        }
+        SongEditorStore.addAnnotationListener(this.update);
+    },
+    setupBrowserListeners: function() {
         var AccidentalTool = require("../tools/accidentalTool.jsx");
         var DotTool = require("../tools/dotTool.jsx");
         var NoteTool = require("../tools/noteTool.jsx");
@@ -472,12 +478,16 @@ var Renderer = React.createClass({
             }
         };
 
-        SongEditorStore.addAnnotationListener(this.update);
     },
     componentWillUnmount: function() {
+        if (isBrowser) {
+            this.clearBrowserListeners();
+        }
+        SongEditorStore.removeAnnotationListener(this.update);
+    },
+    clearBrowserListeners: function() {
         document.onkeypress = null;
         document.onkeydown = null;
-        SongEditorStore.removeAnnotationListener(this.update);
     },
     update: function() {
         this.setState({

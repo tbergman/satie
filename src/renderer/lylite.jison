@@ -383,7 +383,7 @@ partElement
             $$ = new TimeSignatureBridge({timeSignature: {beats: $2, beatType: $4} });
         }
   | relativeMode                         { $$ = $1; }
-  | completePitchOrChord                 { $$ = new PitchBridge(false, $1); }
+  | completePitchOrChord                 { $$ = new PitchBridge($1); }
   | tupletMode                           { $$ = $1; }
   | 'PAGE_BREAK'                         { $$ = {append: [
         new BarlineBridge({barline: true}),

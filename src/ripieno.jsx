@@ -33,11 +33,6 @@ if (typeof window !== "undefined") {
 
 var Ripieno = React.createClass({
     render: function() {
-        // Nothing is rendered until a session has started.
-        if (!this.props.session.state) {
-            return <i />;
-        }
-
         var loggedIn = this.props.session.state === "LoggedIn";
 
         return <Locations path={this.props.defaultPath} ref="router"

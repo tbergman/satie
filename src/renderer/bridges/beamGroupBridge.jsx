@@ -10,8 +10,6 @@ var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var PitchBridge = require("./pitchBridge.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
-var beamPitchBridge = new PitchBridge(true);
-
 class BeamGroupBridge extends Bridge {
     annotateImpl(ctx) {
         var SongEditorStore = require("../../stores/songEditor.jsx");
@@ -127,7 +125,7 @@ BeamGroupBridge.prototype.prereqs = [
 ];
 
 var createBeam = (ctx, beam) => {
-    return ctx.insertBefore(new BeamGroupBridge(
+    return ctx.insertPast(new BeamGroupBridge(
         {beam: beam, _annotated: "createBeam"}));
 };
 

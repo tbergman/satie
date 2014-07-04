@@ -6,16 +6,18 @@ var EventEmitter = require('events').EventEmitter;
 var _ = require("underscore");
 var assert = require("assert");
 
-var Audio5js = require("audio5");
 var Dispatcher = require("./dispatcher.jsx"); 
 var SessionStore = require("./session.jsx"); // must be registered before PlaybackStore!
 
-var USING_LEGACY_AUDIO = !global.AudioContext && typeof window !== "undefined";
-var _legacyAudioReady = false;
-
 var enabled = (typeof window !== "undefined");
 
+var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
+
+var Audio5js;
 var MIDI;
+var _legacyAudioReady = false;
+var audio5js;
+
 if (enabled) {
     MIDI = require("midi/js/MIDI/Plugin.js");
     MIDI = _(MIDI).extend({
@@ -24,11 +26,12 @@ if (enabled) {
         Player: require("midi/js/MIDI/Player.js")
     });
     global.MIDI = MIDI;
+    if (USING_LEGACY_AUDIO) {
+        Audio5js = require("audio5");
+    }
 }
 
 var CHANGE_EVENT = 'change'; 
-
-var audio5js;
 
 class PlaybackStore extends EventEmitter {
     constructor() {
@@ -40,7 +43,7 @@ class PlaybackStore extends EventEmitter {
         if (USING_LEGACY_AUDIO) {
             var store = this;
             _.defer(() => {
-                window.audio5js = audio5js = new Audio5js({
+                global.audio5js = audio5js = new Audio5js({
                     swf_path: "/node_modules/audio5/swf/audio5js.swf",
                     throw_errors: true,
                     ready: function(player) {
@@ -216,7 +219,7 @@ class PlaybackStore extends EventEmitter {
             }, delay*1000 - 10);
 
             this._remainingActions.push(() => {
-                window.clearTimeout(to);
+                global.clearTimeout(to);
             });
         });
     }
@@ -264,4 +267,4 @@ module.exports.hit = hit;
 module.exports.USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
 module.exports.latestID = 0;
 
-window.PlaybackStore = module.exports;
+global.PlaybackStore = module.exports;

@@ -201,7 +201,7 @@ class SongEditorStore extends EventEmitter {
                         }
                     }
                     if (i === _staves[3].body.length) {
-                        console.log("Not found");
+                        console.warn("Cursor not found");
                         break;
                     }
                     while(i >= 0 && !_staves[3].body[i].pitch &&
@@ -372,18 +372,23 @@ class SongEditorStore extends EventEmitter {
 
         PROFILER_ENABLED && console.time("annotate");
 
-        var vcStave = 0;
-        var vcBar = 0;
-        var vcBeat = 0;
+        var cursorStave = 0;
+        var cursorBar = 0;
+        var cursorBeat = 0;
+        var cursor = _visualCursor;
 
         if (!pointerData) {
-            _visualCursor.annotatedObj = null;
-            _visualCursor.annotatedLine = null;
+            cursor.annotatedObj = null;
+            cursor.annotatedLine = null;
             _ctxs = [];
         }
 
         var y = 0;
         while (!staves.every((stave, sidx) => {
+            /**
+             * Process staves that aren't actually staves.
+             * (Headers, authors, etc.)
+             */
             if (stave.header) {
                 y += Header.getHeight(stave.header);
                 return true;
@@ -391,87 +396,53 @@ class SongEditorStore extends EventEmitter {
                 return true;
             }
         
-            var ctx =
-                    this.ctxFromSnapshot(pointerData, stave) ||
-                        new Context({
-                            start: y,
-                            fontSize: this.staveHeight(),
-                            first: true,
-                            pageSize: pageSize || _pageSize,
-                            stave: stave
-                        });
+            /**
+             * Get a context.
+             *
+             * Contexts are retreived from snapshots when modifying a line
+             * other than the first line.
+             */
+            var dirty = _dirty;
+            var context = this.ctxFromSnapshot(pointerData, stave) ||
+                    new Context({
+                        top: y,
+                        fontSize: this.staveHeight(),
+                        isFirstLine: true,
+                        pageSize: pageSize || _pageSize,
+                        stave: stave
+                    });
 
-            var exitCode;
-            var operations = 0;
-            for (ctx.begin(); !ctx.atEnd(); ctx.idx = ctx.nextIndex(exitCode)) {
+            /**
+             * Annotate the stave.
+             */
+            var info = context.annotate({
+                cursor: cursor,
+                cursorBar: cursorBar,
+                cursorBeat: cursorBeat,
+                cursorStave: cursorStave,
+                dirty: dirty,
+                pointerData: pointerData,
+                staveIdx: sidx,
+                toolFn: toolFn
+            });
 
-                ++operations;
-
-                var doCustomAction = pointerData && (stave.body[ctx.idx] === pointerData.obj ||
-                        (pointerData && pointerData.obj && pointerData.obj.idx === ctx.idx));
-
-                if (!pointerData && ctx.bar === _visualCursor.bar &&
-                        ((!_visualCursor.beat && !_visualCursor.annotatedObj) ||
-                            ctx.beats === _visualCursor.beat) &&
-                        (((stave.body[ctx.idx].pitch || stave.body[ctx.idx].chord) &&
-                            !_visualCursor.endMarker) || (_visualCursor.endMarker &&
-                            stave.body[ctx.idx].endMarker))) {
-
-                    if (vcStave === sidx || ctx.bar > vcBar || (vcBar === ctx.bar &&
-                            ctx.beats > vcBeat)) {
-                        vcStave = sidx;
-                        vcBar = ctx.bar;
-                        vcBeat = ctx.beats;
-                        _visualCursor.annotatedObj = stave.body[ctx.idx];
-                        _visualCursor.annotatedLine = ctx.line;
-                    }
-                }
-
-                stave.body[ctx.idx].ctxData = {
-                    bar: ctx.bar,
-                    beat: ctx.beats,
-                        // TODO: Move into the bridge layer
-                    endMarker: stave.body[ctx.idx].endMarker
-                };
-
-                if (doCustomAction) {
-                    exitCode = toolFn(stave.body[ctx.idx], ctx);
-                    pointerData = undefined;
-                } else {
-                    exitCode = stave.body[ctx.idx].annotate(ctx);
-                }
-
-                if (!doCustomAction &&
-                        toolFn &&
-                        !pointerData &&
-                        stave.body[ctx.idx].newline &&
-                        !_dirty &&
-                        exitCode !== "line_created") {
-                    return true;
-                }
-
-                if (exitCode === "line_created" && toolFn) {
-                    // ... and so must everything else
-                    _dirty = true;
-                    toolFn = false;
-                }
-            }
-            if (ctx.bar === 1 && !ctx.beats && !_visualCursor.endMarker) {
-                _visualCursor.endMarker = true;
-                y = 0;
-                return false;
+            if (!_visualCursor.annotatedObj) {
+                _visualCursor = info.cursor;
             }
 
-            ctx.idx = stave.body.length - 1;
-            NewlineBridge.semiJustify(ctx);
+            _dirty = _dirty || info.dirty;
+            y = info.resetY ? 0 : y;
 
-            PROFILER_ENABLED && console.log("Annotation efficiency: " +
-                    (operations / stave.body.length));
+            if (!info.skip) {
+                PROFILER_ENABLED && console.log("Annotation efficiency: " +
+                        (info.operations / stave.body.length));
 
-            _ctxs.length = sidx;
-            _ctxs[sidx] = ctx;
-            y += 2.25;
-            return true;
+                _ctxs.length = sidx;
+                _ctxs[sidx] = context;
+                y += 2.25;
+            }
+
+            return info.success;
         })) { /* pass */ }
 
         PROFILER_ENABLED && console.timeEnd("annotate");

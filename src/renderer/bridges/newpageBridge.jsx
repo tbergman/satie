@@ -31,10 +31,10 @@ NewPageBridge.prototype.prereqs = [
 ];
 
 var createNewPage = (ctx) => {
-    ctx.insertBefore(new NewPageBridge({newpage: true, _annotated: "createNewPage"}));
+    ctx.insertPast(new NewPageBridge({newpage: true, _annotated: "createNewPage"}));
     for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
         if (ctx.body[i].newpage && ctx.body[i]["_annotated"]) {
-            ctx.body.splice(i, 1);
+            ctx.eraseFuture(i);
             --i;
         }
     }

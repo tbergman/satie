@@ -151,13 +151,12 @@ var createNewline = (ctx) => {
                     ctx.body[i].clef ||
                     ctx.body[i].timeSignature ||
                     ctx.body[i].keySignature) {
-                ctx.body.splice(i, 1);
+                ctx.eraseFuture(i);
                 --i;
             }
         }
     }
-    ctx.body.splice(fidx + 1, 0,
-        new NewlineBridge({newline: true, _annotated: "createNewline"}));
+    ctx.insertPast(new NewlineBridge({newline: true, _annotated: "createNewline"}), fidx + 1);
     removeNextNewline(ctx, fidx + 2);
     return "line_created";
 };
@@ -169,7 +168,7 @@ var removeNextNewline = (ctx, start) => {
             for (var j = i; j < ctx.body.length && !ctx.body[j].beam &&
                     !ctx.body[j].pitch && !ctx.body[j].chord; ++j) {
                 if (ctx.body[j]._annotated) {
-                    ctx.body.splice(j, 1);
+                    ctx.eraseFuture(j);
                     --j;
                 }
             }
@@ -186,7 +185,7 @@ var removeNextNewline = (ctx, start) => {
 var semiJustify = (ctx) => {
     var fullJustify = false;
     if (typeof window !== "undefined" &&
-            window.location.href.indexOf("/scales/") !== -1) {
+            global.location.href.indexOf("/scales/") !== -1) {
         // XXX: HACK!!!
         fullJustify = true;
     }

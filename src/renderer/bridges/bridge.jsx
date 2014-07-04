@@ -45,14 +45,18 @@ var assert = require("assert");
 var _ = require("underscore");
 
 class Bridge {
-    annotate(ctx) {
+    annotate(ctx, stopping) {
         if (!this.inBeam) {
             this.setX(ctx.x);
             this.setY(ctx.y);
         }
+        this.idx = ctx.idx;
         for (var i = 0; i < this.prereqs.length; ++i) {
             if (!this.prereqs[i][0 /* condition */].call(this, ctx)) {
                 var exitCode = this.prereqs[i][1 /* correction */].call(this, ctx);
+                if (stopping) {
+                    console.warn(" -" + this.prereqs[i][2 /* description */], "(code: " + exitCode + ")");
+                }
                 if (exitCode !== true) {
                     return exitCode;
                 }
@@ -109,6 +113,10 @@ class Bridge {
     }
     setY(y) {
         this._y = y;
+    }
+
+    isNote() {
+        return this.pitch || this.chord;
     }
 }
 

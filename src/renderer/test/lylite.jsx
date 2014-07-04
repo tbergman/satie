@@ -16,7 +16,6 @@ describe("Lylite", function() {
         });
         it("should be annotatable", function() {
             SongEditorStore.annotate(null, null, parsed, {width: 1000, height: 1000});
-            //console.log(JSON.stringify(parsed));
         });
     });
 

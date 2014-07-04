@@ -12,6 +12,19 @@ var renderUtil = require("../renderer/util.jsx");
 
 class Context {
     constructor(opts) {
+        assert(opts instanceof Object, "opts is a required field");
+        assert(opts.stave instanceof Object, "opts.stave is a required field");
+
+        opts.firstLine = opts.firstLine || true;
+        opts.fontSize = opts.fontSize || 7;
+        opts.pageSize = opts.pageSize || {
+            height: 297,
+            lilypondName: "a4",
+            unit: "mm",
+            width: 210
+        };
+        opts.top = opts.top || 2.75;
+
         if (opts.snapshot) {
             var s = JSON.parse(opts.snapshot);
             _.forEach(s, (val, key) => {
@@ -20,12 +33,12 @@ class Context {
         } else {
             var noMargin = false;
             if (typeof window !== "undefined" &&
-                    window.location.href.indexOf("/scales/") !== -1) {
+                    global.location.href.indexOf("/scales/") !== -1) {
                 // XXX: HACK!!!
                 noMargin = true;
             }
             var initialX = renderUtil.mm(15, opts.fontSize) + 1/4;
-            var firstX = renderUtil.mm(opts.first && !noMargin ? 30 : 15, opts.fontSize) + 1/4;
+            var firstX = renderUtil.mm(opts.isFirstLine && !noMargin ? 30 : 15, opts.fontSize) + 1/4;
 
             this.accidentals = {};
             this.bar = 1;
@@ -44,7 +57,7 @@ class Context {
             this.smallest = 10000;
             this.start = 0;
             this.x = firstX;
-            this.y = renderUtil.mm(15, opts.fontSize) + opts.start;
+            this.y = renderUtil.mm(15, opts.fontSize) + opts.top;
             this.lines = [
                 {
                     all: [],
@@ -54,7 +67,7 @@ class Context {
                     beats: 0,
                     line: 0,
                     x: firstX,
-                    y: renderUtil.mm(15, opts.fontSize) + opts.start
+                    y: renderUtil.mm(15, opts.fontSize) + opts.top
                 }
             ];
         }
@@ -80,24 +93,22 @@ class Context {
     }
 
     /**
-     * Start iterating through the stave.
-     * For use in the SongEditor store.
+     * Start iterating through the stave (for annotating)
      */
-    begin() {
+    _begin() {
         this.idx = this.start;
     }
     /**
-     * Iteration condition.
-     * For use in the SongEditor store.
+     * Iteration condition (for annotating)
      */
-    atEnd() {
+    _atEnd() {
         return this.idx >= this.body.length;
     }
     /**
      * Based on a return code, continue iterating through the stave.
      * For use in the SongEditor store.
      */
-    nextIndex(exitCode) {
+    _nextIndex(exitCode) {
         var i = this.idx;
 
         switch(exitCode) {
@@ -162,19 +173,152 @@ class Context {
         return i + 1;
     }
 
+    annotate(opts) {
+        opts = opts || {};
+        var cursor = opts.cursor || {};
+        var cursorBar = opts.cursorBar === undefined ? NaN : opts.cursorBar;
+        var cursorBeat = opts.cursorBeat === undefined ? NaN : opts.cursorBeat;
+        var cursorStave = opts.cursorStave === undefined ? NaN : opts.cursorStave;
+        var dirty = opts.dirty || false;
+        var exitCode;
+        var operations = 0;
+        var pointerData = opts.pointerData || null;
+        var sidx = opts.staveIdx || 0;
+        var toolFn = opts.toolFn || null;
+        var stopping = false;
+
+        for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
+
+            ++operations;
+            if (operations/this.body.length > 500 && !stopping) {
+                console.warn("Detected loop or severe inefficency.");
+                stopping = 20;
+            }
+
+            var doCustomAction = pointerData && (this.body[this.idx] === pointerData.obj ||
+                    (pointerData && pointerData.obj && pointerData.obj.idx === this.idx));
+
+            if (!pointerData && this.bar === cursor.bar &&
+                    ((!cursor.beat && !cursor.annotatedObj) ||
+                        this.beats === cursor.beat) &&
+                    (((this.body[this.idx].pitch || this.body[this.idx].chord) &&
+                        !cursor.endMarker) || (cursor.endMarker &&
+                        this.body[this.idx].endMarker))) {
+
+                if (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
+                        this.beats > cursorBeat)) {
+                    if (!cursor.annotatedObj) {
+                        // XXX: ROBUSTNESS
+                        cursorStave = sidx;
+                        cursorBar = this.bar;
+                        cursorBeat = this.beats;
+                        cursor.annotatedObj = this.body[this.idx];
+                        cursor.annotatedLine = this.line;
+                    }
+                }
+            }
+
+            this.body[this.idx].ctxData = {
+                bar: this.bar,
+                beat: this.beats,
+                    // TODO: Move into the bridge layer
+                endMarker: this.body[this.idx].endMarker
+            };
+
+            if (doCustomAction) {
+                exitCode = toolFn(this.body[this.idx], this);
+                pointerData = undefined;
+            } else {
+                exitCode = this.body[this.idx].annotate(this, stopping);
+                if (stopping && !--stopping) {
+                    assert(false, "Aborting.");
+                }
+            }
+
+            if (!doCustomAction &&
+                    toolFn &&
+                    !pointerData &&
+                    this.body[this.idx].newline &&
+                    !dirty &&
+                    exitCode !== "line_created") {
+                this.idx = -1;
+                return {
+                    cursor: cursor,
+                    operations: operations,
+                    skip: true,
+                    success: true
+                }
+            }
+
+            if (exitCode === "line_created" && toolFn) {
+                // ... and so must everything else
+                dirty = true;
+                toolFn = false;
+            }
+        }
+        if (this.bar === 1 && !this.beats && !cursor.endMarker) {
+            cursor.endMarker = true;
+            this.idx = -1;
+            return {
+                cursor: cursor,
+                resetY: true,
+                skip: true,
+                success: false
+            };
+        }
+
+        this.idx = this.body.length - 1;
+
+        var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
+        NewlineBridge.semiJustify(this);
+
+        this.idx = -1;
+        return {
+            cursor: cursor,
+            operations: operations,
+            dirty: dirty,
+            success: true
+        };
+    }
+
     get curr() {
         return this.body[this.idx];
     }
-    next(cond) {
+    /**
+     * Returns the next element in the stave, skipping over beams.
+     *
+     * @param{fn} cond: Optional delegate accepting a Bridge. Returns false
+     *     when it should be skipped.
+     * @param{num} skip: Start looking at Bridges <skip> after current.
+     *     1 if unspecified.
+     */
+    next(cond, skip, allowBeams) {
         var i;
-        for (i = 1; this.body[this.idx + i] && (
-            this.body[this.idx + i].beam || (cond && !cond(this.body[this.idx + i]))); ++i) {
+        skip = (skip === undefined || skip === null) ? 1 : skip;
+        for (i = skip; this.body[this.idx + i] && (
+            (this.body[this.idx + i].beam && !allowBeams) ||
+            (cond && !cond(this.body[this.idx + i]))); ++i) {
         }
         return this.body[this.idx + i];
     }
-    beamFollows() {
+    beamFollows(idx) {
         // Must return .beam
-        return this.body[this.idx + 1] && this.body[this.idx + 1].beam;
+        if (idx === null || idx === undefined) {
+            idx = this.idx;
+        }
+        return this.body[idx + 1] && this.body[idx + 1].beam;
+    }
+    removeFollowingBeam(idx, past) {
+        if (idx === null || idx === undefined) {
+            idx = this.idx;
+        }
+
+        assert(past || idx >= this.idx, "Set past to true if you are " +
+                "removing an already-processed beam (this is inefficient)");
+        var beam = this.beamFollows(idx);
+        assert(beam, "There must be a beam to remove");
+        beam.forEach(p => p.inBeam = false);
+        return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
     get prev() {
         return this.body[this.idx - 1];
@@ -184,12 +328,38 @@ class Context {
         this.body.splice(this.idx, 1);
         return -1;
     }
-    insertBefore(obj) {
-        this.body.splice(this.idx, 0, obj);
-        return -1;
+    eraseFuture(idx) {
+        assert(idx > this.idx, "Invalid use of eraseFuture");
+        this.body.splice(idx, 1);
+        return true;
     }
-    insertAfter(obj) {
-        this.body.splice(this.idx + 1, 0, obj);
+    erasePast(idx) {
+        assert(idx <= this.idx, "Invalid use of erasePast");
+        this.body.splice(idx, 1);
+        return false;
+    }
+    /**
+     * Inserts an element somewhere BEFORE the current element.
+     *
+     * @param{num} idx: The absolute position to insert an element at.
+     *     By default, just before current position.
+     */
+    insertPast(obj, idx) {
+        idx = (idx === null || idx === undefined) ? this.idx : idx;
+        assert(idx <= this.idx, "Otherwise, use 'insertFuture'");
+        this.body.splice(idx, 0, obj);
+        return this.idx === idx ? -1 : false;
+    }
+    /**
+     * Inserts an element somewhere AFTER the current element.
+     *
+     * @param{num} idx: The absolute position to insert an element at.
+     *     By default, one after current position.
+     */
+    insertFuture(obj, idx) {
+        idx = (idx === null || idx === undefined) ? (this.idx + 1) : idx;
+        assert(idx > this.idx, "Otherwise, use 'insertPast'");
+        this.body.splice(idx, 0, obj);
         return true;
     }
 }

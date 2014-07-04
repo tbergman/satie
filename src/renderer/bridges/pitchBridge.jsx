@@ -19,11 +19,6 @@ var Rest = require("../primitives/rest.jsx");
 var TimeSignatureBridge = require("./timeSignatureBridge.jsx");
 
 class PitchBridge extends Bridge {
-    constructor(isBeam, spec) {
-        super(spec);
-        this.isBeam = isBeam;
-    }
-
     annotateImpl(ctx) {
         this._line = getLine(this, ctx);
         
@@ -161,7 +156,7 @@ class PitchBridge extends Bridge {
         var nonAccidentals = KeySignatureBridge.getAccidentals(ctx.keySignature);
         var pitches = this.chord || [this];
         for (var i = 0; i < pitches.length; ++i) {
-            if (!nonAccidentals[pitches[i].pitch] && pitches[i].acc) {
+            if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
             }
         }
@@ -384,7 +379,7 @@ var cannotBeBeamed = function(ctx) {
 var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
 
 var noteNames = ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
-    "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
+    "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
 var beamable = (ctx) => {
     // TODO: give a better algorithm
@@ -526,8 +521,7 @@ PitchBridge.prototype.prereqs = [
 
     [
         function(ctx) {
-            return (!ctx.isBeam && this.inBeam /* don't check twice */) ||
-            (ctx.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
+            return (ctx.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
                 getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats); },
         BarlineBridge.createBarline,
         "The number of beats in a bar must not exceed that specified by the time signature"
@@ -554,6 +548,17 @@ PitchBridge.prototype.prereqs = [
     ],
 
     [
+        function(ctx) {
+            // XXX: Extend beam logic to work in other time signatures.
+            return ctx.curr().isBeam || !ctx.beamFollows();
+        },
+        function(ctx) {
+            return ctx.removeFollowingBeam();
+        },
+        "Recalculate future beams."
+    ],
+
+    [
         cannotBeBeamed,
         function (ctx) {
             var b = beamable(ctx);
@@ -571,7 +576,7 @@ PitchBridge.prototype.prereqs = [
         function (ctx) {
             return ctx.next(); },
         function (ctx) {
-            return ctx.insertAfter(
+            return ctx.insertFuture(
                 new EndMarkerBridge({endMarker: true}));
         },
         "The document must end with a marker."
@@ -579,7 +584,8 @@ PitchBridge.prototype.prereqs = [
 
     [
         function (ctx) {
-            return false;
+            this.forceMiddleNoteDirection = false;
+            return getAverageLine(this, ctx) !== 3;
         },
         decideMiddleLineStemDirection,
         "Middle note directions are set by surrounding notes"
@@ -588,11 +594,6 @@ PitchBridge.prototype.prereqs = [
 ];
 
 function decideMiddleLineStemDirection(ctx) {
-    var thisLine = getAverageLine(this, ctx);
-    if (thisLine !== 3) {
-        this.forceMiddleNoteDirection = false;
-        return true;
-    }
     var prevLine = (ctx.prev() && (ctx.prev().pitch ||
             ctx.prev().chord)) ? getAverageLine(ctx.prev(), ctx) : null;
     var nextLine = (ctx.next() && (ctx.next().pitch ||

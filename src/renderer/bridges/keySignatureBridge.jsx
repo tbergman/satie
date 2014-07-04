@@ -73,7 +73,7 @@ KeySignatureBridge.prototype.prereqs = [
 ];
 
 var createKeySignature = (ctx) => {
-    return ctx.insertBefore(new KeySignatureBridge({
+    return ctx.insertPast(new KeySignatureBridge({
         keySignature: ctx.prevKeySignature ||
             {pitch: {pitch: "c"}, acc: 0, mode: MAJOR},
         _annotated: "createKeySignature"

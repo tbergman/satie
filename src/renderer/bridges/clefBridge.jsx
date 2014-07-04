@@ -60,7 +60,7 @@ var clefIsNotRedundant = function(ctx) {
 };
 
 var createClef = function(ctx) {
-    return ctx.insertBefore(new ClefBridge({
+    return ctx.insertPast(new ClefBridge({
         clef: (ctx.prevClef ? "detect" : "treble"),
         _annotated: "createClef"
     }));
