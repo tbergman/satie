@@ -53,13 +53,14 @@ var SongEditor = React.createClass({
         // and users viewing someone else's song. If a song is loading, and
         // we're not sure who owns it, we render the Ribbon. This makes loading
         // slightly faster.
-        var showRibbon = this.state.width > 910 &&
+        var showRibbon = this.state.width >= 667 &&
             this.props.session.user &&
             (!this.state.staves ||
                 this.props.session.user._id === this.props.activeSong._owner);
 
         return <div className="global">
-            {this.props.session.state === "LoggedIn" ?
+            {/* THE HEADER */}
+            {showRibbon ?
                 <div className="topLeftPageOverlay">
                     <Link href="/library">
                         <i className="fa fa-arrow-circle-o-left" />
@@ -79,6 +80,7 @@ var SongEditor = React.createClass({
                     reloadFn={this.reload}
                     selection={this.state.selection}
                     session={this.props.session}
+                    width={this.state.width}
                     tool={this.state.tool} />
             </span>}
 

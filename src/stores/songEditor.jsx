@@ -571,10 +571,12 @@ class SongEditorStore extends EventEmitter {
             return null;
         }
 
+        var stave = staves[idx];
+
         if (pointerData && _snapshots[pointerData.musicLine]) {
             var ctx = new Context({
                 snapshot: _snapshots[pointerData.musicLine],
-                staves: stave,
+                staves: staves,
                 staveIdx: idx
             });
             _linesToUpdate[ctx.line] = true;
