@@ -122,6 +122,7 @@ class Context {
         
         var actives = [];
         var beat = 0;
+        var impliedCount = 4;
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             var allNewActives = [];
             iterators
@@ -145,7 +146,8 @@ class Context {
                                 return {obj: a, expires: s.beat};
                             }));
                             if (s.body[s.idx]) {
-                                s.beat = s.beat + s.body[s.idx].getBeats();
+                                impliedCount = s.body[s.idx].count || impliedCount;
+                                s.beat = s.beat + s.body[s.idx].getBeats(impliedCount);
                             } else {
                                 s.beat = undefined;
                             }

@@ -31,14 +31,13 @@ if (typeof window !== "undefined") {
     require("./main.less");
 }
 
-var Ripieno = React.createClass({
+var Router = React.createClass({
     render: function() {
         var loggedIn = this.props.session.state === "LoggedIn";
 
-        return <Locations path={this.props.defaultPath} ref="router"
-                style={{width: "100%", height: "100%"}}>
+        return <Locations path={this.props.defaultPath} ref="router">
             {/* The hero page with the login button */}
-            {/* Only available to logged in users */}
+            {/* Only available to logged out users */}
             {loggedIn ?
                 <Redirect path="/" to="/library" /> :
                 <Location path="/"
@@ -174,4 +173,4 @@ var Ripieno = React.createClass({
 
 var futurePath = null;
 
-module.exports = Ripieno;
+module.exports = Router;

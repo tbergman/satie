@@ -13,9 +13,9 @@ module.exports = {
                 if (!parsed) {
                     return;
                 }
-                context = new Context({stave: parsed[0]});
+                context = new Context({staves: parsed, staveIdx: 0});
                 context.annotate();
-                context = new Context({stave: parsed[0]});
+                context = new Context({staves: parsed, staveIdx: 0});
             });
             tests.forEach(test => it(test[0], () => parsed && context && test[1](parsed, context)));
         });
