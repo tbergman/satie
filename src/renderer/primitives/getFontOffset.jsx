@@ -6,7 +6,7 @@
  * @jsx React.DOM
  */
 
-var _ = require("underscore");
+var _ = require("lodash");
 
 var SMuFL = require("./SMuFL.js");
 

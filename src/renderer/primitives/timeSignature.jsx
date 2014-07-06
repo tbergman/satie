@@ -5,6 +5,7 @@
  */
 
 var React = require('react');
+var _ = require("lodash");
 
 var Glyph = require("./glyph.jsx");
 var Group = require("./group.jsx");
@@ -85,7 +86,7 @@ var TimeSignature = React.createClass({
 });
 
 function TimeSignatureNumber(props, children) {
-    return (children + "").split("").map((c, i) => <Glyph
+    return _.map((children + "").split(""), (c, i) => <Glyph
         key={"ts-" + i}
         x={props.x + i/4}
         y={props.y}

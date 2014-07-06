@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var Group = require("./primitives/group.jsx");

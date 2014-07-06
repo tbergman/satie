@@ -11,7 +11,7 @@ var Glyph = require("./glyph.jsx");
 var Group = require("./group.jsx");
 var SMuFL = require("./SMuFL.js");
 
-var _ = require("underscore");
+var _ = require("lodash");
 
 var KeySignature = React.createClass({
     propTypes: {
@@ -28,7 +28,7 @@ var KeySignature = React.createClass({
 
             if (props[propName]) {
                 console.assert(props[propsName] instanceof Array);
-                _(props[propsName]).each(s => assert(s.line && s.accidental));
+                _.each(props[propsName], s => assert(s.line && s.accidental));
             }
         }
     },
@@ -42,7 +42,7 @@ var KeySignature = React.createClass({
 
     render: function() {
         return <Group>
-            {this.getAccidentals().map((a, idx) => <Accidental
+            {_.map(this.getAccidentals(), (a, idx) => <Accidental
                 key={idx /* for React */}
                 x={this.props.x + idx/4}
                 y={this.props.y}
@@ -55,12 +55,12 @@ var KeySignature = React.createClass({
 
     getAccidentals: function() {
         if (!isNaN(this.props.sharpCount)) {
-            return _(this.props.sharpCount).times(i => Object({
+            return _.times(this.props.sharpCount, i => Object({
                 line: sharps[standardClef(this.props.clef)][i],
                 accidental: "accidentalSharp"
             }));
         } else if (!isNaN(this.props.flatCount)) {
-            return _(this.props.flatCount).times(i => Object({
+            return _.times(this.props.flatCount, i => Object({
                 line: flats[standardClef(this.props.clef)][i],
                 accidental: "accidentalFlat"
             }));

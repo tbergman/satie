@@ -12,7 +12,7 @@
 
 var React = require('react');
 var Router = require('react-router-component');
-var _ = require('underscore');
+var _ = require("lodash");
 var saveAs;
 if (typeof window !== "undefined") {
     saveAs = require("../../third_party/fileSaver/FileSaver.js");

@@ -9,7 +9,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Glyph = require("./glyph.jsx");
 var Group = require("./group.jsx");
@@ -46,7 +46,7 @@ var Beam = React.createClass({
                 height={this.props.scaleFactor}
                 viewBox="0 0 1 1"
                 className="overflow">
-            {_(this.props.beams).times(idx => 
+            {_.times(this.props.beams, idx => 
                 <polygon
                     key={idx}
                     points={this.getX1() + "," + this.getY1(0, idx) + " " +
@@ -64,7 +64,7 @@ var Beam = React.createClass({
 
     renderGL: function() {
         return <Group>
-            {_(this.props.beams).times(idx => <VRect
+            {_.times(this.props.beams, idx => <VRect
                 key={idx}
                 x1={this.getX1()} x2={this.getX2()}
                 y1={this.getY1(0, idx)} y2={this.getY1(1, idx)}

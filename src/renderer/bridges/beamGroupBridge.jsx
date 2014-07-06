@@ -2,6 +2,8 @@
  * @jsx React.DOM
  */
 
+var _ = require("lodash");
+
 var Bridge = require("./bridge.jsx");
 
 var BeamGroup = require("../primitives/beamGroup.jsx");
@@ -45,7 +47,7 @@ class BeamGroupBridge extends Bridge {
                 key={this.key()}
                 beams={beams}
                 fontSize={this.fontSize()}
-                generate={() => this.beam.map(b => b.render(true))}
+                generate={() => _.map(this.beam, b => b.render(true))}
                 scaleFactor={this._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
                 tupletsTemporary={this.tupletsTemporary}
                 tuplet={this._tuplet} />;
@@ -117,7 +119,7 @@ BeamGroupBridge.prototype.prereqs = [
         function(ctx) {
             return this.beam.length > 1; },
         function(ctx) {
-            this.beam.forEach(o => delete o.inBeam);
+            _.each(this.beam, o => delete o.inBeam);
             ctx.eraseCurrent();
             return -1;
         },

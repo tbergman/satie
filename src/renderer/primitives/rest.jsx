@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Accidental = require("./accidental.jsx");
 var Dot = require("./dot.jsx");
@@ -43,7 +43,7 @@ var Rest = React.createClass({
                 fill={this.props.stroke}
                 fontSize={this.props.fontSize}
                 glyphName={this.props.notehead} />
-            {this.props.dotted && _(this.props.dotted).times(idx => <Dot
+            {this.props.dotted && _.times(this.props.dotted, idx => <Dot
                 idx={idx}
                 key={idx + "d"}
                 stroke={this.props.stroke}
@@ -51,7 +51,7 @@ var Rest = React.createClass({
                 y={this.props.y}
                 fontSize={this.props.fontSize}
                 line={line} />)}
-            {this.props.children && this.props.children.map((element, idx) => {
+            {this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = this.getDirection();
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;

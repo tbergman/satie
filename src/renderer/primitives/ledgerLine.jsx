@@ -5,7 +5,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Line = require("./line.jsx");
 var SMuFL = require("./SMuFL.js");

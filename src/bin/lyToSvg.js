@@ -1,5 +1,5 @@
 var assert = require("assert");
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Context = require("../stores/context.jsx");
 var Header = require("../renderer/primitives/header.jsx");
@@ -17,8 +17,8 @@ browserifySrv(function(app) {
         var staves = lylite.parse(req.body.lylite);
         renderUtil.addDefaults(staves);
 
-        var staveHeight = _(staves).find(function(s) { return s.staveHeight; }).staveHeight;
-        var pageSize = _(staves).find(function(s) { return s.pageSize; }).pageSize;
+        var staveHeight = _.find(staves, function(s) { return s.staveHeight; }).staveHeight;
+        var pageSize = _.find(staves, function(s) { return s.pageSize; }).pageSize;
 
         var y = 0;
         var contexts = [];

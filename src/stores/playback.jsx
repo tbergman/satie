@@ -3,7 +3,7 @@
  */
 
 var EventEmitter = require('events').EventEmitter; 
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var Dispatcher = require("./dispatcher.jsx"); 
@@ -20,7 +20,7 @@ var audio5js;
 
 if (enabled) {
     MIDI = require("midi/js/MIDI/Plugin.js");
-    MIDI = _(MIDI).extend({
+    MIDI = _.extend(MIDI, {
         audioDetect: require("midi/js/MIDI/AudioDetect.js"),
         loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
         Player: require("midi/js/MIDI/Player.js")
@@ -122,7 +122,7 @@ class PlaybackStore extends EventEmitter {
         var MAX_DELAY = 9999999999999999;
         var anyDelay = MAX_DELAY;
         var delays = [];
-        (this._remainingActions || []).forEach(m => {
+        _.each(this._remainingActions || [], m => {
             m();
         });
         this._remainingActions = [];
@@ -170,7 +170,7 @@ class PlaybackStore extends EventEmitter {
                     if (foundIdx && (obj.pitch || obj.chord)) {
                         var beats = obj.getBeats();
                         if (!USING_LEGACY_AUDIO) {
-                            (obj.pitch ? [obj.midiNote()] : obj.midiNote()).forEach(midiNote => {
+                            _.each(obj.pitch ? [obj.midiNote()] : obj.midiNote(), midiNote => {
                                 var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
                                 MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
@@ -195,7 +195,7 @@ class PlaybackStore extends EventEmitter {
 
         var delayMap = {};
         var lastIdx;
-        delays.forEach((delay, idx) => {
+        _.each(delays, (delay, idx) => {
             if (delayMap[delay]) {
                 return;
             }
@@ -253,7 +253,7 @@ var _timeoutId;
 
 var hit = function(note, velocity, duration) {
     if (note instanceof Array) {
-        note.map(n => hit(n, velocity, duration));
+        _.map(note, n => hit(n, velocity, duration));
     } else {
         if (enabled) {
             MIDI.noteOn(0, note, velocity || 127, 0);

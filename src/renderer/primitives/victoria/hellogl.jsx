@@ -5,7 +5,7 @@
  */
 
 var React = require('react');
-var _ = require('underscore');
+var _ = require("lodash");
 var assert = require('assert');
 
 var DOMPropertyOperations = require('react/lib/DOMPropertyOperations');
@@ -220,10 +220,10 @@ VGlyphNode.prototype.eject = function() {
     this._parent = null;
 };
 
-pixmapData.glyphs.forEach((g, idx) => {
+_.each(pixmapData.glyphs, (g, idx) => {
     g.idx = idx;
 });
-var idxByUnicode = _(pixmapData.glyphs).indexBy("code");
+var idxByUnicode = _.indexBy(pixmapData.glyphs, "code");
 
 var VGlyph = createComponent(
     'VGlyph',
@@ -452,7 +452,7 @@ var HelloGL = createComponent(
 
         var oldRed, oldGreen, oldBlue, oldSkew;
 
-        rects.forEach(rect => {
+        _.each(rects, rect => {
             var x = rect.props.x1;
             var y = rect.props.y1;
             var width = rect.props.x2 - rect.props.x1;
@@ -491,7 +491,7 @@ var HelloGL = createComponent(
         var oldRed, oldGreen, oldBlue, oldIDX;
 
         gl.useProgram(this.node.glyphProgram);
-        glyphs.forEach(glyph => {
+        _.each(glyphs, glyph => {
             var i = glyph.idx;
             var x = glyph.props.x;
             var y = glyph.props.y;
@@ -549,7 +549,7 @@ var HelloGL = createComponent(
         gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, false, 0, 0);
 
         gl.useProgram(this.node.circleProgram);
-        circles.forEach(circles => {
+        _.each(circles, circles => {
             var cx = circle.props.cx;
             var cy = circle.props.cy;
             var radius = circle.props.radius;

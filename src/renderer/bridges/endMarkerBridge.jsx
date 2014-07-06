@@ -10,7 +10,7 @@
 var Bridge = require("./bridge.jsx");
 
 var assert = require("assert");
-var _ = require("underscore");
+var _ = require("lodash");
 
 class EndMarkerBridge extends Bridge {
     annotateImpl(ctx) {

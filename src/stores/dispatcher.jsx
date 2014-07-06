@@ -14,6 +14,7 @@
  */
 
 var Promise = require('es6-promise').Promise;
+var _ = require("lodash");
 var assert = require("assert");
 
 var ajax = require("../util/ajax.jsx").untrusted;
@@ -72,7 +73,7 @@ class Dispatcher {
             assert(false, "Queueing an action during an action is a violation of Flux");
         }
 
-        _callbacks.forEach(function(callback) {
+        _.each(_callbacks, function(callback) {
             _addPromise(callback, action);
         });
 

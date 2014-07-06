@@ -4,7 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
-var _ = require("underscore");
+var _ = require("lodash");
 
 class NewPageBridge extends Bridge {
     annotateImpl(ctx) {

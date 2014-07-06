@@ -42,7 +42,7 @@
  */
 
 var assert = require("assert");
-var _ = require("underscore");
+var _ = require("lodash");
 
 class Bridge {
     annotate(ctx, stopping) {

@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Glyph = require("./glyph.jsx");
 var Note = require("./note.jsx");

@@ -6,7 +6,7 @@
     "dependencies": {
         "react": "~0.10",
         "react-bootstrap": "~0.10.1",
-        "underscore": "~1.6.0",
+        "lodash": "~2.4.1",
         "react-router-component": "~0.18.3",
         "es6-promise": ">= 1.0.0",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
@@ -33,7 +33,7 @@
         "build": "NODE_ENV=production browserify . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
         "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .jsx$)",
-        "chore": "browserify --bare ./src/bin/lyToSvg.js --noparse ./src/bin/browserifySrv.js | node"
+        "chore": "NODE_ENV=production browserify --bare ./src/bin/lyToSvg.js --noparse lodash --noparse ./src/bin/browserifySrv.js | uglifyjs -cm 2>/dev/null | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",

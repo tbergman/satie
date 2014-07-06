@@ -6,7 +6,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var Beam = require("./beam.jsx");
@@ -28,7 +28,7 @@ var BeamGroup = React.createClass({
         // The slope is usually decided based on the first and last notes.
         var firstP, lastP;
 
-        children.forEach((note, idx) => {
+        _.each(children, (note, idx) => {
             // All notes in a beam have a unique key
             note.props.key = props.key + idx;
 
@@ -62,7 +62,7 @@ var BeamGroup = React.createClass({
                 (direction === 1 ? 0 : 6.9) + m*idx*direction) - direction*line;
 
         // When the slope causes near-collisions, eliminate the slope.
-        children.forEach((note, idx) => {
+        _.each(children, (note, idx) => {
             // Using -direction means that we'll be finding the closest note to the
             // beam. This will help us avoid collisions.
             var sh = getSH(direction, idx, getExtremeLine(note.props.line, -direction));
@@ -75,7 +75,7 @@ var BeamGroup = React.createClass({
         var strokeColor;
         var strokeEnabled = true;
 
-        children.forEach((note, idx) => {
+        _.each(children, (note, idx) => {
             note.props.direction = direction;
             note.props.stemHeight = getSH(direction, idx,
                 getExtremeLine(note.props.line, direction));
@@ -116,10 +116,10 @@ var BeamGroup = React.createClass({
 
 var decideDirection = function(firstLine, lastLine) {
     if (firstLine.length) {
-        firstLine = _(firstLine).reduce((m, s) => m + s, 0)/firstLine.length;
+        firstLine = _.reduce(firstLine, (m, s) => m + s, 0)/firstLine.length;
     }
     if (lastLine.length) {
-        lastLine = _(lastLine).reduce((m, s) => m + s, 0)/lastLine.length;
+        lastLine = _.reduce(lastLine, (m, s) => m + s, 0)/lastLine.length;
     }
     var avgLine = (firstLine + lastLine)/2;
     if (avgLine >= 3) {

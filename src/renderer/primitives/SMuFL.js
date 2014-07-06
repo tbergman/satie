@@ -8,7 +8,7 @@
  *
  * See http://smufl.org for more details.
  */
-var _ = require("underscore");
+var _ = require("lodash");
 
 var bravuraMetadata = require("./bravura_metadata.json");
 var glyphClasses = require("./classes.json");
@@ -18,7 +18,7 @@ module.exports = {
     glyphNames: glyphNames,
     glyphClasses: glyphClasses,
     bravuraMetadata: bravuraMetadata,
-    bravuraBBoxes: _(bravuraMetadata.glyphBBoxes).indexBy("name"),
+    bravuraBBoxes: _.indexBy(bravuraMetadata.glyphBBoxes, "name"),
     getGlyphCode: function(name) {
         if (!(name in this.glyphNames)) {
             console.warn(name, " is not a valid glyph");

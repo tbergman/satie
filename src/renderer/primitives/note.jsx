@@ -8,7 +8,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var Accidental = require("./accidental.jsx");
@@ -112,7 +112,7 @@ var Note = React.createClass({
             }
         }
         return <Group>
-            {lines.map((line, idx) => [
+            {_.map(lines, (line, idx) => [
                 // XXX(profile) make more efficient
                 <NoteHead
                     key={idx + "l"}
@@ -122,7 +122,7 @@ var Note = React.createClass({
                     line={line}
                     stroke={this.props.strokes[idx]}
                     notehead={this.props.notehead} />].concat(
-                this.props.dotted && _(this.props.dotted).times(idx => <Dot
+                this.props.dotted && _.times(this.props.dotted, idx => <Dot
                     idx={idx}
                     key={idx + "d"}
                     stroke={this.props.strokes[0]}
@@ -150,7 +150,7 @@ var Note = React.createClass({
                 fontSize={this.props.fontSize}
                 notehead={this.props.notehead}
                 direction={direction} />]).concat(
-            this.props.children && this.props.children.map((element, idx) => {
+            this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;
@@ -172,7 +172,7 @@ var Note = React.createClass({
         }
         var consider;
         if (this.props.line.length) {
-            consider = _(this.props.line).reduce((memo, i) => memo + i/this.props.line.length, 0);
+            consider = _.reduce(this.props.line, (memo, i) => memo + i/this.props.line.length, 0);
         } else {
             consider = this.props.line;
         }
@@ -188,10 +188,10 @@ var Note = React.createClass({
         return this.props.line.length ? this.props.line : [this.props.line];
     },
     getLowestLine: function() {
-        return _(this.getLines()).reduce((a, b) => Math.min(a, b), 99999);
+        return _.reduce(this.getLines(), (a, b) => Math.min(a, b), 99999);
     },
     getHighestLine: function() {
-        return _(this.getLines()).reduce((a, b) => Math.max(a, b), -99999);
+        return _.reduce(this.getLines(), (a, b) => Math.max(a, b), -99999);
     },
     getStartingLine: function() {
         return (this.getDirection() === 1 ? this.getLowestLine : this.getHighestLine)();
@@ -232,7 +232,7 @@ var Note = React.createClass({
         var lowest = this.getLowestLine();
         var highest = this.getHighestLine();
         if (lowest < 0.5) {
-            ret = ret.concat(_(Math.floor(1 - lowest)).times(idx =>
+            ret = ret.concat(_.times(Math.floor(1 - lowest), idx =>
                 <LedgerLine
                     key={idx + "low"}
                     line={-idx}
@@ -241,7 +241,7 @@ var Note = React.createClass({
                     y={this.props.y} />));
         }
         if (highest > 5.5) {
-            ret = ret.concat(_(Math.floor(highest - 5)).times(idx =>
+            ret = ret.concat(_.times(Math.floor(highest - 5), idx =>
                 <LedgerLine
                     key={idx + "high"}
                     line={6 + idx}
@@ -269,7 +269,7 @@ var Note = React.createClass({
 
         var l = this.getLines();
 
-        return accidentals.map((acc, idx) => {
+        return _.map(accidentals, (acc, idx) => {
             if (!isNaN(acc)) {
                 var glyphName;
                 switch(acc) {
@@ -331,9 +331,9 @@ var getExtremeLine = (line, direction) => {
     if (!isNaN(line)) {
         return line;
     } else if (direction === 1) {
-        return _(line).reduce((m, s) => Math.min(m, s), 99999);
+        return _.reduce(line, (m, s) => Math.min(m, s), 99999);
     } else {
-        return _(line).reduce((m, s) => Math.max(m, s), -99999);
+        return _.reduce(line, (m, s) => Math.max(m, s), -99999);
     }
 };
 

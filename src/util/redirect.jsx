@@ -4,7 +4,7 @@
 
 var React = require('react');
 var Router = require('react-router-component');
-var _ = require('underscore');
+var _ = require("lodash");
 
 var Location = Router.Location;
 

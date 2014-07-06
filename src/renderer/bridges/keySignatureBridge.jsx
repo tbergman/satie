@@ -4,7 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var ClefBridge = require("./clefBridge.jsx");
@@ -180,14 +180,14 @@ var getAccidentals = (keySignature) => {
 
     var flats = getFlatCount(keySignature);
     if (flats) {
-        _(flats).times(idx => {
+        _.times(flats, idx => {
             ret[flatCircle[idx]] = -1;
         });
         return ret;
     }
 
     var sharps = getSharpCount(keySignature);
-    _(sharps).times(idx => {
+    _.times(sharps, idx => {
         ret[sharpCircle[idx]] = 1;
     });
     return ret;

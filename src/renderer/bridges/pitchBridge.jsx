@@ -5,7 +5,7 @@
 var Bridge = require("./bridge.jsx");
 
 var React = require("react");
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var BarlineBridge = require("./barlineBridge.jsx");
@@ -35,7 +35,7 @@ class PitchBridge extends Bridge {
         this.setX(ctx.x);
         this._fontSize = ctx.fontSize;
         this._acc = getAccidentals(this, ctx);
-        (this.chord || [this.pitch]).map((pitch) => {
+        _.map(this.chord || [this.pitch], (pitch) => {
             ctx.accidentals[pitch.pitch] = pitch.acc;
         });
         ctx.x += this.getWidth(ctx);
@@ -54,7 +54,7 @@ class PitchBridge extends Bridge {
     render(isBeam) {
         var Renderer = require("../renderer.jsx");
 
-        var markings = (this.accents || []).map((m, idx) =>
+        var markings = _.map(this.accents || [], (m, idx) =>
             <NoteMarking fontSize={this.fontSize()} marking={m} key={idx} />
         );
 
@@ -99,7 +99,7 @@ class PitchBridge extends Bridge {
         var acc = getAccidentals(this, ctx);
         if (acc) {
             var acc = (acc instanceof Array) ? acc : [acc];
-            var max = acc.reduce((memo, t) => Math.max(Math.abs(t||0), memo), 0);
+            var max = _.reduce(acc, (memo, t) => Math.max(Math.abs(t||0), memo), 0);
             var accWidth = max*0.15;
         }
         return Math.max(0, accWidth - 0.3);
@@ -117,9 +117,9 @@ class PitchBridge extends Bridge {
             str += "es";
         }
         if (pitch.octave > 0) {
-            _(pitch.octave).times(() => str += "'");
+            _.times(pitch.octave, () => str += "'");
         } else if (pitch.octave < 0) {
-            _(-pitch.octave).times(() => str += ",");
+            _.times(-pitch.octave, () => str += ",");
         }
 
         return str;
@@ -130,11 +130,11 @@ class PitchBridge extends Bridge {
         if (this.pitch) {
             str = this._lyPitch(this);
         } else if (this.chord) {
-            str = "< " + this.chord.map(a => this._lyPitch(a)).join(" ") + " >";
+            str = "< " + _.map(this.chord, a => this._lyPitch(a)).join(" ") + " >";
         }
         str += this.count;
         if (this.dots) {
-            _(this.dots).times(d => str += ".");
+            _.times(this.dots, d => str += ".");
         }
         if (this.tie) {
             str += "~";
@@ -151,7 +151,7 @@ class PitchBridge extends Bridge {
             var base = chromaticScale[this.pitch] + 48;
             return base + (this.octave || 0)*12 + (this.acc || 0);
         }
-        return this.chord.map(m => this.midiNote.call(m));
+        return _.map(this.chord, m => this.midiNote.call(m));
     }
 
     containsAccidental(ctx) {
@@ -177,9 +177,10 @@ var getLine = (pitch, ctx, options) => {
     }
     assert(ctx.clef, "A clef must be inserted before the first note");
     if (pitch.chord) {
-        return pitch.chord
+        return _(pitch.chord)
             .filter(p => !options.filterTemporary || !p.temporary)
-            .map(p => getLine(p, ctx));
+            .map(p => getLine(p, ctx))
+            .value();
     }
     if (pitch.pitch === "r") {
         return 3;
@@ -192,7 +193,7 @@ var getAverageLine = (pitch, ctx) => {
     if (!isNaN(line)) {
         return line;
     }
-    return line.reduce((memo, l) => memo + l, 0)/line.length;
+    return _.reduce(line, (memo, l) => memo + l, 0)/line.length;
 };
 
 var getPitch = (line, ctx) => {
@@ -209,14 +210,14 @@ var getPitch = (line, ctx) => {
 
 var getAccStrokes = (pitch) => {
     if (pitch.chord) {
-        return pitch.chord.map(c => c.accTemporary ? "#A5A5A5" : "black");
+        return _.map(pitch.chord, c => c.accTemporary ? "#A5A5A5" : "black");
     }
     return [pitch.accTemporary ? "#A5A5A5" : "black"];
 };
 
 var getStrokes = (pitch) => {
     if (pitch.chord) {
-        return pitch.chord.map(c => c.temporary ?
+        return _.map(pitch.chord, c => c.temporary ?
                 "#A5A5A5" :
                 (pitch.selected ? "#75A1D0" : "black"));
     }
@@ -287,7 +288,7 @@ var offsetToPitch = {
 
 var getAccidentals = (pitch, ctx) => {
     if (pitch.chord) {
-        return pitch.chord.map(p => getAccidentals(p, ctx));
+        return _.map(pitch.chord, p => getAccidentals(p, ctx));
     }
 
     var actual = pitch.acc;
@@ -566,7 +567,7 @@ PitchBridge.prototype.prereqs = [
             var b = beamable(ctx);
             var BeamGroupBridge = require("./beamGroupBridge.jsx");
 
-            b.forEach(function(b) {
+            _.each(b, function(b) {
                 b.inBeam = true;
             });
             return BeamGroupBridge.createBeam(ctx, b);

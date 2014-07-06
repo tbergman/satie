@@ -1,4 +1,4 @@
-var _ = require("underscore");
+var _ = require("lodash");
 
 module.exports = {
     rastalToHeight: [
@@ -73,10 +73,10 @@ module.exports = {
         return this.rastalToHeight[4];
     },
     addDefaults: function(staves) {
-        if (!_(staves).any(s => s.staveHeight)) {
+        if (!_.any(staves, s => s.staveHeight)) {
             staves.splice(0, 0, {staveHeight: this.defaultStaveHeight()});
         }
-        if (!_(staves).any(s => s.pageSize)) {
+        if (!_.any(staves, s => s.pageSize)) {
             staves.splice(0, 0, {pageSize: this.defaultPageSize()});
         }
     },

@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Group = require("./group.jsx");
 var Line = require("./line.jsx");
@@ -18,7 +18,7 @@ var StaveLines = React.createClass({
     },
     render: function() {
         return <Group>
-            {_(5).times(i => <Line
+            {_.times(5, i => <Line
                 key={"staff-" + i}
                 x1={this.props.x}
                 x2={this.props.x + this.props.width}

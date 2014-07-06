@@ -5,7 +5,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Accidental = require("./accidental.jsx");
 var Glyph = require("./glyph.jsx");

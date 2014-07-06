@@ -10,7 +10,7 @@ var NewPageBridge = require("./newpageBridge.jsx");
 var StaveLines = require("../primitives/staveLines.jsx");
 var renderUtil = require("../util.jsx");
 
-var _ = require("underscore");
+var _ = require("lodash");
 
 class NewlineBridge extends Bridge {
     annotateImpl(ctx) {
@@ -83,8 +83,9 @@ class NewlineBridge extends Bridge {
             }
             var newX = ctx.body[i].x() + xOffset;
             if (ctx.body[i].barline && (!ctx.body[i + 1] || !ctx.body[i + 1].newline)) {
-                if (ctx.lines[ctx.line - 1] && _(ctx.lines[ctx.line - 1].barlineX)
-                        .any(x => Math.abs(x - newX) < 0.15)) {
+                if (ctx.lines[ctx.line - 1] &&
+                        _.any(ctx.lines[ctx.line - 1].barlineX,
+                            x => Math.abs(x - newX) < 0.15)) {
                     // ADJUST BARLINE
                     var offset = -0.2;
                     newX += offset;

@@ -3,7 +3,7 @@
  */
 
 var EventEmitter = require('events').EventEmitter; 
-var _ = require('underscore');
+var _ = require("lodash");
 var assert = require('assert');
 
 var Dispatcher = require("./dispatcher.jsx"); 
@@ -140,7 +140,7 @@ class SongEditorStore extends EventEmitter {
                 }
                 _dirty = true;
                 _ctxs = null;
-                _(_staves).find(s => s.staveHeight).staveHeight = _staveHeight;
+                _.find(_staves, s => s.staveHeight).staveHeight = _staveHeight;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -150,7 +150,7 @@ class SongEditorStore extends EventEmitter {
                 _pageSize = action.postData;
                 _dirty = true;
                 _ctxs = null;
-                _(_staves).find(s => s.pageSize).pageSize = _pageSize;
+                _.find(_staves, s => s.pageSize).pageSize = _pageSize;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -356,8 +356,8 @@ class SongEditorStore extends EventEmitter {
         _staves = lylite.parse(activeSong.src);
         renderUtil.addDefaults(_staves);
 
-        _staveHeight = _(_staves).find(s => s.staveHeight).staveHeight;
-        _pageSize = _(_staves).find(s => s.pageSize).pageSize;
+        _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
+        _pageSize = _.find(_staves, s => s.pageSize).pageSize;
 
         this.annotate();
     }
@@ -472,7 +472,7 @@ class SongEditorStore extends EventEmitter {
                 var obj = body[i];
                 if (obj.pitch || obj.chord) {
                     var beats = obj.getBeats();
-                    (obj.pitch ? [obj.midiNote()] : obj.midiNote()).map(midiNote => {
+                    _.map(obj.pitch ? [obj.midiNote()] : obj.midiNote(), midiNote => {
                         data.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
                         data.push((delay + beats*timePerBeat - 0.019) +
@@ -501,7 +501,7 @@ class SongEditorStore extends EventEmitter {
                 continue;
             }
 
-            _selection.forEach(item => {
+            _.each(_selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
                     if (body[i].keySignature) {
                         accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
@@ -522,7 +522,7 @@ class SongEditorStore extends EventEmitter {
                 // For "chromatic":
                 var noteToVal = PitchBridge.chromaticScale;
 
-                (item.pitch ? [item] : item.chord).forEach(note => {
+                _.each(item.pitch ? [item] : item.chord, note => {
                     if (how.mode === "inKey") {
                         var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
                         var newNote = noteToNum[note.pitch] + how.letters;
@@ -604,7 +604,7 @@ class SongEditorStore extends EventEmitter {
 
         var lyliteArr = [];
         var unresolved = [];
-        staves.forEach((stave, sidx) => {
+        _.each(staves, (stave, sidx) => {
             if (stave.staveHeight) {
                 lyliteArr.push("#(set-global-staff-size " +
                     stave.staveHeight*renderUtil.ptPerMM + ")\n");

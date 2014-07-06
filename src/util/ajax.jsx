@@ -1,4 +1,4 @@
-var _ = require("underscore");
+var _ = require("lodash");
 
 var postJSON = (withCredentials, verb, url, json, onload) => {
     if (url.indexOf("/api") === 0 && global.RipienoDesktop) {

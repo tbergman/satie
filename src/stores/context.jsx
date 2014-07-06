@@ -5,7 +5,7 @@
  * Context is the memo.
  */
 
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var renderUtil = require("../renderer/util.jsx");
@@ -26,7 +26,7 @@ class Context {
 
         if (opts.snapshot) {
             var s = JSON.parse(opts.snapshot);
-            _.forEach(s, (val, key) => {
+            _.each(s, (val, key) => {
                 this[key] = val;
             });
         } else {
@@ -104,17 +104,18 @@ class Context {
     calculateIntersections() {
         // XXX FIXME: Intersections will be incorrect if an incomplete bar exists!
         var genIterators =
-            () => this.staves
+            () => _(this.staves)
                 .filter(s => s.body)
                 .map(s => {return {
                     idx: 0,
                     body: s.body,
                     beat: 0,
                     doIf: (act, cond) => {if (cond()) { return act() };}
-                }});
+                }})
+                .value();
 
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-            iterators.forEach(s => s.doIf(
+            _.each(iterators, s => s.doIf(
                 () => {
                     s.body[s.idx].intersects = [];
                     ++s.idx;
@@ -127,7 +128,7 @@ class Context {
         var impliedCount = 4;
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             var allNewActives = [];
-            iterators
+            _(iterators)
                 .map((s, sidx) => s.doIf(
                     () => {
                         if (beat === s.beat) {
@@ -144,7 +145,7 @@ class Context {
                                     continue;
                                 }
                             } while(s.body[s.idx] && !s.body[s.idx].getBeats);
-                            actives = actives.concat(newActives.map(a => {
+                            actives = actives.concat(_.map(newActives, a => {
                                 return {obj: a, expires: s.beat};
                             }));
                             if (s.body[s.idx]) {
@@ -156,19 +157,20 @@ class Context {
                         }
                     },
                     () => s.idx < s.body.length))
-                .filter(s => s);
+                .filter(s => s)
+                .value();
 
-            var increment = iterators
+            var increment = _(iterators)
                 .map(s => s.beat)
                 .filter(s => s !== null && !isNaN(s))
-                .sort((a, b) => a - b);
+                .sort((a, b) => a - b)
+                .value();
 
             beat = increment[0]; // lowest
 
-            actives.forEach(a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
+            _.each(actives, a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
 
-            actives = actives
-                .filter(a => a.expires > beat);
+            actives = _.filter(actives, a => a.expires > beat);
         }
     }
 
@@ -204,7 +206,7 @@ class Context {
             // A line break was added somewhere to the current line
             // The current line must be re-rendered...
             var line = this.lines[this.line];
-            _(line).each((v, attrib) => {
+            _.each(line, (v, attrib) => {
                 this[attrib] = line[attrib];
             });
             while (i >= 0 && !this.body[i].newline) {
@@ -221,7 +223,7 @@ class Context {
             // At least one of the pre-conditions of the object were
             // not met and the entire line must be rerendered.
             var line = this.lines[this.line];
-            _(line).each((v, attrib) => {
+            _.each(line, (v, attrib) => {
                 this[attrib] = line[attrib];
             });
             --i;

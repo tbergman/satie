@@ -4,7 +4,7 @@
 
 var Bridge = require("./bridge.jsx");
 
-var _ = require("underscore");
+var _ = require("lodash");
 
 var Barline = require("../primitives/barline.jsx");
 var EndMarkerBridge = require("./endMarkerBridge.jsx");
@@ -90,7 +90,7 @@ BarlineBridge.prototype.prereqs = [
                 // e.g., | C/////
                 //       | C/C#// will add spacing, but it shouldn't!
                 this.annotatedAccidentalSpacing = 0.2*
-                    (_.any(ctx.next().intersects.filter(l => l.isNote()),
+                    (_.any(_.filter(ctx.next().intersects, l => l.isNote()),
                            n => n.containsAccidental(ctx)) ? 1 : 0);
             } else {
                 this.annotatedAccidentalSpacing = 0;

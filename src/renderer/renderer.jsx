@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var _ = require("underscore");
+var _ = require("lodash");
 var assert = require("assert");
 
 var Molasses = require("./primitives/molasses/molasses.jsx");
@@ -59,9 +59,9 @@ var Renderer = React.createClass({
 
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
-        var isPianoStaff = staves.reduce((memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
+        var isPianoStaff = _.reduce(staves, (memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
 
-        var rawPages = pages.map((page, pidx) =>
+        var rawPages = _.map(pages, (page, pidx) =>
             <RenderEngine
                 onClick={this.handleMouseClick}
                 onMouseDown={this.handleMouseDown}
@@ -76,7 +76,7 @@ var Renderer = React.createClass({
                 viewbox={viewbox}>
             {/* Using staves is an anti-pattern. Ideally, we would have a getBridges()
                 method in SongEditorStore or something. */}
-            {staves.map((stave, idx) => {
+            {_.map(staves, (stave, idx) => {
                 if (stave.header) {
                     if (page.from) {
                         return null;
@@ -90,7 +90,7 @@ var Renderer = React.createClass({
                         model={stave.header} />;
                 } else if (stave.body) {
                     return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                        {stave.body.slice(page.from, page.to).reduce((memo, obj) => {
+                        {_.reduce(stave.body.slice(page.from, page.to), (memo, obj) => {
                             if (obj.newline) {
                                 memo.push([]);
                             }
@@ -100,14 +100,14 @@ var Renderer = React.createClass({
                             <LineContainer
                                 store={this.props.store}
                                 staveHeight={this.props.staveHeight}
-                                generate={() => s.map(item => item.visible() && item.render())}
+                                generate={() => _.map(s, item => item.visible() && item.render())}
                                 idx={idx + pageLines[page.idx]} key={idx} />)}
                     </Group>;
                 } else {
                     return null;
                 }
             })}
-            {!pidx && this.props.tool && staves.map((stave,idx) => stave.body &&
+            {!pidx && this.props.tool && _.map(staves, (stave,idx) => stave.body &&
                 this.props.tool.render(
                     this.getCtx(idx),
                     this.state.mouse,
@@ -140,7 +140,7 @@ var Renderer = React.createClass({
         var ret;
         if (!this.props.raw) {
             ret = <div className="workspace" style={{top: this.props.top}}>
-                {rawPages.map((rawPage, pidx) => <div className="page" 
+                {_.map(rawPages, (rawPage, pidx) => <div className="page" 
                     key={"page" + pidx}
                     style={{
                         position: "relative",
@@ -312,7 +312,7 @@ var Renderer = React.createClass({
     handleMouseDown: function(event) {
         if (event.button === 0) {
             if (this.props.selection) {
-                this.props.selection.forEach(s => {
+                _.each(this.props.selection, s => {
                     delete s.selected;
                 });
             }
@@ -343,7 +343,7 @@ var Renderer = React.createClass({
             };
             var selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
             if (selection.length) {
-                selection.forEach(s => {
+                _.each(selection, s => {
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content

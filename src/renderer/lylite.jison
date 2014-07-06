@@ -1,5 +1,5 @@
 %{
-    var _ = require("underscore");
+    var _ = require("lodash");
     var util = require("./util.jsx");
 
     var BarlineBridge = require("./bridges/barlineBridge.jsx");
@@ -180,7 +180,7 @@
             [prevO - 1, currP - 7 - prevP]
         ];
 
-        var octave = _(alternatives).min(function(m) { return Math.abs(m[1]); })[0];
+        var octave = _.min(alternatives, function(m) { return Math.abs(m[1]); })[0];
 
         curr.octave = (curr.octave || 0) + octave;
         curr.relative = true;
@@ -297,7 +297,7 @@ pianoStaff
   : LT LT parts GT GT
         {
             $$ = $3;
-            $$.forEach(function(s, idx) {
+            _.each($$, function(s, idx) {
                 if (idx + 1 !== $$.length) {
                     s.pianoStaff = true;
                 }
@@ -313,7 +313,7 @@ headerElements
   : /* empty */                        { $$ = {}; }
   | headerElements headerElement
         {
-            $$ = _($1).extend($2);
+            $$ = _.extend($1, $2);
         }
   ;
 
@@ -416,21 +416,21 @@ partElement
 
 completePitchOrChord 
   : pitchOrChord                             { $$ = $1; }
-  | pitchOrChord beatType                    { $$ = _($1).extend($2); }
-  | pitchOrChord beatType dots               { $$ = _($1).extend($2, $3); }
-  | pitchOrChord beatType dots accents       { $$ = _($1).extend($2, $3, $4); }
-  | pitchOrChord beatType accents            { $$ = _($1).extend($2, $3); }
-  | pitchOrChord dots                        { $$ = _($1).extend($2); }
-  | pitchOrChord dots accents                { $$ = _($1).extend($2, $3); }
-  | pitchOrChord accents                     { $$ = _($1).extend($2); }
-  | pitchOrChord tie                         { $$ = _($1).extend($2); }
-  | pitchOrChord beatType tie                { $$ = _($1).extend($2, $3); }
-  | pitchOrChord beatType dots tie           { $$ = _($1).extend($2, $3, $4); }
-  | pitchOrChord beatType dots accents tie   { $$ = _($1).extend($2, $3, $4, $5); }
-  | pitchOrChord beatType accents tie        { $$ = _($1).extend($2, $3, $4); }
-  | pitchOrChord dots tie                    { $$ = _($1).extend($2, $3); }
-  | pitchOrChord dots accents tie            { $$ = _($1).extend($2, $3, $4); }
-  | pitchOrChord accents tie                 { $$ = _($1).extend($2, $3); }
+  | pitchOrChord beatType                    { $$ = _.extend($1, $2); }
+  | pitchOrChord beatType dots               { $$ = _.extend($1, $2, $3); }
+  | pitchOrChord beatType dots accents       { $$ = _.extend($1, $2, $3, $4); }
+  | pitchOrChord beatType accents            { $$ = _.extend($1, $2, $3); }
+  | pitchOrChord dots                        { $$ = _.extend($1, $2); }
+  | pitchOrChord dots accents                { $$ = _.extend($1, $2, $3); }
+  | pitchOrChord accents                     { $$ = _.extend($1, $2); }
+  | pitchOrChord tie                         { $$ = _.extend($1, $2); }
+  | pitchOrChord beatType tie                { $$ = _.extend($1, $2, $3); }
+  | pitchOrChord beatType dots tie           { $$ = _.extend($1, $2, $3, $4); }
+  | pitchOrChord beatType dots accents tie   { $$ = _.extend($1, $2, $3, $4, $5); }
+  | pitchOrChord beatType accents tie        { $$ = _.extend($1, $2, $3, $4); }
+  | pitchOrChord dots tie                    { $$ = _.extend($1, $2, $3); }
+  | pitchOrChord dots accents tie            { $$ = _.extend($1, $2, $3, $4); }
+  | pitchOrChord accents tie                 { $$ = _.extend($1, $2, $3); }
   ;
 
 pitchOrChord
@@ -451,7 +451,7 @@ tie
   ;
 
 pitchMaybeWithOctave
-  : 'STRING' octaveOpts                      { $$ = _(parsePitch($1)).extend($2); }
+  : 'STRING' octaveOpts                      { $$ = _.extend(parsePitch($1), $2); }
   | 'STRING'                                 { $$ = parsePitch($1); }
   ;
 
@@ -472,7 +472,7 @@ tupletMode
                 num: $2,
                 den: $4
             };
-            $5.forEach(function(n) {
+            _.each($5, function(n) {
                 if (n.pitch || n.chord) {
                     n.tuplet = tuplet;
                 }
@@ -486,12 +486,12 @@ relativeMode
   : 'RELATIVE' pitchMaybeWithOctave musicExpr
         { 
             var chain = $3;
-            _(chain).reduce(function(prev, curr) {
+            _.reduce(chain, function(prev, curr) {
                 if (curr.pitch) {
                     makeRelativeInPlace(prev, curr);
                     return curr;
                 } else if (curr.chord && curr.chord.length) {
-                    _(curr.chord).reduce(function(prev, curr) {
+                    _.reduce(curr.chord, function(prev, curr) {
                         makeRelativeInPlace(prev, curr);
                         return curr;
                     }, prev);
@@ -509,7 +509,7 @@ clef
 
 octaveOpts
   : octaveOpt                 { $$ = $1; }
-  | octaveOpts octaveOpt      { $2.octave += ($1.octave || 0); $$ = _($1).extend($2); }
+  | octaveOpts octaveOpt      { $2.octave += ($1.octave || 0); $$ = _.extend($1, $2); }
   ;
 
 octaveOpt
