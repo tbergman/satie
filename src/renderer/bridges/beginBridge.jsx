@@ -29,6 +29,8 @@ class BeginBridge extends Bridge {
         this.pageSize = ctx.pageSize;
         return true;
     }
+    toLylite() {
+    }
     render() {
         var Renderer = require("../renderer.jsx");
         return <Group key={this.key()}>

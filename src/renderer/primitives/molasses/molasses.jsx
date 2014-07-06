@@ -14,14 +14,14 @@ var Molasses = React.createClass({
         return <svg
                     data-page={this.props.page.idx}
                     ref={"svg" + this.props.page.idx}
-                    height="100%"
+                    height={this.props.height}
                     onClick={this.props.onClick}
                     onMouseDown={this.props.onMouseDown}
                     onMouseUp={this.props.onMouseUp}
                     onMouseLeave={this.props.onMouseLeave}
                     onMouseMove={this.props.onMouseMove}
                     viewBox={this.props.viewbox}
-                    width="100%">
+                    width={this.props.width}>
                 {this.props.children}
         </svg>;
     },

@@ -52,9 +52,10 @@ var Renderer = React.createClass({
             idx: pageCount - 1
         });
 
-        var viewbox = "0 0 " +
-            Math.round(85000*(this.props.pageSize.width/215.9)) + " " +
-            Math.round(110000*(this.props.pageSize.height/279.4));
+        var mInchW = 85000*(this.props.pageSize.width/215.9);
+        var mInchH = 110000*(this.props.pageSize.height/279.4);
+
+        var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
 
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
@@ -69,6 +70,8 @@ var Renderer = React.createClass({
                 onMouseMove={this.handleMouseMove}
                 page={page}
                 staves={staves}
+                width={this.props.raw ? mInchW/10000 + "in" : "100%"}
+                height={this.props.raw ? mInchH/10000 + "in" : "100%"}
                 widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
                 viewbox={viewbox}>
             {/* Using staves is an anti-pattern. Ideally, we would have a getBridges()
@@ -80,7 +83,7 @@ var Renderer = React.createClass({
                     }
                     y += Header.getHeight(stave.header);
                     return !useGL && <Header
-                        fontSize={fontSize*FONT_SIZE_FACTOR}
+                        fontSize={fontSize}
                         middle={renderUtil.mm(this.props.pageSize.width, fontSize)/2}
                         right={renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75)}
                         key="HEADER"

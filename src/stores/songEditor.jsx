@@ -150,7 +150,7 @@ class SongEditorStore extends EventEmitter {
                 _pageSize = action.postData;
                 _dirty = true;
                 _ctxs = null;
-                _(nextProps.staves).find(s => s.pageSize).pageSize = nextProps.pageSize;
+                _(_staves).find(s => s.pageSize).pageSize = _pageSize;
                 Bridge.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);

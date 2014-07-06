@@ -16,25 +16,27 @@ var Header = React.createClass({
     },
 
     render: function() {
+        var Renderer = require("../renderer.jsx");
+
         var model = this.props.model;
         var style = {
-            fontSize: this.props.fontSize + "px"
+            fontSize: Renderer.FONT_SIZE_FACTOR*this.props.fontSize + "px"
         };
 
         return <g style={style}>
             {model.title &&
                 <text className="tn_"
                     style={{textAnchor: "middle"}}
-                    x={this.props.middle + "em"}
-                    y={2 + "em"} >
+                    x={this.props.middle*this.props.fontSize*Renderer.FONT_SIZE_FACTOR}
+                    y={2*this.props.fontSize*Renderer.FONT_SIZE_FACTOR} >
                         {model.title}
                 </text>
             }
             {model.composer &&
                 <text className="tn_"
                     style={{textAnchor: "end", fontSize: 0.75 + "em"}}
-                    x={this.props.right + "em"}
-                    y={3/0.75 + "em"}>
+                    x={this.props.right*0.75*this.props.fontSize*Renderer.FONT_SIZE_FACTOR}
+                    y={3/0.75*0.75*this.props.fontSize*Renderer.FONT_SIZE_FACTOR}>
                         {model.composer}
                 </text>
             }
