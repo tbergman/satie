@@ -86,7 +86,7 @@ var Note = React.createClass({
     render: function() {
         var direction = this.getDirection();
         var lines = this.getLines();
-        var lowestLine = this.getLowestLine();
+        var lowestLine = this.getLowestLine(); // XXX(profile) make more efficient
         var linesObj = {};
         var linesOffset = {};
         for (var i = 0; i < lines.length; ++i) {
@@ -113,10 +113,12 @@ var Note = React.createClass({
         }
         return <Group>
             {lines.map((line, idx) => [
+                // XXX(profile) make more efficient
                 <NoteHead
                     key={idx + "l"}
                     x={this.props.x + (linesOffset[line] || 0)}
                     y={this.props.y}
+                    fontSize={this.props.fontSize}
                     line={line}
                     stroke={this.props.strokes[idx]}
                     notehead={this.props.notehead} />].concat(
@@ -126,6 +128,7 @@ var Note = React.createClass({
                     stroke={this.props.strokes[0]}
                     x={this.props.x}
                     y={this.props.y}
+                    fontSize={this.props.fontSize}
                     line={line} />))).concat([
             this.props.hasStem && <NoteStem
                 x={this.props.x}
@@ -135,6 +138,7 @@ var Note = React.createClass({
                 line={this.getStartingLine()}
                 stroke={this.props.secondaryStroke}
                 height={this.getStemHeight()}
+                fontSize={this.props.fontSize}
                 notehead={this.props.notehead} />,
             this.props.flag && <Flag
                 key="flag"
@@ -143,6 +147,7 @@ var Note = React.createClass({
                 line={this.getHeightDeterminingLine()}
                 stroke={this.props.secondaryStroke}
                 flag={this.props.flag}
+                fontSize={this.props.fontSize}
                 notehead={this.props.notehead}
                 direction={direction} />]).concat(
             this.props.children && this.props.children.map((element, idx) => {
@@ -152,10 +157,11 @@ var Note = React.createClass({
                 element.props.y = this.props.y;
                 element.props.idx = idx;
                 element.props.notehead = this.props.notehead;
+                element.props.fontSize = this.props.fontSize;
                 return element;
             })).concat(
             this.accidentals()).concat(
-            this.ledgerLines()).concat(
+            this.ledgerLines()).concat( // XXX(profile) make more efficient
             this.tie())}
         </Group>;
     },
@@ -289,6 +295,7 @@ var Note = React.createClass({
                     x={this.props.x - this.accidentalSpacing()}
                     y={this.props.y}
                     stroke={this.props.accStrokes[idx]}
+                    fontSize={this.props.fontSize}
                     line={l[idx]}
                     key={"acc_" + idx}
                     accidental={glyphName} />;

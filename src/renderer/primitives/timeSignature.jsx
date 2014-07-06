@@ -36,12 +36,14 @@ var TimeSignature = React.createClass({
                     x={this.props.x}
                     y={this.props.y}
                     fill={this.props.stroke}
+                    fontSize={this.props.fontSize}
                     glyphName="timeSigCommon" />;
             } else if (beats === 2 && beatType === 2) {
                 return <Glyph
                     x={this.props.x}
                     y={this.props.y}
                     fill={this.props.stroke}
+                    fontSize={this.props.fontSize}
                     glyphName="timeSigCutCommon" />;
             }
             console.warn("Cannot be represented with a common time signature!");
@@ -50,6 +52,7 @@ var TimeSignature = React.createClass({
             {[<TimeSignatureNumber
                     key="num"
                     stroke={this.props.stroke}
+                    fontSize={this.props.fontSize}
                     x={this.props.x + this.numOffset()}
                     y={this.props.y - 1/4}>
                 {this.props.beats}
@@ -57,6 +60,7 @@ var TimeSignature = React.createClass({
             <TimeSignatureNumber
                     key="den"
                     stroke={this.props.stroke}
+                    fontSize={this.props.fontSize}
                     x={this.props.x + this.denOffset()}
                     y={this.props.y + 1/4}>
                 {this.props.beatType}
@@ -86,6 +90,7 @@ function TimeSignatureNumber(props, children) {
         x={props.x + i/4}
         y={props.y}
         fill={props.stroke}
+        fontSize={props.fontSize}
         glyphName={"timeSig" + c} />);
 }
 

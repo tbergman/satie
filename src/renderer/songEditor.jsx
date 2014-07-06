@@ -45,7 +45,7 @@ var SongEditor = React.createClass({
         var width = this.state.width*0.8;
         var height = width/aspectRatio;
         if (height/this.state.height > 2) {
-            height = (this.state.height - V_PADDING * 2)*2;
+            height = (this.state.height - renderUtil.V_PADDING * 2)*2;
             width = aspectRatio * height;
         }
 
@@ -87,13 +87,14 @@ var SongEditor = React.createClass({
             {/* THE SHEET MUSIC */}
             {this.state.staves && <Renderer
                 height={height}
-                marginBottom={V_PADDING}
-                marginTop={V_PADDING}
+                marginBottom={renderUtil.V_PADDING}
+                marginTop={renderUtil.V_PADDING}
                 pageSize={this.state.pageSize}
                 ref="renderer"
                 selection={this.state.selection}
                 staveHeight={this.state.staveHeight}
                 staves={this.state.staves}
+                store={SongEditorStore}
                 tool={this.state.tool}
                 top={showRibbon ? 140 : 44}
                 width={width} />}
@@ -218,7 +219,5 @@ var SongEditor = React.createClass({
 
     mixins: [Router.NavigatableMixin] // for this.navigate
 });
-
-var V_PADDING = 20;
 
 module.exports = SongEditor;

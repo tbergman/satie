@@ -1,3 +1,5 @@
+var _ = require("underscore");
+
 module.exports = {
     rastalToHeight: [
         /* largest is '0' */
@@ -64,6 +66,20 @@ module.exports = {
             height: 170
         }
     ],
+    defaultPageSize: function() {
+        return this.pageSizes[0];
+    },
+    defaultStaveHeight: function() {
+        return this.rastalToHeight[4];
+    },
+    addDefaults: function(staves) {
+        if (!_(staves).any(s => s.staveHeight)) {
+            staves.splice(0, 0, {staveHeight: this.defaultStaveHeight()});
+        }
+        if (!_(staves).any(s => s.pageSize)) {
+            staves.splice(0, 0, {pageSize: this.defaultPageSize()});
+        }
+    },
     lilypondSizes: {
         // Sizes that we support loading from Lilypond.
         // Did you know there were this many sizes?
@@ -633,5 +649,6 @@ module.exports = {
     mm: (num, fontSize) => num*1.0415/fontSize,
     ptPerMM: 2.842,
     mmPerIn: 25.4,
-    sigmoid: t => 1/(1 + Math.exp(-t))
+    sigmoid: t => 1/(1 + Math.exp(-t)),
+    V_PADDING: 20
 };

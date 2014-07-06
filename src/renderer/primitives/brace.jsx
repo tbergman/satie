@@ -28,6 +28,7 @@ var Brace = React.createClass({
             {[<Glyph transform={"scale(" + s + "," + s + ")" +
                     "translate(" + -this.props.fontSize*this.props.x*(1-1/s) + "," +
                         -(1-1/s)*this.props.fontSize*(this.props.y + this.props.y2)/2 + ")"}
+                fontSize={this.props.fontSize}
                 key={0}
                 x={this.props.x - 1/8}
                 y={(this.props.y + this.props.y2)/2 + 2/4}

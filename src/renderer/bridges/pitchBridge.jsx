@@ -55,7 +55,7 @@ class PitchBridge extends Bridge {
         var Renderer = require("../renderer.jsx");
 
         var markings = (this.accents || []).map((m, idx) =>
-            <NoteMarking marking={m} key={idx} />
+            <NoteMarking fontSize={this.fontSize()} marking={m} key={idx} />
         );
 
         if (this.pitch === "r") {
@@ -63,6 +63,7 @@ class PitchBridge extends Bridge {
                     dotted={this.dots}
                     line={3}
                     key={this.key()}
+                    fontSize={this.fontSize}
                     notehead={countToRest[this.count]}
                     stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black")}
                     x={this.x()}
@@ -83,6 +84,7 @@ class PitchBridge extends Bridge {
                 line={this._line}
                 notehead={countToNotehead[this.count]}
                 scaleFactor={this._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
+                fontSize={this._fontSize}
                 secondaryStroke={this.selected ? "#75A1D0" : "black"}
                 strokes={getStrokes(this)}
                 tieTo={this._tieTo && this._tieTo.x()}

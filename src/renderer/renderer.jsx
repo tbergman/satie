@@ -18,16 +18,12 @@ var Brace = require("./primitives/brace.jsx");
 var Group = require("./primitives/group.jsx");
 var Header = require("./primitives/header.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-var SongEditorStore = require("../stores/songEditor.jsx");
 var StaveLines = require("./primitives/staveLines.jsx");
 var renderUtil = require("./util.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
-
-var getCtx = (idx) => SongEditorStore.ctx(idx);
-var getCtxCount = () => SongEditorStore.ctxCount();
 
 var Renderer = React.createClass({
     render: function() {
@@ -42,7 +38,7 @@ var Renderer = React.createClass({
         while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
             ++firstStaveIdx;
         }
-        var ctx = getCtx(firstStaveIdx);
+        var ctx = this.getCtx(firstStaveIdx);
         var pageStarts = ctx.pageStarts;
         var pageLines = ctx.pageLines;
 
@@ -64,15 +60,7 @@ var Renderer = React.createClass({
         // isPianoStaff is set to true when there is at least 2 staves.
         var isPianoStaff = staves.reduce((memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
 
-        var ret = <div className="workspace" style={{top: this.props.top}}>
-            {pages.map((page, pidx) => <div className="page" 
-                key={"page" + page.idx}
-                style={{
-                    position: "relative",
-                    width: this.props.width,
-                    height: this.props.height,
-                    marginTop: this.props.marginTop,
-                    marginBottom: this.props.marginBottom}}>
+        var rawPages = pages.map((page, pidx) =>
             <RenderEngine
                 onClick={this.handleMouseClick}
                 onMouseDown={this.handleMouseDown}
@@ -107,6 +95,7 @@ var Renderer = React.createClass({
                             return memo;
                         }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) =>
                             <LineContainer
+                                store={this.props.store}
                                 staveHeight={this.props.staveHeight}
                                 generate={() => s.map(item => item.visible() && item.render())}
                                 idx={idx + pageLines[page.idx]} key={idx} />)}
@@ -117,7 +106,7 @@ var Renderer = React.createClass({
             })}
             {!pidx && this.props.tool && staves.map((stave,idx) => stave.body &&
                 this.props.tool.render(
-                    getCtx(idx),
+                    this.getCtx(idx),
                     this.state.mouse,
                     _pointerData,
                     fontSize,
@@ -143,11 +132,27 @@ var Renderer = React.createClass({
                         strokeWidth={0.04} />
                 </Group>}
 
-        </RenderEngine>
-        </div>)}
-        </div>;
+        </RenderEngine>);
 
-        SongEditorStore.rendererIsClean();
+        var ret;
+        if (!this.props.raw) {
+            ret = <div className="workspace" style={{top: this.props.top}}>
+                {rawPages.map((rawPage, pidx) => <div className="page" 
+                    key={"page" + pidx}
+                    style={{
+                        position: "relative",
+                        width: this.props.width,
+                        height: this.props.height,
+                        marginTop: this.props.marginTop,
+                        marginBottom: this.props.marginBottom}}>
+                    {rawPage}
+                </div>)}
+            </div>;
+        } else {
+            ret = rawPages[0];
+        }
+
+        this.props.store && this.props.store.rendererIsClean();
 
         PROFILER_ENABLED && console.timeEnd("render");
         return ret;
@@ -161,8 +166,8 @@ var Renderer = React.createClass({
         var foundIdx;
         var musicLine;
         var ctxData;
-        for (var h = 0; h < getCtxCount(); ++h) {
-            var ctx = getCtx(h);
+        for (var h = 0; h < this.getCtxCount(); ++h) {
+            var ctx = this.getCtx(h);
             if (!ctx) {
                 continue;
             }
@@ -192,7 +197,7 @@ var Renderer = React.createClass({
                                 foundObj = item;
                                 break;
                             } else if (dynX < item["$Bridge_x"] ||
-                                    (j === body.length - 1 && h === getCtxCount() - 1)) {
+                                    (j === body.length - 1 && h === this.getCtxCount() - 1)) {
                                 if (dynX < item["$Bridge_x"]) {
                                     j -= 1;
                                 }
@@ -231,8 +236,8 @@ var Renderer = React.createClass({
     _elementsInBBox: function(box, mouse) {
         var ret = [];
 
-        for (var h = 0; h < getCtxCount(); ++h) {
-            var ctx = getCtx(h);
+        for (var h = 0; h < this.getCtxCount(); ++h) {
+            var ctx = this.getCtx(h);
             if (!ctx) {
                 continue;
             }
@@ -254,7 +259,7 @@ var Renderer = React.createClass({
     getInitialState: function() {
         return {
             mouse: {x: 0, y: 0},
-            visualCursor: SongEditorStore.visualCursor()
+            visualCursor: this.props.store && this.props.store.visualCursor()
         };
     },
     getPositionForMouse: function(event) {
@@ -311,7 +316,7 @@ var Renderer = React.createClass({
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.rendererIsDirty();
+                this.props.store && this.props.store.rendererIsDirty();
             }
             this.setState({
                 selectionRect: {
@@ -339,7 +344,7 @@ var Renderer = React.createClass({
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
-                SongEditorStore.rendererIsDirty();
+                this.props.store && this.props.store.rendererIsDirty();
             }
             this.setState({
                 selectionRect: null
@@ -385,11 +390,17 @@ var Renderer = React.createClass({
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            SongEditorStore.handleAction({description: "PUT /local/tool", resource: "hide"});
+            this.props.store && this.props.store.handleAction({
+                description: "PUT /local/tool",
+                resource: "hide"
+            });
         } else if (fn) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            SongEditorStore.handleAction({description: "PUT /local/tool", resource: "preview",
-                postData: {mouseData: data, fn: fn}});
+            this.props.store && this.props.store.handleAction({
+                description: "PUT /local/tool",
+                resource: "preview",
+                postData: {mouseData: data, fn: fn}
+            });
         }
 
         this.setState({
@@ -397,11 +408,22 @@ var Renderer = React.createClass({
         });
     }, 16 /* 60 Hz */),
 
+    getCtx: function(idx) {
+        return this.props.contexts ?
+            this.props.contexts[idx] :
+            (this.props.store && this.props.store.ctx(idx));
+    },
+    getCtxCount: function() {
+        return this.props.contexts ?
+            this.props.contexts.length :
+            (this.props.store && this.props.store.ctxCount());
+    },
+
     componentDidMount: function() {
         if (isBrowser) {
             this.setupBrowserListeners();
         }
-        SongEditorStore.addAnnotationListener(this.update);
+        this.props.store && this.props.store.addAnnotationListener(this.update);
     },
     setupBrowserListeners: function() {
         var AccidentalTool = require("../tools/accidentalTool.jsx");
@@ -466,7 +488,7 @@ var Renderer = React.createClass({
         if (isBrowser) {
             this.clearBrowserListeners();
         }
-        SongEditorStore.removeAnnotationListener(this.update);
+        this.props.store && this.props.store.removeAnnotationListener(this.update);
     },
     clearBrowserListeners: function() {
         document.onkeypress = null;
@@ -474,7 +496,7 @@ var Renderer = React.createClass({
     },
     update: function() {
         this.setState({
-            visualCursor: SongEditorStore.visualCursor()
+            visualCursor: this.props.store && this.props.store.visualCursor()
         });
     }
 });
@@ -492,12 +514,12 @@ var LineContainer = React.createClass({
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
-        var songDirty = SongEditorStore.dirty();
+        var songDirty = this.props.store && this.props.store.dirty();
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
-        var lineDirty = SongEditorStore.lineDirty(nextProps.idx);
+        var lineDirty = this.props.store && this.props.store.lineDirty(nextProps.idx);
 
         if (lineDirty) {
-            SongEditorStore.handleAction({description: "DELETE /local/song",
+            this.props.store && this.props.store.handleAction({description: "DELETE /local/song",
                 resource: "lineDirty", postData: nextProps.idx});
         }
         return songDirty || heightChanged || lineDirty;

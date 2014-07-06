@@ -47,6 +47,8 @@ var NoteMarking = React.createClass({
         return <Glyph
             x={this.props.x + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2}
             y={this.props.y - this.getYOffset()}
+            fontSize={this.props.fontSize}
+            staveHeight={this.props.fontSize}
             glyphName={this.getGlyphName()} />;
     },
 

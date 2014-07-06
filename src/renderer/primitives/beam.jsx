@@ -165,6 +165,7 @@ var Beam = React.createClass({
                 selectioninfo={"beamTuplet"}
                 fill={this.props.tupletsTemporary ? "#A5A5A5" : "black"}
                 glyphName={"tuplet3"}
+                fontSize={this.props.fontSize}
                 x={this.props.x + offset/2}
                 y={y} />;
         }

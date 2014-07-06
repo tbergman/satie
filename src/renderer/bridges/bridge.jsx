@@ -51,6 +51,7 @@ class Bridge {
             this.setY(ctx.y);
         }
         this.idx = ctx.idx;
+        this._fontSize = ctx.fontSize;
         for (var i = 0; i < this.prereqs.length; ++i) {
             if (!this.prereqs[i][0 /* condition */].call(this, ctx)) {
                 var exitCode = this.prereqs[i][1 /* correction */].call(this, ctx);
@@ -90,6 +91,9 @@ class Bridge {
 
     key() {
         return this._key;
+    }
+    fontSize() {
+        return this._fontSize;
     }
 
     annotateImpl(ctx) {

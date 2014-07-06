@@ -78,7 +78,9 @@ class Context {
         this.body = this.stave.body;
         this.idx = -1;
 
-        this.calculateIntersections();
+        if (this.stave.body && this.stave.body.length && !this.stave.body[0].intersects) {
+            this.calculateIntersections();
+        }
     }
 
     /**

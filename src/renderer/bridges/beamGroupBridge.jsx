@@ -44,6 +44,7 @@ class BeamGroupBridge extends Bridge {
         return <BeamGroup
                 key={this.key()}
                 beams={beams}
+                fontSize={this.fontSize()}
                 generate={() => this.beam.map(b => b.render(true))}
                 scaleFactor={this._fontSize*Renderer.FONT_SIZE_FACTOR + "px"}
                 tupletsTemporary={this.tupletsTemporary}

@@ -48,6 +48,7 @@ var KeySignature = React.createClass({
                 y={this.props.y}
                 line={a.line}
                 stroke={this.props.stroke}
+                fontSize={this.props.fontSize}
                 accidental={a.accidental} />)}
         </Group>;
     },

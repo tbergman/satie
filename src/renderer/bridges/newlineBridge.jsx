@@ -14,7 +14,6 @@ var _ = require("underscore");
 
 class NewlineBridge extends Bridge {
     annotateImpl(ctx) {
-        this._fontSize = ctx.fontSize;
         this._lineSpacing = ctx.lineSpacing;
         this._pageSize = ctx.pageSize;
 
@@ -55,8 +54,8 @@ class NewlineBridge extends Bridge {
     render() {
         return <StaveLines
                 key={this.key()}
-                width={renderUtil.mm(this._pageSize.width - 30, this._fontSize)}
-                x={renderUtil.mm(15, this._fontSize)}
+                width={renderUtil.mm(this._pageSize.width - 30, this.fontSize())}
+                x={renderUtil.mm(15, this.fontSize())}
                 y={this.y() + this._lineSpacing} />;
     }
     justify(ctx) {

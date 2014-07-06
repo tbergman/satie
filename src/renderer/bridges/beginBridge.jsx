@@ -15,7 +15,6 @@ class BeginBridge extends Bridge {
     annotateImpl(ctx) {
         this.pianoStaff = ctx.stave.pianoStaff;
         this.stave = ctx.stave;
-        this.fontSize = ctx.fontSize;
         if (typeof window !== "undefined" &&
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
@@ -34,14 +33,15 @@ class BeginBridge extends Bridge {
         var Renderer = require("../renderer.jsx");
         return <Group key={this.key()}>
             {this.stave.pianoStaff && <Brace
-                x={renderUtil.mm(this.noMargin ? 15 : 30, this.fontSize)}
-                fontSize={this.fontSize*Renderer.FONT_SIZE_FACTOR}
+                x={renderUtil.mm(this.noMargin ? 15 : 30, this.fontSize())}
+                fontSize={this.fontSize()*Renderer.FONT_SIZE_FACTOR}
                 y={this.braceY}
                 y2={this.getBraceY2()} />}
             <StaveLines
                 key={"StaveLines"}
-                width={renderUtil.mm(this.pageSize.width - (this.noMargin ? 30 : 45), this.fontSize)}
-                x={renderUtil.mm(this.noMargin ? 15 : 30, this.fontSize)}
+                width={renderUtil.mm(this.pageSize.width -
+                        (this.noMargin ? 30 : 45), this.fontSize())}
+                x={renderUtil.mm(this.noMargin ? 15 : 30, this.fontSize())}
                 y={this.braceY} />
         </Group>;
     }

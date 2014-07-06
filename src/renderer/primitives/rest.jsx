@@ -41,6 +41,7 @@ var Rest = React.createClass({
                 x={this.props.x}
                 y={this.props.y}
                 fill={this.props.stroke}
+                fontSize={this.props.fontSize}
                 glyphName={this.props.notehead} />
             {this.props.dotted && _(this.props.dotted).times(idx => <Dot
                 idx={idx}
@@ -48,6 +49,7 @@ var Rest = React.createClass({
                 stroke={this.props.stroke}
                 x={this.props.x}
                 y={this.props.y}
+                fontSize={this.props.fontSize}
                 line={line} />)}
             {this.props.children && this.props.children.map((element, idx) => {
                 element.props.direction = this.getDirection();
@@ -56,6 +58,7 @@ var Rest = React.createClass({
                 element.props.y = this.props.y;
                 element.props.idx = idx;
                 element.props.notehead = this.props.notehead;
+                element.props.fontSize = this.props.fontSize;
                 return element;
             })}
         </Group>;

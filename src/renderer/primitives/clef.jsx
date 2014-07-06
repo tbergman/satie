@@ -83,6 +83,7 @@ var Clef = React.createClass({
             x={this.props.x - (this.props.isChange ? 0.2 : 0)}
             y={this.props.y - (this.getLine() - 3)/4}
             fill={this.props.stroke}
+            fontSize={this.props.fontSize}
             glyphName={this.getSign() + (this.props.isChange ? "Change" : "")} />;
     },
 

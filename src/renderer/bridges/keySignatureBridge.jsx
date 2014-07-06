@@ -45,6 +45,7 @@ class KeySignatureBridge extends Bridge {
             x={this.x()}
             y={this.y()}
             clef={this._clef}
+            fontSize={this.fontSize()}
             sharpCount={getSharpCount(this.keySignature)}
             flatCount={getFlatCount(this.keySignature)} />;
     }

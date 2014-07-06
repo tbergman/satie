@@ -39,9 +39,18 @@ var Glyph = React.createClass({
     },
 
     renderSVG: function() {
+        var Renderer = require("../renderer.jsx");
+        var px = this.props.fontSize ?
+                this.props.x*this.props.fontSize*Renderer.FONT_SIZE_FACTOR :
+                this.props.x + "em";
+
+        var py = this.props.fontSize ?
+                this.props.y*this.props.fontSize*Renderer.FONT_SIZE_FACTOR :
+                this.props.y + "em";
+
         var text = <text
-                x={this.props.x + "em"}
-                y={this.props.y + "em"}
+                x={px}
+                y={py}
                 fill={this.props.fill}
                 transform={this.props.transform}
                 className="mn_">

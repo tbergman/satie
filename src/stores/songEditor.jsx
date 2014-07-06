@@ -354,13 +354,8 @@ class SongEditorStore extends EventEmitter {
 
     reparse(activeSong) {
         _staves = lylite.parse(activeSong.src);
+        renderUtil.addDefaults(_staves);
 
-        if (!_(_staves).any(s => s.staveHeight)) {
-            _staves.splice(0, 0, {staveHeight: renderUtil.rastalToHeight[4]});
-        }
-        if (!_(_staves).any(s => s.pageSize)) {
-            _staves.splice(0, 0, {pageSize: renderUtil.pageSizes[0]});
-        }
         _staveHeight = _(_staves).find(s => s.staveHeight).staveHeight;
         _pageSize = _(_staves).find(s => s.pageSize).pageSize;
 

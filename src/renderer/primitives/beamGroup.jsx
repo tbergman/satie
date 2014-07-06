@@ -96,6 +96,7 @@ var BeamGroup = React.createClass({
                 beams={(props && props.beams) || 1}
                 direction={direction}
                 key={props.key}
+                fontSize={this.props.fontSize}
                 line1={line1 + direction*getSH(direction, 0, line1)}
                 line2={line2 + direction*getSH(direction, children.length - 1, line2)}
                 notehead1={firstP.notehead}

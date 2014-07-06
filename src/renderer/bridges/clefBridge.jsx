@@ -36,6 +36,7 @@ class ClefBridge extends Bridge {
         return <Clef
             key={this.key()}
             stroke={this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black")}
+            fontSize={this.fontSize()}
             x={this.x()} 
             y={this.y()}
             isChange={this._isChange}
