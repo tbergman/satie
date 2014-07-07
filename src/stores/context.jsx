@@ -278,7 +278,8 @@ class Context {
             }
 
             var doCustomAction = pointerData && (this.body[this.idx] === pointerData.obj ||
-                    (pointerData && pointerData.obj && pointerData.obj.idx === this.idx));
+                    (pointerData.obj && pointerData.obj.placeholder &&
+                        pointerData.obj.idx === this.idx));
 
             if (!pointerData && this.bar === cursor.bar &&
                     ((!cursor.beat && !cursor.annotatedObj) ||
