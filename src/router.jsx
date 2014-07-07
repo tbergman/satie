@@ -26,11 +26,6 @@ var Location = Router.Location;
 var Locations = Router.Locations;
 var NotFound = Router.NotFound;
 
-if (typeof window !== "undefined") {
-    require("./landing/landing.less");
-    require("./main.less");
-}
-
 var Router = React.createClass({
     render: function() {
         var loggedIn = this.props.session.state === "LoggedIn";
