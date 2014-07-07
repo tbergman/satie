@@ -97,6 +97,10 @@ class PlaybackStore extends EventEmitter {
                     _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                 }
                 break;
+            case "POST /api/synth":
+                _legacyAudioReady = false;
+                this.emit(CHANGE_EVENT);
+                break;
             case "POST /api/synth DONE":
                 if (action.response.cb === "" + module.exports.latestID) {
                     var play = function() {
