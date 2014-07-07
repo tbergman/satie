@@ -39,25 +39,19 @@ var Beam = React.createClass({
     },
 
     renderSVG: function() {
-        return <Group><svg
-                x={0}
-                y={0}
-                width={this.props.scaleFactor}
-                height={this.props.scaleFactor}
-                viewBox="0 0 1 1"
-                className="overflow">
+        var f = this.props.fontSize * require("../renderer.jsx").FONT_SIZE_FACTOR;
+        return <Group>
             {_.times(this.props.beams, idx => 
                 <polygon
                     key={idx}
-                    points={this.getX1() + "," + this.getY1(0, idx) + " " +
-                        this.getX2() + "," + this.getY2(0, idx) + " " +
-                        this.getX2() + "," + this.getY2(1, idx) + " " +
-                        this.getX1() + "," + this.getY1(1, idx)}
+                    points={f*this.getX1() + "," + f*this.getY1(0, idx) + " " +
+                        f*this.getX2() + "," + f*this.getY2(0, idx) + " " +
+                        f*this.getX2() + "," + f*this.getY2(1, idx) + " " +
+                        f*this.getX1() + "," + f*this.getY1(1, idx)}
                     stroke={this.props.stroke}
                     fill={this.props.stroke}
                     strokeWidth={0} />
             )}
-        </svg>
             {this.tuplet()}
         </Group>;
     },

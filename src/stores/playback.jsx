@@ -79,6 +79,10 @@ class PlaybackStore extends EventEmitter {
 
     handleAction(action) {
         switch(action.description) {
+            case "DELETE /local/song/show":
+            case "PUT /local/song/show":
+                this._play(false);
+                break;
             case "POST /local/midiOut":
                 if (_pianoLoaded) {
                     hit(action.postData);
@@ -86,14 +90,7 @@ class PlaybackStore extends EventEmitter {
                 break;
             case "POST /local/visualCursor":
                 if (action.resource === "togglePlay") {
-                    _playing = !_playing;
-                    if (_playing) {
-                        _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
-                    } else {
-                        (this._remainingActions || []).forEach(m => {
-                            m();
-                        });
-                    }
+                    this._play(!_playing);
 
                     this.emit(CHANGE_EVENT);
                 } else if (_playing && action.postData && !action.postData.step) {
@@ -115,6 +112,17 @@ class PlaybackStore extends EventEmitter {
                 break;
         }
         return true;
+    }
+
+    _play(on) {
+        _playing = on;
+        if (_playing) {
+            _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
+        } else {
+            (this._remainingActions || []).forEach(m => {
+                m();
+            });
+        }
     }
 
     continuePlay() {

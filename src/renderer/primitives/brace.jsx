@@ -19,6 +19,7 @@ var Brace = React.createClass({
     },
 
     render: function() {
+        var FONT_SIZE_FACTOR = require("../renderer.jsx").FONT_SIZE_FACTOR;
         var staves = this.props.staves;
         var fontSize = this.props.fontSize;
         var idx = this.props.idx;
@@ -28,7 +29,7 @@ var Brace = React.createClass({
             {[<Glyph transform={"scale(" + s + "," + s + ")" +
                     "translate(" + -this.props.fontSize*this.props.x*(1-1/s) + "," +
                         -(1-1/s)*this.props.fontSize*(this.props.y + this.props.y2)/2 + ")"}
-                fontSize={this.props.fontSize}
+                fontSize={this.props.fontSize/FONT_SIZE_FACTOR}
                 key={0}
                 x={this.props.x - 1/8}
                 y={(this.props.y + this.props.y2)/2 + 2/4}

@@ -106,7 +106,8 @@ class PitchBridge extends Bridge {
     }
 
     getWidth(ctx) {
-        return 0.62 + (this.annotatedExtraWidth || 0);
+        // 0.62?
+        return 0.52 + (this.annotatedExtraWidth || 0);
     }
 
     _lyPitch(pitch) {

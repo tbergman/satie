@@ -21,6 +21,7 @@ var Redirect = require("./util/redirect.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
 var SongEditor = require("./renderer/songEditor.jsx");
+var SoonPage = require("./landing/soon.jsx");
 
 var Location = Router.Location;
 var Locations = Router.Locations;
@@ -41,12 +42,12 @@ var Router = React.createClass({
 
             {/* Managing and creating new songs */}
             {/* Currenly you can only see your own library */}
-            {loggedIn ?
+            {loggedIn && this.props.session.user["_id"] === "116342869526407645103" ?
                 <Location path="/library" 
                     handler={LibraryPage}
                     session={this.props.session}
                     songs={this.props.songs} /> :
-                <Redirect path="/library*" to="/"
+                <Redirect path="/library*" to={loggedIn ? "/soon" : "/"}
                     onRedirect={(path) => { futurePath = path; }} />}
             {loggedIn ?
                 <Location path="/library/:subpage" 
@@ -72,6 +73,10 @@ var Router = React.createClass({
                 session={this.props.session} />
             <Location path="/blog*"
                 handler={BlogPage}
+                session={this.props.session} />
+
+            <Location path="/soon"
+                handler={SoonPage}
                 session={this.props.session} />
 
             {/* The blog. No login required to view. */}

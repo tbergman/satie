@@ -20,8 +20,11 @@ class KeySignatureBridge extends Bridge {
     annotateImpl(ctx) {
         this._clef = ctx.clef;
         var next = ctx.next();
+        ctx.keySignature = this.keySignature;
+        ctx.accidentals = getAccidentals(ctx.keySignature);
         if (next.pitch || next.chord) {
-            if (next.acc) {
+            if (_.any(_.filter(next.intersects, l => l.isNote()),
+                           n => n.containsAccidental(ctx)) ? 1 : 0) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 2.5;
             } else {
@@ -34,8 +37,6 @@ class KeySignatureBridge extends Bridge {
         if (c) {
             ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
-        ctx.keySignature = this.keySignature;
-        ctx.accidentals = getAccidentals(ctx.keySignature);
         return true;
     }
     render() {

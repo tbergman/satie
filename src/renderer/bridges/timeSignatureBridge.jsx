@@ -4,6 +4,8 @@
 
 var Bridge = require("./bridge.jsx");
 
+var _ = require("lodash");
+
 var ClefBridge = require("./clefBridge.jsx");
 var KeySignatureBridge = require("./keySignatureBridge.jsx");
 var TimeSignature = require("../primitives/timeSignature.jsx");
@@ -12,7 +14,8 @@ class TimeSignatureBridge extends Bridge {
     annotateImpl(ctx) {
         var next = ctx.next();
         if (next.pitch || next.chord) {
-            if (next.containsAccidental(ctx)) {
+            if (_.any(_.filter(next.intersects, l => l.isNote()),
+                           n => n.containsAccidental(ctx)) ? 1 : 0) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {

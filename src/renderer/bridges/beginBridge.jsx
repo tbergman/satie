@@ -15,7 +15,7 @@ class BeginBridge extends Bridge {
     annotateImpl(ctx) {
         this.pianoStaff = ctx.stave.pianoStaff;
         this.stave = ctx.stave;
-        if (typeof window !== "undefined" &&
+        if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
             this.noMargin = true;

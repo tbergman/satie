@@ -5,11 +5,15 @@ var Context = require("../stores/context.jsx");
 var Header = require("../renderer/primitives/header.jsx");
 var React = require("react");
 var Renderer = require("../renderer/renderer.jsx");
+var ScaleGenerator = require("../promos/scales/scaleGenerator.jsx");
+var browserifySrv = require("./browserifySrv.js");
 var lylite = require("../renderer/lylite.jison").parser;
 var renderUtil = require("../renderer/util.jsx");
-var browserifySrv = require("./browserifySrv.js");
 
 browserifySrv(function(app) {
+    app.post("/scale.svg", function(req, res) {
+        res.send(ScaleGenerator.lylite(req.body));
+    });
     app.post("/to.svg", function(req, res) {
         assert(req && req.body && req.body.lylite, "Lylite must be defined");
         assert(typeof req.body.lylite === "string", "Lylite must be a string");

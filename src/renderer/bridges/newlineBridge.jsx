@@ -184,7 +184,7 @@ var removeNextNewline = (ctx, start) => {
  */
 var semiJustify = (ctx) => {
     var fullJustify = false;
-    if (typeof window !== "undefined" &&
+    if (typeof window === "undefined" ||
             global.location.href.indexOf("/scales/") !== -1) {
         // XXX: HACK!!!
         fullJustify = true;

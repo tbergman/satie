@@ -31,7 +31,7 @@ class Context {
             });
         } else {
             var noMargin = false;
-            if (typeof window !== "undefined" &&
+            if (typeof window === "undefined" ||
                     global.location.href.indexOf("/scales/") !== -1) {
                 // XXX: HACK!!!
                 noMargin = true;
