@@ -97,7 +97,7 @@ BarlineBridge.prototype.prereqs = [
             }
             return true;
         },
-        "Barlines followed by newlines have additional padding"
+        "Barlines followed by accidentals have additional padding"
     ],
 
     [
