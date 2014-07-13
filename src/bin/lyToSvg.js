@@ -2,13 +2,14 @@ var assert = require("assert");
 var _ = require("lodash");
 
 var Context = require("../stores/context.jsx");
-var Header = require("../renderer/primitives/header.jsx");
+var Header = require("../primitives/header.jsx");
 var React = require("react");
 var Renderer = require("../renderer/renderer.jsx");
 var ScaleGenerator = require("../promos/scales/scaleGenerator.jsx");
 var browserifySrv = require("./browserifySrv.js");
-var lylite = require("../renderer/lylite.jison").parser;
-var renderUtil = require("../renderer/util.jsx");
+var lylite = require("../stores/models/lylite.jison").parser;
+var renderUtil = require("ripienoUtil/renderUtil.jsx");
+require("../webViews.jsx");
 
 browserifySrv(function(app) {
     app.post("/scale.svg", function(req, res) {

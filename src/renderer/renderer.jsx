@@ -2,24 +2,22 @@
  * @jsx React.DOM
  */
 
-var React = require('react');
+var React = require("react");
 var _ = require("lodash");
 var assert = require("assert");
 
-var Molasses = require("./primitives/molasses/molasses.jsx");
-var Victoria = require("./primitives/victoria/hellogl.jsx");
+var Molasses = require("./molasses/molasses.jsx");
+var Victoria = require("./victoria/hellogl.jsx");
 
 var isBrowser = typeof window !== "undefined";
 var useGL = isBrowser && global.location.search.indexOf("engine=gl") !== -1;
 global.useGL = useGL;
 
-var Barline = require("./primitives/barline.jsx");
-var Brace = require("./primitives/brace.jsx");
-var Group = require("./primitives/group.jsx");
-var Header = require("./primitives/header.jsx");
+var Group = require("../primitives/group.jsx");
+var Header = require("../primitives/header.jsx");
+var Line = require("../primitives/line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-var StaveLines = require("./primitives/staveLines.jsx");
-var renderUtil = require("./util.jsx");
+var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var RenderEngine = useGL ? Victoria : Molasses;
 
@@ -57,6 +55,8 @@ var Renderer = React.createClass({
 
         var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
 
+        var vcHeight = 2/4 + 0.1 + (isPianoStaff ? 1.2 : 0);
+
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
         var isPianoStaff = _.reduce(staves, (memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
@@ -74,7 +74,7 @@ var Renderer = React.createClass({
                 height={this.props.raw ? mInchH/10000 + "in" : "100%"}
                 widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
                 viewbox={viewbox}>
-            {/* Using staves is an anti-pattern. Ideally, we would have a getBridges()
+            {/* Using staves is an anti-pattern. Ideally, we would have a getModels()
                 method in SongEditorStore or something. */}
             {_.map(staves, (stave, idx) => {
                 if (stave.header) {
@@ -125,12 +125,14 @@ var Renderer = React.createClass({
             {!pidx && this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
                         key={"visualCursorGroup"}
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                    <Barline key="visualCursor"
+                    <Line key="visualCursor"
                         className="visualCursor"
-                        height={2/4 + 0.1 + (isPianoStaff ? 1.2 : 0)}
-                        x={this.state.visualCursor.annotatedObj["$Bridge_x"] - 0.1}
-                        y={this.state.visualCursor.annotatedObj["$Bridge_y"] +
-                            (isPianoStaff ? 1.15 : 0)}
+                        x1={this.state.visualCursor.annotatedObj["$Model_x"] - 0.1}
+                        x2={this.state.visualCursor.annotatedObj["$Model_x"] - 0.1}
+                        y1={this.state.visualCursor.annotatedObj["$Model_y"] +
+                            (isPianoStaff ? 1.15 : 0) - vcHeight}
+                        y2={this.state.visualCursor.annotatedObj["$Model_y"] +
+                            (isPianoStaff ? 1.15 : 0) + vcHeight}
                         stroke={"#008CFF"}
                         strokeWidth={0.04} />
                 </Group>}
@@ -187,21 +189,21 @@ var Renderer = React.createClass({
                             j < body.length && !body[i].newpage; ++j) {
                         var item = body[j];
                         ctxData = item.ctxData;
-                        if (Math.abs(item["$Bridge_y"] - dynY) < 0.001) {
+                        if (Math.abs(item["$Model_y"] - dynY) < 0.001) {
                             if ((item.keySignature ||
                                         item.timeSignature ||
                                         item.clef ||
                                         item.pitch ||
                                         item.chord) &&
-                                    Math.abs(dynX - item["$Bridge_x"]) < 0.27 +
+                                    Math.abs(dynX - item["$Model_x"]) < 0.27 +
                                         (item.dots ? item.dots*0.2 : 0)) {
-                                dynX = item["$Bridge_x"];
+                                dynX = item["$Model_x"];
                                 foundIdx = j;
                                 foundObj = item;
                                 break;
-                            } else if (dynX < item["$Bridge_x"] ||
+                            } else if (dynX < item["$Model_x"] ||
                                     (j === body.length - 1 && h === this.getCtxCount() - 1)) {
-                                if (dynX < item["$Bridge_x"]) {
+                                if (dynX < item["$Model_x"]) {
                                     j -= 1;
                                 }
                                 _pointerData = {
@@ -249,9 +251,9 @@ var Renderer = React.createClass({
 
             for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
                 var item = body[i];
-                if (inRange(box.top - 1, item["$Bridge_y"],
+                if (inRange(box.top - 1, item["$Model_y"],
                             box.bottom + 1) &&
-                        inRange(box.left, item["$Bridge_x"], box.right)) {
+                        inRange(box.left, item["$Model_x"], box.right)) {
                     ret.push(item);
                 }
             }
@@ -530,7 +532,7 @@ var LineContainer = React.createClass({
 });
 
 // Ratio between svg coordinate system and 1mm.
-var FONT_SIZE_FACTOR = 378;
+var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
 
 var _pointerData = {};
 

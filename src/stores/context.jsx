@@ -8,7 +8,7 @@
 var _ = require("lodash");
 var assert = require("assert");
 
-var renderUtil = require("../renderer/util.jsx");
+var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 class Context {
     constructor(opts) {
@@ -352,8 +352,8 @@ class Context {
 
         this.idx = this.body.length - 1;
 
-        var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
-        NewlineBridge.semiJustify(this);
+        var NewlineModel = require("../stores/models/newline.jsx");
+        NewlineModel.semiJustify(this);
 
         this.idx = -1;
         return {
@@ -373,9 +373,9 @@ class Context {
     /**
      * Returns the next element in the stave, skipping over beams.
      *
-     * @param{fn} cond: Optional delegate accepting a Bridge. Returns false
+     * @param{fn} cond: Optional delegate accepting a Model. Returns false
      *     when it should be skipped.
-     * @param{num} skip: Start looking at Bridges <skip> after current.
+     * @param{num} skip: Start looking at Models <skip> after current.
      *     1 if unspecified.
      */
     next(cond, skip, allowBeams) {

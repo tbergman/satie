@@ -4,8 +4,8 @@
  *
  * "Flux is the application architecture that Facebook
  * uses for building client-side web applications. It
- * complements React's composable view components by
- * utilizing a unidirectional data flow. It's more of
+ * complements React"s composable view components by
+ * utilizing a unidirectional data flow. It"s more of
  * a pattern rather than a formal framework, and you
  * can start using Flux immediately without a lot of
  * new code."
@@ -13,11 +13,11 @@
  * See also ripieno
  */
 
-var Promise = require('es6-promise').Promise;
+var Promise = require("es6-promise").Promise;
 var _ = require("lodash");
 var assert = require("assert");
 
-var ajax = require("../util/ajax.jsx").untrusted;
+var ajax = require("ripienoUtil/ajax.jsx").untrusted;
 
 var _callbacks = [];
 var _promises = [];
@@ -27,7 +27,7 @@ var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== 
 
 /**
  * Add a promise to the queue of callback invocation promises.
- * @param {function} callback The Store's registered callback.
+ * @param {function} callback The Store"s registered callback.
  * @param {object} payload The data from the Action.
  */
 var _addPromise = function(callback, payload) {
@@ -35,7 +35,7 @@ var _addPromise = function(callback, payload) {
         if (callback(payload)) {
             resolve(payload);
         } else {
-            reject(new Error('Dispatcher callback unsuccessful'));
+            reject(new Error("Dispatcher callback unsuccessful"));
         }
     }));
 };
@@ -50,7 +50,7 @@ var _clearPromises = function() {
 
 class Dispatcher {
     /**
-     * Register a Store's callback so that it may be invoked by an action.
+     * Register a Store"s callback so that it may be invoked by an action.
      * @param {function} callback The callback to be registered.
      * @return {number} The index of the callback within the _callbacks array.
      */

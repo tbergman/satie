@@ -5,10 +5,11 @@
  * @jsx React.DOM
  */
 
-var React = require('react');
-var Router = require('react-router-component');
+var React = require("react");
+var Redirect = require("ripienoUtil/redirect.jsx");
+var Router = require("react-router-component");
 var _ = require("lodash");
-var assert = require('assert');
+var assert = require("assert");
 
 var AboutPage = require("./landing/about.jsx");
 var BlogPage = require("./landing/blog.jsx");
@@ -17,11 +18,11 @@ var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var ProductPage = require("./landing/products.jsx");
-var Redirect = require("./util/redirect.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
 var SongEditor = require("./renderer/songEditor.jsx");
 var SoonPage = require("./landing/soon.jsx");
+require("./webViews.jsx");
 
 var Location = Router.Location;
 var Locations = Router.Locations;
@@ -151,7 +152,7 @@ var Router = React.createClass({
     },
 
     _onChange: function() {
-        // Responde to updates from SessionStore. This follow's Facebook's Flux
+        // Responde to updates from SessionStore. This follow"s Facebook"s Flux
         // architecture.
         var errors = SessionStore.errors();
         for (var i = this.props.errors.length; i < errors.length; ++i) {

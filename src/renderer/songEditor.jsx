@@ -10,8 +10,8 @@
  * @jsx React.DOM
  */
 
-var React = require('react');
-var Router = require('react-router-component');
+var React = require("react");
+var Router = require("react-router-component");
 var _ = require("lodash");
 var saveAs;
 if (typeof window !== "undefined") {
@@ -19,10 +19,10 @@ if (typeof window !== "undefined") {
 }
 
 var Renderer = require("./renderer.jsx");
-var Ribbon = require("../ribbon/ribbon.jsx");
+var Ribbon = require("./ribbon/ribbon.jsx");
 var RipienoHeader = require("../landing/ripienoHeader.jsx");
 var SongEditorStore = require("../stores/songEditor.jsx");
-var renderUtil = require("./util.jsx");
+var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var Link = Router.Link;
 

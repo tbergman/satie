@@ -2,7 +2,7 @@
  * Flux store for playback.
  */
 
-var EventEmitter = require('events').EventEmitter; 
+var EventEmitter = require("events").EventEmitter; 
 var _ = require("lodash");
 var assert = require("assert");
 
@@ -31,7 +31,7 @@ if (enabled) {
     }
 }
 
-var CHANGE_EVENT = 'change'; 
+var CHANGE_EVENT = "change"; 
 
 class PlaybackStore extends EventEmitter {
     constructor() {
@@ -65,7 +65,7 @@ class PlaybackStore extends EventEmitter {
                     soundfontUrl: "/res/soundfonts/",
                     instrument: "acoustic_grand_piano",
                     soundManagerUrl: "/res/soundmanager2.js",
-                    soundManagerSwfUrl: '/res/soundManager2_swf/',
+                    soundManagerSwfUrl: "/res/soundManager2_swf/",
                     callback: () => {
                         console.log("LOADED MIDI", MIDI.api);
                         _pianoLoaded = true;

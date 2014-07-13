@@ -2,7 +2,7 @@
  * The browser entrypoint.
  */
 
-var React = require('react');
+var React = require("react");
 var Router = require("./router.jsx");
 
 global.React = React; // for Chrome devtool extension

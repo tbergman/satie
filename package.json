@@ -27,7 +27,8 @@
         "browserify-shader": "http://nettek.ca/browserify-shader.tar.gz",
         "mocha": "*",
         "mochify": "*",
-        "uglify-js": "~2.4.14"
+        "uglify-js": "~2.4.14",
+        "react-tools": "~0.10.0"
     },
     "scripts": {
         "dev-server": "watchify -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",

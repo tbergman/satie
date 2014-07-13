@@ -2,25 +2,22 @@
  * Flux store for the song being edited.
  */
 
-var EventEmitter = require('events').EventEmitter; 
+var EventEmitter = require("events").EventEmitter; 
 var _ = require("lodash");
-var assert = require('assert');
+var assert = require("assert");
 
-var Dispatcher = require("./dispatcher.jsx"); 
-var deepFreeze = require("../util/deepFreeze.jsx");
 
-var Bridge = require("../renderer/bridges/bridge.jsx");
 var Context = require("./context.jsx");
-var Header = require("../renderer/primitives/header.jsx");
-var KeySignatureBridge = require("../renderer/bridges/keySignatureBridge.jsx");
-var NewlineBridge = require("../renderer/bridges/newlineBridge.jsx");
-var lylite = require("../renderer/lylite.jison").parser;
-var renderUtil = require("../renderer/util.jsx");
-
+var Dispatcher = require("./dispatcher.jsx"); 
+var Header = require("../primitives/header.jsx");
+var Model = require("../stores/models/model.jsx");
+var deepFreeze = require("ripienoUtil/deepFreeze.jsx");
+var lylite = require("../stores/models/lylite.jison").parser;
+var renderUtil = require("ripienoUtil/renderUtil.jsx");
 var isBrowser = typeof window !== "undefined";
 
-var CHANGE_EVENT = 'change'; 
-var ANNOTATE_EVENT = 'annotate'; 
+var CHANGE_EVENT = "change"; 
+var ANNOTATE_EVENT = "annotate"; 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 ///
@@ -141,7 +138,7 @@ class SongEditorStore extends EventEmitter {
                 _dirty = true;
                 _ctxs = null;
                 _.find(_staves, s => s.staveHeight).staveHeight = _staveHeight;
-                Bridge.removeAnnotations(_staves);
+                Model.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
                 break;
@@ -151,7 +148,7 @@ class SongEditorStore extends EventEmitter {
                 _dirty = true;
                 _ctxs = null;
                 _.find(_staves, s => s.pageSize).pageSize = _pageSize;
-                Bridge.removeAnnotations(_staves);
+                Model.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
                 break;
@@ -164,11 +161,11 @@ class SongEditorStore extends EventEmitter {
                         break;
                     case "dirty":
                         _dirty = true;
-                        // don't emit.
+                        // don"t emit.
                         break;
                     case "lineDirty":
                         _linesToUpdate[action.postData] = true;
-                        // don't emit.
+                        // don"t emit.
                         break;
                 }
                 break;
@@ -178,12 +175,12 @@ class SongEditorStore extends EventEmitter {
                     case "dirty":
                         _.defer(() => {
                             _dirty = false;
-                            // don't emit.
+                            // don"t emit.
                         });
                         break;
                     case "lineDirty":
                         delete _linesToUpdate[action.postData];
-                        // don't emit.
+                        // don"t emit.
                         break;
                 }
                 break;
@@ -191,7 +188,7 @@ class SongEditorStore extends EventEmitter {
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
                     // Remove the item directly before the ctx.
-                    var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+                    var DurationModel = require("./models/duration.jsx");
                     var EraseTool = require("../tools/eraseTool.jsx");
                     var i;
                     for (i = 0; i < _staves[3].body.length; ++i) {
@@ -233,7 +230,7 @@ class SongEditorStore extends EventEmitter {
             case "POST /local/visualCursor":
                 switch (action.resource) {
                     case "ptr":
-                        var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+                        var DurationModel = require("./models/duration.jsx");
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj = null;
                         var prevIdx;
@@ -291,7 +288,7 @@ class SongEditorStore extends EventEmitter {
                                             throughBar = true;
                                         }
                                         if (_staves[3].body[i].newline) {
-                                            // TODO: we don't need to update all the lines
+                                            // TODO: we don"t need to update all the lines
                                             _dirty = true;
                                         }
                                         if (_visualCursor.endMarker &&
@@ -314,7 +311,7 @@ class SongEditorStore extends EventEmitter {
                                             _visualCursor = JSON.parse(JSON.stringify(
                                                 _staves[3].body[i].ctxData));
 
-                                            // If we're walking through a bar, make up for that.
+                                            // If we"re walking through a bar, make up for that.
                                             if (throughBar) {
                                                 if (action.postData.step < 0) {
                                                     _visualCursor.endMarker = true;
@@ -381,7 +378,7 @@ class SongEditorStore extends EventEmitter {
         var y = 0;
         while (!staves.every((stave, sidx) => {
             /**
-             * Process staves that aren't actually staves.
+             * Process staves that aren"t actually staves.
              * (Headers, authors, etc.)
              */
             if (stave.header) {
@@ -489,7 +486,8 @@ class SongEditorStore extends EventEmitter {
     }
 
     transpose(how) {
-        var PitchBridge = require("../renderer/bridges/pitchBridge.jsx");
+        var KeySignatureModel = require("../stores/models/keySignature.jsx");
+        var DurationModel = require("./models/duration.jsx");
 
         // The selection is guaranteed to be in song order.
         for (var staveIdx = 0; staveIdx < _staves.length; ++staveIdx) {
@@ -504,7 +502,7 @@ class SongEditorStore extends EventEmitter {
             _.each(_selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
                     if (body[i].keySignature) {
-                        accidentals = KeySignatureBridge.getAccidentals(body[i].keySignature);
+                        accidentals = KeySignatureModel.getAccidentals(body[i].keySignature);
                     }
                 }
 
@@ -520,7 +518,7 @@ class SongEditorStore extends EventEmitter {
                 var numToNote = "cdefgab";
 
                 // For "chromatic":
-                var noteToVal = PitchBridge.chromaticScale;
+                var noteToVal = DurationModel.chromaticScale;
 
                 _.each(item.pitch ? [item] : item.chord, note => {
                     if (how.mode === "inKey") {
@@ -758,7 +756,7 @@ var rendererIsClean = () => {
     });
 };
 
-var rendererLineIsClean = (line) => {
+var rendererMarkLineDirty = (line) => {
     // Mark a given line as clean.
     // NOT a Flux method.
     _linesToUpdate[line] = true;
@@ -776,4 +774,4 @@ module.exports.beamCountIs = beamCountIs;
 module.exports.snapshot = snapshot;
 module.exports.rendererIsClean = rendererIsClean;
 module.exports.rendererIsDirty = rendererIsDirty;
-module.exports.rendererLineIsClean = rendererLineIsClean;
+module.exports.rendererMarkLineDirty = rendererMarkLineDirty;
