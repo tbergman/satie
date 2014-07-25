@@ -9,8 +9,12 @@ var React = require("react");
 var _ = require("lodash");
 
 var Glyph = require("./glyph.jsx");
+var RenderableMixin = require("./renderable.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
+var Victoria = require("../renderer/victoria/hellogl.jsx");
 var getFontOffset = require("./getFontOffset.jsx");
+
+var VCircle = Victoria.VCircle;
 
 var Dot = React.createClass({
     propTypes: {
@@ -28,7 +32,7 @@ var Dot = React.createClass({
         };
     },
 
-    render: function() {
+    renderSVG: function() {
         // See rationale for hidden rect in glyph.jsx
         return <g>
             <circle
@@ -48,6 +52,19 @@ var Dot = React.createClass({
         </g>;
     },
 
+    renderGL: function() {
+        var fill = this.props.stroke;
+        if (fill === "black" || !fill) {
+            fill = "#000000";
+        }
+
+        return <VCircle
+            fill={fill}
+            cx={this.getCX()}
+            cy={this.getCY()}
+            radius={this.props.radius} />;
+    },
+
     getCYOffset: function() {
         return ((this.props.line * 2) % 2) ? 0 : 0.5/4;
     },
@@ -56,7 +73,8 @@ var Dot = React.createClass({
     },
     getCY: function() {
         return this.props.y - (this.props.line - 3)/4 - this.getCYOffset();
-    }
+    },
+    mixins: [RenderableMixin]
 });
 
 module.exports = Dot;

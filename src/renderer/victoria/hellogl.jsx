@@ -15,23 +15,25 @@ var ReactMount = require("react/lib/ReactMount");
 var ReactMultiChild = require("react/lib/ReactMultiChild");
 var ReactDOMComponent = require("react/lib/ReactDOMComponent");
 var ReactUpdates = require("react/lib/ReactUpdates");
-
-var ReactComponentMixin = ReactComponent.Mixin;
-
 var mixInto = require("react/lib/mixInto");
 var merge = require("react/lib/merge");
 
+var RiactUpdateTransaction = require("../../riactUpdateTransaction.js");
 var SMuFL = require("ripienoUtil/SMuFL.js");
-
+var bezierFS = require("./bezier.fs");
+var bezierVS = require("./bezier.vs");
+var circleFS = require("./circle.fs");
+var circleVS = require("./circle.vs");
 var glyphFS = require("./glyph.fs");
 var glyphVS = require("./glyph.vs");
 var rectFS = require("./rect.fs");
 var rectVS = require("./rect.vs");
-var circleVS = require("./circle.vs");
-var circleFS = require("./circle.fs");
 var pixmapData = require("./bravura48PixmapData.json");
+var globalGL = typeof gl === "undefined" ? null : gl;
 
 var BLANK_PROPS = {};
+var DEBUG_GLYPH_POSITION = false;
+var ReactComponentMixin = ReactComponent.Mixin;
 
 global.requestAnimationFrame = global.requestAnimationFrame || global.mozRequestAnimationFrame ||
     global.webkitRequestAnimationFrame || global.msRequestAnimationFrame;
@@ -64,21 +66,19 @@ var ContainerMixin = merge(ReactMultiChild.Mixin, {
      * Creates a child component.
      *
      * @param {ReactComponent} child Component to create.
-     * @param {object} childNode ART node to insert.
+     * @param {object} childNode custom node to insert.
      * @protected
      */
     createChild: function(child, childNode) {
         child._mountImage = childNode;
         var mostRecentlyPlacedChild = this._mostRecentlyPlacedChild;
         if (mostRecentlyPlacedChild == null) {
-            // I'm supposed to be first.
             if (this.node.firstChild) {
                 childNode.injectBefore(this.node.firstChild);
             } else {
                 childNode.inject(this.node);
             }
         } else {
-            // I'm supposed to be after the previous one.
             if (mostRecentlyPlacedChild.nextSibling) {
                 childNode.injectBefore(mostRecentlyPlacedChild.nextSibling);
             } else {
@@ -103,7 +103,7 @@ var ContainerMixin = merge(ReactMultiChild.Mixin, {
      * Override to bypass batch updating because it is not necessary.
      *
      * @param {?object} nextChildren.
-     * @param {ReactReconcileTransaction} transaction
+     * @param {RiactUpdateTransaction} transaction
      * @internal
      * @override {ReactMultiChild.Mixin.updateChildren}
      */
@@ -143,6 +143,7 @@ var VGNode = function() {
     this.rects = [];
     this.circles = [];
     this.glyphs = [];
+    this.beziers = [];
     this.children = [];
 };
 VGNode.prototype.inject = function(n) {
@@ -341,6 +342,46 @@ var VCircle = createComponent(
 });
 
 
+/**
+ * BEZIER CURVES
+ */
+
+
+var VBezierNode = function() {};
+VBezierNode.prototype.inject = function(n) {
+    if (this.injected) {
+        return;
+    }
+    this._parent = n;
+    this.injected = true;
+    n.injectChild(this, "beziers");
+};
+VBezierNode.prototype.eject = function() {
+    this._parent.ejectChild(this, "bezier");
+    this._parent = null;
+};
+
+var VBezier = createComponent(
+    'VBezier',
+    ReactComponentMixin, {
+
+    mountComponent: function(transaction) {
+        ReactComponentMixin.mountComponent.apply(this, arguments);
+        this.node = new VBezierNode;
+        this.node.props = this.props;
+        return this.node;
+    },
+
+    receiveComponent: function(nextComponent, transaction) {
+        var props = nextComponent.props;
+        this.node.props = this.props = props;
+    },
+
+    unmountComponent: function() {
+    }
+});
+
+
 var HelloGL = createComponent(
     'HelloGL',
     ReactDOMComponent.Mixin,
@@ -363,6 +404,7 @@ var HelloGL = createComponent(
             glyphs: [],
             rects: [],
             circles: [],
+            beziers: [],
             children: []
         };
         ReactComponentMixin.mountComponent.call(
@@ -394,14 +436,14 @@ var HelloGL = createComponent(
     componentDidMount: function() {
         var props = this.props;
 
-        var transaction = ReactComponent.ReactReconcileTransaction.getPooled();
+        var transaction = RiactUpdateTransaction.getPooled();
         transaction.perform(
             this.mountAndInjectChildren,
             this,
             props.children,
             transaction
         );
-        ReactComponent.ReactReconcileTransaction.release(transaction);
+        RiactUpdateTransaction.release(transaction);
 
         this.props = props;
         this.initGL();
@@ -422,7 +464,24 @@ var HelloGL = createComponent(
         this.paint();
     },
     paint: function() {
-        var gl = this.node.gl;
+        var rects = [];
+        var glyphs = [];
+        var circles = [];
+        var beziers = [];
+        var children = [this.node];
+        
+        var splice = Array.prototype.splice;
+        var push = Array.prototype.push;
+        while (children.length) {
+            push.apply(rects, children[0].rects);
+            push.apply(glyphs, children[0].glyphs);
+            push.apply(circles, children[0].circles);
+            push.apply(beziers, children[0].beziers);
+
+            splice.apply(children, [0, 1].concat(children[0].children));
+        }
+
+        var gl = globalGL || this.node.gl;
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         global.CS = global.CS || 0;
         if (global.CS++ < 100) {
@@ -434,21 +493,6 @@ var HelloGL = createComponent(
         gl.vertexAttribPointer(this.vertexTexCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         gl.useProgram(this.node.rectProgram);
-
-        var rects = [];
-        var glyphs = [];
-        var circles = [];
-        var children = [this.node];
-        
-        var splice = Array.prototype.splice;
-        var push = Array.prototype.push;
-        while (children.length) {
-            push.apply(rects, children[0].rects);
-            push.apply(glyphs, children[0].glyphs);
-            push.apply(circles, children[0].circles);
-
-            splice.apply(children, [0, 1].concat(children[0].children));
-        }
 
         var oldRed, oldGreen, oldBlue, oldSkew;
 
@@ -488,21 +532,111 @@ var HelloGL = createComponent(
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
         });
 
+        var PNG_SPACE = 44; // 51 px @ 128 dpi
+
+        if (DEBUG_GLYPH_POSITION) {
+            _.each(glyphs, (glyph, idx) => {
+                var i = glyph.idx;
+
+                var rect = pixmapData.glyphs[i].rect.split(" ");
+                var offset = pixmapData.glyphs[i].offset.split(" ");
+
+                var fx = 1/PNG_SPACE/2;
+                var fy = 1/PNG_SPACE/2;
+
+                // Outer border
+                var width = pixmapData.glyphs[i].width*fx;
+                var height = pixmapData.height*fy;;
+
+                var x = glyph.props.x;
+                var y = glyph.props.y - pixmapData.height*fy/2;
+
+                gl.uniform4f(this.node.rectUniforms.posInfo,
+                    x/(this.stepsInWidth/2) - 1,
+                    1 - (y + height)/(this.stepsInWidth/this.aspectRatio/2),
+                    width/(this.stepsInWidth/2),
+                    height/(this.stepsInWidth/this.aspectRatio/2));
+
+                var red = Math.random()/2 + 0.5;
+                var green = 0;
+                var blue = 0;
+
+                if (red !== oldRed || green !== oldGreen || blue !== oldBlue) {
+                    gl.uniform4f(this.node.rectUniforms.colorAndSkew,
+                        red,
+                        green,
+                        blue,
+                        0);
+
+                    oldRed = red;
+                    oldGreen = green;
+                    oldBlue = blue;
+                }
+
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+                // Inner border
+                
+                width = pixmapData.glyphs[i].width*fx;
+                height = rect[3]*fy;
+
+                x = glyph.props.x;
+                var actualOffsetX = (offset[1] - (pixmapData.height - rect[3])/2)*2;
+                y = glyph.props.y - (rect[3]*1 - actualOffsetX)*fy/2;
+
+                gl.uniform4f(this.node.rectUniforms.posInfo,
+                    x/(this.stepsInWidth/2) - 1,
+                    1 - (y + height)/(this.stepsInWidth/this.aspectRatio/2),
+                    width/(this.stepsInWidth/2),
+                    height/(this.stepsInWidth/this.aspectRatio/2));
+
+                var red = 0;
+                var green = Math.random()/2 + 0.5;
+                var blue = 0;
+
+                if (red !== oldRed || green !== oldGreen || blue !== oldBlue) {
+                    gl.uniform4f(this.node.rectUniforms.colorAndSkew,
+                        red,
+                        green,
+                        blue,
+                        0);
+
+                    oldRed = red;
+                    oldGreen = green;
+                    oldBlue = blue;
+                }
+
+                gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            });
+        }
+
         var oldRed, oldGreen, oldBlue, oldIDX;
 
         gl.useProgram(this.node.glyphProgram);
         _.each(glyphs, glyph => {
             var i = glyph.idx;
-            var x = glyph.props.x;
-            var y = glyph.props.y;
 
+            // Outer border
             var rect = pixmapData.glyphs[i].rect.split(" ");
             var offset = pixmapData.glyphs[i].offset.split(" ");
+            var actualOffsetY = Math.ceil((offset[1] - (pixmapData.height - rect[3])/2)*2);
 
-            var startX = rect[0]/pixmapData.totalWidth;
-            var endX = startX + rect[2]/pixmapData.totalWidth;
-            var startY = 1 - (rect[1])/pixmapData.totalHeight;
-            var endY = startY - rect[3]/pixmapData.totalHeight;
+            var fx = 1/PNG_SPACE/2;
+            var fy = 1/PNG_SPACE/2;
+
+            var width = rect[2]*fx;
+            var height = rect[3]*fy;
+
+            var x = glyph.props.x + offset[0]*fx;
+            var y = glyph.props.y - (rect[3]*1 - actualOffsetY)*fy/2;
+
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+            var startX = (rect[0]*1)/pixmapData.totalWidth;
+            var endX = startX + (rect[2]*1)/pixmapData.totalWidth;
+            var startY = 1 - (rect[1]*1)/pixmapData.totalHeight;
+            var endY = startY - (rect[3]*1)/pixmapData.totalHeight;
 
             var color = glyph.props.fill;
 
@@ -513,18 +647,11 @@ var HelloGL = createComponent(
                     startY, endY);
             }
 
-            var offsetX = offset[0]/pixmapData.totalWidth;
-            var offsetY = offset[1]/pixmapData.totalHeight;
-
-            var allheight = pixmapData.height/pixmapData.totalHeight;
-
             gl.uniform4f(this.node.glyphUniforms.posInfo,
-                x/(this.stepsInWidth/2) + 0.0014*offset[0] - 1,
-                1 - y/(this.stepsInWidth/this.aspectRatio/2) +
-                    this.aspectRatio*(offsetY + startY - endY)*-4 +
-                    this.aspectRatio/8,
-                (endX - startX)/(this.stepsInWidth/2)*pixmapData.height/4,
-                (startY - endY)/(this.stepsInWidth/this.aspectRatio/2)*pixmapData.height/4);
+                x/(this.stepsInWidth/2) - 1,
+                1 - (y + height)/(this.stepsInWidth/this.aspectRatio/2),
+                width/(this.stepsInWidth/2),
+                height/(this.stepsInWidth/this.aspectRatio/2));
 
             var red = parseInt(color.slice(1, 1 + 2), 16)/255;
             var green = parseInt(color.slice(3, 3 + 2), 16)/255;
@@ -545,11 +672,11 @@ var HelloGL = createComponent(
         });
 
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.radTexBuffer);
-        gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer);
+        gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, 0, 0, 0);
 
         gl.useProgram(this.node.circleProgram);
-        _.each(circles, circles => {
+        _.each(circles, circle => {
             var cx = circle.props.cx;
             var cy = circle.props.cy;
             var radius = circle.props.radius;
@@ -557,8 +684,8 @@ var HelloGL = createComponent(
             var color = circle.props.fill;
 
             gl.uniform4f(this.node.circleUniforms.circleInfo,
-                (cx + radius)/(this.stepsInWidth/2) - 1,
-                1 - (radius + cy)/(this.stepsInWidth/this.aspectRatio/2),
+                (cx)/(this.stepsInWidth/2) - 1,
+                1 - (cy)/(this.stepsInWidth/this.aspectRatio/2),
                 radius/(this.stepsInWidth/2),
                 radius/(this.stepsInWidth/this.aspectRatio/2));
 
@@ -569,6 +696,41 @@ var HelloGL = createComponent(
 
             gl.drawArrays(gl.TRIANGLE_FAN, 0, CIRCLE_RESOLUTION);
         });
+
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer2);
+        gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, 0, 0, 0);
+
+        gl.useProgram(this.node.bezierProgram);
+        _.each(beziers, bezier => {
+            var color = bezier.props.fill;
+
+            gl.uniform4f(this.node.bezierUniforms.x,
+                (bezier.props.x1)/(this.stepsInWidth/2) - 1,
+                (bezier.props.x2)/(this.stepsInWidth/2) - 1,
+                (bezier.props.x3)/(this.stepsInWidth/2) - 1,
+                (bezier.props.x4)/(this.stepsInWidth/2) - 1)
+
+            gl.uniform4f(this.node.bezierUniforms.y,
+                1 - (bezier.props.y1)/(this.stepsInWidth/this.aspectRatio/2),
+                1 - (bezier.props.y2)/(this.stepsInWidth/this.aspectRatio/2),
+                1 - (bezier.props.y3)/(this.stepsInWidth/this.aspectRatio/2),
+                1 - (bezier.props.y4)/(this.stepsInWidth/this.aspectRatio/2));
+
+            gl.uniform4f(this.node.bezierUniforms.r,
+                (bezier.props.x5)/(this.stepsInWidth/2) - 1,
+                1 - (bezier.props.y5)/(this.stepsInWidth/this.aspectRatio/2),
+                (bezier.props.x6)/(this.stepsInWidth/2) - 1,
+                1 - (bezier.props.y6)/(this.stepsInWidth/this.aspectRatio/2));
+
+            gl.uniform4f(this.node.bezierUniforms.colorAndStroke,
+                parseInt(color.slice(1, 1 + 2), 16)/255,
+                parseInt(color.slice(3, 3 + 2), 16)/255,
+                parseInt(color.slice(5, 5 + 2), 16)/255,
+                0.03);
+
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, BEZIER_RESOLUTION);
+        });
     },
     componentWillUnmount: function() {
         ReactComponentMixin.unmountComponent.call(this);
@@ -576,20 +738,23 @@ var HelloGL = createComponent(
     },
 
     initGL: function() {
-        var canvas = this.getDOMNode();
-        
-        try {
-            this.node.gl = canvas.getContext("webgl") ||
-                canvas.getContext("experimental-webgl");
-        } catch(e) {}
-        
-        if (!this.node.gl) {
-            alert("Unable to initialize WebGL. Your browser may not support it.");
-            this.node.gl = null;
-            return;
-        }
+        if (!globalGL) {
+            var canvas = this.getDOMNode();
+            try {
+                this.node.gl = canvas.getContext("webgl") ||
+                    canvas.getContext("experimental-webgl");
+            } catch(e) {}
+            
+            if (!this.node.gl) {
+                alert("Unable to initialize WebGL. Your browser may not support it.");
+                this.node.gl = null;
+                return;
+            }
 
-        var gl = this.node.gl;
+            var gl = this.node.gl;
+        } else {
+            var gl = globalGL;
+        }
 
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
         gl.depthFunc(gl.LEQUAL);
@@ -604,10 +769,15 @@ var HelloGL = createComponent(
             0, 0
         ];
 
-        var rads = [];
-        var twoPI = 2*Math.PI;
+        var ts = [];
         for (var i = 0; i < CIRCLE_RESOLUTION; ++i) {
-            rads.push(twoPI*i/(CIRCLE_RESOLUTION - 1));
+            ts.push(i/(CIRCLE_RESOLUTION - 1));
+        }
+
+        var t2s = [];
+        for (var i = 0; i < BEZIER_RESOLUTION/2; ++i) {
+            t2s.push(i/(BEZIER_RESOLUTION - 1));
+            t2s.push(1 - i/(BEZIER_RESOLUTION - 1));
         }
 
         ////////////
@@ -623,7 +793,12 @@ var HelloGL = createComponent(
         this.squareTexBuffer = gl.createBuffer();
         
         gl.bindBuffer(gl.ARRAY_BUFFER, this.squareTexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rectangle), gl.STATIC_DRAW);
+        if (typeof libripienoclient !== "undefined") {
+            // For use in libripienoclient (Potentially old JSC)
+            gl.bufferData(gl.ARRAY_BUFFER, rectangle, gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rectangle), gl.STATIC_DRAW);
+        }
         gl.vertexAttribPointer(this.vertexTexCoordAttribute, 2, gl.FLOAT, false, 0, 0);
 
         this.node.glyphProgram = glyphProgram;
@@ -632,6 +807,7 @@ var HelloGL = createComponent(
             posInfo: gl.getUniformLocation(glyphProgram, 'uPosInfo'),
             color: gl.getUniformLocation(glyphProgram, 'uColor')
         };
+
 
         ////////////////
         // RECTANGLES //
@@ -656,45 +832,92 @@ var HelloGL = createComponent(
         var circleProgram = this.newProgram(circleVS, circleFS);
         gl.useProgram(circleProgram);
 
-        this.radCoordAttribute = gl.getAttribLocation(circleProgram, "vRad");
-        gl.enableVertexAttribArray(this.radCoordAttribute);
+        this.tCoordAttribute = gl.getAttribLocation(circleProgram, "t");
+        gl.enableVertexAttribArray(this.tCoordAttribute);
         
-        this.radTexBuffer = gl.createBuffer();
+        this.tTexBuffer = gl.createBuffer();
         
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.radTexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(rads), gl.STATIC_DRAW);
-        gl.vertexAttribPointer(this.radCoordAttribute, 1, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer);
+        if (typeof Float32Array !== "undefined") {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(ts), gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, ts, gl.STATIC_DRAW);
+        }
+        gl.vertexAttribPointer(this.tCoordAttribute, 1, gl.FLOAT, false, 0, 0);
 
         this.node.circleProgram = circleProgram;
+
         this.node.circleUniforms = {
             circleInfo: gl.getUniformLocation(circleProgram, 'uCircleInfo'),
             color: gl.getUniformLocation(circleProgram, 'uColor')
         };
 
+        ///////////////////
+        // BEZIER CURVES //
+        ///////////////////
+        
+        var bezierProgram = this.newProgram(bezierVS, bezierFS);
+        gl.useProgram(bezierProgram);
+
+        this.tCoordAttribute2 = gl.getAttribLocation(bezierProgram, "t");
+        gl.enableVertexAttribArray(this.tCoordAttribute2);
+        
+        this.tTexBuffer2 = gl.createBuffer();
+        
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer2);
+        if (typeof Float32Array !== "undefined") {
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(t2s), gl.STATIC_DRAW);
+        } else {
+            gl.bufferData(gl.ARRAY_BUFFER, t2s, gl.STATIC_DRAW);
+        }
+        gl.vertexAttribPointer(this.tCoordAttribute2, 1, gl.FLOAT, false, 0, 0);
+
+        this.node.bezierProgram = bezierProgram;
+
+        this.node.bezierUniforms = {
+            x: gl.getUniformLocation(bezierProgram, 'uBezierX'),
+            y: gl.getUniformLocation(bezierProgram, 'uBezierY'),
+            r: gl.getUniformLocation(bezierProgram, 'uBezierR'),
+            colorAndStroke: gl.getUniformLocation(bezierProgram, 'uColorAndStroke')
+        };
+
         ////////////////
 
-        this.node.spiritTexture = loadImageTexture(gl, "/res/bravura48.png");
+        this.node.spiritTexture = loadImageTexture(gl, "/res/bravura48.png",
+                () => this.paint());
         this.node.gl = gl;
     },
     newProgram: function(vsSRC, fsSRC) {
-        var gl = this.node.gl;
+        var gl = globalGL || this.node.gl;
 
         var shaderProgram = gl.createProgram();
 
+        var prelude = (globalGL && globalGL.ripieno_isDesktopGL) ? 
+            "" : "precision mediump float;\n";
+
         var vs = gl.createShader(gl.VERTEX_SHADER);
-        gl.shaderSource(vs, vsSRC()); 
+        gl.shaderSource(vs, prelude + vsSRC()); 
         gl.compileShader(vs);
+        if(!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+            console.log("invalid shader1: " + gl.getShaderInfoLog(vs));
+            return null;
+        };
         gl.attachShader(shaderProgram, vs);
 
         var fs = gl.createShader(gl.FRAGMENT_SHADER);
-        gl.shaderSource(fs, fsSRC()); 
+        gl.shaderSource(fs, prelude + fsSRC()); 
         gl.compileShader(fs);
+        if(!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+            console.log("invalid shader2: " + gl.getShaderInfoLog(fs));
+            return null;
+        };
         gl.attachShader(shaderProgram, fs);
 
         gl.linkProgram(shaderProgram);
 
         if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            alert("Unable to initialize the shader program.");
+            console.log("invalid shader : " + gl.getProgramInfoLog(shaderProgram));
+            console.warn("Unable to initialize the shader program.");
         }
 
         return shaderProgram;
@@ -719,8 +942,8 @@ function clearLoadingImages() {
 // Load the image at the passed url, place it in a new WebGLTexture
 // object and return the WebGLTexture.
 //
-function loadImageTexture(ctx, url)
-{
+var loadImageTexture = (globalGL && globalGL.ripieno_loadImageTexture) ||
+        function(ctx, url, cb) {
     var texture = ctx.createTexture();
     ctx.bindTexture(ctx.TEXTURE_2D, texture);
     ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
@@ -728,6 +951,7 @@ function loadImageTexture(ctx, url)
     g_loadingImages.push(image);
     image.onload = function() {
         doLoadImageTexture(ctx, image, texture);
+        cb();
     };
     image.src = url;
     return texture;
@@ -747,6 +971,7 @@ function doLoadImageTexture(ctx, image, texture)
 }
 
 var CIRCLE_RESOLUTION = 40;
+var BEZIER_RESOLUTION = 120;
 
 module.exports = React.createClass({
     render: function() {
@@ -760,17 +985,37 @@ module.exports = React.createClass({
      * changed sizes.
      */
     updateDimensions: function() {
-        var canvas = this.getDOMNode();
-        var r = canvas.getBoundingClientRect();
+        if (!globalGL) {
+            // We are using WebGL
+            var canvas = this.getDOMNode();
+            var r = canvas.getBoundingClientRect();
 
-        canvas.width = Math.round(canvas.clientWidth*global.devicePixelRatio);
-        canvas.height = Math.round(canvas.clientHeight*global.devicePixelRatio);
-        this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
-        this.refs.glContext.fillAvailableSpace();
+            canvas.width = Math.round(canvas.clientWidth*global.devicePixelRatio);
+            canvas.height = Math.round(canvas.clientHeight*global.devicePixelRatio);
+            this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
+            this.refs.glContext.fillAvailableSpace();
+        } else {
+            // We are using libripienoclient GL bindings.
+            var width = globalGL.ripieno_getWidth();
+            var height = globalGL.ripieno_getHeight();
+
+            this.latest_width = width;
+            this.latest_height = height;
+
+            this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
+            this.refs.glContext.aspectRatio = width / height;
+            gl.viewport(0, 0, width, height);
+        }
     },
 
     componentDidUpdate: function(oldProps) {
-        if (this.props.widthInSpaces !== oldProps.widthInSpaces) {
+        var shouldUpdateDimensions =
+            this.props.widthInSpaces !== oldProps.widthInSpaces ||
+            globalGL && (
+                    this.latest_width !== globalGL.ripieno_getWidth() ||
+                    this.latest_height !== globalGL.ripieno_getHeight());
+        
+        if (shouldUpdateDimensions) {
             this.updateDimensions();
         }
         this.refs.glContext.paint();
@@ -778,19 +1023,25 @@ module.exports = React.createClass({
     },
 
     componentDidMount: function() {
-        global.addEventListener("resize", this.updateDimensions);
-        this.updateDimensions();
-        this.refs.glContext.paint();
+        if (!globalGL) {
+            // We are using webGL.
+            global.addEventListener("resize", this.updateDimensions);
+            this.refs.glContext.paint();
 
-        this.setupListeners();
+            this.setupListeners();
+        }
+        
+        this.updateDimensions();
     },
 
     setupListeners: function() {
-        var canvas = this.getDOMNode();
-        canvas.onmousedown = this.props.onMouseDown;
-        canvas.onmouseup = this.props.onMouseUp;
-        canvas.onmousemove = this.props.onMouseMove;
-        canvas.onclick = this.props.onClick;
+        if (typeof window !== "undefined") {
+            var canvas = this.getDOMNode();
+            canvas.onmousedown = this.props.onMouseDown;
+            canvas.onmouseup = this.props.onMouseUp;
+            canvas.onmousemove = this.props.onMouseMove;
+            canvas.onclick = this.props.onClick;
+        }
     },
 
     componentWillUnmount: function() {
@@ -800,3 +1051,5 @@ module.exports = React.createClass({
 module.exports.VG = VG;
 module.exports.VRect = VRect;
 module.exports.VGlyph = VGlyph;
+module.exports.VBezier = VBezier;
+module.exports.VCircle = VCircle;

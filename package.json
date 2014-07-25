@@ -32,6 +32,7 @@
     },
     "scripts": {
         "dev-server": "watchify -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
+        "lrc-watchify": "watchify -v -o build/lrc-bundle.js -d ./src/lrc-helper.jsx --noparse lodash",
         "build": "NODE_ENV=production browserify . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
         "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .jsx$)",

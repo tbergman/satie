@@ -11,6 +11,7 @@ var assert = require("assert");
 
 var BarlineModel = require("../stores/models/barline.jsx");
 var Group = require("../primitives/group.jsx");
+var Rect = require("../primitives/rect.jsx");
 var Line = require("../primitives/line.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 var hash = require("ripienoUtil/hash.jsx");
@@ -46,6 +47,7 @@ var Barline = React.createClass({
                     y1={spec.y() - spec.height}
                     y2={spec.y() + spec.height}
                     stroke={spec.color}
+                    victoriaYStrokeWidthFactor={0}
                     fill={spec.color}
                     strokeWidth={defaults.thinBarlineThickness/4} />,
                 <Line key={2}
@@ -53,21 +55,22 @@ var Barline = React.createClass({
                     x2={thickX}
                     y1={spec.y() - spec.height}
                     y2={spec.y() + spec.height}
+                    victoriaYStrokeWidthFactor={0}
                     stroke={spec.color}
                     fill={spec.color}
                     strokeWidth={defaults.thickBarlineThickness/4} />,
                 // HACK HACK HACK: We're drawing a white bar to
                 // cover over the empty part of the stave.
-                <rect
+                <Rect
                     key={3}
                     x={spec.x() + defaults.barlineSeparation/4 +
                         defaults.thickBarlineThickness/4 +
-                        defaults.thinBarlineThickness/4 + "em"}
-                    y={spec.y() - spec.height - 0.1 + "em"}
+                        defaults.thinBarlineThickness/4}
+                    y={spec.y() - spec.height - 0.1}
                     stroke="#FFFFFF"
                     fill="#FFFFFF"
-                    height={spec.height*2 + 0.2 + "em"}
-                    width="400em" />]}
+                    height={spec.height*2 + 0.2}
+                    width={400} />]}
             </Group>;
         }
         return <Line
@@ -75,6 +78,7 @@ var Barline = React.createClass({
             x2={spec.x()}
             y1={spec.y() - spec.height}
             y2={spec.y() + spec.height}
+            victoriaYStrokeWidthFactor={0}
             stroke={spec.color}
             fill={spec.color}
             strokeWidth={defaults.thinBarlineThickness/4} />;

@@ -5,6 +5,7 @@
 var React = require("react");
 var _ = require("lodash");
 
+var Bezier = require("../primitives/bezier.jsx");
 var Glyph = require("../primitives/glyph.jsx");
 var Note = require("../primitives/note.jsx");
 var SlurGroupModel = require("../stores/models/slur.jsx");
@@ -34,42 +35,44 @@ var Slur = React.createClass({
             return <g />;
         }
 
-        var x2mx1 = this.getX2() - this.getX1();
+        var x2 = this.getX2();
+        var x1 = this.getX1();
+        var y2 = this.getY2(0, 0);
+        var y1 = this.getY1(0, 0);
+        var dir = this.getDirection();
+
+        var x2mx1 = x2 - x1;
         var x1mx2 = -x2mx1;
         var relw = 0.08;
-        var y1my2 = this.getY1(0,0) - this.getY2(0,0);
-        var absw = -this.getDirection()*0.2080307/Math.max(1, (Math.abs(y1my2)));
-        if ((y1my2 > 0 ? -1 : 1)*this.getDirection() === 1) {
+        var y1my2 = y1 - y2;
+        var absw = -dir*0.2080307/Math.max(1, (Math.abs(y1my2)));
+        if ((y1my2 > 0 ? -1 : 1)*dir === 1) {
             absw *= 2;
         }
-        return <svg
-                x={0}
-                y={0}
-                width={this.props.spec.fontSize*renderUtil.FONT_SIZE_FACTOR}
-                height={this.props.spec.fontSize*renderUtil.FONT_SIZE_FACTOR}
-                viewBox="0 0 1 1"
-                className="overflow">
-            <path
-                d={
-                    "M" +
-                        this.getX2() + "," + this.getY2(0, 0) +
-                    "c" +
-                        (0.28278198/1.23897534*x1mx2) + "," +
-                            ((this.getDirection() === -1 ? y1my2 : 0) + absw) + " " +
-                        (0.9561935/1.23897534*x1mx2)  + "," +
-                            ((this.getDirection() === -1 ? y1my2 : 0) + absw) + " " +
-                        (1.23897534/1.23897534*x1mx2) + "," + (y1my2) +
-                    "c " +
-                        (0.28278198/1.23897534*x2mx1) + "," +
-                            ((this.getDirection() === -1 ? 0 :-y1my2) + absw + relw) + " " +
-                        (0.95619358/1.23897534*x2mx1) + "," +
-                            ((this.getDirection() === -1 ? 0 :-y1my2) + absw + relw) + " " +
-                        (1.23897534/1.23897534*x2mx1) + "," + (-y1my2)
-                    }
-                fill={"black"}
-                strokeWidth={0.03}
-                stroke={"black"} />
-        </svg>;
+
+        return <Bezier
+            x1={x2}
+            y1={y2}
+
+            x2={0.28278198/1.23897534*x1mx2 + x2}
+            y2={((dir === -1 ? y1my2 : 0) + absw) + y2}
+
+            x3={0.9561935/1.23897534*x1mx2 + x2}
+            y3={((dir === -1 ? y1my2 : 0) + absw) + y2}
+
+            x4={x1}
+            y4={y1}
+
+            x5={0.28278198/1.23897534*x2mx1 + x1}
+            y5={((dir === -1 ? 0 :-y1my2) + absw + relw) + y1}
+
+            x6={0.95619358/1.23897534*x2mx1 + x1}
+            y6={((dir === -1 ? 0 :-y1my2) + absw + relw) + y1}
+            
+            fontSizeFactor={this.props.spec.fontSize*renderUtil.FONT_SIZE_FACTOR}
+            fill={"#000000"}
+            strokeWidth={0.03}
+            stroke={"#000000"} />
     },
 
     getYOffset: function() {

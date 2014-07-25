@@ -25,6 +25,7 @@ var StaveLines = React.createClass({
                 y1={this.props.y - 0.25*(i - 2)}
                 y2={this.props.y - 0.25*(i - 2)}
                 stroke="#6A6A6A"
+                victoriaXStrokeWidthFactor={0}
                 strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness/4} />)}
         </Group>;
     }

@@ -10,14 +10,15 @@ var Molasses = require("./molasses/molasses.jsx");
 var Victoria = require("./victoria/hellogl.jsx");
 
 var isBrowser = typeof window !== "undefined";
-var useGL = isBrowser && global.location.search.indexOf("engine=gl") !== -1;
-global.useGL = useGL;
+var useGL = (typeof libripienoclient !== "undefined") ||
+    (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
 var Group = require("../primitives/group.jsx");
 var Header = require("../primitives/header.jsx");
 var Line = require("../primitives/line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
+renderUtil.useGL = useGL;
 
 var RenderEngine = useGL ? Victoria : Molasses;
 

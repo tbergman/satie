@@ -1,6 +1,6 @@
 attribute vec2 vTexCoord; /* [1, 1], [0, 1], [1, 0], [0, 0] */
 uniform vec4 uPosInfo;
-uniform lowp vec4 uColorAndSkew;
+uniform vec4 uColorAndSkew;
 
 void main() {
     gl_Position = vec4(

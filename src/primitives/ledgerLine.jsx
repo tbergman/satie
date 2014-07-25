@@ -34,6 +34,7 @@ var LedgerLine = React.createClass({
             x2={this.props.x + xOffset + 0.08}
             y1={this.props.y - (this.props.line - 3)/4}
             y2={this.props.y - (this.props.line - 3)/4}
+            victoriaXStrokeWidthFactor={0}
             stroke="#000000"
             strokeWidth={0.055} />;
             // Ledger lines should be thicker than regular lines.

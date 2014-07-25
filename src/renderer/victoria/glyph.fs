@@ -1,7 +1,5 @@
-precision mediump float;
-
-uniform lowp sampler2D sampler2d;
-uniform lowp vec3 uColor;
+uniform sampler2D sampler2d;
+uniform vec3 uColor;
 
 varying vec2 v_texCoord;
 
