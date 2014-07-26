@@ -81,7 +81,7 @@ class Dispatcher {
         Promise
             .all(_promises)
             .then(_clearPromises)
-            .catch((err) => {
+            ["catch"]((err) => {
                 inAction = false;
                 console.warn("Exception occured in promise", err);
             });
