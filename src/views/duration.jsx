@@ -1,4 +1,9 @@
 /**
+ * This is a pseudo-component to maintain compatibility with
+ * GroupBridgeView. At some point, GroupBridgeView should be
+ * rewritten so we can enjoy the full performance benefits
+ * of components here.
+ *
  * @jsx React.DOM
  */
 
@@ -12,10 +17,6 @@ var NoteMarking = require("./_noteMarking.jsx");
 var Rest = require("./_rest.jsx");
 
 var DurationView = function(props) {
-    // This is a pseudo-component to maintain compatibility with
-    // GroupBridgeView. At some point, GroupBridgeView should be
-    // rewritten so we can enjoy the full performance benefits
-    // of components here.
     var spec = props.spec;
     assert(spec instanceof DurationModel);
 
@@ -28,8 +29,8 @@ var DurationView = function(props) {
                 dotted={spec.dots}
                 line={3}
                 key={spec.key()}
-                fontSize={spec.fontSize}
-                notehead={spec.getRestHead(countToRest)}
+                fontSize={spec.fontSize()}
+                notehead={spec.getRestHead()}
                 stroke={spec.color}
                 x={spec.x()}
                 y={spec.y()}>

@@ -42,7 +42,40 @@ EndMarkerModel.prototype.prereqs = [
             }
             return -1;
         },
-        "End markers must only exist at the end of a line, document, or unfilled bar"
+        "End markers must only exist at the end of a line, document, or bar"
+    ],
+    [
+        function(ctx) {
+            return ctx.prev().barline || !ctx.beats ||
+                ctx.beats >= 4/ctx.timeSignature.beatType * ctx.timeSignature.beats; },
+        function(ctx) {
+            // XXX: extend to work on things other than 4/4
+            var DurationModel = require("./duration.jsx");
+            var toAdd = ctx.timeSignature.beatType/ctx.timeSignature.beats*
+                (ctx.timeSignature.beats - ctx.beats);
+
+            var count;
+            var dots = false;
+
+            assert(toAdd < ctx.timeSignature.beats, "Don't run this on entirely blank bars!");
+            var val = 2;
+            for (var val = 2; val >= 0.015625; val /= 2) {
+                if (toAdd === val*3/2) {
+                    count = val;
+                    dots = 1;
+                    break;
+                } else if (toAdd >= val) {
+                    count = val;
+                    break;
+                }
+            }
+            return ctx.insertPast(new DurationModel({
+                pitch: "r",
+                count: parseInt(4/count)+"",
+                dots: dots
+            }));
+        },
+        "Bars must not be underfilled (should be filled with rests)"
     ],
     [
         function(ctx) {

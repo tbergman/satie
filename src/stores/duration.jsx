@@ -422,6 +422,7 @@ var beamable = (ctx) => {
 };
 
 var getBeats = (count, dots, tuplet) => {
+    // XXX: Make sure this works for things other than 4/4
     var base = 4/count;
     if (tuplet) {
         base *= tuplet.num / tuplet.den;

@@ -377,7 +377,7 @@ class SongEditorStore extends EventEmitter {
 
         var y = 0;
         while (!staves.every((stave, sidx) => {
-            /**
+            /*
              * Process staves that aren"t actually staves.
              * (Headers, authors, etc.)
              */
@@ -388,11 +388,13 @@ class SongEditorStore extends EventEmitter {
                 return true;
             }
         
-            /**
+            /*
              * Get a context.
              *
-             * Contexts are retreived from snapshots when modifying a line
-             * other than the first line.
+             * Contexts are iterators that hold information such as the current
+             * beat, what accidentals have been set, and what accidentals are
+             * present on other staves.  Contexts are retreived from snapshots
+             * when modifying a line other than the first.
              */
             var dirty = _dirty;
             var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
@@ -405,7 +407,7 @@ class SongEditorStore extends EventEmitter {
                         staveIdx: sidx
                     });
 
-            /**
+            /*
              * Annotate the stave.
              */
             var info = context.annotate({
@@ -419,10 +421,19 @@ class SongEditorStore extends EventEmitter {
                 toolFn: toolFn
             });
 
+            /*
+             * If the cursor is past the end of the line, move the cursor back
+             * to the end of the line
+             */
             if (!_visualCursor.annotatedObj) {
                 _visualCursor = info.cursor;
             }
 
+            /*
+             * The _dirty flag is consumed by the client. It forces a complete
+             * re-render, which can be expensive in SVG mode, so avoid this when
+             * possible. Instead, code should use SongEditorModel.rendererMarkLineDirty.
+             */
             _dirty = _dirty || info.dirty;
             y = info.resetY ? 0 : y;
 
@@ -486,7 +497,7 @@ class SongEditorStore extends EventEmitter {
     }
 
     transpose(how) {
-        var KeySignatureModel = require("../stores/keySignature.jsx");
+        var KeySignatureModel = require("./keySignature.jsx");
         var DurationModel = require("./duration.jsx");
 
         // The selection is guaranteed to be in song order.

@@ -1,5 +1,7 @@
 /**
- * The state of the SongEditor pipeline.
+ * Contexts are iterators in the annotation pipeline that hold information
+ * such as the current beat, what accidentals have been set, and what
+ * accidentals are present on other staves.
  *
  * If you think of annotation as a 'reduce' on all the elements across staves,
  * Context is the memo.
@@ -268,12 +270,14 @@ class Context {
         var sidx = opts.staveIdx || 0;
         var toolFn = opts.toolFn || null;
         var stopping = false;
+        var initialLength = this.body.length;
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
             ++operations;
-            if (operations/this.body.length > 500 && !stopping) {
+            if (operations/initialLength > 500 && !stopping) {
                 console.warn("Detected loop or severe inefficency.");
+                console.warn("Here are some conditions that need to be satisfied:");
                 stopping = 20;
             }
 
