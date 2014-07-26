@@ -11,12 +11,12 @@ var _ = require("lodash");
 var assert = require("assert");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
-var Beam = require("../primitives/beam.jsx");
-var BeamGroupModel = require("../stores/models/beamGroup.jsx");
-var Glyph = require("../primitives/glyph.jsx");
-var Group = require("../primitives/group.jsx");
-var Note = require("../primitives/note.jsx");
-var getFontOffset = require("../primitives/getFontOffset.jsx");
+var Beam = require("./_beam.jsx");
+var BeamGroupModel = require("../stores/beamGroup.jsx");
+var Glyph = require("./_glyph.jsx");
+var Group = require("./_group.jsx");
+var Note = require("./_note.jsx");
+var getFontOffset = require("./_getFontOffset.jsx");
 
 // The line of a chord futhest from the end of a stem.
 var getExtremeLine = Note.getExtremeLine;

@@ -20,7 +20,7 @@ var LibraryPage = require("./landing/libraryPage.jsx");
 var ProductPage = require("./landing/products.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
-var SongEditor = require("./renderer/songEditor.jsx");
+var SongEditor = require("./landing/songEditor.jsx");
 var SoonPage = require("./landing/soon.jsx");
 require("./webViews.jsx");
 

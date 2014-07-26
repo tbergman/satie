@@ -6,10 +6,10 @@
 
 var React = require("react");
 
-var Accidental = require("../primitives/accidental.jsx");
-var Glyph = require("../primitives/glyph.jsx");
-var Group = require("../primitives/group.jsx");
-var KeySignatureModel = require("../stores/models/keySignature.jsx");
+var Accidental = require("./_accidental.jsx");
+var Glyph = require("./_glyph.jsx");
+var Group = require("./_group.jsx");
+var KeySignatureModel = require("../stores/keySignature.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 
 var _ = require("lodash");

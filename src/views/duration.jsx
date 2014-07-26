@@ -6,10 +6,10 @@ var React = require("react");
 var _ = require("lodash");
 var assert = require("assert");
 
-var DurationModel = require("../stores/models/duration.jsx");
-var Note = require("../primitives/note.jsx");
-var NoteMarking = require("../primitives/noteMarking.jsx");
-var Rest = require("../primitives/rest.jsx");
+var DurationModel = require("../stores/duration.jsx");
+var Note = require("./_note.jsx");
+var NoteMarking = require("./_noteMarking.jsx");
+var Rest = require("./_rest.jsx");
 
 var DurationView = function(props) {
     // This is a pseudo-component to maintain compatibility with

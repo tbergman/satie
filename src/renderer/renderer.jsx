@@ -13,9 +13,9 @@ var isBrowser = typeof window !== "undefined";
 var useGL = (typeof libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
-var Group = require("../primitives/group.jsx");
-var Header = require("../primitives/header.jsx");
-var Line = require("../primitives/line.jsx");
+var Group = require("../views/_group.jsx");
+var Header = require("../views/_header.jsx");
+var Line = require("../views/_line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 renderUtil.useGL = useGL;
@@ -432,11 +432,11 @@ var Renderer = React.createClass({
         this.props.store && this.props.store.addAnnotationListener(this.update);
     },
     setupBrowserListeners: function() {
-        var AccidentalTool = require("../tools/accidentalTool.jsx");
-        var DotTool = require("../tools/dotTool.jsx");
-        var NoteTool = require("../tools/noteTool.jsx");
-        var RestTool = require("../tools/restTool.jsx");
-        var TieTool = require("../tools/tieTool.jsx");
+        var AccidentalTool = require("../stores/accidentalTool.jsx");
+        var DotTool = require("../stores/dotTool.jsx");
+        var NoteTool = require("../stores/noteTool.jsx");
+        var RestTool = require("../stores/restTool.jsx");
+        var TieTool = require("../stores/tieTool.jsx");
 
         // Handle backspace and arrows
         document.onkeydown = (event) => {

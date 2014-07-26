@@ -8,10 +8,10 @@ var React = require("react");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 var _ = require("lodash");
 
-var BeginModel = require("../stores/models/begin.jsx");
-var Brace = require("../primitives/brace.jsx");
-var Group = require("../primitives/group.jsx");
-var StaveLines = require("../primitives/staveLines.jsx");
+var BeginModel = require("../stores/begin.jsx");
+var Brace = require("./_brace.jsx");
+var Group = require("./_group.jsx");
+var StaveLines = require("./_staveLines.jsx");
 var hash = require("ripienoUtil/hash.jsx");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 

@@ -7,8 +7,8 @@
 var React = require("react");
 var _ = require("lodash");
 
-var Glyph = require("../primitives/glyph.jsx");
-var Group = require("../primitives/group.jsx");
+var Glyph = require("./_glyph.jsx");
+var Group = require("./_group.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 
 var TimeSignature = React.createClass({

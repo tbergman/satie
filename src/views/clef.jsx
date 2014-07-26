@@ -7,8 +7,8 @@
 var React = require("react");
 var _ = require("lodash");
 
-var ClefModel = require("../stores/models/clef.jsx");
-var Glyph = require("../primitives/glyph.jsx");
+var ClefModel = require("../stores/clef.jsx");
+var Glyph = require("./_glyph.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 
 var Clef = React.createClass({

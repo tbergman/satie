@@ -9,10 +9,10 @@ var React = require("React");
 var _ = require("lodash");
 var assert = require("assert");
 
-var BarlineModel = require("../stores/models/barline.jsx");
-var Group = require("../primitives/group.jsx");
-var Rect = require("../primitives/rect.jsx");
-var Line = require("../primitives/line.jsx");
+var BarlineModel = require("../stores/barline.jsx");
+var Group = require("./_group.jsx");
+var Rect = require("./_rect.jsx");
+var Line = require("./_line.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
 var hash = require("ripienoUtil/hash.jsx");
 

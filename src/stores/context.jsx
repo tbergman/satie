@@ -352,7 +352,7 @@ class Context {
 
         this.idx = this.body.length - 1;
 
-        var NewlineModel = require("../stores/models/newline.jsx");
+        var NewlineModel = require("../stores/newline.jsx");
         NewlineModel.semiJustify(this);
 
         this.idx = -1;

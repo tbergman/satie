@@ -6,7 +6,7 @@ var React = require("react");
 var _ = require("lodash");
 var assert = require("assert");
 
-var Group = require("../primitives/group.jsx");
+var Group = require("../views/_group.jsx");
 
 if (typeof window !== "undefined") {
     require("./selectionRect.less");

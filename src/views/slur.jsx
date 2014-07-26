@@ -5,12 +5,12 @@
 var React = require("react");
 var _ = require("lodash");
 
-var Bezier = require("../primitives/bezier.jsx");
-var Glyph = require("../primitives/glyph.jsx");
-var Note = require("../primitives/note.jsx");
-var SlurGroupModel = require("../stores/models/slur.jsx");
+var Bezier = require("./_bezier.jsx");
+var Glyph = require("./_glyph.jsx");
+var Note = require("./_note.jsx");
+var SlurGroupModel = require("../stores/slur.jsx");
 var SMuFL = require("ripienoUtil/SMuFL.js");
-var getFontOffset = require("../primitives/getFontOffset.jsx");
+var getFontOffset = require("./_getFontOffset.jsx");
 var hash = require("ripienoUtil/hash.jsx");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 

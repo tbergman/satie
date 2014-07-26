@@ -9,10 +9,10 @@ var assert = require("assert");
 
 var Context = require("./context.jsx");
 var Dispatcher = require("./dispatcher.jsx"); 
-var Header = require("../primitives/header.jsx");
-var Model = require("../stores/models/model.jsx");
+var Header = require("../views/_header.jsx");
+var Model = require("./model.jsx");
 var deepFreeze = require("ripienoUtil/deepFreeze.jsx");
-var lylite = require("../stores/models/lylite.jison").parser;
+var lylite = require("./lylite.jison").parser;
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 var isBrowser = typeof window !== "undefined";
 
@@ -188,8 +188,8 @@ class SongEditorStore extends EventEmitter {
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
                     // Remove the item directly before the ctx.
-                    var DurationModel = require("./models/duration.jsx");
-                    var EraseTool = require("../tools/eraseTool.jsx");
+                    var DurationModel = require("./duration.jsx");
+                    var EraseTool = require("./eraseTool.jsx");
                     var i;
                     for (i = 0; i < _staves[3].body.length; ++i) {
                         if (_staves[3].body[i] === _visualCursor.annotatedObj) {
@@ -230,7 +230,7 @@ class SongEditorStore extends EventEmitter {
             case "POST /local/visualCursor":
                 switch (action.resource) {
                     case "ptr":
-                        var DurationModel = require("./models/duration.jsx");
+                        var DurationModel = require("./duration.jsx");
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj = null;
                         var prevIdx;
@@ -486,8 +486,8 @@ class SongEditorStore extends EventEmitter {
     }
 
     transpose(how) {
-        var KeySignatureModel = require("../stores/models/keySignature.jsx");
-        var DurationModel = require("./models/duration.jsx");
+        var KeySignatureModel = require("../stores/keySignature.jsx");
+        var DurationModel = require("./duration.jsx");
 
         // The selection is guaranteed to be in song order.
         for (var staveIdx = 0; staveIdx < _staves.length; ++staveIdx) {
