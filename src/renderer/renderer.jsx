@@ -56,11 +56,11 @@ var Renderer = React.createClass({
 
         var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
 
-        var vcHeight = 2/4 + 0.1 + (isPianoStaff ? 1.2 : 0);
-
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
         var isPianoStaff = _.reduce(staves, (memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
+
+        var vcHeight = 2/4 + 0.1 + (isPianoStaff ? 1.2 : 0);
 
         var rawPages = _.map(pages, (page, pidx) =>
             <RenderEngine

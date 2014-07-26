@@ -21,6 +21,7 @@ class BarlineModel extends Model {
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
 
         this.height = this.onPianoStaff ? 1.15 : 2/4;
+        this.yOffset = this.onPianoStaff ? (2/4 - 1.15): 0;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
         return true;
     }

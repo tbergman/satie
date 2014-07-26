@@ -20,7 +20,7 @@ var BeginView = React.createClass({
         var spec = this.props.spec;
 
         return <Group>
-            {spec.stave.pianoStaff && <Brace
+            {spec.pianoStaff && <Brace
                 x={renderUtil.mm(spec.noMargin ? 15 : 30, spec.fontSize())}
                 fontSize={spec.fontSize()}
                 y={spec.braceY}
