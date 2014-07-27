@@ -990,8 +990,13 @@ module.exports = React.createClass({
             var canvas = this.getDOMNode();
             var r = canvas.getBoundingClientRect();
 
-            canvas.width = Math.round(canvas.clientWidth*global.devicePixelRatio);
-            canvas.height = Math.round(canvas.clientHeight*global.devicePixelRatio);
+            var devicePixelRatio = window.devicePixelRatio ||
+                                    window.webkitDevicePixelRatio ||
+                                    window.mozDevicePixelRatio ||
+                                    window.opDevicePixelRatio || 1;
+
+            canvas.width = Math.round(canvas.clientWidth*devicePixelRatio);
+            canvas.height = Math.round(canvas.clientHeight*devicePixelRatio);
             this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
             this.refs.glContext.fillAvailableSpace();
         } else {

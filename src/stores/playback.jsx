@@ -11,6 +11,10 @@ var SessionStore = require("./session.jsx"); // must be registered before Playba
 
 var enabled = (typeof window !== "undefined");
 
+if (!global.AudioContext && global.webkitAudioContext) {
+    global.AudioContext = global.webkitAudioContext;
+}
+
 var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 
 var Audio5js;
