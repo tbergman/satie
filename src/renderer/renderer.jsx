@@ -97,12 +97,13 @@ var Renderer = React.createClass({
                             }
                             memo[memo.length - 1].push(obj);
                             return memo;
-                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, idx) =>
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, lidx) =>
                             <LineContainer
                                 store={this.props.store}
                                 staveHeight={this.props.staveHeight}
+                                h={idx}
                                 generate={() => _.map(s, item => item.visible() && item.render())}
-                                idx={idx + pageLines[page.idx]} key={idx} />)}
+                                idx={lidx + pageLines[page.idx]} key={lidx} />)}
                     </Group>;
                 } else {
                     return null;
@@ -172,72 +173,96 @@ var Renderer = React.createClass({
         var foundIdx;
         var musicLine;
         var ctxData;
+        var staveIdx;
+        var info = this.getStaveInfoForY(mouse.y, mouse.page);
+        if (info) {
+            var h = info.h;
+            var i = info.i;
+            var ctx = this.getCtx(h);
+
+            staveIdx = h;
+
+            musicLine = i;
+            dynY = ctx.lines[i].y;
+            dynLine = Math.round((ctx.lines[i].y - mouse.y)/0.125)/2 + 3;
+            var body = this.props.staves[h].body;
+            for (var j = ctx.pageStarts[mouse.page];
+                    j < body.length && !body[i].newpage; ++j) {
+                var item = body[j];
+                ctxData = item.ctxData;
+                if (Math.abs(item["$Model_y"] - dynY) < 0.001) {
+                    if ((item.keySignature ||
+                                item.timeSignature ||
+                                item.clef ||
+                                item.pitch ||
+                                item.chord) &&
+                            Math.abs(dynX - item["$Model_x"]) < 0.27 +
+                                (item.dots ? item.dots*0.2 : 0)) {
+                        dynX = item["$Model_x"];
+                        foundIdx = j;
+                        foundObj = item;
+                        break;
+                    } else if (dynX < item["$Model_x"] ||
+                            (j === body.length - 1 && h === this.getCtxCount() - 1)) {
+
+                        // End of a line.
+                        // XXX: Instead, use EndMarker.
+                        if (dynX < item["$Model_x"]) {
+                            j -= 1;
+                        }
+                        _pointerData = {
+                            mouse: mouse,
+                            line: dynLine,
+                            idx: j,
+                            staveIdx: h,
+                            musicLine: musicLine,
+                            ctxData: item.ctxData,
+                            obj: {
+                                placeholder: true,
+                                idx: j,
+                                item: item,
+                                musicLine: musicLine
+                            }
+                        };
+                        return _pointerData;
+                    }
+                }
+            }
+        }
+
+        _pointerData = {
+            ctxData: ctxData,
+            idx: foundIdx,
+            line: dynLine,
+            mouse: mouse,
+            musicLine: musicLine,
+            obj: foundObj,
+            staveIdx: staveIdx
+        };
+
+        return _pointerData;
+    },
+
+    /**
+     * Given a y position and a page, returns a part (h) and
+     * and a line (i).
+     */
+    getStaveInfoForY: function(my, page) {
         for (var h = 0; h < this.getCtxCount(); ++h) {
             var ctx = this.getCtx(h);
             if (!ctx) {
                 continue;
             }
-            for (var i = ctx.pageLines[mouse.page]; i < ctx.lines.length; ++i) {
-                if (mouse.y < ctx.lines[i].y + 8/4) {
-                    musicLine = i;
-                    dynY = ctx.lines[i].y;
-                    dynLine = Math.round((ctx.lines[i].y - mouse.y)/0.125)/2 + 3;
-                    if (dynLine > 8.5 || dynLine < -2.5) {
-                        break;
-                    }
-                    var body = this.props.staves[h].body;
-                    for (var j = ctx.pageStarts[mouse.page];
-                            j < body.length && !body[i].newpage; ++j) {
-                        var item = body[j];
-                        ctxData = item.ctxData;
-                        if (Math.abs(item["$Model_y"] - dynY) < 0.001) {
-                            if ((item.keySignature ||
-                                        item.timeSignature ||
-                                        item.clef ||
-                                        item.pitch ||
-                                        item.chord) &&
-                                    Math.abs(dynX - item["$Model_x"]) < 0.27 +
-                                        (item.dots ? item.dots*0.2 : 0)) {
-                                dynX = item["$Model_x"];
-                                foundIdx = j;
-                                foundObj = item;
-                                break;
-                            } else if (dynX < item["$Model_x"] ||
-                                    (j === body.length - 1 && h === this.getCtxCount() - 1)) {
-                                if (dynX < item["$Model_x"]) {
-                                    j -= 1;
-                                }
-                                _pointerData = {
-                                    mouse: mouse,
-                                    line: dynLine,
-                                    idx: j,
-                                    musicLine: musicLine,
-                                    ctxData: item.ctxData,
-                                    obj: {
-                                        placeholder: true,
-                                        idx: j,
-                                        item: item,
-                                        musicLine: musicLine
-                                    }
-                                };
-                                return _pointerData;
-                            }
-                        }
-                    }
-                    break;
+            for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
+                if (Math.abs(ctx.lines[i].y - my) < 1.01) {
+                    return {
+                        h: h,
+                        i: i
+                    };
                 }
             }
         }
-        _pointerData = {
-            mouse: mouse,
-            line: dynLine,
-            obj: foundObj,
-            idx: foundIdx,
-            musicLine: musicLine,
-            ctxData: ctxData
-        };
-
-        return _pointerData;
+        return null;
     },
     _elementsInBBox: function(box, mouse) {
         var ret = [];
@@ -522,11 +547,11 @@ var LineContainer = React.createClass({
     shouldComponentUpdate: function(nextProps, nextState) {
         var songDirty = this.props.store && this.props.store.dirty();
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
-        var lineDirty = this.props.store && this.props.store.lineDirty(nextProps.idx);
+        var lineDirty = this.props.store && this.props.store.isLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
             this.props.store && this.props.store.handleAction({description: "DELETE /local/song",
-                resource: "lineDirty", postData: nextProps.idx});
+                resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx});
         }
         return songDirty || heightChanged || lineDirty;
     }

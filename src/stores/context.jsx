@@ -281,7 +281,9 @@ class Context {
                 stopping = 20;
             }
 
-            var doCustomAction = pointerData && (this.body[this.idx] === pointerData.obj ||
+            var doCustomAction = pointerData && 
+                pointerData.staveIdx === sidx &&
+                (this.body[this.idx] === pointerData.obj ||
                     (pointerData.obj && pointerData.obj.placeholder &&
                         pointerData.obj.idx === this.idx));
 

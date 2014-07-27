@@ -359,6 +359,9 @@ class SongEditorStore extends EventEmitter {
         this.annotate();
     }
 
+    /**
+     * Calls Context.anotate on each stave with a body
+     */
     annotate(pointerData, toolFn, staves, pageSize) {
         staves = staves || _staves;
 
@@ -583,7 +586,7 @@ class SongEditorStore extends EventEmitter {
                 staves: staves,
                 staveIdx: idx
             });
-            _linesToUpdate[ctx.line] = true;
+            _linesToUpdate[ctx.staveIdx + "_" + ctx.line] = true;
             ctx.start = pointerData.idx;
             while (ctx.start > 0 && !stave.body[ctx.start - 1].newline) {
                 --ctx.start;
@@ -592,7 +595,7 @@ class SongEditorStore extends EventEmitter {
         } else {
             // We don't store snapshots for the 0th line, but we still need
             // to force it to be re-renderered.
-            _linesToUpdate[0] = true;
+            _linesToUpdate[idx + "_0"] = true;
         }
     }
 
@@ -697,8 +700,8 @@ class SongEditorStore extends EventEmitter {
         };
         // Does not emit.
     }
-    lineDirty(idx) {
-        return _linesToUpdate[idx];
+    isLineDirty(idx, h) {
+        return _linesToUpdate[h + "_" + idx];
     }
 
     /** 
@@ -767,10 +770,11 @@ var rendererIsClean = () => {
     });
 };
 
-var rendererMarkLineDirty = (line) => {
-    // Mark a given line as clean.
+var rendererMarkLineDirty = (line, h) => {
+    // Mark a given line as dirty
     // NOT a Flux method.
-    _linesToUpdate[line] = true;
+    console.log("DIRTY:", h);
+    _linesToUpdate[h + "_" + line] = true;
 };
 
 var rendererIsDirty = () => {
