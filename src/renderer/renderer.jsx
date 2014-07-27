@@ -124,8 +124,9 @@ var Renderer = React.createClass({
                 height={Math.abs(this.state.selectionRect.start.y -
                         this.state.selectionRect.end.y)} />}
 
-            {!pidx && this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
-                        key={"visualCursorGroup"}
+            {pidx === this.state.visualCursor.annotatedPage &&
+                this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
+                        key={"visualCursorGroup" + Math.random() /* chrome bug */}
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Line key="visualCursor"
                         className="visualCursor"

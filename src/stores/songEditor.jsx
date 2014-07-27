@@ -257,11 +257,7 @@ class SongEditorStore extends EventEmitter {
                     case null:
                     case false:
                         if (action.postData.bar) {
-                            _visualCursor = {
-                                bar: action.postData.bar,
-                                beat: action.postData.beat,
-                                endMarker: action.postData.endMarker
-                            };
+                            this.visualCursorIs(action.postData);
                         } else if (action.postData.step) {
                             if (!_visualCursor || !_visualCursor.annotatedObj) {
                                 break;
@@ -272,10 +268,10 @@ class SongEditorStore extends EventEmitter {
                                     if ((!_staves[3].body[i + 1] ||
                                                 _staves[3].body[i + 1].barline === "double") &&
                                             action.postData.loopThroughEnd) {
-                                        _visualCursor = {
+                                        this.visualCursorIs({
                                             beat: 0,
                                             bar: 1
-                                        };
+                                        });
                                         break;
                                     }
                                     var cd = _staves[3].body[i].ctxData;
@@ -293,10 +289,10 @@ class SongEditorStore extends EventEmitter {
                                         }
                                         if (_visualCursor.endMarker &&
                                                 action.postData.step === 1) {
-                                            _visualCursor = {
+                                            this.visualCursorIs({
                                                 beat: 0,
                                                 bar: _visualCursor.bar + 1
-                                            };
+                                            });
                                             break;
                                         } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
                                                 cd.beat !== _staves[3].body[i].ctxData.beat) {
@@ -308,10 +304,10 @@ class SongEditorStore extends EventEmitter {
                                                     ++i;
                                                 }
                                             }
-                                            _visualCursor = JSON.parse(JSON.stringify(
-                                                _staves[3].body[i].ctxData));
+                                            this.visualCursorIs(
+                                                _staves[3].body[i].ctxData);
 
-                                            // If we"re walking through a bar, make up for that.
+                                            // If we're walking through a bar, make up for that.
                                             if (throughBar) {
                                                 if (action.postData.step < 0) {
                                                     _visualCursor.endMarker = true;
@@ -343,10 +339,10 @@ class SongEditorStore extends EventEmitter {
         _pageSize = null;
         _tool = null;
         _selection = null;
-        _visualCursor = {
+        this.visualCursorIs({
             bar: 1,
             beat: 0
-        };
+        });
     }
 
     reparse(activeSong) {
@@ -429,7 +425,7 @@ class SongEditorStore extends EventEmitter {
              * to the end of the line
              */
             if (!_visualCursor.annotatedObj) {
-                _visualCursor = info.cursor;
+                this.visualCursorIs(info.cursor);
             }
 
             /*

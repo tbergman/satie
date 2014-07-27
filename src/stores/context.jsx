@@ -297,12 +297,12 @@ class Context {
                 if (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
                         this.beats > cursorBeat)) {
                     if (!cursor.annotatedObj) {
-                        // XXX: ROBUSTNESS
                         cursorStave = sidx;
                         cursorBar = this.bar;
                         cursorBeat = this.beats;
                         cursor.annotatedObj = this.body[this.idx];
                         cursor.annotatedLine = this.line;
+                        cursor.annotatedPage = this.pageStarts.length - 1;
                     }
                 }
             }
