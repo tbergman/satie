@@ -741,6 +741,10 @@ var beamCountIs = (beamCount) => {
     _beamBeatCount = beamCount;
 };
 
+var getBeamCount = () => {
+    return _beamBeatCount;
+}
+
 var _beamBeatCount = 0;
 var _ctxs = null;
 var _cleanup = null;
@@ -786,3 +790,4 @@ module.exports.snapshot = snapshot;
 module.exports.rendererIsClean = rendererIsClean;
 module.exports.rendererIsDirty = rendererIsDirty;
 module.exports.rendererMarkLineDirty = rendererMarkLineDirty;
+module.exports.getBeamCount = getBeamCount;

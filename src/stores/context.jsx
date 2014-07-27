@@ -79,10 +79,6 @@ class Context {
         this.staves = opts.staves;
         this.body = this.stave.body;
         this.idx = -1;
-
-        if (this.stave.body && this.stave.body.length && !this.stave.body[0].intersects) {
-            this.calculateIntersections();
-        }
     }
 
     /**
@@ -236,7 +232,9 @@ class Context {
             break;
         case "beam":
             // The beam needs to be re-rendered.
-            this.beats = _beamBeatCount;
+            var SongEditorStore = require("./songEditor.jsx");
+
+            this.beats = SongEditorStore.getBeamCount();
             --i;
             while(i >= 0 && !this.body[i].beam) {
                 --i;
@@ -258,6 +256,8 @@ class Context {
     }
 
     annotate(opts) {
+        this.calculateIntersections();
+
         opts = opts || {};
         var cursor = opts.cursor || {};
         var cursorBar = opts.cursorBar === undefined ? NaN : opts.cursorBar;

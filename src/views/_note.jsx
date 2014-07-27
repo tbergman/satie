@@ -328,8 +328,8 @@ var IDEAL_STEM_HEIGHT = 3.5;
 var MIN_STEM_HEIGHT = 2.5;
 
 var getExtremeLine = (line, direction) => {
-    if (!isNaN(line)) {
-        return line;
+    if (!isNaN(line*1)) {
+        return line*1;
     } else if (direction === 1) {
         return _.reduce(line, (m, s) => Math.min(m, s), 99999);
     } else {
