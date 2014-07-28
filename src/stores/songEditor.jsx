@@ -232,7 +232,8 @@ class SongEditorStore extends EventEmitter {
                             {
                                 obj: obj,
                                 musicLine: _visualCursor.annotatedLine,
-                                idx: i
+                                idx: i,
+                                staveIdx: this._activeStaveIdx
                             },
                             tool.splice.bind(tool, false));
                         this.emit(ANNOTATE_EVENT);
@@ -265,7 +266,8 @@ class SongEditorStore extends EventEmitter {
                             {
                                 obj: prevObj,
                                 musicLine: _visualCursor.annotatedLine,
-                                idx: prevIdx
+                                idx: prevIdx,
+                                staveIdx: this._activeStaveIdx
                             },
                             _tool.visualCursorAction(action.postData));
                         this.emit(ANNOTATE_EVENT);
@@ -351,6 +353,7 @@ class SongEditorStore extends EventEmitter {
     }
 
     clear() {
+        this._activeStaveIdx = null;
         _staves = null;
         _staveHeight = null;
         _prevActiveSong = null;
@@ -369,6 +372,11 @@ class SongEditorStore extends EventEmitter {
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
         _pageSize = _.find(_staves, s => s.pageSize).pageSize;
+        for (var i = 0; i < _staves.length; ++i) {
+            if (_staves[i].body) {
+                this._activeStaveIdx = i;
+            }
+        }
 
         this.annotate();
     }
@@ -439,11 +447,10 @@ class SongEditorStore extends EventEmitter {
             });
 
             /*
-             * If the cursor is past the end of the line, move the cursor back
-             * to the end of the line
+             * If the cursor is out of date, fix that.
              */
             if (!_visualCursor.annotatedObj) {
-                this.visualCursorIs(info.cursor);
+                _visualCursor = info.cursor;
             }
 
             /*
@@ -793,7 +800,6 @@ var rendererIsClean = () => {
 var rendererMarkLineDirty = (line, h) => {
     // Mark a given line as dirty
     // NOT a Flux method.
-    console.log("DIRTY:", h);
     _linesToUpdate[h + "_" + line] = true;
 };
 
