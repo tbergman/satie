@@ -226,16 +226,29 @@ class SongEditorStore extends EventEmitter {
                     }
                     var obj = _staves[3].body[i];
                     if (obj) {
-                        var tool = new EraseTool();
-                        _visualCursor.beat -= (obj.getBeats ? obj.getBeats() : 0);
-                        this.annotate(
-                            {
-                                obj: obj,
-                                musicLine: _visualCursor.annotatedLine,
-                                idx: i,
-                                staveIdx: this._activeStaveIdx
-                            },
-                            tool.splice.bind(tool, false));
+                        var DurationModel = require("./duration.jsx");
+                        var line = _visualCursor.annotatedLine;
+                        this.stepCursor({
+                            step: -1,
+                            skipThroughBars: false
+                        });
+
+                        // Remove items based on a whitelist.
+                        if (obj instanceof DurationModel) {
+                            // The stepCursor call above invalidates _visualCursor
+                            // DO NOT CHECK _visualCursor HERE!!!
+                            var tool = new EraseTool();
+                            this.annotate(
+                                {
+                                    obj: obj,
+                                    musicLine: line,
+                                    idx: i,
+                                    staveIdx: this._activeStaveIdx
+                                },
+                                tool.splice.bind(tool, false));
+                        } else {
+                            this.annotate();
+                        }
                         this.emit(ANNOTATE_EVENT);
                     }
                 } else {
@@ -279,69 +292,11 @@ class SongEditorStore extends EventEmitter {
                         if (action.postData.bar) {
                             this.visualCursorIs(action.postData);
                         } else if (action.postData.step) {
-                            if (!_visualCursor || !_visualCursor.annotatedObj) {
-                                break;
-                            }
-                            var obj = _visualCursor.annotatedObj;
-                            for (var i = 0; i < _staves[3].body.length; ++i) {
-                                if (_staves[3].body[i] === obj) {
-                                    if ((!_staves[3].body[i + 1] ||
-                                                _staves[3].body[i + 1].barline === "double") &&
-                                            action.postData.loopThroughEnd) {
-                                        this.visualCursorIs({
-                                            beat: 0,
-                                            bar: 1
-                                        });
-                                        break;
-                                    }
-                                    var cd = _staves[3].body[i].ctxData;
-                                    var throughBar = false;
-                                    while (_staves[3].body[i += action.postData.step]) {
-                                        if (!_staves[3].body[i]) {
-                                            break;
-                                        }
-                                        if (_staves[3].body[i].barline) {
-                                            throughBar = true;
-                                        }
-                                        if (_staves[3].body[i].newline) {
-                                            // TODO: we don"t need to update all the lines
-                                            _dirty = true;
-                                        }
-                                        if (_visualCursor.endMarker &&
-                                                action.postData.step === 1) {
-                                            this.visualCursorIs({
-                                                beat: 0,
-                                                bar: _visualCursor.bar + 1
-                                            });
-                                            break;
-                                        } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
-                                                cd.beat !== _staves[3].body[i].ctxData.beat) {
-
-                                            if (action.postData.skipThroughBars) {
-                                                while (_staves[3].body[i + 1] &&
-                                                        (_staves[3].body[i].endMarker ||
-                                                        _staves[3].body[i].barline)) {
-                                                    ++i;
-                                                }
-                                            }
-                                            this.visualCursorIs(
-                                                _staves[3].body[i].ctxData);
-
-                                            // If we're walking through a bar, make up for that.
-                                            if (throughBar) {
-                                                if (action.postData.step < 0) {
-                                                    _visualCursor.endMarker = true;
-                                                } else {
-                                                    _visualCursor.beat = 0;
-                                                    _visualCursor.bar++;
-                                                }
-                                            }
-                                            break;
-                                        }
-                                    }
-                                    break;
-                                }
-                            }
+                            this.stepCursor({
+                                step: action.postData.step,
+                                loopThroughEnd: action.postData.loopThroughEnd,
+                                skipThroughBars: action.postData.skipThroughBars
+                            });
                         }
                         this.annotate();
                         this.emit(ANNOTATE_EVENT);
@@ -445,13 +400,6 @@ class SongEditorStore extends EventEmitter {
                 staveIdx: sidx,
                 toolFn: toolFn
             });
-
-            /*
-             * If the cursor is out of date, fix that.
-             */
-            if (!_visualCursor.annotatedObj) {
-                _visualCursor = info.cursor;
-            }
 
             /*
              * The _dirty flag is consumed by the client. It forces a complete
@@ -594,6 +542,73 @@ class SongEditorStore extends EventEmitter {
         return true;
     }
 
+    stepCursor(spec) {
+        if (!_visualCursor || !_visualCursor.annotatedObj) {
+            return;
+        }
+        var obj = _visualCursor.annotatedObj;
+        for (var i = 0; i < _staves[3].body.length; ++i) {
+            if (_staves[3].body[i] === obj) {
+                if ((!_staves[3].body[i + 1] ||
+                            _staves[3].body[i + 1].barline === "double") &&
+                        spec.loopThroughEnd) {
+                    this.visualCursorIs({
+                        beat: 0,
+                        bar: 1
+                    });
+                    break;
+                }
+                var cd = _staves[3].body[i].ctxData;
+                var throughBar = false;
+                while (_staves[3].body[i += spec.step]) {
+                    if (!_staves[3].body[i]) {
+                        break;
+                    }
+                    if (_staves[3].body[i].barline) {
+                        throughBar = true;
+                    }
+                    if (_staves[3].body[i].newline) {
+                        // TODO: we don"t need to update all the lines
+                        _dirty = true;
+                    }
+                    if (_visualCursor.endMarker &&
+                            spec.step === 1) {
+                        this.visualCursorIs({
+                            beat: 0,
+                            bar: _visualCursor.bar + 1
+                        });
+                        break;
+                    } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
+                            cd.beat !== _staves[3].body[i].ctxData.beat) {
+
+                        if (spec.skipThroughBars) {
+                            while (_staves[3].body[i + 1] &&
+                                    (_staves[3].body[i].endMarker ||
+                                    _staves[3].body[i].barline)) {
+                                ++i;
+                            }
+                        }
+                        this.visualCursorIs(
+                            _staves[3].body[i].ctxData);
+
+                        // If we're walking through a bar, make up for that.
+                        if (throughBar) {
+                            if (spec.step < 0) {
+                                _visualCursor.endMarker = true;
+                            } else {
+                                _visualCursor.beat = 0;
+                                _visualCursor.bar++;
+                            }
+                        }
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        // Does not emit
+    }
+
     ctxFromSnapshot(pointerData, staves, idx) {
         if (!pointerData) {
             return null;
@@ -714,11 +729,15 @@ class SongEditorStore extends EventEmitter {
         return _visualCursor;
     }
     set visualCursorIs(visualCursor) {
-        _visualCursor = {
-            bar: visualCursor.bar,
-            beat: visualCursor.beat,
-            endMarker: visualCursor.endMarker
-        };
+        // Assign directly to keep refrences in tact.
+        // Alternatively, Context could be updated with the updated
+        // cursor.
+        _visualCursor.bar = visualCursor.bar;
+        _visualCursor.beat = visualCursor.beat;
+        _visualCursor.endMarker = visualCursor.endMarker;
+        _visualCursor.annotatedObj = null;
+        _visualCursor.annotatedLine = null;
+        _visualCursor.annotatedPage = null;
         // Does not emit.
     }
     isLineDirty(idx, h) {

@@ -61,7 +61,7 @@ var Renderer = React.createClass({
         // isPianoStaff is set to true when there is at least 2 staves.
         var isPianoStaff = _.reduce(staves, (memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
 
-        var vcHeight = 2/4 + 0.1 + (isPianoStaff ? 1.2 : 0);
+        var vcHeight = 1.2 + (isPianoStaff ? 1.2 : 0);
 
         var rawPages = _.map(pages, (page, pidx) =>
             <RenderEngine
@@ -125,20 +125,18 @@ var Renderer = React.createClass({
                 height={Math.abs(this.state.selectionRect.start.y -
                         this.state.selectionRect.end.y)} />}
 
-            {pidx === this.state.visualCursor.annotatedPage &&
+            {(pidx === this.state.visualCursor.annotatedPage) &&
                 this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
-                        key={"visualCursorGroup" + Math.random() /* chrome bug */}
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                    <Line key="visualCursor"
-                        className="visualCursor"
-                        x1={this.state.visualCursor.annotatedObj["$Model_x"] - 0.1}
-                        x2={this.state.visualCursor.annotatedObj["$Model_x"] - 0.1}
+                    <Line
+                        x1={this.state.visualCursor.annotatedObj["$Model_x"] - 0.2}
+                        x2={this.state.visualCursor.annotatedObj["$Model_x"] - 0.2}
                         y1={this.state.visualCursor.annotatedObj["$Model_y"] +
                             (isPianoStaff ? 1.15 : 0) - vcHeight}
                         y2={this.state.visualCursor.annotatedObj["$Model_y"] +
                             (isPianoStaff ? 1.15 : 0) + vcHeight}
                         stroke={"#008CFF"}
-                        strokeWidth={0.04} />
+                        strokeWidth={0.05} />
                 </Group>}
 
         </RenderEngine>);
