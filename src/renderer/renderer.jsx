@@ -13,6 +13,7 @@ var isBrowser = typeof window !== "undefined";
 var useGL = (typeof libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
+var History = require("../stores/history.jsx");
 var Group = require("../views/_group.jsx");
 var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
@@ -464,7 +465,7 @@ var Renderer = React.createClass({
         var RestTool = require("../stores/restTool.jsx");
         var TieTool = require("../stores/tieTool.jsx");
 
-        // Handle backspace and arrows
+        // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = (event) => {
             var keyCode = event.keyCode || event.charCode || 0;
             switch(keyCode) {
@@ -482,10 +483,20 @@ var Renderer = React.createClass({
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
                     "/local/visualCursor".POST({step: 1});
                     break;
+                case 90: // 'z'
+                    event.preventDefault(); // we control all undo behaviour
+                    if (event.ctrlKey || event.metaKey) {
+                        if (event.shiftKey) {
+                            History.redo();
+                        } else {
+                            History.undo();
+                        }
+                    }
+                    break;
             }
         };
 
-        // Handle other keys
+        // Handle letters or numbers
         document.onkeypress = (event) => {
             var keyCode = event.keyCode || event.charCode || 0;
 

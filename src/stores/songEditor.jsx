@@ -18,6 +18,8 @@ var isBrowser = typeof window !== "undefined";
 
 var CHANGE_EVENT = "change"; 
 var ANNOTATE_EVENT = "annotate"; 
+var HISTORY_EVENT = "history";
+var CLEAR_HISTORY_EVENT = "clearHistory";
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 ///
@@ -46,20 +48,22 @@ class SongEditorStore extends EventEmitter {
                 if (activeSong !== _prevActiveSong) {
                     _dirty = true;
                     this.clear();
-                    this.reparse(activeSong);
+                    this.reparse(activeSong.src);
                     this.emit(CHANGE_EVENT);
                     this.emit(ANNOTATE_EVENT);
                 }
+                this.emit(CLEAR_HISTORY_EVENT);
                 break;
             case "DELETE /local/song/show":
                 this.clear();
                 this.emit(CHANGE_EVENT);
+                this.emit(CLEAR_HISTORY_EVENT);
                 break;
 
             case "PUT /local/song/forceUpdate":
                 this.clear();
                 var activeSong = SessionStore.activeSong();
-                this.reparse(activeSong);
+                this.reparse(activeSong.src);
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -68,17 +72,20 @@ class SongEditorStore extends EventEmitter {
                     var tool = _tool;
                     switch(action.resource) {
                         case "hide":
-                            if (_cleanup) {
-                                _cleanup();
+                            if (_cleanupFn) {
+                                _cleanupFn();
                                 this.emit(ANNOTATE_EVENT);
                             }
                             break;
-                        case "preview":
                         case "action":
-                            _cleanup && _cleanup();
+                        case "preview":
+                            _cleanupFn && _cleanupFn();
+                            if (action.resource === "action") {
+                                this.emit(HISTORY_EVENT);
+                            }
                             if (action.resource === "preview") {
-                                _cleanup = () => {
-                                    _cleanup = null;
+                                _cleanupFn = () => {
+                                    _cleanupFn = null;
                                     this.annotate(
                                         action.postData.mouseData,
                                         tool.hidePreview.bind(tool));
@@ -94,12 +101,12 @@ class SongEditorStore extends EventEmitter {
                     }
                     break;
                 }
-                _cleanup && _cleanup();
+                _cleanupFn && _cleanupFn();
                 _tool = action.postData;
                 this.emit(CHANGE_EVENT);
                 break;
             case "DELETE /local/tool":
-                _cleanup && _cleanup();
+                _cleanupFn && _cleanupFn();
                 _tool = null;
                 this.emit(CHANGE_EVENT);
                 break;
@@ -116,6 +123,7 @@ class SongEditorStore extends EventEmitter {
                 break;
 
             case "PUT /local/staveHeight":
+                this.emit(HISTORY_EVENT);
                 var h = Math.round(_staveHeight*100)/100;
 
                 if (action.resource === "larger") {
@@ -144,6 +152,7 @@ class SongEditorStore extends EventEmitter {
                 break;
 
             case "PUT /local/pageSize":
+                this.emit(HISTORY_EVENT);
                 _pageSize = action.postData;
                 _dirty = true;
                 _ctxs = null;
@@ -155,7 +164,16 @@ class SongEditorStore extends EventEmitter {
 
             case "PUT /local/song":
                 switch (action.resource) {
+                    case "replaceSrc":
+                        _cleanupFn && _cleanupFn();
+                        _cleanupFn = null;
+                        this.reparse(action.postData);
+                        this.rendererIsDirty();
+                        this.emit(CHANGE_EVENT);
+                        this.emit(ANNOTATE_EVENT);
+                        break;
                     case "transpose":
+                        this.emit(HISTORY_EVENT);
                         this.transpose(action.postData);
                         this.emit(CHANGE_EVENT);
                         break;
@@ -345,8 +363,8 @@ class SongEditorStore extends EventEmitter {
         });
     }
 
-    reparse(activeSong) {
-        _staves = lylite.parse(activeSong.src);
+    reparse(src) {
+        _staves = lylite.parse(src);
         renderUtil.addDefaults(_staves);
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
@@ -700,27 +718,29 @@ class SongEditorStore extends EventEmitter {
         return _linesToUpdate[h + "_" + idx];
     }
 
-    /** 
-     * @param {function} callback 
-     */ 
     addChangeListener(callback) { 
-        this.on(CHANGE_EVENT, callback); 
-    }
+        this.on(CHANGE_EVENT, callback); }
 
     addAnnotationListener(callback) { 
-        this.on(ANNOTATE_EVENT, callback); 
-    }
+        this.on(ANNOTATE_EVENT, callback); }
 
-    /** 
-     * @param {function} callback 
-     */ 
+    addHistoryListener(callback) {
+        this.on(HISTORY_EVENT, callback); }
+
+    addClearHistoryListener(callback) {
+        this.on(CLEAR_HISTORY_EVENT, callback); }
+
     removeChangeListener(callback) { 
-        this.removeListener(CHANGE_EVENT, callback); 
-    } 
+        this.removeListener(CHANGE_EVENT, callback); } 
 
     removeAnnotationListener(callback) { 
-        this.removeListener(ANNOTATE_EVENT, callback); 
-    }
+        this.removeListener(ANNOTATE_EVENT, callback); }
+
+    removeHistoryListener(callback) {
+        this.removeListener(HISTORY_EVENT, callback); }
+
+    removeClearHistoryListener(callback) {
+        this.removeListener(CLEAR_HISTORY_EVENT, callback); }
 }
 
 /**
@@ -747,7 +767,7 @@ var getBeamCount = () => {
 
 var _beamBeatCount = 0;
 var _ctxs = null;
-var _cleanup = null;
+var _cleanupFn = null;
 var _dirty = false;
 var _linesToUpdate = {};
 var _pageSize = null;
