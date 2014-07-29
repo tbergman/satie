@@ -37,7 +37,8 @@ class DurationModel extends Model {
         });
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        this.flag = !this.inBeam && (this.count in countToFlag) && countToFlag[this.count];
+        this.flag = !this.inBeam && (this.getDisplayCount() in countToFlag) &&
+            countToFlag[this.getDisplayCount()];
         return true;
     }
     _handleTie(ctx) {
@@ -49,6 +50,14 @@ class DurationModel extends Model {
     }
     visible() {
         return !this.inBeam;
+    }
+    /**
+     * Returns the length of the beat, without dots or tuplet modifiers
+     * that should be rendered. This can differ from the actual count
+     * during a preview, for example.
+     */
+    getDisplayCount() {
+        return this.displayCount || this.count;
     }
     getRestHead() {
         return countToRest[this.count];
@@ -81,11 +90,11 @@ class DurationModel extends Model {
     }
 
     hasStem() {
-        return countToHasStem[this.count];
+        return countToHasStem[this.getDisplayCount()];
     }
 
     notehead() {
-        return countToNotehead[this.count];
+        return countToNotehead[this.getDisplayCount()];
     }
 
     _lyPitch(pitch) {
@@ -122,7 +131,7 @@ class DurationModel extends Model {
     }
 
     getBeats(inheritedCount) {
-        return getBeats(getCount(this) || inheritedCount, getDots(this), getTuplet(this));
+        return getBeats(this.count || inheritedCount, getDots(this), getTuplet(this));
     }
 
     get midiNote() {
@@ -360,7 +369,7 @@ var beamable = (ctx) => {
     // TODO: give a better algorithm
     // This has lots of corner cases that don't work (it's for a demo!)
     var beamable = [];
-    var count = getCount(ctx.curr());
+    var count = ctx.curr().count;
     var rcount = 1/parseInt(ctx.count);
     var c = 0;
     var hasTimeValue = (other) => other.pitch || other.chord;
@@ -376,14 +385,14 @@ var beamable = (ctx) => {
             }
             if (ctx.timeSignature.beatType === 4 &&
                     ctx.timeSignature.beats === 4 && rcount <= 2 &&
-                    rcount + 1/parseInt(getCount(ctx.body[i])) >= 2) {
+                    rcount + 1/parseInt(ctx.body[i].count) >= 2) {
                 break;
             }
             if (isRest(ctx.body[i])) {
                 break;
             }
 
-            beats += getBeats(getCount(ctx.body[i]), getDots(ctx.body[i]), 
+            beats += getBeats(ctx.body[i].count, getDots(ctx.body[i]), 
                         getTuplet(ctx.body[i]));
 
             if (beats > getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats) {
@@ -402,7 +411,7 @@ var beamable = (ctx) => {
                     break;
                 }
             }
-            if (countToIsBeamable[getCount(ctx.body[i]) || count]) {
+            if (countToIsBeamable[ctx.body[i].count || count]) {
                 beamable = beamable.concat(ctx.body[i]);
             } else {
                 break;
@@ -412,7 +421,7 @@ var beamable = (ctx) => {
             }
 
             prev = ctx.body[i];
-            rcount += 1/parseInt(getCount(ctx.body[i]));
+            rcount += 1/parseInt(ctx.body[i].count);
         }
     }
     if (beamable.length > 1) {
@@ -437,8 +446,6 @@ var getBeats = (count, dots, tuplet) => {
 };
 
 var getDots = obj => isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
-
-var getCount = obj => obj.actualCount || obj.count;
 
 var getTuplet = obj => (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj.tuplet;
 
@@ -477,9 +484,9 @@ DurationModel.prototype.prereqs = [
 
     [
         function (ctx) {
-            return getCount(this) === ctx.count; },
+            return this.count === ctx.count; },
         function (ctx) {
-            ctx.count = getCount(this);
+            ctx.count = this.count;
             return true;
         },
         "Updated the ctx to reflect the current note's duration"
@@ -487,9 +494,9 @@ DurationModel.prototype.prereqs = [
 
     [
         function(ctx) {
-            return ctx.smallest <= getBeats(getCount(this), 0); },
+            return ctx.smallest <= getBeats(this.count, 0); },
         function (ctx) {
-            ctx.smallest = getBeats(getCount(this), 0);
+            ctx.smallest = getBeats(this.count, 0);
             return "line";
         },
         "All notes, chords, and rests throughout a line must have the same spacing"
@@ -497,7 +504,7 @@ DurationModel.prototype.prereqs = [
 
     [
         function(ctx) {
-            return (ctx.beats + getBeats(getCount(this), getDots(this), getTuplet(this)) <=
+            return (ctx.beats + getBeats(this.count, getDots(this), getTuplet(this)) <=
                 getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats); },
         BarlineModel.createBarline,
         "The number of beats in a bar must not exceed that specified by the time signature"
@@ -508,7 +515,7 @@ DurationModel.prototype.prereqs = [
             return false; }, // re-calculate it every time
         function(ctx) {
             this.annotatedExtraWidth = (Math.log(getBeats(
-                            getCount(this), getDots(this), getTuplet(this))) -
+                            this.count, getDots(this), getTuplet(this))) -
                     Math.log(ctx.smallest))/log2/3;
             return true;
         },
@@ -576,7 +583,7 @@ function decideMiddleLineStemDirection(ctx) {
             ctx.next().chord)) ? getAverageLine(ctx.next(), ctx) : null;
 
     if ((nextLine !== null) && ctx.beats + this.getBeats() + ctx.next()
-            .getBeats(getCount(this)) > ctx.timeSignature.beats) {
+            .getBeats(this.count) > ctx.timeSignature.beats) {
         // Barlines aren't inserted yet.
         nextLine = null;
     }
@@ -619,7 +626,6 @@ module.exports.countToHasStem = countToHasStem;
 module.exports.countToNotehead = countToNotehead;
 module.exports.countToFlag = countToFlag;
 module.exports.countToRest = countToRest;
-module.exports.getCount = getCount;
 module.exports.getLine = getLine;
 module.exports.getPitch = getPitch;
 module.exports.chromaticScale = chromaticScale;

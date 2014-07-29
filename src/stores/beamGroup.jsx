@@ -25,7 +25,7 @@ class BeamGroupModel extends Model {
         this.beams = 1;
         if (this.beam.length) {
             // TODO: variable beams
-            this.beams = DurationModel.getCount(this.beam[0])/8;
+            this.beams = this.beam[0].count/8;
         }
 
         if (!this.beam.every(b => {
