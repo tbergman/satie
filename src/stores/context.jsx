@@ -377,21 +377,25 @@ class Context {
         return this.body[this.idx];
     }
     /**
-     * Returns the next element in the stave, skipping over beams.
+     * Returns the next element in the stave, skipping over beams by default.
      *
      * @param{fn} cond: Optional delegate accepting a Model. Returns false
      *     when it should be skipped.
      * @param{num} skip: Start looking at Models <skip> after current.
      *     1 if unspecified.
+     * @param{bool} allowBeams: True if beams should not be skipped.
      */
     next(cond, skip, allowBeams) {
+        return this.body[this.nextIdx(cond, skip, allowBeams)];
+    }
+    nextIdx(cond, skip, allowBeams) {
         var i;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         for (i = skip; this.body[this.idx + i] && (
             (this.body[this.idx + i].beam && !allowBeams) ||
             (cond && !cond(this.body[this.idx + i]))); ++i) {
         }
-        return this.body[this.idx + i];
+        return this.idx + i;
     }
     beamFollows(idx) {
         // Must return .beam
