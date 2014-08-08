@@ -27,7 +27,7 @@ class NewlineModel extends Model {
         ////////////////////////////////////////
         ++ctx.line;
         ////////////////////////////////////////
-
+        
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
                 line: ctx.line,
@@ -44,6 +44,7 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].pageLines = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
         ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
+        this.DEBUG_line = ctx.line;
 
         var SongEditorStore = require("./songEditor.jsx");
         SongEditorStore.snapshot(ctx);

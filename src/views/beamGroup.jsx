@@ -82,14 +82,15 @@ var BeamGroup = React.createClass({
             note.props.stemHeight = getSH(direction, idx,
                 getExtremeLine(note.props.line, direction));
 
-            assert(note.props.strokes.length);
+            assert(note.props.strokes || note.props.stroke);
+            var stroke = note.props.stroke || note.props.strokes[0];
 
-            if (strokeColor !== note.props.strokes[0] && strokeColor) {
+            if (strokeColor !== stroke && strokeColor) {
                 strokeEnabled = false;
             }
 
             if (!strokeColor) {
-                strokeColor = note.props.strokes[0];
+                strokeColor = stroke;
             }
         });
 

@@ -71,7 +71,7 @@ class PlaybackStore extends EventEmitter {
                     soundManagerUrl: "/res/soundmanager2.js",
                     soundManagerSwfUrl: "/res/soundManager2_swf/",
                     callback: () => {
-                        console.log("LOADED MIDI", MIDI.api);
+                        //console.log("LOADED MIDI", MIDI.api);
                         _pianoLoaded = true;
                         MIDI.setVolume(0, 127);
                         this.emit(CHANGE_EVENT);

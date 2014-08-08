@@ -168,7 +168,7 @@ class SongEditorStore extends EventEmitter {
                         _cleanupFn && _cleanupFn();
                         _cleanupFn = null;
                         this.reparse(action.postData);
-                        this.rendererIsDirty();
+                        this.markRendererDirty();
                         this.emit(CHANGE_EVENT);
                         this.emit(ANNOTATE_EVENT);
                         break;
@@ -404,7 +404,7 @@ class SongEditorStore extends EventEmitter {
             /*
              * The _dirty flag is consumed by the client. It forces a complete
              * re-render, which can be expensive in SVG mode, so avoid this when
-             * possible. Instead, code should use SongEditorModel.rendererMarkLineDirty.
+             * possible. Instead, code should use SongEditorModel.markRendererLineDirty.
              */
             _dirty = _dirty || info.dirty;
             y = info.resetY ? 0 : y;
@@ -573,10 +573,14 @@ class SongEditorStore extends EventEmitter {
                     }
                     if (_visualCursor.endMarker &&
                             spec.step === 1) {
-                        this.visualCursorIs({
-                            beat: 0,
-                            bar: _visualCursor.bar + 1
-                        });
+                        var last = _staves[3].body[_staves[3].body.length -1];
+                        assert(last.endMarker);
+                        if (last.ctxData.bar !== _visualCursor.bar +1) {
+                            this.visualCursorIs({
+                                beat: 0,
+                                bar: _visualCursor.bar + 1
+                            });
+                        }
                         break;
                     } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
                             cd.beat !== _staves[3].body[i].ctxData.beat) {
@@ -808,7 +812,7 @@ var _visualCursor = {
 };
 var _tool = null;
 
-var rendererIsClean = () => {
+var markRendererClean = () => {
     // Mark entire score as clean.
     // NOT a Flux method.
     _.defer(() => {
@@ -816,13 +820,13 @@ var rendererIsClean = () => {
     });
 };
 
-var rendererMarkLineDirty = (line, h) => {
+var markRendererLineDirty = (line, h) => {
     // Mark a given line as dirty
     // NOT a Flux method.
     _linesToUpdate[h + "_" + line] = true;
 };
 
-var rendererIsDirty = () => {
+var markRendererDirty = () => {
     // Mark entire score as dirty, so everything has to be re-rendered.
     // NOT a Flux method.
     _dirty = true;
@@ -832,7 +836,7 @@ var rendererIsDirty = () => {
 global.SongEditorStore = module.exports = new SongEditorStore();
 module.exports.beamCountIs = beamCountIs;
 module.exports.snapshot = snapshot;
-module.exports.rendererIsClean = rendererIsClean;
-module.exports.rendererIsDirty = rendererIsDirty;
-module.exports.rendererMarkLineDirty = rendererMarkLineDirty;
+module.exports.markRendererClean = markRendererClean;
+module.exports.markRendererDirty = markRendererDirty;
+module.exports.markRendererLineDirty = markRendererLineDirty;
 module.exports.getBeamCount = getBeamCount;

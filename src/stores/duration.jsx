@@ -4,6 +4,7 @@
 
 var Model = require("./model.jsx");
 
+var Metre = require("ripienoUtil/metre.jsx");
 var React = require("react");
 var _ = require("lodash");
 var assert = require("assert");
@@ -14,6 +15,8 @@ var EndMarkerModel = require("./endMarker.jsx");
 var KeySignatureModel = require("./keySignature.jsx");
 var NewlineModel = require("./newline.jsx");
 var TimeSignatureModel = require("./timeSignature.jsx");
+
+var getBeats = Metre.getBeats;
 
 class DurationModel extends Model {
     annotateImpl(ctx) {
@@ -96,6 +99,14 @@ class DurationModel extends Model {
     notehead() {
         return countToNotehead[this.getDisplayCount()];
     }
+    
+    isRest() {
+        return this.pitch === 'r';
+    }
+
+    hasFlagOrBeam() {
+        return countToIsBeamable[this.count];
+    }
 
     _lyPitch(pitch) {
         var str = pitch.pitch;
@@ -130,8 +141,20 @@ class DurationModel extends Model {
         lylite.push(str);
     }
 
-    getBeats(inheritedCount) {
-        return getBeats(this.count || inheritedCount, getDots(this), getTuplet(this));
+    getBeats(inheritedCount, inheritedTS) {
+        return getBeats(
+            this.count || inheritedCount,
+            this.getDots(),
+            this.getTuplet(),
+            this.impliedTS || inheritedTS);
+    }
+
+    getDots() {
+        return getDots(this);
+    }
+
+    getTuplet() {
+        return getTuplet(this);
     }
 
     get midiNote() {
@@ -356,94 +379,23 @@ var countToIsBeamable = {
     1024: true
 };
 
-var cannotBeBeamed = function(ctx) {
-    return this.inBeam || !beamable(ctx);
+var BEAMDATA;
+
+var perfectlyBeamed = function(ctx) {
+    if (!this.hasFlagOrBeam()) {
+        return true;
+    }
+    var rebeamable = Metre.rebeamable(ctx.body, ctx.idx, ctx.timeSignature, ctx.beats);
+    if (rebeamable) {
+        BEAMDATA = rebeamable;
+    }
+    return !rebeamable;
 };
 
 var chromaticScale = {c:0, d:2, e:4, f:5, g:7, a:9, b:11}; //c:12
 
 var noteNames = ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
     "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
-
-var beamable = (ctx) => {
-    // TODO: give a better algorithm
-    // This has lots of corner cases that don't work (it's for a demo!)
-    var beamable = [];
-    var count = ctx.curr().count;
-    var rcount = 1/parseInt(ctx.count);
-    var c = 0;
-    var hasTimeValue = (other) => other.pitch || other.chord;
-    var isRest = (other) => other.pitch === "r";
-    var prev;
-
-    var beats = ctx.beats;
-
-    for (var i = ctx.idx; i < ctx.body.length; ++i) {
-        if (hasTimeValue(ctx.body[i])) {
-            if (ctx.body[i].inBeam) {
-                break;
-            }
-            if (ctx.timeSignature.beatType === 4 &&
-                    ctx.timeSignature.beats === 4 && rcount <= 2 &&
-                    rcount + 1/parseInt(ctx.body[i].count) >= 2) {
-                break;
-            }
-            if (isRest(ctx.body[i])) {
-                break;
-            }
-
-            beats += getBeats(ctx.body[i].count, getDots(ctx.body[i]), 
-                        getTuplet(ctx.body[i]));
-
-            if (beats > getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats) {
-                break;
-
-            }
-
-            if (prev && prev.tuplet) {
-                if (!ctx.body[i].tuplet) {
-                    break;
-                }
-                if (ctx.body[i].tuplet.num !== prev.tuplet.num) {
-                    break;
-                }
-                if (ctx.body[i].tuplet.den !== prev.tuplet.den) {
-                    break;
-                }
-            }
-            if (countToIsBeamable[ctx.body[i].count || count]) {
-                beamable = beamable.concat(ctx.body[i]);
-            } else {
-                break;
-            }
-            if (++c >= 4) {
-                break;
-            }
-
-            prev = ctx.body[i];
-            rcount += 1/parseInt(ctx.body[i].count);
-        }
-    }
-    if (beamable.length > 1) {
-        return beamable;
-    }
-    return false;
-};
-
-var getBeats = (count, dots, tuplet) => {
-    // XXX: Make sure this works for things other than 4/4
-    var base = 4/count;
-    if (tuplet) {
-        base *= tuplet.num / tuplet.den;
-    }
-
-    var total = base;
-    for (var i = 0; i < dots; ++i) {
-        base /= 2;
-        total += base;
-    }
-    return total;
-};
 
 var getDots = obj => isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
 
@@ -466,7 +418,8 @@ DurationModel.prototype.prereqs = [
 
     [
         function (ctx) {
-            return ctx.timeSignature; },
+            this.impliedTS = ctx.timeSignature;
+            return this.impliedTS; },
         TimeSignatureModel.createTS,
         "A time signature must exist on the first line of every page."
     ],
@@ -494,9 +447,9 @@ DurationModel.prototype.prereqs = [
 
     [
         function(ctx) {
-            return ctx.smallest <= getBeats(this.count, 0); },
+            return ctx.smallest <= this.getBeats(); },
         function (ctx) {
-            ctx.smallest = getBeats(this.count, 0);
+            ctx.smallest = this.getBeats();
             return "line";
         },
         "All notes, chords, and rests throughout a line must have the same spacing"
@@ -504,8 +457,7 @@ DurationModel.prototype.prereqs = [
 
     [
         function(ctx) {
-            return (ctx.beats + getBeats(this.count, getDots(this), getTuplet(this)) <=
-                getBeats(ctx.timeSignature.beatType) * ctx.timeSignature.beats); },
+            return (ctx.beats + this.getBeats() <= ctx.timeSignature.beats); },
         BarlineModel.createBarline,
         "The number of beats in a bar must not exceed that specified by the time signature"
     ],
@@ -514,8 +466,7 @@ DurationModel.prototype.prereqs = [
         function() {
             return false; }, // re-calculate it every time
         function(ctx) {
-            this.annotatedExtraWidth = (Math.log(getBeats(
-                            this.count, getDots(this), getTuplet(this))) -
+            this.annotatedExtraWidth = (Math.log(this.getBeats()) -
                     Math.log(ctx.smallest))/log2/3;
             return true;
         },
@@ -531,29 +482,40 @@ DurationModel.prototype.prereqs = [
     ],
 
     [
+        perfectlyBeamed,
         function(ctx) {
-            // XXX: Extend beam logic to work in other time signatures.
-            return ctx.curr().isBeam || !ctx.beamFollows();
-        },
-        function(ctx) {
-            return ctx.removeFollowingBeam();
-        },
-        "Recalculate future beams."
-    ],
-
-    [
-        cannotBeBeamed,
-        function (ctx) {
-            var b = beamable(ctx);
+            var b = BEAMDATA;
+            BEAMDATA = null;
             var BeamGroupModel = require("./beamGroup.jsx");
+
+            while(_.any(b, (b) => b.inBeam)) {
+                var j = b[0].idx;
+                while(ctx.body[j].inBeam) {
+                    --j;
+                }
+                while(!ctx.body[j].beam) {
+                    ++j;
+                }
+                _.each(ctx.body[j].beam, (c) => {
+                    c.inBeam = false;
+                    return true;
+                });
+                if (j <= ctx.idx) {
+                    ctx.erasePast(j);
+                } else {
+                    ctx.eraseFuture(j);
+                }
+            }
 
             _.each(b, function(b) {
                 b.inBeam = true;
             });
-            return BeamGroupModel.createBeam(ctx, b);
+            BeamGroupModel.createBeam(ctx, b);
+            return "line";
         },
-        "Beams should be automatically created when applicable"
+        "Beams must follow the beat pattern."
     ],
+
 
     [
         function (ctx) {
@@ -583,7 +545,7 @@ function decideMiddleLineStemDirection(ctx) {
             ctx.next().chord)) ? getAverageLine(ctx.next(), ctx) : null;
 
     if ((nextLine !== null) && ctx.beats + this.getBeats() + ctx.next()
-            .getBeats(this.count) > ctx.timeSignature.beats) {
+            .getBeats(this.count, this.impliedTS) > ctx.timeSignature.beats) {
         // Barlines aren't inserted yet.
         nextLine = null;
     }

@@ -59,7 +59,7 @@ class Tool {
         return this.action.bind(this, mouse, line, false);
     }
     shouldHide(mouse, line, obj) {
-        assert(false, "You either need to implement handleMouseMove, " +
+        assert(false, "You either need to implement handleMouse[Move/Click], " +
                 "or both shouldHide and action!");
     }
     action(mouse, line, obj) {

@@ -14,6 +14,7 @@ var assert = require("assert");
 var AboutPage = require("./landing/about.jsx");
 var BlogPage = require("./landing/blog.jsx");
 var DiscoverPage = require("./landing/discover.jsx");
+var FiveOhFive = require("./landing/fiveOhFive.jsx");
 var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
@@ -31,6 +32,7 @@ var NotFound = Router.NotFound;
 var Router = React.createClass({
     render: function() {
         var loggedIn = this.props.session.state === "LoggedIn";
+        console.log(this.props.session.state);
 
         return <Locations path={this.props.defaultPath} ref="router">
             {/* The hero page with the login button */}
@@ -104,6 +106,10 @@ var Router = React.createClass({
             <Redirect path="/scales/" to="/scales/g/major" />
 
             <Redirect path="/index.html" to="/" />
+
+            <Location path="/500"
+                handler={FiveOhFive} 
+                session={this.props.session} />
 
             <NotFound handler={FourOhFour}
                 session={this.props.session} />

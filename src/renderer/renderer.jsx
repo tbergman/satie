@@ -159,7 +159,7 @@ var Renderer = React.createClass({
             ret = rawPages[0];
         }
 
-        this.props.store && this.props.store.rendererIsClean();
+        this.props.store && this.props.store.markRendererClean();
 
         PROFILER_ENABLED && console.timeEnd("render");
         return ret;
@@ -290,7 +290,9 @@ var Renderer = React.createClass({
     getInitialState: function() {
         return {
             mouse: {x: 0, y: 0},
-            visualCursor: this.props.store && this.props.store.visualCursor()
+            visualCursor: this.props.store && this.props.store.visualCursor() || {
+                annotatedPage: 0
+            } // TODO: render multiple pages
         };
     },
     getPositionForMouse: function(event) {
@@ -347,7 +349,7 @@ var Renderer = React.createClass({
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
-                this.props.store && this.props.store.rendererIsDirty();
+                this.props.store && this.props.store.markRendererDirty();
             }
             this.setState({
                 selectionRect: {
@@ -375,7 +377,7 @@ var Renderer = React.createClass({
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
-                this.props.store && this.props.store.rendererIsDirty();
+                this.props.store && this.props.store.markRendererDirty();
             }
             this.setState({
                 selectionRect: null

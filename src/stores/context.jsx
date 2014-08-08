@@ -12,6 +12,8 @@ var assert = require("assert");
 
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
+var _ANNOTATING = false; // To prevent annotate from being called recursively.
+
 class Context {
     constructor(opts) {
         assert(opts instanceof Object, "opts is a required field");
@@ -31,6 +33,7 @@ class Context {
             _.each(s, (val, key) => {
                 this[key] = val;
             });
+            
         } else {
             var noMargin = false;
             if (typeof window === "undefined" ||
@@ -124,6 +127,9 @@ class Context {
         var actives = [];
         var beat = 0;
         var impliedCount = 4;
+        var impliedTS = {beatType: 4}; // The bars might not have been annotated yet, so
+                                       // it's possible we don't have a time signature. We
+                                       // need an implied time signature to calculate bars.
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             var allNewActives = [];
             _(iterators)
@@ -135,6 +141,9 @@ class Context {
                                 ++s.idx;
                                 if (!s.body[s.idx]) {
                                     break;
+                                }
+                                if (s.body[s.idx].timeSignature) {
+                                    impliedTS = s.body[s.idx].timeSignature;
                                 }
                                 newActives.push(s.body[s.idx]);
                                 allNewActives.push(s.body[s.idx]);
@@ -148,7 +157,7 @@ class Context {
                             }));
                             if (s.body[s.idx]) {
                                 impliedCount = s.body[s.idx].count || impliedCount;
-                                s.beat = s.beat + s.body[s.idx].getBeats(impliedCount);
+                                s.beat = s.beat + s.body[s.idx].getBeats(impliedCount, impliedTS);
                             } else {
                                 s.beat = undefined;
                             }
@@ -228,6 +237,7 @@ class Context {
             while (i >= 0 && !this.body[i].newline) {
                 --i;
             }
+            assert(i === -1 || this.body[i].DEBUG_line === this.line);
             this.clef = null;
             break;
         case "beam":
@@ -256,6 +266,9 @@ class Context {
     }
 
     annotate(opts) {
+        assert(!_ANNOTATING);
+        _ANNOTATING = true;
+
         this.calculateIntersections();
 
         opts = opts || {};
@@ -274,6 +287,11 @@ class Context {
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
+            /*
+             * Debugging: Avoid infinite loops by aborting when we do 500x + 20
+             * as many operations as we originally had items. Print the last 20
+             * items.
+             */
             ++operations;
             if (operations/initialLength > 500 && !stopping) {
                 console.warn("Detected loop or severe inefficency.");
@@ -281,56 +299,103 @@ class Context {
                 stopping = 20;
             }
 
+            /*
+             * Custom actions are things such as inserting a note.
+             */
             var doCustomAction = pointerData && 
                 pointerData.staveIdx === sidx &&
                 (this.body[this.idx] === pointerData.obj ||
                     (pointerData.obj && pointerData.obj.placeholder &&
                         pointerData.obj.idx === this.idx));
 
-            if (!pointerData && this.bar === cursor.bar &&
+            /*
+             * The visual cursor requires the current object, the current index, and
+             * the current page. We need to check if we should update the visual cursor
+             * before doing the action as doing an action removes information.
+             *
+             * The visual cursor needs to be updated on (a) initial page load and (b) when
+             * custom actions have occured.
+             *
+             * I'm sure this can be simplied, and a more sober Joshua should do so.
+             */
+            var shouldUpdateVC =
+                (!pointerData && this.bar === cursor.bar &&
                     ((!cursor.beat && !cursor.annotatedObj) ||
                         this.beats === cursor.beat) &&
-                    (((this.body[this.idx].pitch || this.body[this.idx].chord) &&
+                    (((this.curr().pitch || this.curr().chord) &&
                         !cursor.endMarker) || (cursor.endMarker &&
-                        this.body[this.idx].endMarker))) {
+                        this.curr().endMarker))) &&
+                (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
+                        this.beats > cursorBeat)) &&
+                (!cursor.annotatedObj);
 
-                if (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
-                        this.beats > cursorBeat)) {
-                    if (!cursor.annotatedObj) {
-                        cursorStave = sidx;
-                        cursorBar = this.bar;
-                        cursorBeat = this.beats;
-                        cursor.annotatedObj = this.body[this.idx];
-                        cursor.annotatedLine = this.line;
-                        cursor.annotatedPage = this.pageStarts.length - 1;
-                    }
-                }
-            }
-
-            this.body[this.idx].ctxData = {
+            /*
+             * Context data is used throughout Ripieno to avoid the need to reannotate
+             * (or duplicate a similar procedure) to calculate what beat/bar a note is
+             * in.
+             */
+            this.curr().ctxData = {
                 bar: this.bar,
                 beat: this.beats,
                     // TODO: Move into the bridge layer
-                endMarker: this.body[this.idx].endMarker
+                endMarker: this.curr().endMarker
             };
 
+            /*
+             * THIS IS THE PART OF THE FUNCTION YOU CARE ABOUT!
+             *
+             * We usually call annotatei() on the Model at this.curr(). We can also
+             * run a custom action (passed in as 'toolFn') to add a note, edit a note,
+             * etc.
+             */
             if (doCustomAction) {
-                exitCode = toolFn(this.body[this.idx], this);
+                // HACK HACK HACK -- we don't want to call annotate, because we can't
+                // process the exit code, but the note tools needs to have a valid timeSignature
+                if (this.curr().timeSignature) {
+                    this.timeSignature = this.curr().timeSignature;
+                }
+                exitCode = toolFn(this.curr(), this);
                 pointerData = undefined;
             } else {
-                exitCode = this.body[this.idx].annotate(this, stopping);
+                exitCode = this.curr().annotate(this, stopping);
                 if (stopping && !--stopping) {
                     assert(false, "Aborting.");
                 }
             }
 
-            if (!doCustomAction &&
-                    toolFn &&
-                    !pointerData &&
-                    this.body[this.idx].newline &&
-                    !dirty &&
+            /*
+             * We have to actually run annotate() before we can safely update the
+             * annotated visual cursor information. We just called annotate(), so
+             * this is the earliest we can do that.
+             */
+            if (shouldUpdateVC) {
+                cursorStave = sidx;
+                cursorBar = this.bar;
+                cursorBeat = this.beats;
+                cursor.annotatedObj = this.curr();
+                cursor.annotatedLine = this.line;
+                cursor.annotatedPage = this.pageStarts.length - 1;
+            }
+
+            /*
+             * We've just added a line. So we can't quit early (see the next section)
+             */
+            if (exitCode === "line_created" && toolFn) {
+                dirty = true;
+                cursor.annotatedObj = null;
+            }
+
+            /*
+             * This is a performance hack.
+             *
+             * When we're confident a custom action has only modified one line, there
+             * is no need to continue annotating!
+             */
+            if (!doCustomAction && toolFn && !pointerData &&
+                    this.curr().newline && !dirty &&
                     exitCode !== "line_created") {
                 this.idx = -1;
+                _ANNOTATING = false; // This is a debug flag. Set to false when quitting.
                 return {
                     cursor: cursor,
                     operations: operations,
@@ -339,12 +404,10 @@ class Context {
                 }
             }
 
-            if (exitCode === "line_created" && toolFn) {
-                // ... and so must everything else
-                dirty = true;
-                toolFn = false;
-            }
         }
+
+        _ANNOTATING = false;
+
         if (this.bar === 1 && !this.beats && !cursor.endMarker) {
             cursor.endMarker = true;
             this.idx = -1;
@@ -362,6 +425,7 @@ class Context {
         NewlineModel.semiJustify(this);
 
         this.idx = -1;
+
         return {
             cursor: cursor,
             operations: operations,

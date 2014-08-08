@@ -11,6 +11,7 @@ var Model = require("./model.jsx");
 
 var assert = require("assert");
 var _ = require("lodash");
+var Metre = require("ripienoUtil/metre.jsx");
 
 class EndMarkerModel extends Model {
     annotateImpl(ctx) {
@@ -51,29 +52,28 @@ EndMarkerModel.prototype.prereqs = [
         function(ctx) {
             // XXX: extend to work on things other than 4/4
             var DurationModel = require("./duration.jsx");
-            var toAdd = ctx.timeSignature.beatType/ctx.timeSignature.beats*
+            var beatsRemaining = ctx.timeSignature.beatType/ctx.timeSignature.beats*
                 (ctx.timeSignature.beats - ctx.beats);
 
             var count;
             var dots = false;
 
-            assert(toAdd < ctx.timeSignature.beats, "Don't run this on entirely blank bars!");
+            assert(beatsRemaining < ctx.timeSignature.beats,
+                   "Don't run this on entirely blank bars!");
             var val = 2;
-            for (var val = 2; val >= 0.015625; val /= 2) {
-                if (toAdd === val*3/2) {
-                    count = val;
-                    dots = 1;
-                    break;
-                } else if (toAdd >= val) {
-                    count = val;
-                    break;
-                }
-            }
-            return ctx.insertPast(new DurationModel({
-                pitch: "r",
-                count: parseInt(4/count)+"",
-                dots: dots
-            }));
+
+
+            var toAdd = Metre.subtract(
+                    ctx.timeSignature.beats,
+                    ctx.beats,
+                    ctx.timeSignature,
+                    ctx.beats)
+                .map(beat => new DurationModel(_.extend(beat, {
+                    pitch: "r"})));
+            Array.prototype.splice.apply(ctx.body,
+                [this.idx, 0].concat(toAdd));
+
+            return -1;
         },
         "Bars must not be underfilled (should be filled with rests)"
     ],
