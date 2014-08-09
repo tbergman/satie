@@ -157,7 +157,7 @@ class DurationModel extends Model {
         return getTuplet(this);
     }
 
-    get midiNote() {
+    midiNote() {
         if (this.pitch) {
             var base = chromaticScale[this.pitch] + 48;
             return base + (this.octave || 0)*12 + (this.acc || 0);

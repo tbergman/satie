@@ -19,6 +19,7 @@ var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
 var LibraryPage = require("./landing/libraryPage.jsx");
 var ProductPage = require("./landing/products.jsx");
+var PrivacyPolicy = require("./landing/privacy.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
 var SessionStore = require("./stores/session.jsx");
 var SongEditor = require("./landing/songEditor.jsx");
@@ -32,7 +33,6 @@ var NotFound = Router.NotFound;
 var Router = React.createClass({
     render: function() {
         var loggedIn = this.props.session.state === "LoggedIn";
-        console.log(this.props.session.state);
 
         return <Locations path={this.props.defaultPath} ref="router">
             {/* The hero page with the login button */}
@@ -66,6 +66,11 @@ var Router = React.createClass({
                 session={this.props.session} />
 
             {/* See songs from other users. No login required to view. */}
+            {/* Misc clutter. */}
+            <Location path="/privacy"
+                handler={PrivacyPolicy}
+                session={this.props.session} />
+
             <Location path="/products"
                 handler={ProductPage}
                 session={this.props.session} />

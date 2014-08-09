@@ -254,11 +254,11 @@ class PlaybackStore extends EventEmitter {
         this.removeListener(CHANGE_EVENT, callback); 
     } 
 
-    get playing() {
+    playing() {
         return _playing;
     }
 
-    get ready() {
+    ready() {
         return _pianoLoaded && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
 }

@@ -1,14 +1,13 @@
+var CallbackQueue = require("react/lib/CallbackQueue");
 var PooledClass = require("react/lib/PooledClass");
-var ReactEventEmitter = require("react/lib/ReactEventEmitter");
 var ReactInputSelection = require("react/lib/ReactInputSelection");
-var ReactMountReady = require("react/lib/ReactMountReady");
 var ReactPutListenerQueue = require("react/lib/ReactPutListenerQueue");
 var Transaction = require("react/lib/Transaction");
 
 var mixInto = require("react/lib/mixInto");
 
 /**
- * Provides a `ReactMountReady` queue for collecting `onDOMReady` callbacks
+ * Provides a `CallbackQueue` queue for collecting `onDOMReady` callbacks
  * during the performing of the transaction.
  */
 var ON_DOM_READY_QUEUEING = {
@@ -69,7 +68,7 @@ function RiactUpdateTransaction() {
   // accessible and defaults to false when `ReactDOMComponent` and
   // `ReactTextComponent` checks it in `mountComponent`.`
   this.renderToStaticMarkup = false;
-  this.reactMountReady = ReactMountReady.getPooled(null);
+  this.reactMountReady = CallbackQueue.getPooled(null);
   this.putListenerQueue = ReactPutListenerQueue.getPooled();
 }
 
@@ -87,7 +86,6 @@ var Mixin = {
 
   /**
    * @return {object} The queue to collect `onDOMReady` callbacks with.
-   *   TODO: convert to ReactMountReady
    */
   getReactMountReady: function() {
     return this.reactMountReady;
@@ -102,11 +100,10 @@ var Mixin = {
    * instance to be resused.
    */
   destructor: function() {
-    ReactMountReady.release(this.reactMountReady);
+    CallbackQueue.release(this.reactMountReady);
     this.reactMountReady = null;
-
     ReactPutListenerQueue.release(this.putListenerQueue);
-    this.putListenerQueue = null;
+    this.putListenerQueue = null; 
   }
 };
 

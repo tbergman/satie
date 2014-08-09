@@ -18,9 +18,7 @@ var getExtremeLine = Note.getExtremeLine;
 
 var Slur = React.createClass({
     shouldComponentUpdate: function(nextProps) {
-        if (this.getHash(nextProps.spec) !== this.hash) {
-            return true;
-        }
+        return this.getHash(nextProps.spec) !== this.hash;
     },
     getHash: function(spec) {
         var statics = ["line1", "width", "line2", "direction", "empty", "fontSize"];

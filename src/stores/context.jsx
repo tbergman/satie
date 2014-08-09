@@ -89,7 +89,7 @@ class Context {
      * Used to avoid re-annotating everything when only a line or a set
      * of lines have changed.
      */
-    get snapshot() {
+    snapshot() {
         var stave = this.stave;
         var staves = this.staves;
         this.stave = null;
@@ -380,7 +380,7 @@ class Context {
             /*
              * We've just added a line. So we can't quit early (see the next section)
              */
-            if (exitCode === "line_created" && toolFn) {
+            if (exitCode === "line_created" && toolFn && !dirty /* Why? */) {
                 dirty = true;
                 cursor.annotatedObj = null;
             }
@@ -437,7 +437,7 @@ class Context {
     /**
      * ITEMS ON THE CURRENT STAVE
      */
-    get curr() {
+    curr() {
         return this.body[this.idx];
     }
     /**
@@ -480,7 +480,7 @@ class Context {
         beam.forEach(p => p.inBeam = false);
         return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
-    get prev() {
+    prev() {
         return this.body[this.idx - 1];
     }
 
@@ -526,13 +526,13 @@ class Context {
     /**
      * STAVES
      */
-    get currStave() {
+    currStave() {
         return this.stave;
     }
-    get nextStave() {
+    nextStave() {
         return this.staves[this.staveIdx + 1];
     }
-    get prevStave() {
+    prevStave() {
         return this.staves[this.staveIdx - 1];
     }
 }

@@ -565,7 +565,7 @@ var LineContainer = React.createClass({
             this.props.store && this.props.store.handleAction({description: "DELETE /local/song",
                 resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx});
         }
-        return songDirty || heightChanged || lineDirty;
+        return !!(songDirty || heightChanged || lineDirty);
     }
 });
 

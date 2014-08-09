@@ -11,9 +11,10 @@ var assert = require("assert");
 var DOMPropertyOperations = require("react/lib/DOMPropertyOperations");
 var ReactBrowserComponentMixin = require("react/lib/ReactBrowserComponentMixin");
 var ReactComponent = require("react/lib/ReactComponent");
+var ReactDOMComponent = require("react/lib/ReactDOMComponent");
+var ReactDescriptor = require("react/lib/ReactDescriptor");
 var ReactMount = require("react/lib/ReactMount");
 var ReactMultiChild = require("react/lib/ReactMultiChild");
-var ReactDOMComponent = require("react/lib/ReactDOMComponent");
 var ReactUpdates = require("react/lib/ReactUpdates");
 var mixInto = require("react/lib/mixInto");
 var merge = require("react/lib/merge");
@@ -35,30 +36,77 @@ var BLANK_PROPS = {};
 var DEBUG_GLYPH_POSITION = false;
 var ReactComponentMixin = ReactComponent.Mixin;
 
+
+/**********************
+ * LEGACY DESCRIPTORS *
+ **********************/
+var invariant = require("react/lib/invariant");
+
+/**
+ * Transfer static properties from the source to the target. Functions are
+ * rebound to have this reflect the original source.
+ */
+function proxyStaticMethods(target, source) {
+  if (typeof source !== 'function') {
+    return;
+  }
+  for (var key in source) {
+    if (source.hasOwnProperty(key)) {
+      var value = source[key];
+      if (typeof value === 'function') {
+        var bound = value.bind(source);
+        // Copy any properties defined on the function, such as `isRequired` on
+        // a PropTypes validator. (mergeInto refuses to work on functions.)
+        for (var k in value) {
+          if (value.hasOwnProperty(k)) {
+            bound[k] = value[k];
+          }
+        }
+        target[key] = bound;
+      } else {
+        target[key] = value;
+      }
+    }
+  }
+}
+
+var ReactLegacyDescriptorFactory = {};
+
+ReactLegacyDescriptorFactory.wrapFactory = function(factory) {
+  invariant(
+    ReactDescriptor.isValidFactory(factory),
+    'This is suppose to accept a descriptor factory'
+  );
+  var legacyDescriptorFactory = function(config, children) {
+    // This factory should not be called when the new JSX transform is in place.
+    // TODO: Warning - Use JSX instead of direct function calls.
+    return factory.apply(this, arguments);
+  };
+  proxyStaticMethods(legacyDescriptorFactory, factory.type);
+  legacyDescriptorFactory.isReactLegacyFactory = true;
+  legacyDescriptorFactory.type = factory.type;
+  return legacyDescriptorFactory;
+};
+
+/**********************
+ * STUFF              *
+ **********************/
+
 global.requestAnimationFrame = global.requestAnimationFrame || global.mozRequestAnimationFrame ||
     global.webkitRequestAnimationFrame || global.msRequestAnimationFrame;
 
 function createComponent(name) {
-    var VictoriaComponent = function() {};
+    var VictoriaComponent = function(descriptor) {
+        this.construct(descriptor);
+    };
     VictoriaComponent.displayName = name;
     for (var i = 1, l = arguments.length; i < l; i++) {
         mixInto(VictoriaComponent, arguments[i]);
     }
 
-    var ConvenienceConstructor = function(props, children) {
-        var instance = new VictoriaComponent();
-        // Children can be either an array or more than one argument
-        instance.construct.apply(instance, arguments);
-        return instance;
-    };
+    var ConvenienceConstructor = ReactDescriptor.createFactory(VictoriaComponent);
     
-    // Expose the convience constructor on the prototype so that it can be
-    // easily accessed on descriptors. E.g. <Foo />.type === Foo.type
-    // This for consistency with other descriptors and future proofing.
-    ConvenienceConstructor.type = VictoriaComponent;
-    VictoriaComponent.prototype.type = VictoriaComponent;
-
-    return ConvenienceConstructor;
+    return ReactLegacyDescriptorFactory.wrapFactory(ConvenienceConstructor);
 }
 
 var ContainerMixin = merge(ReactMultiChild.Mixin, {
@@ -178,7 +226,7 @@ var VG = createComponent(
     ReactComponentMixin,
     ContainerMixin, {
 
-    mountComponent: function(transaction) {
+    mountComponent: function(rootID, transaction, mountDepth) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
         this.node = new VGNode;
         this.applyGroupProps(BLANK_PROPS, this.props);
@@ -230,7 +278,7 @@ var VGlyph = createComponent(
     'VGlyph',
     ReactComponentMixin, {
 
-    mountComponent: function(transaction) {
+    mountComponent: function(rootID, transaction, mountDepth) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
         this.node = new VGlyphNode;
         this.node.props = this.props;
@@ -277,7 +325,7 @@ var VRect = createComponent(
     'VRect',
     ReactComponentMixin, {
 
-    mountComponent: function(transaction) {
+    mountComponent: function(rootID, transaction, mountDepth) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
         this.node = new VRectNode;
         this.node.props = this.props;
@@ -325,7 +373,7 @@ var VCircle = createComponent(
     'VCircle',
     ReactComponentMixin, {
 
-    mountComponent: function(transaction) {
+    mountComponent: function(rootID, transaction, mountDepth) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
         this.node = new VCircleNode;
         this.node.props = this.props;
@@ -365,7 +413,7 @@ var VBezier = createComponent(
     'VBezier',
     ReactComponentMixin, {
 
-    mountComponent: function(transaction) {
+    mountComponent: function(rootID, transaction, mountDepth) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
         this.node = new VBezierNode;
         this.node.props = this.props;
@@ -412,7 +460,7 @@ var HelloGL = createComponent(
             rootID,
             transaction,
             mountDepth);
-        transaction.getReactMountReady().enqueue(this, this.componentDidMount);
+        transaction.getReactMountReady().enqueue(this.componentDidMount, this);
 
         var idMarkup = DOMPropertyOperations.createMarkupForID(rootID);
         return '<canvas ' + idMarkup + ' style="' +
@@ -611,7 +659,7 @@ var HelloGL = createComponent(
             });
         }
 
-        var oldRed, oldGreen, oldBlue, oldIDX;
+        oldRed = oldGreen = oldBlue = oldIDX = null;
 
         gl.useProgram(this.node.glyphProgram);
         _.each(glyphs, glyph => {

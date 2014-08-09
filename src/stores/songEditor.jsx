@@ -639,19 +639,19 @@ class SongEditorStore extends EventEmitter {
         }
     }
 
-    get tool() {
+    tool() {
         return _tool;
     }
-    get staves() {
+    staves() {
         return _staves;
     }
-    get staveHeight() {
+    staveHeight() {
         return _staveHeight;
     }
-    get pageSize() {
+    pageSize() {
         return _pageSize;
     }
-    get src() {
+    src() {
         var staves = _staves;
 
         var lyliteArr = [];
@@ -707,10 +707,10 @@ class SongEditorStore extends EventEmitter {
         var lyliteStr = lyliteArr.join(" ");
         return lyliteStr;
     }
-    get selection() {
+    selection() {
         return _selection;
     }
-    get dirty() {
+    dirty() {
         return _dirty;
     }
     ctx(idx) {
@@ -726,13 +726,13 @@ class SongEditorStore extends EventEmitter {
         }
         return _ctxs[idx];
     }
-    get ctxCount() {
+    ctxCount() {
         return _ctxs.length;
     }
-    get visualCursor() {
+    visualCursor() {
         return _visualCursor;
     }
-    set visualCursorIs(visualCursor) {
+    visualCursorIs(visualCursor) {
         // Assign directly to keep refrences in tact.
         // Alternatively, Context could be updated with the updated
         // cursor.
