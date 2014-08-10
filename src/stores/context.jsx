@@ -368,6 +368,8 @@ class Context {
              * annotated visual cursor information. We just called annotate(), so
              * this is the earliest we can do that.
              */
+            shouldUpdateVC = shouldUpdateVC && exitCode === true;
+
             if (shouldUpdateVC) {
                 cursorStave = sidx;
                 cursorBar = this.bar;
