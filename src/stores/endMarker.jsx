@@ -48,12 +48,11 @@ EndMarkerModel.prototype.prereqs = [
     [
         function(ctx) {
             return ctx.prev().barline || !ctx.beats ||
-                ctx.beats >= 4/ctx.timeSignature.beatType * ctx.timeSignature.beats; },
+                ctx.beats >= ctx.timeSignature.beats; },
         function(ctx) {
             // XXX: extend to work on things other than 4/4
             var DurationModel = require("./duration.jsx");
-            var beatsRemaining = ctx.timeSignature.beatType/ctx.timeSignature.beats*
-                (ctx.timeSignature.beats - ctx.beats);
+            var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
 
             var count;
             var dots = false;
