@@ -41,11 +41,30 @@
  * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
  */
 
-var assert = require("assert");
-var _ = require("lodash");
+/// <reference path="node.d.ts" />
+/// <reference path="lodash.d.ts" />
+/// <reference path="es6-promise.d.ts" />
+/// <reference path="../promos/scales/scaleGenerator.d.ts" />
+
+import assert = require("assert");
+import _ = require("lodash");
 
 class Model {
-    annotate(ctx, stopping) {
+    _fontSize: number;
+    _key: string;
+    _x: number;
+    _y: number;
+    ctxData: {
+        bar: number;
+        beat: number;
+    };
+    endMarker: boolean;
+    idx: number;
+    inBeam: boolean;
+    name: string;
+    prereqs: any;
+    
+    annotate(ctx, stopping?: number) {
         if (!this.inBeam) {
             this.setX(ctx.x);
             this.setY(ctx.y);
@@ -89,63 +108,77 @@ class Model {
         return ctx.bar + "_" + ctx.renderKey_eInBar[this.name] + this.name;
     }
 
-    key() {
+    key() : string {
         return this._key;
     }
+
     fontSize() {
         return this._fontSize;
     }
 
-    annotateImpl(ctx) {
+    annotateImpl(ctx) : boolean {
         assert(false, "Not implemented");
+        return false; // Not reached
     }
+
     visible() {
         return true;
     }
+
     render() {
         assert(false, "Not implemented");
     }
 
-    x() {
+    x() : number {
         return this._x;
     }
-    y() {
+
+    y() : number {
         return this._y;
     }
-    setX(x) {
+
+    setX(x) : void {
         this._x = x;
     }
-    setY(y) {
+
+    setY(y) : void {
         this._y = y;
     }
 
-    isNote() {
-        return this.pitch || this.chord;
+    isNote() : boolean {
+        return false;
     }
-}
-Model.setView = function(View) {
-    this.prototype.render = function() {
-        return <View key={this.key()} spec={this} />
-    }
-}
 
-/**
- * Given an array of staves, remove all annotated objects
- * created through a Model.
- */
-var removeAnnotations = (staves) => {
-    for (var i = 0; i < staves.length; ++i) {
-        for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
-            var item = staves[i].body[j];
-            if (item._annotated) {
-                staves[i].body.splice(j, 1);
-                --j;
-            } else if (item.inBeam) {
-                delete item.inBeam;
-            }
+    toLylite(lylite, unresolved?) {
+        assert(false, "Not implemented");
+    }
+
+    static setView = function(View) {
+        this.prototype.render = function() {
+            return View({
+                key: this.key(),
+                spec: this
+            })
         }
     }
-};
 
-module.exports = Model;
-module.exports.removeAnnotations = removeAnnotations;
+    /**
+    * Given an array of staves, remove all annotated objects
+    * created through a Model.
+    */
+    static removeAnnotations = (staves) => {
+        for (var i = 0; i < staves.length; ++i) {
+            for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
+                var item = staves[i].body[j];
+                if (item._annotated) {
+                    staves[i].body.splice(j, 1);
+                    --j;
+                } else if (item.inBeam) {
+                    delete item.inBeam;
+                }
+            }
+        }
+    };
+}
+
+export = Model;

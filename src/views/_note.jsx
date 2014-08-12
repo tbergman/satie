@@ -20,7 +20,7 @@ var LedgerLine = require("./_ledgerLine.jsx");
 var NoteHead = require("./_noteHead.jsx");
 var NoteMarking = require("./_noteMarking.jsx");
 var NoteStem = require("./_noteStem.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
 
 var Note = React.createClass({

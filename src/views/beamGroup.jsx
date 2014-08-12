@@ -6,13 +6,13 @@
  */
 
 var React = require("react");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var _ = require("lodash");
 var assert = require("assert");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var Beam = require("./_beam.jsx");
-var BeamGroupModel = require("../stores/beamGroup.jsx");
+var BeamGroupModel = require("../stores/beamGroup.ts");
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
 var Note = require("./_note.jsx");

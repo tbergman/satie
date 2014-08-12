@@ -8,7 +8,7 @@
 
 var _ = require("lodash");
 
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var getAnchor = _.memoize(notehead => SMuFL.bravuraMetadata.glyphsWithAnchors[notehead]);
 

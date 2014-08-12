@@ -13,7 +13,8 @@ var isBrowser = typeof window !== "undefined";
 var useGL = (typeof libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
-var History = require("../stores/history.jsx");
+var Dispatcher = require("../stores/dispatcher.ts");
+var History = require("../stores/history.ts");
 var Group = require("../views/_group.jsx");
 var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
@@ -83,7 +84,7 @@ var Renderer = React.createClass({
                     if (page.from) {
                         return null;
                     }
-                    y += Header.getHeight(stave.header);
+                    y += renderUtil.getHeaderHeight(stave.header);
                     return !useGL && <Header
                         fontSize={fontSize}
                         middle={renderUtil.mm(this.props.pageSize.width, fontSize)/2}
@@ -129,11 +130,11 @@ var Renderer = React.createClass({
                 this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
                         style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
                     <Line
-                        x1={this.state.visualCursor.annotatedObj["$Model_x"] - 0.2}
-                        x2={this.state.visualCursor.annotatedObj["$Model_x"] - 0.2}
-                        y1={this.state.visualCursor.annotatedObj["$Model_y"] +
+                        x1={this.state.visualCursor.annotatedObj.x() - 0.2}
+                        x2={this.state.visualCursor.annotatedObj.x() - 0.2}
+                        y1={this.state.visualCursor.annotatedObj.y() +
                             (isPianoStaff ? 1.15 : 0) - vcHeight}
-                        y2={this.state.visualCursor.annotatedObj["$Model_y"] +
+                        y2={this.state.visualCursor.annotatedObj.y() +
                             (isPianoStaff ? 1.15 : 0) + vcHeight}
                         stroke={"#008CFF"}
                         strokeWidth={0.05} />
@@ -190,24 +191,24 @@ var Renderer = React.createClass({
                     j < body.length && !body[i].newpage; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
-                if (Math.abs(item["$Model_y"] - dynY) < 0.001) {
+                if (Math.abs(item.y() - dynY) < 0.001) {
                     if ((item.keySignature ||
                                 item.timeSignature ||
                                 item.clef ||
                                 item.pitch ||
                                 item.chord) &&
-                            Math.abs(dynX - item["$Model_x"]) < 0.27 +
+                            Math.abs(dynX - item.x()) < 0.27 +
                                 (item.dots ? item.dots*0.2 : 0)) {
-                        dynX = item["$Model_x"];
+                        dynX = item.x();
                         foundIdx = j;
                         foundObj = item;
                         break;
-                    } else if (dynX < item["$Model_x"] ||
+                    } else if (dynX < item.x() ||
                             (j === body.length - 1 && h === this.getCtxCount() - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
-                        if (dynX < item["$Model_x"]) {
+                        if (dynX < item.x()) {
                             j -= 1;
                         }
                         _pointerData = {
@@ -277,9 +278,9 @@ var Renderer = React.createClass({
 
             for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
                 var item = body[i];
-                if (inRange(box.top - 1, item["$Model_y"],
+                if (inRange(box.top - 1, item.y(),
                             box.bottom + 1) &&
-                        inRange(box.left, item["$Model_x"], box.right)) {
+                        inRange(box.left, item.x(), box.right)) {
                     ret.push(item);
                 }
             }
@@ -324,7 +325,7 @@ var Renderer = React.createClass({
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
         if (!this.props.tool && data.ctxData) {
-            "/local/visualCursor".POST({
+            Dispatcher.POST("/local/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
@@ -335,7 +336,7 @@ var Renderer = React.createClass({
         }
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
-            "/local/tool/_action".PUT({mouseData: data, fn: fn});
+            Dispatcher.PUT("/local/tool/_action", {mouseData: data, fn: fn});
         }
         this.forceUpdate();
     },
@@ -358,7 +359,7 @@ var Renderer = React.createClass({
                 }
             });
             if (this.props.selection) {
-                "/local/selection".DELETE();
+                Dispatcher.DELETE("/local/selection");
             }
         }
     },
@@ -383,7 +384,7 @@ var Renderer = React.createClass({
                 selectionRect: null
             });
             if (selection.length) {
-                "/local/selection".PUT(selection.length ? selection : null);
+                Dispatcher.PUT("/local/selection", selection.length ? selection : null);
             }
         }
     },
@@ -398,7 +399,7 @@ var Renderer = React.createClass({
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
             if (area > 1 && this.props.tool) {
-                "/local/tool".DELETE();
+                Dispatcher.DELETE("/local/tool");
             }
             return;
         }
@@ -459,11 +460,11 @@ var Renderer = React.createClass({
         this.props.store && this.props.store.addAnnotationListener(this.update);
     },
     setupBrowserListeners: function() {
-        var AccidentalTool = require("../stores/accidentalTool.jsx");
-        var DotTool = require("../stores/dotTool.jsx");
-        var NoteTool = require("../stores/noteTool.jsx");
-        var RestTool = require("../stores/restTool.jsx");
-        var TieTool = require("../stores/tieTool.jsx");
+        var AccidentalTool = require("../stores/accidentalTool.ts");
+        var DotTool = require("../stores/dotTool.ts");
+        var NoteTool = require("../stores/noteTool.ts");
+        var RestTool = require("../stores/restTool.ts");
+        var TieTool = require("../stores/tieTool.ts");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = (event) => {
@@ -477,19 +478,19 @@ var Renderer = React.createClass({
                     break;
                 case 37: // left arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    "/local/visualCursor".POST({step: -1});
+                    Dispatcher.POST("/local/visualCursor", {step: -1});
                     break;
                 case 39: // right arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    "/local/visualCursor".POST({step: 1});
+                    Dispatcher.POST("/local/visualCursor", {step: 1});
                     break;
                 case 90: // 'z'
                     event.preventDefault(); // we control all undo behaviour
                     if (event.ctrlKey || event.metaKey) {
                         if (event.shiftKey) {
-                            History.redo();
+                            History.Instance.redo();
                         } else {
-                            History.undo();
+                            History.Instance.undo();
                         }
                     }
                     break;
@@ -520,7 +521,7 @@ var Renderer = React.createClass({
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
-                "/local/tool".PUT(toolFn());
+                Dispatcher.PUT("/local/tool", toolFn());
             } else if (this.props.tool) {
                 this.props.tool.handleKeyPressEvent(key, event);
             }

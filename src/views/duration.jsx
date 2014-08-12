@@ -11,7 +11,7 @@ var React = require("react");
 var _ = require("lodash");
 var assert = require("assert");
 
-var DurationModel = require("../stores/duration.jsx");
+var DurationModel = require("../stores/duration.ts");
 var Note = require("./_note.jsx");
 var NoteMarking = require("./_noteMarking.jsx");
 var Rest = require("./_rest.jsx");

@@ -10,7 +10,7 @@ var renderUtil = require("ripienoUtil/renderUtil.jsx");
 var Line = require("./_line.jsx");
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var Brace = React.createClass({
     propTypes: {

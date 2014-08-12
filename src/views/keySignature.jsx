@@ -9,8 +9,8 @@ var React = require("react");
 var Accidental = require("./_accidental.jsx");
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
-var KeySignatureModel = require("../stores/keySignature.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var KeySignatureModel = require("../stores/keySignature.ts");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var _ = require("lodash");
 

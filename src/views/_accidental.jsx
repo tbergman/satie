@@ -8,7 +8,7 @@
 var React = require("react");
 
 var Glyph = require("./_glyph.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var Accidental = React.createClass({
     propTypes: {

@@ -9,7 +9,7 @@ var _ = require("lodash");
 
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var TimeSignature = React.createClass({
     proptypes: {

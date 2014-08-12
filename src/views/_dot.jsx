@@ -10,7 +10,7 @@ var _ = require("lodash");
 
 var Glyph = require("./_glyph.jsx");
 var RenderableMixin = require("./_renderable.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var Victoria = require("../renderer/victoria/hellogl.jsx");
 var getFontOffset = require("./_getFontOffset.jsx");
 

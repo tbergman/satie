@@ -4,9 +4,16 @@
  * @jsx React.DOM
  */
 
-var Model = require("./model.jsx");
+import Model = require("./model");
 
 class BeginModel extends Model {
+    pianoStaff : boolean;
+    stave: number;
+    noMargin : boolean;
+    braceY : number;
+    getBraceY2 : ()=>number;
+    pageSize : number;
+
     annotateImpl(ctx) {
         this.pianoStaff = ctx.stave.pianoStaff;
         this.stave = ctx.stave;
@@ -29,22 +36,25 @@ class BeginModel extends Model {
     visible() {
         return true;
     }
+
+    static createBegin = (ctx) => {
+        return ctx.insertPast(new BeginModel(
+            {_annotated: "createBegin"}));
+    };
+
+    prereqs = BeginModel.prereqs;
+    static prereqs = [
+        [
+            function(ctx) {
+                return ctx.idx === 0; },
+            function(ctx) {
+                return ctx.eraseCurrent();
+            },
+            "BeginModel must only appear at the begining of a song."
+        ]
+    ];
 }
-BeginModel.prototype.prereqs = [
-    [
-        function(ctx) {
-            return ctx.idx === 0; },
-        function(ctx) {
-            return ctx.eraseCurrent();
-        },
-        "BeginModel must only appear at the begining of a song."
-    ]
-];
 
-var createBegin = (ctx) => {
-    return ctx.insertPast(new BeginModel(
-        {_annotated: "createBegin"}));
-};
+Model.length; // BUG in typescriptifier
 
-module.exports = BeginModel;
-module.exports.createBegin = createBegin;
+export = BeginModel;

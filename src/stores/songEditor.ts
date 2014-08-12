@@ -2,46 +2,50 @@
  * Flux store for the song being edited.
  */
 
-var EventEmitter = require("events").EventEmitter; 
-var _ = require("lodash");
-var assert = require("assert");
 
+import EventEmitter = require("events");
+import _ = require("lodash");
+import assert = require("assert");
 
-var Context = require("./context.jsx");
-var Dispatcher = require("./dispatcher.jsx"); 
-var Header = require("../views/_header.jsx");
-var Model = require("./model.jsx");
+import Context = require("./context");
+import Dispatcher = require("./dispatcher");
+import Model = require("./model");
+import Tool = require("./tool");
 var deepFreeze = require("ripienoUtil/deepFreeze.jsx");
-var lylite = require("./lylite.jison").parser;
+var lylite = require("./lylite.jison");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
-var isBrowser = typeof window !== "undefined";
+import TSEE = require("./tsee");
+import Pitch = require("./pitch");
 
+import SessionStore = require("./session"); // must be registered before SongEditorStore!!!
+var PlaybackStore = require("./playback.jsx"); // must be registered before SongEditorStore!!!
+
+var isBrowser = typeof window !== "undefined";
 var CHANGE_EVENT = "change"; 
 var ANNOTATE_EVENT = "annotate"; 
 var HISTORY_EVENT = "history";
 var CLEAR_HISTORY_EVENT = "clearHistory";
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-///
-var SessionStore = require("./session.jsx"); // must be registered before SongEditorStore!!!
-var PlaybackStore = require("./playback.jsx"); // must be registered before SongEditorStore!!!
-
 var latestID = 0;
 
 var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
-class SongEditorStore extends EventEmitter {
+export class SongEditorStore extends TSEE {
+    _activeStaveIdx: number;
+
     constructor() {
         this.clear();
 
-        Dispatcher.register(this.handleAction.bind(this));
+        Dispatcher.Instance.register(this.handleAction.bind(this));
+        super();
     }
 
     handleAction(action) {
         switch(action.description) {
             case "GET /api/song":
             case "PUT /local/song/show":
-                var activeSong = SessionStore.activeSong();
+                var activeSong = SessionStore.Instance.activeSong();
                 if (USING_LEGACY_AUDIO) {
                     _.defer(this.downloadLegacyAudio.bind(this));
                 }
@@ -62,7 +66,7 @@ class SongEditorStore extends EventEmitter {
 
             case "PUT /local/song/forceUpdate":
                 this.clear();
-                var activeSong = SessionStore.activeSong();
+                var activeSong = SessionStore.Instance.activeSong();
                 this.reparse(activeSong.src);
                 this.emit(CHANGE_EVENT);
                 break;
@@ -145,7 +149,7 @@ class SongEditorStore extends EventEmitter {
                 }
                 _dirty = true;
                 _ctxs = null;
-                _.find(_staves, s => s.staveHeight).staveHeight = _staveHeight;
+                _.find(_staves, s => s["staveHeight"])["staveHeight"] = _staveHeight;
                 Model.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -156,7 +160,7 @@ class SongEditorStore extends EventEmitter {
                 _pageSize = action.postData;
                 _dirty = true;
                 _ctxs = null;
-                _.find(_staves, s => s.pageSize).pageSize = _pageSize;
+                _.find(_staves, s => s["pageSize"])["pageSize"] = _pageSize;
                 Model.removeAnnotations(_staves);
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -168,7 +172,7 @@ class SongEditorStore extends EventEmitter {
                         _cleanupFn && _cleanupFn();
                         _cleanupFn = null;
                         this.reparse(action.postData);
-                        this.markRendererDirty();
+                        markRendererDirty();
                         this.emit(CHANGE_EVENT);
                         this.emit(ANNOTATE_EVENT);
                         break;
@@ -206,11 +210,9 @@ class SongEditorStore extends EventEmitter {
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
                     // Remove the item directly before the ctx.
-                    var DurationModel = require("./duration.jsx");
-                    var EraseTool = require("./eraseTool.jsx");
-                    var i;
+                    var i: number;
                     for (i = 0; i < _staves[3].body.length; ++i) {
-                        if (_staves[3].body[i] === _visualCursor.annotatedObj) {
+                        if (_staves[3].body[i] === _visualCursor["annotatedObj"]) {
                             --i;
                             break;
                         }
@@ -219,25 +221,26 @@ class SongEditorStore extends EventEmitter {
                         console.warn("Cursor not found");
                         break;
                     }
-                    while(i >= 0 && !_staves[3].body[i].pitch &&
-                            !_staves[3].body[i].chord &&
-                            !_staves[3].body[i].barline) {
+                    while(i >= 0 && !_staves[3].body[i]["pitch"] &&
+                            !_staves[3].body[i]["chord"] &&
+                            !_staves[3].body[i]["barline"]) {
                         --i;
                     }
                     var obj = _staves[3].body[i];
                     if (obj) {
-                        var DurationModel = require("./duration.jsx");
-                        var line = _visualCursor.annotatedLine;
+                        var line = _visualCursor["annotatedLine"];
                         this.stepCursor({
                             step: -1,
                             skipThroughBars: false
                         });
 
                         // Remove items based on a whitelist.
+                        var DurationModel = require("./duration"); // Recursive dependency.
                         if (obj instanceof DurationModel) {
                             // The stepCursor call above invalidates _visualCursor
                             // DO NOT CHECK _visualCursor HERE!!!
-                            var tool = new EraseTool();
+                            var EraseTool = require("./eraseTool"); // Recursive dependency.
+                            var etool = new EraseTool();
                             this.annotate(
                                 {
                                     obj: obj,
@@ -245,14 +248,14 @@ class SongEditorStore extends EventEmitter {
                                     idx: i,
                                     staveIdx: this._activeStaveIdx
                                 },
-                                tool.splice.bind(tool, false));
+                                etool.splice.bind(etool, false));
                         } else {
                             this.annotate();
                         }
                         this.emit(ANNOTATE_EVENT);
                     }
                 } else {
-                    _visualCursor = 0;
+                    _visualCursor = null;
                     this.emit(CHANGE_EVENT);
                     this.annotate();
                     break;
@@ -262,7 +265,6 @@ class SongEditorStore extends EventEmitter {
             case "POST /local/visualCursor":
                 switch (action.resource) {
                     case "ptr":
-                        var DurationModel = require("./duration.jsx");
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj = null;
                         var prevIdx;
@@ -321,8 +323,8 @@ class SongEditorStore extends EventEmitter {
         });
     }
 
-    reparse(src) {
-        _staves = lylite.parse(src);
+reparse(src) {
+    _staves = lylite.parser.parse(src);
         renderUtil.addDefaults(_staves);
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
@@ -339,7 +341,7 @@ class SongEditorStore extends EventEmitter {
     /**
      * Calls Context.anotate on each stave with a body
      */
-    annotate(pointerData, toolFn, staves, pageSize) {
+    annotate(pointerData?, toolFn?, staves?, pageSize?) {
         staves = staves || _staves;
 
         PROFILER_ENABLED && console.time("annotate");
@@ -350,8 +352,8 @@ class SongEditorStore extends EventEmitter {
         var cursor = _visualCursor;
 
         if (!pointerData) {
-            cursor.annotatedObj = null;
-            cursor.annotatedLine = null;
+            cursor["annotatedObj"] = null;
+            cursor["annotatedLine"] = null;
             _ctxs = [];
         }
 
@@ -362,7 +364,7 @@ class SongEditorStore extends EventEmitter {
              * (Headers, authors, etc.)
              */
             if (stave.header) {
-                y += Header.getHeight(stave.header);
+                y += renderUtil.getHeaderHeight(stave.header);
                 return true;
             } else if (!stave.body) {
                 return true;
@@ -434,6 +436,15 @@ class SongEditorStore extends EventEmitter {
     markDirty() {
         _dirty = true;
     }
+    markRendererClean() {
+        markRendererClean();
+    }
+    markRendererDirty() {
+        markRendererDirty();
+    }
+    markRendererLineDirty(idx, h) {
+        markRendererLineDirty(idx, h);
+    }
 
     downloadLegacyAudio() {
         var data = [];
@@ -450,9 +461,9 @@ class SongEditorStore extends EventEmitter {
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                if (obj.pitch || obj.chord) {
-                    var beats = obj.getBeats();
-                    _.map(obj.pitch ? [obj.midiNote()] : obj.midiNote(), midiNote => {
+                if (obj["pitch"] || obj["chord"]) {
+                    var beats = obj["getBeats"]();
+                    _.map(obj["pitch"] ? [obj["midiNote"]()] : obj["midiNote"](), midiNote => {
                         data.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
                         data.push((delay + beats*timePerBeat - 0.019) +
@@ -462,16 +473,13 @@ class SongEditorStore extends EventEmitter {
                 }
             }
         }
-        "/api/synth".POST({
+        Dispatcher.POST("/api/synth", {
             data: data,
             cb: "" + ++PlaybackStore.latestID
         });
     }
 
     transpose(how) {
-        var KeySignatureModel = require("./keySignature.jsx");
-        var DurationModel = require("./duration.jsx");
-
         // The selection is guaranteed to be in song order.
         for (var staveIdx = 0; staveIdx < _staves.length; ++staveIdx) {
             var lastIdx = 0;
@@ -484,15 +492,17 @@ class SongEditorStore extends EventEmitter {
 
             _.each(_selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
-                    if (body[i].keySignature) {
-                        accidentals = KeySignatureModel.getAccidentals(body[i].keySignature);
+                    if (body[i]["keySignature"]) {
+                        var KeySignatureModel = require("./keySignature"); // Recursive dependency
+                        accidentals = KeySignatureModel.getAccidentals(
+                            body[i]["keySignature"]);
                     }
                 }
 
                 assert(body[i] === item, "The selection must be in song order.");
                 assert(accidentals, "A key signature must preceed any note.");
 
-                if (!item.pitch && !item.chord) {
+                if (!item["pitch"] && !item["chord"]) {
                     return;
                 }
 
@@ -501,9 +511,10 @@ class SongEditorStore extends EventEmitter {
                 var numToNote = "cdefgab";
 
                 // For "chromatic":
+                var DurationModel = require("./duration"); // Recursive dependency.
                 var noteToVal = DurationModel.chromaticScale;
 
-                _.each(item.pitch ? [item] : item.chord, note => {
+                _.each(item["pitch"] ? [item] : item["chord"], (note: Pitch) => {
                     if (how.mode === "inKey") {
                         var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
                         var newNote = noteToNum[note.pitch] + how.letters;
@@ -533,7 +544,7 @@ class SongEditorStore extends EventEmitter {
                         }
                     }
                 });
-                delete item.selected;
+                item["selected"] = null;
             });
         }
         _dirty = true;
@@ -550,7 +561,7 @@ class SongEditorStore extends EventEmitter {
         for (var i = 0; i < _staves[3].body.length; ++i) {
             if (_staves[3].body[i] === obj) {
                 if ((!_staves[3].body[i + 1] ||
-                            _staves[3].body[i + 1].barline === "double") &&
+                            _staves[3].body[i + 1]["barline"] === "double") &&
                         spec.loopThroughEnd) {
                     this.visualCursorIs({
                         beat: 0,
@@ -564,10 +575,10 @@ class SongEditorStore extends EventEmitter {
                     if (!_staves[3].body[i]) {
                         break;
                     }
-                    if (_staves[3].body[i].barline) {
+                    if (_staves[3].body[i]["barline"]) {
                         throughBar = true;
                     }
-                    if (_staves[3].body[i].newline) {
+                    if (_staves[3].body[i]["newline"]) {
                         // TODO: we don"t need to update all the lines
                         _dirty = true;
                     }
@@ -588,7 +599,7 @@ class SongEditorStore extends EventEmitter {
                         if (spec.skipThroughBars) {
                             while (_staves[3].body[i + 1] &&
                                     (_staves[3].body[i].endMarker ||
-                                    _staves[3].body[i].barline)) {
+                                    _staves[3].body[i]["barline"])) {
                                 ++i;
                             }
                         }
@@ -713,13 +724,13 @@ class SongEditorStore extends EventEmitter {
     dirty() {
         return _dirty;
     }
-    ctx(idx) {
+    ctx(idx: any) {
         if (idx === undefined) {
             console.warn("Calling ctx without an index is deprecated.");
             console.trace();
         }
         if (idx === undefined || idx.first) {
-            var idx = 0;
+            idx = 0;
             while (!_ctxs[idx] && idx < _ctxs.length) {
                 ++idx;
             }
@@ -778,7 +789,7 @@ class SongEditorStore extends EventEmitter {
  * needs to be updated, the ctx can be unfrozen from here instead of
  * recalculating the ctx from the begining of the song.
  */
-var snapshot = (ctx) => {
+export var snapshot = (ctx) => {
     _snapshots[ctx.line] = ctx.snapshot();
 };
 
@@ -787,11 +798,11 @@ var snapshot = (ctx) => {
  * to be "backed up", it can do so without recalculating from the begining
  * of the line.
  */
-var beamCountIs = (beamCount) => {
+export var beamCountIs = (beamCount) => {
     _beamBeatCount = beamCount;
 };
 
-var getBeamCount = () => {
+export var getBeamCount = () => {
     return _beamBeatCount;
 }
 
@@ -805,14 +816,29 @@ var _prevActiveSong = null;
 var _selection = null;
 var _snapshots = {};
 var _staveHeight = null;
-var _staves = null;
+var _staves: Array<{
+    body: Array<Model>;
+    staveHeight: number;
+    pageSize: {
+        lilypondName: string;
+    }
+    header: {
+        title: string;
+        composer: string;
+    }
+}>;
+
 var _visualCursor = {
     bar: 1,
-    beat: 0
+    beat: 0,
+    endMarker: <boolean> null,
+    annotatedObj: <Model> null,
+    annotatedLine: <number> null,
+    annotatedPage: <number> null
 };
 var _tool = null;
 
-var markRendererClean = () => {
+export var markRendererClean = () => {
     // Mark entire score as clean.
     // NOT a Flux method.
     _.defer(() => {
@@ -820,23 +846,20 @@ var markRendererClean = () => {
     });
 };
 
-var markRendererLineDirty = (line, h) => {
+export var markRendererLineDirty = (line, h) => {
     // Mark a given line as dirty
     // NOT a Flux method.
     _linesToUpdate[h + "_" + line] = true;
 };
 
-var markRendererDirty = () => {
+export var markRendererDirty = () => {
     // Mark entire score as dirty, so everything has to be re-rendered.
     // NOT a Flux method.
     _dirty = true;
 };
 
+TSEE.length; // BUG in typescriptifier
+
 // Exposed for console debugging.
-global.SongEditorStore = module.exports = new SongEditorStore();
-module.exports.beamCountIs = beamCountIs;
-module.exports.snapshot = snapshot;
-module.exports.markRendererClean = markRendererClean;
-module.exports.markRendererDirty = markRendererDirty;
-module.exports.markRendererLineDirty = markRendererLineDirty;
-module.exports.getBeamCount = getBeamCount;
+export var Instance = new SongEditorStore();
+global.SongEditorInstance = Instance;

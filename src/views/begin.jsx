@@ -5,14 +5,14 @@
  */
 
 var React = require("react");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var _ = require("lodash");
 
-var BeginModel = require("../stores/begin.jsx");
+var BeginModel = require("../stores/begin.ts");
 var Brace = require("./_brace.jsx");
 var Group = require("./_group.jsx");
 var StaveLines = require("./_staveLines.jsx");
-var hash = require("ripienoUtil/hash.jsx");
+var hash = require("ripienoUtil/hash.ts");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var BeginView = React.createClass({

@@ -8,10 +8,10 @@ var _ = require("lodash");
 var Bezier = require("./_bezier.jsx");
 var Glyph = require("./_glyph.jsx");
 var Note = require("./_note.jsx");
-var SlurGroupModel = require("../stores/slur.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SlurGroupModel = require("../stores/slur.ts");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
-var hash = require("ripienoUtil/hash.jsx");
+var hash = require("ripienoUtil/hash.ts");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var getExtremeLine = Note.getExtremeLine;

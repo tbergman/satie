@@ -1,7 +1,7 @@
 var assert = require("assert");
 var _ = require("lodash");
 
-var Context = require("./stores/context.jsx");
+var Context = require("./stores/context.ts");
 var Header = require("./views/_header.jsx");
 var React = require("react");
 var Renderer = require("./renderer/renderer.jsx");

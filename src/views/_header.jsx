@@ -43,16 +43,4 @@ var Header = React.createClass({
     }
 });
 
-var getHeight = header => {
-    var height = 0;
-    if (header.title) {
-        height += 2;
-    }
-    if (header.composer) {
-        height += 0.75;
-    }
-    return height;
-};
-
 module.exports = Header;
-module.exports.getHeight = getHeight;

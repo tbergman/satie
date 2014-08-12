@@ -155,10 +155,10 @@ Riact = { // RIpieno reACT
 }
 
 React = require("react");
-Dispatcher = require("./stores/dispatcher.jsx");
-SessionStore = require("./stores/session.jsx");
-PlaybackStore = require("./stores/playback.jsx");
-SongEditorStore = require("./stores/songEditor.jsx");
+Dispatcher = require("./stores/dispatcher.ts");
+SessionStore = require("./stores/session.ts");
+PlaybackStore = require("./stores/playback.ts");
+SongEditorStore = require("./stores/songEditor.ts");
 
 
 /*******************
@@ -193,7 +193,7 @@ var RendererEnv = React.createClass({
                 selection={state.selection}
                 staveHeight={state.staveHeight}
                 staves={state.staves}
-                store={SongEditorStore}
+                store={SongEditorStore.Instance}
                 top={44}
                 raw={true}
                 width={width} /> :
@@ -208,10 +208,10 @@ var RendererEnv = React.createClass({
     },
     storeState: function() {
         return {
-            pageSize: SongEditorStore.pageSize(),
-            selection: SongEditorStore.selection(),
-            staveHeight: SongEditorStore.staveHeight(),
-            staves: SongEditorStore.staves(),
+            pageSize: SongEditorStore.Instance.pageSize(),
+            selection: SongEditorStore.Instance.selection(),
+            staveHeight: SongEditorStore.Instance.staveHeight(),
+            staves: SongEditorStore.Instance.staves(),
             playing: PlaybackStore.playing(),
             midiReady: PlaybackStore.ready()
         };

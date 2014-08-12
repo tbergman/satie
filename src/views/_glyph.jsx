@@ -9,7 +9,7 @@ var React = require("react");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var RenderableMixin = require("./_renderable.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var Victoria = require("../renderer/victoria/hellogl.jsx");
 
 var VGlyph = Victoria.VGlyph;

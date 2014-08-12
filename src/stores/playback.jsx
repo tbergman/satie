@@ -6,8 +6,8 @@ var EventEmitter = require("events").EventEmitter;
 var _ = require("lodash");
 var assert = require("assert");
 
-var Dispatcher = require("./dispatcher.jsx"); 
-var SessionStore = require("./session.jsx"); // must be registered before PlaybackStore!
+var Dispatcher = require("./dispatcher.ts"); 
+var SessionStore = require("./session.ts"); // must be registered before PlaybackStore!
 
 var enabled = (typeof window !== "undefined");
 
@@ -39,7 +39,7 @@ var CHANGE_EVENT = "change";
 
 class PlaybackStore extends EventEmitter {
     constructor() {
-        Dispatcher.register(this.handleAction.bind(this));
+        Dispatcher.Instance.register(this.handleAction.bind(this));
 
         _pianoLoaded = false;
         _playing = false;
@@ -134,7 +134,7 @@ class PlaybackStore extends EventEmitter {
     }
 
     continuePlay() {
-        var SongEditorStore = require("./songEditor.jsx");
+        var SongEditorStore = require("./songEditor.ts");
         var MAX_DELAY = 9999999999999999;
         var anyDelay = MAX_DELAY;
         var delays = [];
@@ -143,9 +143,9 @@ class PlaybackStore extends EventEmitter {
         });
         this._remainingActions = [];
 
-        var aobj = SongEditorStore.visualCursor().annotatedObj;
+        var aobj = SongEditorStore.Instance.visualCursor().annotatedObj;
         if (aobj && aobj.endMarker) {
-            "/local/visualCursor".POST({
+            Dispatcher.POST("/local/visualCursor", {
                 step: 1,
                 skipThroughBars: true,
                 loopThroughEnd: true
@@ -156,12 +156,12 @@ class PlaybackStore extends EventEmitter {
         var foundLegacyStart = false;
         var startTime = MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < SongEditorStore.ctxCount(); ++h) {
-            var body = SongEditorStore.staves()[h].body;
+        for (var h = 0; h < SongEditorStore.Instance.ctxCount(); ++h) {
+            var body = SongEditorStore.Instance.staves()[h].body;
             if (!body) {
                 continue;
             }
-            var visualCursor = SongEditorStore.visualCursor();
+            var visualCursor = SongEditorStore.Instance.visualCursor();
             var delay = 0;
             var bpm = 120;
             var timePerBeat = 60/bpm;
@@ -228,7 +228,7 @@ class PlaybackStore extends EventEmitter {
                         this.emit(CHANGE_EVENT);
                     });
                 }
-                "/local/visualCursor".POST({
+                Dispatcher.POST("/local/visualCursor", {
                     step: 1,
                     skipThroughBars: true
                 });

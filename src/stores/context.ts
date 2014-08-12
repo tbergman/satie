@@ -7,14 +7,47 @@
  * Context is the memo.
  */
 
-var _ = require("lodash");
-var assert = require("assert");
+/// <reference path="lodash.d.ts" />
 
+import _ = require("lodash");
+import assert = require("assert");
+
+import Model = require("./model");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var _ANNOTATING = false; // To prevent annotate from being called recursively.
 
 class Context {
+    accidentals: Object;
+    bar: number;
+    barlineX: Array<number>
+    beats: number;
+    clef: string;
+    count: number;
+    fontSize: number;
+    initialX: number;
+    line: number;
+    lineSpacing: number;
+    maxX: number;
+    maxY: number;
+    pageLines: Array<number>;
+    pageSize: number;
+    pageStarts: Array<number>
+    smallest: number;
+    start: number;
+    timeSignature: {
+        beats: number;
+        beatType: number;
+    };
+    x: number;
+    y: number;
+    lines: Array<Object>;
+    stave: Object;
+    staveIdx: number;
+    staves: Array<Object>;
+    body: Array<Model>;
+    idx: number;
+
     constructor(opts) {
         assert(opts instanceof Object, "opts is a required field");
 
@@ -80,7 +113,7 @@ class Context {
         assert(this.stave instanceof Object, "either opts.stave or opts.staveIdx&stave are required");
         this.staveIdx = opts.staveIdx;
         this.staves = opts.staves;
-        this.body = this.stave.body;
+        this.body = <Array<Model>>this.stave["body"];
         this.idx = -1;
     }
 
@@ -98,7 +131,7 @@ class Context {
         var ret = JSON.stringify(this);
         this.stave = stave;
         this.staves = staves;
-        this.body = stave.body;
+        this.body = stave["body"];
         return ret;
     }
 
@@ -109,7 +142,7 @@ class Context {
                 .filter(s => s.body)
                 .map(s => {return {
                     idx: 0,
-                    body: s.body,
+                    body: s["body"],
                     beat: 0,
                     doIf: (act, cond) => {if (cond()) { return act() };}
                 }})
@@ -216,11 +249,11 @@ class Context {
             _.each(line, (v, attrib) => {
                 this[attrib] = line[attrib];
             });
-            while (i >= 0 && !this.body[i].newline) {
+            while (i >= 0 && !this.body[i]["newline"]) {
                 --i;
             }
             --i;
-            while (i >= 0 && !this.body[i].newline) {
+            while (i >= 0 && !this.body[i]["newline"]) {
                 --i;
             }
             assert(i >= -1, "Was a new line really created?");
@@ -234,19 +267,19 @@ class Context {
                 this[attrib] = line[attrib];
             });
             --i;
-            while (i >= 0 && !this.body[i].newline) {
+            while (i >= 0 && !this.body[i]["newline"]) {
                 --i;
             }
-            assert(i === -1 || this.body[i].DEBUG_line === this.line);
+            assert(i === -1 || this.body[i]["DEBUG_line"] === this.line);
             this.clef = null;
             break;
         case "beam":
             // The beam needs to be re-rendered.
-            var SongEditorStore = require("./songEditor.jsx");
 
+            var SongEditorStore = require("./songEditor"); // Recursive dependency.
             this.beats = SongEditorStore.getBeamCount();
             --i;
-            while(i >= 0 && !this.body[i].beam) {
+            while (i >= 0 && !this.body[i]["beam"]) {
                 --i;
             }
             this.x = this.body[i].x();
@@ -265,7 +298,7 @@ class Context {
         return i + 1;
     }
 
-    annotate(opts) {
+    annotate(opts): any{
         assert(!_ANNOTATING);
         _ANNOTATING = true;
 
@@ -282,7 +315,7 @@ class Context {
         var pointerData = opts.pointerData || null;
         var sidx = opts.staveIdx || 0;
         var toolFn = opts.toolFn || null;
-        var stopping = false;
+        var stopping = 0;
         var initialLength = this.body.length;
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
@@ -322,9 +355,9 @@ class Context {
                 (!pointerData && this.bar === cursor.bar &&
                     ((!cursor.beat && !cursor.annotatedObj) ||
                         this.beats === cursor.beat) &&
-                    (((this.curr().pitch || this.curr().chord) &&
-                        !cursor.endMarker) || (cursor.endMarker &&
-                        this.curr().endMarker))) &&
+                    (((this.curr()["pitch"] || this.curr()["chord"]) &&
+                    !cursor.endMarker) || (cursor.endMarker &&
+                    this.curr()["endMarker"]))) &&
                 (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
                         this.beats > cursorBeat)) &&
                 (!cursor.annotatedObj);
@@ -351,8 +384,8 @@ class Context {
             if (doCustomAction) {
                 // HACK HACK HACK -- we don't want to call annotate, because we can't
                 // process the exit code, but the note tools needs to have a valid timeSignature
-                if (this.curr().timeSignature) {
-                    this.timeSignature = this.curr().timeSignature;
+                if (this.curr()["timeSignature"]) {
+                    this["timeSignature"] = this.curr()["timeSignature"];
                 }
                 exitCode = toolFn(this.curr(), this);
                 pointerData = undefined;
@@ -394,7 +427,7 @@ class Context {
              * is no need to continue annotating!
              */
             if (!doCustomAction && toolFn && !pointerData &&
-                    this.curr().newline && !dirty &&
+                        this.curr()["newline"] && !dirty &&
                     exitCode !== "line_created") {
                 this.idx = -1;
                 _ANNOTATING = false; // This is a debug flag. Set to false when quitting.
@@ -423,7 +456,7 @@ class Context {
 
         this.idx = this.body.length - 1;
 
-        var NewlineModel = require("../stores/newline.jsx");
+        var NewlineModel = require("./newline"); // Recursive dependency.
         NewlineModel.semiJustify(this);
 
         this.idx = -1;
@@ -451,26 +484,26 @@ class Context {
      *     1 if unspecified.
      * @param{bool} allowBeams: True if beams should not be skipped.
      */
-    next(cond, skip, allowBeams) {
+    next(cond, skip?: number, allowBeams?: boolean) {
         return this.body[this.nextIdx(cond, skip, allowBeams)];
     }
-    nextIdx(cond, skip, allowBeams) {
+    nextIdx(cond, skip?: number, allowBeams?: boolean) {
         var i;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         for (i = skip; this.body[this.idx + i] && (
-            (this.body[this.idx + i].beam && !allowBeams) ||
+            (this.body[this.idx + i]["beam"] && !allowBeams) ||
             (cond && !cond(this.body[this.idx + i]))); ++i) {
         }
         return this.idx + i;
     }
-    beamFollows(idx) {
+    beamFollows(idx?: number) {
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
-        return this.body[idx + 1] && this.body[idx + 1].beam;
+        return this.body[idx + 1] && this.body[idx + 1]["beam"];
     }
-    removeFollowingBeam(idx, past) {
+    removeFollowingBeam(idx?: number, past?: boolean) {
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
@@ -506,7 +539,7 @@ class Context {
      * @param{num} idx: The absolute position to insert an element at.
      *     By default, just before current position.
      */
-    insertPast(obj, idx) {
+    insertPast(obj, idx): any {
         idx = (idx === null || idx === undefined) ? this.idx : idx;
         assert(idx <= this.idx, "Otherwise, use 'insertFuture'");
         this.body.splice(idx, 0, obj);
@@ -518,7 +551,7 @@ class Context {
      * @param{num} idx: The absolute position to insert an element at.
      *     By default, one after current position.
      */
-    insertFuture(obj, idx) {
+    insertFuture(obj, idx?: number) {
         idx = (idx === null || idx === undefined) ? (this.idx + 1) : idx;
         assert(idx > this.idx, "Otherwise, use 'insertPast'");
         this.body.splice(idx, 0, obj);
@@ -539,4 +572,4 @@ class Context {
     }
 }
 
-module.exports = Context;
+export = Context;

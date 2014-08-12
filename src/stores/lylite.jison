@@ -2,14 +2,13 @@
     var _ = require("lodash");
     var util = require("ripienoUtil/renderUtil.jsx");
 
-    var BarlineModel = require("./barline.jsx");
-    var ClefModel = require("./clef.jsx");
-    var EndMarkerModel = require("./endMarker.jsx");
-    var KeySignatureModel = require("./keySignature.jsx");
-    var DurationModel = require("./duration.jsx");
-    var NewlineModel = require("./newline.jsx");
-    var NewPageModel = require("./newpage.jsx");
-    var TimeSignatureModel = require("./timeSignature.jsx");
+    var BarlineModel = require("./barline.ts");
+    var ClefModel = require("./clef.ts");
+    var EndMarkerModel = require("./endMarker.ts");
+    var KeySignatureModel = require("./keySignature.ts");
+    var NewlineModel = require("./newline.ts");
+    var NewPageModel = require("./newpage.ts");
+    var TimeSignatureModel = require("./timeSignature.ts");
 %}
 
 %options flex
@@ -382,7 +381,11 @@ partElement
             $$ = new TimeSignatureModel({timeSignature: {beats: $2, beatType: $4} });
         }
   | relativeMode                         { $$ = $1; }
-  | completePitchOrChord                 { $$ = new DurationModel($1); }
+  | completePitchOrChord                
+        {
+            var DurationModel = require("./duration.ts");
+            $$ = new DurationModel($1);
+        }
   | tupletMode                           { $$ = $1; }
   | 'PAGE_BREAK'                         { $$ = {append: [
         new BarlineModel({barline: true}),

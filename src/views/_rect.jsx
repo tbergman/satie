@@ -5,7 +5,7 @@
 var React = require("react");
 
 var RenderableMixin = require("./_renderable.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var Victoria = require("../renderer/victoria/hellogl.jsx");
 
 var VRect = Victoria.VRect;

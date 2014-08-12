@@ -13,11 +13,14 @@
  * See also ripieno
  */
 
-var Promise = require("es6-promise").Promise;
-var _ = require("lodash");
-var assert = require("assert");
+/// <reference path="es6-promise.d.ts" />
+/// <reference path="node.d.ts" />
 
-var ajax = require("ripienoUtil/ajax.jsx").untrusted;
+import Promise = require("es6-promise");
+import _ = require("lodash");
+import assert = require("assert");
+
+var ajax = require("ripienoUtil/ajax.jsx");
 
 var _callbacks = [];
 var _promises = [];
@@ -31,7 +34,7 @@ var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== 
  * @param {object} payload The data from the Action.
  */
 var _addPromise = function(callback, payload) {
-    _promises.push(new Promise(function(resolve, reject) {
+    _promises.push(new Promise.Promise(function(resolve, reject) {
         if (callback(payload)) {
             resolve(payload);
         } else {
@@ -48,7 +51,7 @@ var _clearPromises = function() {
     inAction = false;
 };
 
-class Dispatcher {
+export class Dispatcher {
     /**
      * Register a Store"s callback so that it may be invoked by an action.
      * @param {function} callback The callback to be registered.
@@ -59,6 +62,8 @@ class Dispatcher {
         return _callbacks.length - 1; // index
     }
 
+    inAction : boolean = false;
+
     /**
      * dispatch
      * @param  {object} action The data from the action.
@@ -67,7 +72,7 @@ class Dispatcher {
         (FLUX_DEBUG || inAction) && console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
-                (action.postData ? [action.postData] : ""), [action]);
+                (action.postData ? [action.postData] : []), [action]);
 
         if (inAction) {
             assert(false, "Queueing an action during an action is a violation of Flux");
@@ -78,7 +83,7 @@ class Dispatcher {
         });
 
         this.inAction = true;
-        Promise
+        Promise.Promise
             .all(_promises)
             .then(_clearPromises)
             ["catch"]((err) => {
@@ -88,7 +93,7 @@ class Dispatcher {
     }
 }
 
-var DispatcherInstance = new Dispatcher();
+export var Instance = new Dispatcher();
 
 var inAction = false;
 
@@ -105,10 +110,10 @@ var networkActions = {
     DELETE: true
 };
 
-String.prototype.dispatch = function(verb, postData) {
+export var dispatch = function(url: string, verb: string, postData: any) : void {
     assert(verb, "Verb must be defined");
 
-    var root = this;
+    var root = url;
     var resource = null;
     var query = null;
 
@@ -122,32 +127,32 @@ String.prototype.dispatch = function(verb, postData) {
     }
 
     if (verb === "GET") {
-        ajax.getJSON(this, (response, request) => {
-            DispatcherInstance.dispatch({
+        ajax.untrusted.getJSON(url, (response, request) => {
+            Instance.dispatch({
                 description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
                 status: request.status,
                 resource: resource,
                 query: query,
-                url: this,
+                url: url,
                 response: response
             });
         });
     } else if (verb in immediateActions) {
-        DispatcherInstance.dispatch({
+        Instance.dispatch({
             description: verb + " " + root,
             resource: resource,
             query: query,
             postData: postData
         });
 
-        if ((verb in networkActions) && !this.indexOf("/api")) {
-            ajax.anyJSON(verb, this, postData, (response, request) => {
-                DispatcherInstance.dispatch({
+        if ((verb in networkActions) && !url.indexOf("/api")) {
+            ajax.untrusted.anyJSON(verb, url, postData, (response, request) => {
+                Instance.dispatch({
                     description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
                     status: request.status,
                     resource: resource,
                     query: query,
-                    url: this,
+                    url: url,
                     response: response
                 });
             });
@@ -155,9 +160,15 @@ String.prototype.dispatch = function(verb, postData) {
     }
 };
 
-String.prototype.DELETE = function(p) { this.dispatch("DELETE", p); };
-String.prototype.PUT = function(p) { this.dispatch("PUT", p); };
-String.prototype.POST = function(p) { this.dispatch("POST", p); };
-String.prototype.GET = function(p) { this.dispatch("GET", p); };
-
-module.exports = DispatcherInstance;
+export var DELETE = function(url: string, p?: any) {
+    dispatch(url, "DELETE", p);
+};
+export var PUT = function(url: string, p?: any) {
+    dispatch(url, "PUT", p);
+};
+export var POST = function(url: string, p?: any) {
+    dispatch(url, "POST", p);
+};
+export var GET = function(url: string, p?: any) {
+    dispatch(url, "GET", p);
+};

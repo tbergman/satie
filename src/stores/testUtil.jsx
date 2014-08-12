@@ -1,7 +1,7 @@
 var _ = require("lodash");
 
-var Context = require("./context.jsx");
-var lylite = require("./lylite.jison").parser;
+var Context = require("./context.ts");
+var lylite = require("./lylite.jison");
 
 module.exports = {
     parseAnnotateTest: function (desc, ly, tests) {
@@ -9,7 +9,7 @@ module.exports = {
             var parsed;
             var context;
             it("should be parsable", () => {
-                parsed = lylite.parse(ly);
+                parsed = lylite.parser.parse(ly);
             });
             it("should be annotatable", () => {
                 if (!parsed) {

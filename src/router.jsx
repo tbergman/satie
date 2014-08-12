@@ -6,7 +6,7 @@
  */
 
 var React = require("react");
-var Redirect = require("ripienoUtil/redirect.jsx");
+var Redirect = require("ripienoUtil/redirect.ts");
 var Router = require("react-router-component");
 var _ = require("lodash");
 var assert = require("assert");
@@ -14,6 +14,7 @@ var assert = require("assert");
 var AboutPage = require("./landing/about.jsx");
 var BlogPage = require("./landing/blog.jsx");
 var DiscoverPage = require("./landing/discover.jsx");
+var Dispatcher = require("./stores/dispatcher.ts");
 var FiveOhFive = require("./landing/fiveOhFive.jsx");
 var FourOhFour = require("./landing/fourOhFour.jsx");
 var HeroPage = require("./landing/heroPage.jsx");
@@ -21,7 +22,7 @@ var LibraryPage = require("./landing/libraryPage.jsx");
 var ProductPage = require("./landing/products.jsx");
 var PrivacyPolicy = require("./landing/privacy.jsx");
 var ScalesPage = require("./promos/scales/scales.jsx");
-var SessionStore = require("./stores/session.jsx");
+var SessionStore = require("./stores/session.ts");
 var SongEditor = require("./landing/songEditor.jsx");
 var SoonPage = require("./landing/soon.jsx");
 require("./webViews.jsx");
@@ -122,16 +123,16 @@ var Router = React.createClass({
     },
     getDefaultProps: function() {
         return {
-            errors: SessionStore.errors(),
-            session: SessionStore.session(),
-            songs: SessionStore.songs()
+            errors: SessionStore.Instance.errors(),
+            session: SessionStore.Instance.session(),
+            songs: SessionStore.Instance.songs()
         };
     },
 
     componentDidMount: function() {
-        SessionStore.addChangeListener(this._onChange);
+        SessionStore.Instance.addChangeListener(this._onChange);
 
-        "/api/user/start_session".GET();
+        Dispatcher.GET("/api/user/start_session");
     },
 
     componentWillUpdate: function(nextProps, nextState) {
@@ -155,17 +156,17 @@ var Router = React.createClass({
             //  2. The page was loading. The user was always logged in.
 
             // Load all songs in a users library.
-            ("/api/song?userId=" + nextProps.session.user._id).GET();
+            Dispatcher.GET("/api/song?userId=" + nextProps.session.user._id);
         }
     },
     componentWillUnmount: function() {
-        SessionStore.removeChangeListener(this._onChange);
+        SessionStore.Instance.removeChangeListener(this._onChange);
     },
 
     _onChange: function() {
         // Responde to updates from SessionStore. This follow"s Facebook"s Flux
         // architecture.
-        var errors = SessionStore.errors();
+        var errors = SessionStore.Instance.errors();
         for (var i = this.props.errors.length; i < errors.length; ++i) {
             console.warn("Error:", errors[i]);
             if (errors[i].redirectTo) {
@@ -175,9 +176,9 @@ var Router = React.createClass({
         }
 
         this.setProps({
-            session: SessionStore.session(),
-            activeSong: SessionStore.activeSong(),
-            songs: SessionStore.songs(),
+            session: SessionStore.Instance.session(),
+            activeSong: SessionStore.Instance.activeSong(),
+            songs: SessionStore.Instance.songs(),
             errors: errors
         });
     }

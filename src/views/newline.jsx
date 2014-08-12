@@ -6,13 +6,13 @@
  */
 
 var React = require("react");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var _ = require("lodash");
 
-var NewlineModel = require("../stores/newline.jsx");
+var NewlineModel = require("../stores/newline.ts");
 var Group = require("./_group.jsx");
 var StaveLines = require("./_staveLines.jsx");
-var hash = require("ripienoUtil/hash.jsx");
+var hash = require("ripienoUtil/hash.ts");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var NewlineView = React.createClass({

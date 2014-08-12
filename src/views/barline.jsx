@@ -9,12 +9,12 @@ var React = require("React");
 var _ = require("lodash");
 var assert = require("assert");
 
-var BarlineModel = require("../stores/barline.jsx");
+var BarlineModel = require("../stores/barline.ts");
 var Group = require("./_group.jsx");
 var Rect = require("./_rect.jsx");
 var Line = require("./_line.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
-var hash = require("ripienoUtil/hash.jsx");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
+var hash = require("ripienoUtil/hash.ts");
 
 var Barline = React.createClass({
     proptypes: {

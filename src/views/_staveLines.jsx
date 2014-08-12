@@ -7,7 +7,7 @@ var _ = require("lodash");
 
 var Group = require("./_group.jsx");
 var Line = require("./_line.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 
 var StaveLines = React.createClass({
     getDefaultProps: function() {

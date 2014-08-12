@@ -3,29 +3,29 @@
  * Models.
  */
 
-require("./stores/barline.jsx").setView(
+require("./stores/barline.ts").setView(
     require("./views/barline.jsx"));
 
-require("./stores/begin.jsx").setView(
+require("./stores/begin.ts").setView(
     require("./views/begin.jsx"));
 
-require("./stores/beamGroup.jsx").setView(
+require("./stores/beamGroup.ts").setView(
     require("./views/beamGroup.jsx"));
 
-require("./stores/clef.jsx").setView(
+require("./stores/clef.ts").setView(
     require("./views/clef.jsx"));
 
-require("./stores/duration.jsx").setView(
+require("./stores/duration.ts").setView(
     require("./views/duration.jsx"));
 
-require("./stores/keySignature.jsx").setView(
+require("./stores/keySignature.ts").setView(
     require("./views/keySignature.jsx"));
 
-require("./stores/newline.jsx").setView(
+require("./stores/newline.ts").setView(
     require("./views/newline.jsx"));
 
-require("./stores/slur.jsx").setView(
+require("./stores/slur.ts").setView(
     require("./views/slur.jsx"));
 
-require("./stores/timeSignature.jsx").setView(
+require("./stores/timeSignature.ts").setView(
     require("./views/timeSignature.jsx"));

@@ -9,7 +9,7 @@ var _ = require("lodash");
 
 var Accidental = require("./_accidental.jsx");
 var Glyph = require("./_glyph.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.js");
+var SMuFL = require("ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
 
 var NoteHead = React.createClass({

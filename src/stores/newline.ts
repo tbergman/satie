@@ -1,17 +1,15 @@
-/**
- * @jsx React.DOM
- */
+import Model = require("./model");
 
-var Model = require("./model.jsx");
-
-var React = require("react");
-
-var NewPageModel = require("./newpage.jsx");
+import NewPageModel = require("./newpage");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
-var _ = require("lodash");
+import _ = require("lodash");
 
 class NewlineModel extends Model {
+    lineSpacing: number;
+    pageSize: number;
+    DEBUG_line: number;
+
     annotateImpl(ctx) {
         this.lineSpacing = ctx.lineSpacing;
         this.pageSize = ctx.pageSize;
@@ -46,7 +44,7 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
         this.DEBUG_line = ctx.line;
 
-        var SongEditorStore = require("./songEditor.jsx");
+        var SongEditorStore = require("./songEditor"); // Recursive dependency.
         SongEditorStore.snapshot(ctx);
 
         return true;
@@ -78,7 +76,7 @@ class NewlineModel extends Model {
             if (ctx.body[i].barline && (!ctx.body[i + 1] || !ctx.body[i + 1].newline)) {
                 if (ctx.lines[ctx.line - 1] &&
                         _.any(ctx.lines[ctx.line - 1].barlineX,
-                            x => Math.abs(x - newX) < 0.15)) {
+                            (x:number) => Math.abs(x - newX) < 0.15)) {
                     // ADJUST BARLINE
                     var offset = -0.2;
                     newX += offset;
@@ -124,109 +122,111 @@ class NewlineModel extends Model {
     toLylite(lylite) {
         lylite.push("\n");
     }
-}
-
-var createNewline = (ctx) => {
-    var l = 0;
-    var fidx = ctx.idx;
-    for (; fidx >=0; --fidx) {
-        ctx.body[fidx].annotatedExtraWidth = undefined;
-        if (ctx.body[fidx].barline) {
-            break;
-        }
-    }
-    if (ctx.body[fidx + 1].newpage) {
-        return true;
-    }
-    for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-        if (ctx.body[i]._annotated) {
-            if (ctx.body[i].newline ||
-                    ctx.body[i].clef ||
-                    ctx.body[i].timeSignature ||
-                    ctx.body[i].keySignature) {
-                ctx.eraseFuture(i);
-                --i;
+    static createNewline = (ctx): any => {
+        var l = 0;
+        var fidx = ctx.idx;
+        for (; fidx >=0; --fidx) {
+            ctx.body[fidx].annotatedExtraWidth = undefined;
+            if (ctx.body[fidx].barline) {
+                break;
             }
         }
-    }
-    ctx.insertPast(new NewlineModel({newline: true, _annotated: "createNewline"}), fidx + 1);
-    removeNextNewline(ctx, fidx + 2);
-    return "line_created";
-};
-
-var removeNextNewline = (ctx, start) => {
-    for (var i = start; i < ctx.body.length; ++i) {
-        if (ctx.body[i].newline) {
-            ctx.body.splice(i, 1);
-            for (var j = i; j < ctx.body.length && !ctx.body[j].beam &&
-                    !ctx.body[j].pitch && !ctx.body[j].chord; ++j) {
-                if (ctx.body[j]._annotated) {
-                    ctx.eraseFuture(j);
-                    --j;
+        if (ctx.body[fidx + 1].newpage) {
+            return true;
+        }
+        for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
+            if (ctx.body[i]._annotated) {
+                if (ctx.body[i].newline ||
+                        ctx.body[i].clef ||
+                        ctx.body[i].timeSignature ||
+                        ctx.body[i].keySignature) {
+                    ctx.eraseFuture(i);
+                    --i;
                 }
             }
-            return;
         }
-    }
-    return;
-};
+        ctx.insertPast(new NewlineModel({ newline: true, _annotated: "createNewline" }), fidx + 1);
+        NewlineModel.removeNextNewline(ctx, fidx + 2);
+        return "line_created";
+    };
 
-/**
- * Given an incomplete line ending at idx, spreads out the line
- * comfortably.
- */
-var semiJustify = (ctx) => {
-    var fullJustify = false;
-    if (typeof window === "undefined" ||
-            global.location.href.indexOf("/scales/") !== -1) {
-        // XXX: HACK!!!
-        fullJustify = true;
-    }
-    var n = 0;
-    for (var i = ctx.idx; i >= 0 && !ctx.body[i].newline; --i) {
-        if (ctx.body[i].pitch || ctx.body[i].chord) {
-            ++n;
+    static removeNextNewline = (ctx, start?: number) => {
+        start = start || ctx.idx;
+        for (var i = start; i < ctx.body.length; ++i) {
+            if (ctx.body[i].newline) {
+                ctx.body.splice(i, 1);
+                for (var j = i; j < ctx.body.length && !ctx.body[j].beam &&
+                        !ctx.body[j].pitch && !ctx.body[j].chord; ++j) {
+                    if (ctx.body[j]._annotated) {
+                        ctx.eraseFuture(j);
+                        --j;
+                    }
+                }
+                return;
+            }
         }
-    }
-    if (n) {
-        var lw = ctx.maxX - 3 - ctx.curr().x();
-        var nw = lw/n;
-        if (fullJustify) {
-            lw = ctx.maxX - ctx.curr().x();
-            nw = lw/n;
-        } else {
-            var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
-            nw = (1 - weight)*nw;
-            lw = nw * n;
+        return;
+    };
+
+    /**
+     * Given an incomplete line ending at idx, spreads out the line
+     * comfortably.
+     */
+    static semiJustify = (ctx) => {
+        var fullJustify = false;
+        if (typeof window === "undefined" ||
+                global.location.href.indexOf("/scales/") !== -1) {
+            // XXX: HACK!!!
+            fullJustify = true;
         }
+        var n = 0;
         for (var i = ctx.idx; i >= 0 && !ctx.body[i].newline; --i) {
             if (ctx.body[i].pitch || ctx.body[i].chord) {
-                lw -= nw;
+                ++n;
             }
-            ctx.body[i]["$Model_x"] += lw;
         }
-    }
-};
+        if (n) {
+            var lw = ctx.maxX - 3 - ctx.curr().x();
+            var nw = lw/n;
+            if (fullJustify) {
+                lw = ctx.maxX - ctx.curr().x();
+                nw = lw/n;
+            } else {
+                var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
+                nw = (1 - weight)*nw;
+                lw = nw * n;
+            }
+            for (var i = ctx.idx; i >= 0 && !ctx.body[i].newline; --i) {
+                if (ctx.body[i].pitch || ctx.body[i].chord) {
+                    lw -= nw;
+                }
+                ctx.body[i].setX(ctx.body[i].x() + lw);
+            }
+        }
+    };
+    
+    prereqs = NewlineModel.prereqs;
+    static prereqs = [
+        [
+            function(ctx) {
+                return ctx.y + ctx.lineSpacing < ctx.maxY;
+            },
+            NewPageModel.createNewPage,
+            "Pages should not overflow"
+        ],
+        [
+            // This requirement should be last so that it only happens once
+            // per line.
+            function(ctx) {
+                return ctx.maxX - ctx.x <= 0.01; },
+            function(ctx) {
+                return this.justify(ctx); },
+            "Notes should be full justfied within a line."
+        ]
+    ];
 
-NewlineModel.prototype.prereqs = [
-    [
-        function(ctx) {
-            return ctx.y + ctx.lineSpacing < ctx.maxY; },
-        NewPageModel.createNewPage,
-        "Pages should not overflow"
-    ],
-    [
-        // This requirement should be last so that it only happens once
-        // per line.
-        function(ctx) {
-            return ctx.maxX - ctx.x <= 0.01; },
-        function(ctx) {
-            return this.justify(ctx); },
-        "Notes should be full justfied within a line."
-    ]
-];
+}
 
-module.exports = NewlineModel;
-module.exports.createNewline = createNewline;
-module.exports.semiJustify = semiJustify;
-module.exports.removeNextNewline = removeNextNewline;
+Model.length; // BUG in typescriptifier!
+
+export = NewlineModel;
