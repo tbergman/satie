@@ -6,7 +6,12 @@ import Model = require("./model");
 
 import _ = require("lodash");
 
+import Context = require("./context");
+import Contracts = require("./contracts");
 import ClefModel = require("./clef");
+import DurationModel = require("./duration");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
 import KeySignatureModel = require("./keySignature");
 
 class TimeSignatureModel extends Model {
@@ -23,10 +28,10 @@ class TimeSignatureModel extends Model {
         beatType: number;
     };
 
-    annotateImpl(ctx) {
+    annotateImpl(ctx: Context): IterationStatus {
         var next = ctx.next();
-        if (next.pitch || next.chord) {
-            if (_.any(_.filter(next.intersects, l => l.isNote()),
+        if (next.isNote) {
+            if (_.any(_.filter(next.intersects, (l: DurationModel) => l.isNote),
                            n => n.containsAccidental(ctx)) ? 1 : 0) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
@@ -40,17 +45,17 @@ class TimeSignatureModel extends Model {
         ctx.x += 0.7 + this._annotatedSpacing/4;
         ctx.timeSignature = this.actualTS || this.timeSignature;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        return true;
+        return IterationStatus.SUCCESS;
     }
-    toLylite(lylite) {
-        if (this["_annotated"]) {
+    toLylite(lylite: Array<string>) {
+        if (this._annotated) {
             return;
         }
 
         lylite.push("\\time " + this.timeSignature.beats + "/" + this.timeSignature.beatType);
     }
 
-    static createTS = (ctx) => {
+    static createTS = (ctx: Context): IterationStatus => {
         return ctx.insertPast(new TimeSignatureModel({
             timeSignature: {
                 beats: 4, 
@@ -61,21 +66,27 @@ class TimeSignatureModel extends Model {
 
     prereqs = TimeSignatureModel.prereqs;
 
-    static prereqs = [
-        [
-            function (ctx) {
-                return ctx.clef; },
-            ClefModel.createClef,
-            "A clef must exist on each line."
-        ],
+    static prereqs : Array<SmartCondition> = [
+        {
+            condition: function (ctx) {
+                return !!ctx.clef;
+            },
+            correction: ClefModel.createClef,
+            description: "A clef must exist on each line."
+        },
 
-        [
-            function (ctx) {
-                return ctx.keySignature; },
-            KeySignatureModel.createKeySignature,
-            "A key signature must exist on each line."
-        ]
+        {
+            condition: function (ctx) {
+                return !!ctx["keySignature"];
+            },
+            correction: KeySignatureModel.createKeySignature,
+            description: "A key signature must exist on each line."
+        }
     ];
+
+    get type() {
+        return Contracts.ModelType.TIME_SIGNATURE;
+    }
 }
 
 Model.length; // BUG in typescriptifier

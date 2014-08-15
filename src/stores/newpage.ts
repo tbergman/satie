@@ -2,8 +2,13 @@ import Model = require("./model");
 
 import _ = require("lodash");
 
+import Context = require("./context");
+import Contracts = require("./contracts");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
+
 class NewPageModel extends Model {
-    annotateImpl(ctx) {
+    annotateImpl(ctx: Context): IterationStatus {
         ctx.y = 0;
 
         ctx.pageLines = _.clone(ctx.pageLines);
@@ -11,32 +16,36 @@ class NewPageModel extends Model {
 
         ctx.pageStarts = _.clone(ctx.pageStarts);
         ctx.pageStarts.push(ctx.idx);
-        return true;
+        return IterationStatus.SUCCESS;
     }
     visible() {
         return false;
     }
-    toLylite(lylite) {
+    toLylite(lylite: Array<string>) {
         if (!this["_annotated"]) {
             lylite.push("\\pageBreak");
         }
     }
 
-    static createNewPage = (ctx) => {
+    static createNewPage = (ctx: Context) => {
         ctx.insertPast(new NewPageModel({newpage: true, _annotated: "createNewPage"}));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i].newpage && ctx.body[i]["_annotated"]) {
+            if (ctx.body[i].type === Contracts.ModelType.NEWPAGE && ctx.body[i]["_annotated"]) {
                 ctx.eraseFuture(i);
                 --i;
             }
         }
-        return -1;
+        return IterationStatus.RETRY_CURRENT;
     };
 
     prereqs = NewPageModel.prereqs;
 
-    static prereqs = [
+    static prereqs : Array<SmartCondition> = [
     ];
+
+    get type() {
+        return Contracts.ModelType.NEWPAGE;
+    }
 }
 Model.length; // BUG in typescriptifier!
 

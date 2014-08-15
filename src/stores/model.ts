@@ -10,24 +10,7 @@
  *           precondition is satisfied and false otherwise.
  *        2. a function which accepts a ctx, stave, and idx and performs
  *           actions which make the precondition true. The exit code is one
- *           of the following:
- *
- *             true:   the precondition is now met, and the annotater should
- *                     continue at annotating at 'idx + 1'.
- *             
- *             false:  the precondition is now met, but the entire document
- *                     needs to be re-rendered.
- *
- *             -1:     the precondition is now met, but the annotater should
- *                     re-annotate the object at 'idx + 1'.
- *
- *             "line": the precondition is now met, but the annotater should
- *                     re-annotate the current line.
- *
- *             "line_created": the precondition is now met, but a line was
- *                     added somewhere between where the previous line was and
- *                     idx. The annotater should re-annotate the previous two
- *                     lines.
+ *           of those described in IterationStatus.
  *        3. A description of the precondition, in English, for debugging.
  *             
  *   - annotateImpl: adds any missing information (default values) not provided
@@ -49,7 +32,13 @@
 import assert = require("assert");
 import _ = require("lodash");
 
+import Context = require("./context");
+import Contracts = require("./contracts");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
+
 class Model {
+    _annotated: string; // Reason for being created.
     _fontSize: number;
     _key: string;
     _x: number;
@@ -60,11 +49,19 @@ class Model {
     };
     endMarker: boolean;
     idx: number;
+    intersects: Array<Model> = null;
     inBeam: boolean;
     name: string;
-    prereqs: any;
-    
-    annotate(ctx, stopping?: number) {
+    prereqs: Array<SmartCondition>;
+    placeholder: boolean;
+    selected: boolean;
+
+    get type(): Contracts.ModelType {
+        assert(false, "Not implemented");
+        return Contracts.ModelType.UNKNOWN;
+    }
+
+    annotate(ctx: Context, stopping?: number): IterationStatus {
         if (!this.inBeam) {
             this.setX(ctx.x);
             this.setY(ctx.y);
@@ -72,19 +69,21 @@ class Model {
         this.idx = ctx.idx;
         this._fontSize = ctx.fontSize;
         for (var i = 0; i < this.prereqs.length; ++i) {
-            if (!this.prereqs[i][0 /* condition */].call(this, ctx)) {
-                var exitCode = this.prereqs[i][1 /* correction */].call(this, ctx);
+            if (!this.prereqs[i].condition.call(this, ctx)) {
+                var exitCode: IterationStatus =
+                        this.prereqs[i].correction.call(this, ctx);
                 if (stopping) {
-                    console.warn(" -" + this.prereqs[i][2 /* description */], "(code: " + exitCode + ")");
+                    console.warn(" -" + this.prereqs[i].description,
+                        "(code: " + exitCode + ")");
                 }
-                if (exitCode !== true) {
+                if (exitCode !== IterationStatus.SUCCESS) {
                     return exitCode;
                 }
             }
         }
 
-        var ret = this.annotateImpl(ctx);
-        if (ret !== true) {
+        var ret: IterationStatus = this.annotateImpl(ctx);
+        if (ret !== IterationStatus.SUCCESS) {
             return ret;
         }
 
@@ -92,19 +91,23 @@ class Model {
         return ret;
     }
 
-    constructor(spec) {
+    /**
+     * TODO: child models should fully manage the spec.
+     */
+    constructor(spec: any) {
         assert(this instanceof Model);
+        var self: { [key: string]: any } = <any> this;
         for (var prop in spec) {
             if (spec.hasOwnProperty(prop)) {
-                this[prop] = spec[prop];
+                self[prop] = spec[prop];
             }
         }
         this.name = Object.getPrototypeOf(this).constructor.name;
     }
 
-    _generateKey(ctx) {
+    _generateKey(ctx: Context) {
         ctx.renderKey_eInBar = ctx.renderKey_eInBar || {};
-        ctx.renderKey_eInBar[this.name] = ctx.renderKey_eInBar[this.name] + 1 || 1;
+        ctx.renderKey_eInBar[this.name] = ctx.renderKey_eInBar[this.name] + 1 || "1";
         return ctx.bar + "_" + ctx.renderKey_eInBar[this.name] + this.name;
     }
 
@@ -116,9 +119,9 @@ class Model {
         return this._fontSize;
     }
 
-    annotateImpl(ctx) : boolean {
+    annotateImpl(ctx: Context): IterationStatus {
         assert(false, "Not implemented");
-        return false; // Not reached
+        return null; // Not reached
     }
 
     visible() {
@@ -137,23 +140,23 @@ class Model {
         return this._y;
     }
 
-    setX(x) : void {
+    setX(x: number) : void {
         this._x = x;
     }
 
-    setY(y) : void {
+    setY(y: number) : void {
         this._y = y;
     }
 
-    isNote() : boolean {
+    get isNote() : boolean {
         return false;
     }
 
-    toLylite(lylite, unresolved?) {
+    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         assert(false, "Not implemented");
     }
 
-    static setView = function(View) {
+    static setView = function (View: (opts: { key: string; spec: Model }) => any ) {
         this.prototype.render = function() {
             return View({
                 key: this.key(),
@@ -166,7 +169,7 @@ class Model {
     * Given an array of staves, remove all annotated objects
     * created through a Model.
     */
-    static removeAnnotations = (staves) => {
+    static removeAnnotations = (staves: Array<Contracts.Stave>) => {
         for (var i = 0; i < staves.length; ++i) {
             for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
                 var item = staves[i].body[j];

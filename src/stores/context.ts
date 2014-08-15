@@ -8,17 +8,27 @@
  */
 
 /// <reference path="lodash.d.ts" />
+/// <reference path="timeSignature.ts" />
 
 import _ = require("lodash");
 import assert = require("assert");
 
+import Contracts = require("./contracts");
 import Model = require("./model");
+import IterationStatus = require("./iterationStatus");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var _ANNOTATING = false; // To prevent annotate from being called recursively.
 
+interface Part {
+    idx: number;
+    body: Array<Model>;
+    beat: number;
+    doIf: (action: () => any, condition: () => boolean) => any;
+};
+
 class Context {
-    accidentals: Object;
+    accidentals: Contracts.Accidentals;
     bar: number;
     barlineX: Array<number>
     beats: number;
@@ -26,32 +36,49 @@ class Context {
     count: number;
     fontSize: number;
     initialX: number;
+    isBeam: boolean;
+    keySignature: Contracts.KeySignature;
     line: number;
     lineSpacing: number;
     maxX: number;
     maxY: number;
     pageLines: Array<number>;
-    pageSize: number;
+    pageSize: Contracts.PageSize;
     pageStarts: Array<number>
+    prevClef: string;
+    prevKeySignature: {};
     smallest: number;
     start: number;
-    timeSignature: {
-        beats: number;
-        beatType: number;
-    };
+    timeSignature: Contracts.TimeSignature;
     x: number;
     y: number;
-    lines: Array<Object>;
-    stave: Object;
+    lines: Array<{ [keys: string]: any }>; // TSFIX
+    stave: Contracts.Stave;
     staveIdx: number;
-    staves: Array<Object>;
+    staves: Array<Contracts.Stave>;
     body: Array<Model>;
     idx: number;
+    renderKey_eInBar: { [key: string]: string };
 
-    constructor(opts) {
+    constructor(
+        opts: {
+            fontSize?: number;
+            pageSize?: {
+                height: number;
+                lilypondName: string;
+                unit: string;
+                width: number;
+            };
+            isFirstLine?: boolean;
+            staveIdx: number;
+            snapshot?: string;
+            top?: number;
+            stave?: Contracts.Stave;
+            staves: Array<Contracts.Stave>;
+        }) {
+
         assert(opts instanceof Object, "opts is a required field");
 
-        opts.firstLine = opts.firstLine || true;
         opts.fontSize = opts.fontSize || 7;
         opts.pageSize = opts.pageSize || {
             height: 297,
@@ -61,10 +88,12 @@ class Context {
         };
         opts.top = opts.top || 2.75;
 
+        var self: { [index: string]: any } = <any> this;
+
         if (opts.snapshot) {
             var s = JSON.parse(opts.snapshot);
-            _.each(s, (val, key) => {
-                this[key] = val;
+            _.each(s, (val: any, key: string) => {
+                self[key] = val;
             });
             
         } else {
@@ -113,7 +142,7 @@ class Context {
         assert(this.stave instanceof Object, "either opts.stave or opts.staveIdx&stave are required");
         this.staveIdx = opts.staveIdx;
         this.staves = opts.staves;
-        this.body = <Array<Model>>this.stave["body"];
+        this.body = this.stave.body;
         this.idx = -1;
     }
 
@@ -136,19 +165,22 @@ class Context {
     }
 
     calculateIntersections() {
+        var BeamModel = require("./beamGroup");
+        var TimeSignatureModel = require("./timeSignature");
+
         // XXX FIXME: Intersections will be incorrect if an incomplete bar exists!
         var genIterators =
             () => _(this.staves)
                 .filter(s => s.body)
-                .map(s => {return {
+                .map((s: Contracts.Stave) => {return <Part> {
                     idx: 0,
-                    body: s["body"],
+                    body: s.body,
                     beat: 0,
-                    doIf: (act, cond) => {if (cond()) { return act() };}
+                    doIf: (act, cond) => { if (cond()) { return act() }; }
                 }})
                 .value();
 
-        for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+        for (var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             _.each(iterators, s => s.doIf(
                 () => {
                     s.body[s.idx].intersects = [];
@@ -156,41 +188,46 @@ class Context {
                 },
                 () => s.idx < s.body.length));
         }
-        
-        var actives = [];
+
+        var actives: Array<Contracts.ActiveIntersection> = [];
         var beat = 0;
         var impliedCount = 4;
-        var impliedTS = {beatType: 4}; // The bars might not have been annotated yet, so
-                                       // it's possible we don't have a time signature. We
-                                       // need an implied time signature to calculate bars.
+
+        // The bars might not have been annotated yet, so it's possible we don't have
+        // a time signature. We need an implied time signature to calculate bars.
+        var impliedTS: Contracts.TimeSignature = { beatType: 4, beats: 4 };
+
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-            var allNewActives = [];
+            var allNewActives: Array<Model> = [];
             _(iterators)
                 .map((s, sidx) => s.doIf(
                     () => {
                         if (beat === s.beat) {
-                            var newActives = [];
+                            var newActives: Array<Model> = [];
                             do {
                                 ++s.idx;
                                 if (!s.body[s.idx]) {
                                     break;
                                 }
-                                if (s.body[s.idx].timeSignature) {
-                                    impliedTS = s.body[s.idx].timeSignature;
+                                if (s.body[s.idx].type === Contracts.ModelType.TIME_SIGNATURE) {
+                                    // TSFIX
+                                    impliedTS = (<any> s.body[s.idx]).timeSignature;
                                 }
                                 newActives.push(s.body[s.idx]);
                                 allNewActives.push(s.body[s.idx]);
-                                if (s.body[s.idx].beam) {
+                                if (s.body[s.idx].type === Contracts.ModelType.BEAM_GROUP) {
                                     ++s.idx;
                                     continue;
                                 }
-                            } while(s.body[s.idx] && !s.body[s.idx].getBeats);
+                            } while (s.body[s.idx] && !s.body[s.idx].isNote);
                             actives = actives.concat(_.map(newActives, a => {
                                 return {obj: a, expires: s.beat};
                             }));
                             if (s.body[s.idx]) {
-                                impliedCount = s.body[s.idx].count || impliedCount;
-                                s.beat = s.beat + s.body[s.idx].getBeats(impliedCount, impliedTS);
+                                assert(s.body[s.idx].isNote);
+                                var pitch: Contracts.PitchDuration = <any> s.body[s.idx];
+                                impliedCount = pitch.count || impliedCount;
+                                s.beat = s.beat + pitch.getBeats(impliedCount, impliedTS);
                             } else {
                                 s.beat = undefined;
                             }
@@ -230,66 +267,54 @@ class Context {
      * Based on a return code, continue iterating through the stave.
      * For use in the SongEditor store.
      */
-    _nextIndex(exitCode) {
+    _nextIndex(exitCode: IterationStatus) {
         var i = this.idx;
+        var self: { [key: string]: any } = <any> this;
 
-        switch(exitCode) {
-        case true:
-            // All of the pre-conditions of the object were met, and
-            // annotations have been added.
+        switch (exitCode) {
+        case IterationStatus.SUCCESS:
             return i + 1;
-        case false:
-            // At least one of the pre-conditions of the object were
-            // not met and the entire document must be rerendered.
+        case IterationStatus.RETRY_ENTIRE_DOCUMENT:
             return this.start;
-        case "line_created":
-            // A line break was added somewhere to the current line
-            // The current line must be re-rendered...
+        case IterationStatus.LINE_CREATED:
             var line = this.lines[this.line];
             _.each(line, (v, attrib) => {
-                this[attrib] = line[attrib];
+                self[attrib] = line[attrib];
             });
-            while (i >= 0 && !this.body[i]["newline"]) {
+            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
                 --i;
             }
             --i;
-            while (i >= 0 && !this.body[i]["newline"]) {
+            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
                 --i;
             }
             assert(i >= -1, "Was a new line really created?");
             this.clef = null;
             break;
-        case "line":
-            // At least one of the pre-conditions of the object were
-            // not met and the entire line must be rerendered.
+        case IterationStatus.RETRY_LINE:
             var line = this.lines[this.line];
             _.each(line, (v, attrib) => {
-                this[attrib] = line[attrib];
+                self[attrib] = line[attrib];
             });
             --i;
-            while (i >= 0 && !this.body[i]["newline"]) {
+            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
                 --i;
             }
-            assert(i === -1 || this.body[i]["DEBUG_line"] === this.line);
+            //assert(i === -1 || this.body[i]["DEBUG_line"] === this.line);
             this.clef = null;
             break;
-        case "beam":
-            // The beam needs to be re-rendered.
-
+        case IterationStatus.RETRY_BEAM:
             var SongEditorStore = require("./songEditor"); // Recursive dependency.
             this.beats = SongEditorStore.getBeamCount();
             --i;
-            while (i >= 0 && !this.body[i]["beam"]) {
+            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
                 --i;
             }
             this.x = this.body[i].x();
             --i;
             break;
-        case -1:
-            // At least one of the pre-conditions of the object were
-            // not met and an item has been inserted in place of the
-            // current item.
-            i += exitCode;
+        case IterationStatus.RETRY_CURRENT:
+            i -= 1;
             break;
         default:
             assert(false, "Invalid exitCode");
@@ -298,19 +323,22 @@ class Context {
         return i + 1;
     }
 
-    annotate(opts): any{
+    annotate(opts: Contracts.AnnotationOpts): any /* TSFIX */ {
         assert(!_ANNOTATING);
         _ANNOTATING = true;
 
         this.calculateIntersections();
+        var EndMarkerModel = require("./endMarker");
+        var TimeSignatureModel = require("./timeSignature");
+        var NewlineModel = require("./newline");
 
-        opts = opts || {};
-        var cursor = opts.cursor || {};
+        opts = opts || <any> {}; // TSFIX
+        var cursor: Contracts.VisualCursor = opts.cursor || <any> {}; // TSFIX
         var cursorBar = opts.cursorBar === undefined ? NaN : opts.cursorBar;
         var cursorBeat = opts.cursorBeat === undefined ? NaN : opts.cursorBeat;
         var cursorStave = opts.cursorStave === undefined ? NaN : opts.cursorStave;
         var dirty = opts.dirty || false;
-        var exitCode;
+        var exitCode: IterationStatus;
         var operations = 0;
         var pointerData = opts.pointerData || null;
         var sidx = opts.staveIdx || 0;
@@ -354,9 +382,8 @@ class Context {
             var shouldUpdateVC =
                 (!pointerData && this.bar === cursor.bar &&
                     ((!cursor.beat && !cursor.annotatedObj) ||
-                        this.beats === cursor.beat) &&
-                    (((this.curr()["pitch"] || this.curr()["chord"]) &&
-                    !cursor.endMarker) || (cursor.endMarker &&
+                    this.beats === cursor.beat) &&
+                    ((this.curr().isNote && !cursor.endMarker) || (cursor.endMarker &&
                     this.curr()["endMarker"]))) &&
                 (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
                         this.beats > cursorBeat)) &&
@@ -384,8 +411,8 @@ class Context {
             if (doCustomAction) {
                 // HACK HACK HACK -- we don't want to call annotate, because we can't
                 // process the exit code, but the note tools needs to have a valid timeSignature
-                if (this.curr()["timeSignature"]) {
-                    this["timeSignature"] = this.curr()["timeSignature"];
+                if (this.curr().type === Contracts.ModelType.TIME_SIGNATURE) {
+                    this["timeSignature"] = (<any>this.curr()).timeSignature; // TSFIX
                 }
                 exitCode = toolFn(this.curr(), this);
                 pointerData = undefined;
@@ -401,7 +428,7 @@ class Context {
              * annotated visual cursor information. We just called annotate(), so
              * this is the earliest we can do that.
              */
-            shouldUpdateVC = shouldUpdateVC && exitCode === true;
+            shouldUpdateVC = shouldUpdateVC && exitCode === IterationStatus.SUCCESS;
 
             if (shouldUpdateVC) {
                 cursorStave = sidx;
@@ -415,7 +442,8 @@ class Context {
             /*
              * We've just added a line. So we can't quit early (see the next section)
              */
-            if (exitCode === "line_created" && toolFn && !dirty /* Why? */) {
+            if (exitCode === IterationStatus.LINE_CREATED &&
+                    toolFn && !dirty /* Why? */) {
                 dirty = true;
                 cursor.annotatedObj = null;
             }
@@ -427,8 +455,8 @@ class Context {
              * is no need to continue annotating!
              */
             if (!doCustomAction && toolFn && !pointerData &&
-                        this.curr()["newline"] && !dirty &&
-                    exitCode !== "line_created") {
+                        this.curr().type === Contracts.ModelType.NEWLINE && !dirty &&
+                    exitCode !== IterationStatus.LINE_CREATED) {
                 this.idx = -1;
                 _ANNOTATING = false; // This is a debug flag. Set to false when quitting.
                 return {
@@ -484,26 +512,30 @@ class Context {
      *     1 if unspecified.
      * @param{bool} allowBeams: True if beams should not be skipped.
      */
-    next(cond, skip?: number, allowBeams?: boolean) {
+    next(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
         return this.body[this.nextIdx(cond, skip, allowBeams)];
     }
-    nextIdx(cond, skip?: number, allowBeams?: boolean) {
-        var i;
+    nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
+        var BeamGroupModel = require("./beamGroup");
+        var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         for (i = skip; this.body[this.idx + i] && (
-            (this.body[this.idx + i]["beam"] && !allowBeams) ||
+            (this.body[this.idx + i].type === Contracts.ModelType.BEAM_GROUP && !allowBeams) ||
             (cond && !cond(this.body[this.idx + i]))); ++i) {
         }
         return this.idx + i;
     }
-    beamFollows(idx?: number) {
+    beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
+        var BeamModel = require("./beamGroup");
+
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
-        return this.body[idx + 1] && this.body[idx + 1]["beam"];
+        return (this.body[idx + 1].type === Contracts.ModelType.BEAM_GROUP) ?
+            (<any>this.body[idx + 1]).beam : null
     }
-    removeFollowingBeam(idx?: number, past?: boolean) {
+    removeFollowingBeam(idx?: number, past?: boolean): IterationStatus {
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
@@ -519,19 +551,19 @@ class Context {
         return this.body[this.idx - 1];
     }
 
-    eraseCurrent() {
+    eraseCurrent(): IterationStatus {
         this.body.splice(this.idx, 1);
-        return -1;
+        return IterationStatus.RETRY_CURRENT;
     }
-    eraseFuture(idx) {
+    eraseFuture(idx: number): IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
         this.body.splice(idx, 1);
-        return true;
+        return IterationStatus.SUCCESS;
     }
-    erasePast(idx) {
+    erasePast(idx: number): IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
         this.body.splice(idx, 1);
-        return false;
+        return IterationStatus.RETRY_ENTIRE_DOCUMENT;
     }
     /**
      * Inserts an element somewhere BEFORE the current element.
@@ -539,11 +571,12 @@ class Context {
      * @param{num} idx: The absolute position to insert an element at.
      *     By default, just before current position.
      */
-    insertPast(obj, idx): any {
+    insertPast(obj: Model, idx?: number): any {
         idx = (idx === null || idx === undefined) ? this.idx : idx;
         assert(idx <= this.idx, "Otherwise, use 'insertFuture'");
         this.body.splice(idx, 0, obj);
-        return this.idx === idx ? -1 : false;
+        return this.idx === idx ? IterationStatus.RETRY_CURRENT :
+            IterationStatus.RETRY_ENTIRE_DOCUMENT;
     }
     /**
      * Inserts an element somewhere AFTER the current element.
@@ -551,23 +584,23 @@ class Context {
      * @param{num} idx: The absolute position to insert an element at.
      *     By default, one after current position.
      */
-    insertFuture(obj, idx?: number) {
+    insertFuture(obj: Model, idx?: number): IterationStatus {
         idx = (idx === null || idx === undefined) ? (this.idx + 1) : idx;
         assert(idx > this.idx, "Otherwise, use 'insertPast'");
         this.body.splice(idx, 0, obj);
-        return true;
+        return IterationStatus.SUCCESS;
     }
 
     /**
      * STAVES
      */
-    currStave() {
+    currStave(): Contracts.Stave {
         return this.stave;
     }
-    nextStave() {
+    nextStave(): Contracts.Stave {
         return this.staves[this.staveIdx + 1];
     }
-    prevStave() {
+    prevStave(): Contracts.Stave {
         return this.staves[this.staveIdx - 1];
     }
 }

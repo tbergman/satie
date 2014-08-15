@@ -7,35 +7,31 @@ import Model = require("./model");
 import _ = require("lodash");
 import assert = require("assert");
 
+import Context = require("./context");
+import Contracts = require("./contracts");
 import ClefModel = require("./clef");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
 
-var MAJOR = "\\major";
-var MINOR = "\\minor";
-
-var isPitch = (k, name, acc?) =>
+var isPitch = (k: Contracts.Pitch, name: string, acc?: number) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
 
 class KeySignatureModel extends Model {
     clef: string;
-    keySignature: {
-        acc: number;
-        mode: number;
-        pitch: {
-            pitch: string
-        }
-    }
+    keySignature: Contracts.KeySignature;
     _annotatedSpacing: number;
     color: string;
     temporary: boolean;
     selected: boolean;
+    pitch: Contracts.Pitch;
 
-    annotateImpl(ctx) {
+    annotateImpl(ctx: Context): IterationStatus {
         this.clef = ctx.clef;
         var next = ctx.next();
         ctx.keySignature = this.keySignature;
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
-        if (next.pitch || next.chord) {
-            if (_.any(_.filter(next.intersects, l => l.isNote()),
+        if (next.isNote) {
+            if (_.any(_.filter(next.intersects, (l: Model) => l.isNote),
                            n => n.containsAccidental(ctx)) ? 1 : 0) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 2.5;
@@ -45,15 +41,14 @@ class KeySignatureModel extends Model {
         } else {
             this._annotatedSpacing = 1;
         }
-        var c = KeySignatureModel.getSharpCount(this.keySignature) ||
-                KeySignatureModel.getFlatCount(this.keySignature);
+        var c: number = this.getSharpCount() || this.getFlatCount();
         if (c) {
             ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        return true;
+        return IterationStatus.SUCCESS;
     }
-    toLylite(lylite) {
+    toLylite(lylite: Array<string>) {
         if (this["_annotated"]) {
             return;
         }
@@ -73,17 +68,17 @@ class KeySignatureModel extends Model {
     getFlatCount() {
         return KeySignatureModel.getFlatCount(this.keySignature);
     }
-    static createKeySignature = (ctx) => {
+    static createKeySignature = (ctx: Context): IterationStatus => {
         return ctx.insertPast(new KeySignatureModel({
             keySignature: ctx.prevKeySignature ||
-                {pitch: {pitch: "c"}, acc: 0, mode: MAJOR},
+                {pitch: {pitch: "c"}, acc: 0, mode: Contracts.MAJOR},
             _annotated: "createKeySignature"
         }));
     };
 
-    static getSharpCount = (keySignature) => {
+    static getSharpCount = (keySignature: Contracts.KeySignature): number => {
         var k = keySignature.pitch;
-        if (keySignature.mode === MAJOR) {
+        if (keySignature.mode === Contracts.MAJOR) {
             if (isPitch(k, "c")) {
                 return 0;
             } else if (isPitch(k, "g")) {
@@ -103,7 +98,7 @@ class KeySignatureModel extends Model {
             } else if (isPitch(k, "g", 1)) {
                 return 7; // + fx
             }
-        } else if (keySignature.mode === MINOR) {
+        } else if (keySignature.mode === Contracts.MINOR) {
             if (isPitch(k, "a")) {
                 return 0;
             } else if (isPitch(k, "e")) {
@@ -130,9 +125,9 @@ class KeySignatureModel extends Model {
         return undefined;
     };
 
-    static getFlatCount = (keySignature) => {
+    static getFlatCount = (keySignature: Contracts.KeySignature): number => {
         var k = keySignature.pitch;
-        if (keySignature.mode === MAJOR) {
+        if (keySignature.mode === Contracts.MAJOR) {
             if (isPitch(k, "f")) {
                 return 1;
             } else if (isPitch(k, "b", -1)) {
@@ -150,7 +145,7 @@ class KeySignatureModel extends Model {
             } else if (isPitch(k, "f", -1)) {
                 return 7; // + bbb
             }
-        } else if (keySignature.mode === MINOR) {
+        } else if (keySignature.mode === Contracts.MINOR) {
             if (isPitch(k, "d")) {
                 return 1;
             } else if (isPitch(k, "g")) {
@@ -175,8 +170,8 @@ class KeySignatureModel extends Model {
         return undefined;
     };
 
-    static getAccidentals = (keySignature) => {
-        var ret = {};
+    static getAccidentals = (keySignature: Contracts.KeySignature) => {
+        var ret: Contracts.Accidentals = {};
 
         var flats = KeySignatureModel.getFlatCount(keySignature);
         if (flats) {
@@ -196,15 +191,19 @@ class KeySignatureModel extends Model {
     static sharpCircle = "fcgdaeb";
 
     prereqs = KeySignatureModel.prereqs;
-    static prereqs = [
-        [
-            function (ctx) {
-                return ctx.clef; },
-            ClefModel.createClef,
-            "A clef must exist on each line."
-        ]
+    static prereqs: Array<SmartCondition> = [
+        {
+            condition: function (ctx: Context): boolean {
+                return !!ctx.clef;
+            },
+            correction: ClefModel.createClef,
+            description: "A clef must exist on each line."
+        }
     ];
 
+    get type() {
+        return Contracts.ModelType.KEY_SIGNATURE;
+    }
 }
 
 Model.length; // BUG in typescriptifier

@@ -6,10 +6,13 @@ import Model = require("./model");
 
 import BeamGroupModel = require("./beamGroup");
 import ClefModel = require("./clef");
+import Context = require("./context");
+import Contracts = require("./contracts");
 import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
+import IterationStatus = require("./iterationStatus");
 import TimeSignatureModel = require("./timeSignature");
-import Pitch = require("./pitch");
+import SmartCondition = require("./smartCondition");
 
 class SlurGroupModel extends Model {
     slur: number;
@@ -23,16 +26,16 @@ class SlurGroupModel extends Model {
     m_x: number;
     m_y: number;
 
-    annotateImpl(ctx) {
-        var n = [];
+    annotateImpl(ctx: Context): IterationStatus {
+        var n: Array<DurationModel> = [];
         this._beam = undefined;
         this._fontSize = ctx.fontSize;
         for (var i = ctx.idx; i < ctx.body.length && n.length < this.slur; ++i) {
-            if (ctx.body[i].beam) {
-                this._beam = ctx.body[i];
+            if ((<any>ctx.body[i])["beam"]) {
+                this._beam = <any> ctx.body[i]; // TSFIX
             }
-            if (ctx.body[i].pitch || ctx.body[i].chord) {
-                n.push(ctx.body[i]);
+            if (ctx.body[i].isNote) {
+                n.push(<DurationModel> ctx.body[i]);
             }
         }
         this._notes = n;
@@ -49,20 +52,20 @@ class SlurGroupModel extends Model {
             this.line2 = DurationModel.getLine(last, ctx);
             this.width = last.x() - first.x();
         }
-        return true;
+        return IterationStatus.SUCCESS;
     }
-    toLylite(lylite, unresolved) {
+    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var count = this.slur;
-        unresolved.push((obj, lylite, unresolved) => {
-            if (!obj.pitch && !obj.chord) {
+        unresolved.push((obj) => {
+            if (!obj.isNote) {
                 return false;
             }
 
             lylite.push("(");
             return true;
         });
-        unresolved.push((obj, lylite, unresolved) => {
-            if (!obj.pitch && !obj.chord) {
+        unresolved.push((obj: Model) => {
+            if (!obj.isNote) {
                 return false;
             }
 
@@ -75,25 +78,29 @@ class SlurGroupModel extends Model {
 
     prereqs = SlurGroupModel.prereqs;
 
-    static prereqs = [
-        [
-            function(ctx) { return ctx.clef; },
-            ClefModel.createClef,
-            "A clef must exist on each line."
-        ],
+    static prereqs: Array<SmartCondition> = [
+        {
+            condition: function (ctx) { return !!ctx.clef; },
+            correction: ClefModel.createClef,
+            description: "A clef must exist on each line."
+        },
 
-        [
-            function(ctx) { return ctx.keySignature; },
-            KeySignatureModel.createKeySignature,
-            "A key signature must exist on each line."
-        ],
+        {
+            condition: function (ctx) { return !!ctx.keySignature; },
+            correction: KeySignatureModel.createKeySignature,
+            description: "A key signature must exist on each line."
+        },
 
-        [
-            function(ctx) { return ctx.timeSignature; },
-            TimeSignatureModel.createTS,
-            "A time signature must exist on the first line of every page."
-        ]
+        {
+            condition: function (ctx) { return !!ctx.timeSignature; },
+            correction: TimeSignatureModel.createTS,
+            description: "A time signature must exist on the first line of every page."
+        }
     ];
+
+    get type() {
+        return Contracts.ModelType.SLUR;
+    }
 }
 
 Model.length; // BUG in typescriptifier

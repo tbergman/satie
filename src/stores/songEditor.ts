@@ -8,14 +8,15 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import Context = require("./context");
+import Contracts = require("./contracts");
 import Dispatcher = require("./dispatcher");
 import Model = require("./model");
 import Tool = require("./tool");
+import IterationStatus = require("./iterationStatus");
 var deepFreeze = require("ripienoUtil/deepFreeze.jsx");
 var lylite = require("./lylite.jison");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 import TSEE = require("./tsee");
-import Pitch = require("./pitch");
 
 import SessionStore = require("./session"); // must be registered before SongEditorStore!!!
 var PlaybackStore = require("./playback.jsx"); // must be registered before SongEditorStore!!!
@@ -41,7 +42,7 @@ export class SongEditorStore extends TSEE {
         super();
     }
 
-    handleAction(action) {
+    handleAction(action: Contracts.FluxAction) {
         switch(action.description) {
             case "GET /api/song":
             case "PUT /local/song/show":
@@ -221,9 +222,8 @@ export class SongEditorStore extends TSEE {
                         console.warn("Cursor not found");
                         break;
                     }
-                    while(i >= 0 && !_staves[3].body[i]["pitch"] &&
-                            !_staves[3].body[i]["chord"] &&
-                            !_staves[3].body[i]["barline"]) {
+                    while(i >= 0 && !_staves[3].body[i].isNote &&
+                            _staves[3].body[i].type !== Contracts.ModelType.BARLINE) {
                         --i;
                     }
                     var obj = _staves[3].body[i];
@@ -236,7 +236,7 @@ export class SongEditorStore extends TSEE {
 
                         // Remove items based on a whitelist.
                         var DurationModel = require("./duration"); // Recursive dependency.
-                        if (obj instanceof DurationModel) {
+                        if (obj.isNote) {
                             // The stepCursor call above invalidates _visualCursor
                             // DO NOT CHECK _visualCursor HERE!!!
                             var EraseTool = require("./eraseTool"); // Recursive dependency.
@@ -263,16 +263,16 @@ export class SongEditorStore extends TSEE {
 
                 break;
             case "POST /local/visualCursor":
-                switch (action.resource) {
+                switch (<any>action.resource) { // TSFIX
                     case "ptr":
                         assert(_visualCursor && _visualCursor.annotatedObj);
-                        var prevObj = null;
-                        var prevIdx;
+                        var prevObj: Model = null;
+                        var prevIdx: number;
                         for (var i = 0; i < _staves[3].body.length; ++i) {
                             if (_staves[3].body[i] === _visualCursor.annotatedObj) {
                                 prevObj = _staves[3].body[i - 1];
                                 prevIdx = i - 1;
-                                if (prevObj.beam) {
+                                if (prevObj.type === Contracts.ModelType.BEAM_GROUP) {
                                     prevObj = _staves[3].body[i - 2];
                                 }
                             }
@@ -323,7 +323,7 @@ export class SongEditorStore extends TSEE {
         });
     }
 
-reparse(src) {
+reparse(src: string) {
     _staves = lylite.parser.parse(src);
         renderUtil.addDefaults(_staves);
 
@@ -341,7 +341,12 @@ reparse(src) {
     /**
      * Calls Context.anotate on each stave with a body
      */
-    annotate(pointerData?, toolFn?, staves?, pageSize?) {
+    annotate(
+        pointerData?: Contracts.PointerData,
+        toolFn?: (obj: Model, ctx: Context) => IterationStatus,
+        staves?: Array<Contracts.Stave>,
+        pageSize?: Contracts.PageSize) {
+
         staves = staves || _staves;
 
         PROFILER_ENABLED && console.time("annotate");
@@ -442,12 +447,12 @@ reparse(src) {
     markRendererDirty() {
         markRendererDirty();
     }
-    markRendererLineDirty(idx, h) {
+    markRendererLineDirty(idx: number, h: number) {
         markRendererLineDirty(idx, h);
     }
 
     downloadLegacyAudio() {
-        var data = [];
+        var request: Array<string> = [];
         for (var h = 0; h < this.ctxCount(); ++h) {
             if (!this.staves()[h].body) {
                 continue;
@@ -461,12 +466,13 @@ reparse(src) {
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                if (obj["pitch"] || obj["chord"]) {
-                    var beats = obj["getBeats"]();
-                    _.map(obj["pitch"] ? [obj["midiNote"]()] : obj["midiNote"](), midiNote => {
-                        data.push(delay +
+                if (obj.isNote) {
+                    var note: Contracts.PitchDuration = <any> obj;
+                    var beats = note.getBeats();
+                    _.map(note.pitch ? [note.midiNote()] : note.midiNote(), midiNote => {
+                        request.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
-                        data.push((delay + beats*timePerBeat - 0.019) +
+                        request.push((delay + beats*timePerBeat - 0.019) +
                                 " NOTE_OFF " + midiNote + " 0");
                     });
                     delay += beats*timePerBeat;
@@ -474,17 +480,17 @@ reparse(src) {
             }
         }
         Dispatcher.POST("/api/synth", {
-            data: data,
+            data: request,
             cb: "" + ++PlaybackStore.latestID
         });
     }
 
-    transpose(how) {
+    transpose(how: any) { // TSFIX
         // The selection is guaranteed to be in song order.
         for (var staveIdx = 0; staveIdx < _staves.length; ++staveIdx) {
             var lastIdx = 0;
             var body = _staves[staveIdx].body;
-            var accidentals = null;
+            var accidentals: Contracts.Accidentals = null;
 
             if (!body) {
                 continue;
@@ -492,32 +498,34 @@ reparse(src) {
 
             _.each(_selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
-                    if (body[i]["keySignature"]) {
+                    if (body[i].type === Contracts.ModelType.KEY_SIGNATURE) {
                         var KeySignatureModel = require("./keySignature"); // Recursive dependency
                         accidentals = KeySignatureModel.getAccidentals(
-                            body[i]["keySignature"]);
+                            (<any>body[i]).keySignature); // TSFIX
                     }
                 }
 
                 assert(body[i] === item, "The selection must be in song order.");
                 assert(accidentals, "A key signature must preceed any note.");
 
-                if (!item["pitch"] && !item["chord"]) {
+                if (!item.isNote) {
                     return;
                 }
 
                 // For "inKey":
-                var noteToNum = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
-                var numToNote = "cdefgab";
+                var noteToNum: { [key: string]: number } = {c:0, d:1, e:2, f:3, g:4, a:5, b:6};
+                var numToNote: { [key: number]: string } = "cdefgab";
 
                 // For "chromatic":
                 var DurationModel = require("./duration"); // Recursive dependency.
                 var noteToVal = DurationModel.chromaticScale;
 
-                _.each(item["pitch"] ? [item] : item["chord"], (note: Pitch) => {
+                var note: Contracts.PitchDuration = <any> item; 
+
+                _.each(note.pitch ? [note] : note.chord, (note: Contracts.Pitch) => {
                     if (how.mode === "inKey") {
                         var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
-                        var newNote = noteToNum[note.pitch] + how.letters;
+                        var newNote = noteToNum[note.pitch] + <number>how.letters;
 
                         note.pitch = numToNote[(noteToNum[note.pitch] + how.letters + 7*7)%7];
 
@@ -544,7 +552,7 @@ reparse(src) {
                         }
                     }
                 });
-                item["selected"] = null;
+                item.selected = null;
             });
         }
         _dirty = true;
@@ -553,7 +561,8 @@ reparse(src) {
         return true;
     }
 
-    stepCursor(spec) {
+    stepCursor(spec: any) {
+        // TSFIX
         if (!_visualCursor || !_visualCursor.annotatedObj) {
             return;
         }
@@ -561,7 +570,7 @@ reparse(src) {
         for (var i = 0; i < _staves[3].body.length; ++i) {
             if (_staves[3].body[i] === obj) {
                 if ((!_staves[3].body[i + 1] ||
-                            _staves[3].body[i + 1]["barline"] === "double") &&
+                            (<any>_staves[3].body[i + 1])["barline"] === "double") &&
                         spec.loopThroughEnd) {
                     this.visualCursorIs({
                         beat: 0,
@@ -575,10 +584,10 @@ reparse(src) {
                     if (!_staves[3].body[i]) {
                         break;
                     }
-                    if (_staves[3].body[i]["barline"]) {
+                    if (_staves[3].body[i].type === Contracts.ModelType.BARLINE) {
                         throughBar = true;
                     }
-                    if (_staves[3].body[i]["newline"]) {
+                    if (_staves[3].body[i].type === Contracts.ModelType.NEWLINE) {
                         // TODO: we don"t need to update all the lines
                         _dirty = true;
                     }
@@ -599,7 +608,7 @@ reparse(src) {
                         if (spec.skipThroughBars) {
                             while (_staves[3].body[i + 1] &&
                                     (_staves[3].body[i].endMarker ||
-                                    _staves[3].body[i]["barline"])) {
+                                    _staves[3].body[i].type === Contracts.ModelType.BARLINE)) {
                                 ++i;
                             }
                         }
@@ -624,7 +633,10 @@ reparse(src) {
         // Does not emit
     }
 
-    ctxFromSnapshot(pointerData, staves, idx) {
+    ctxFromSnapshot( pointerData: Contracts.PointerData,
+            staves: Array<Contracts.Stave>,
+            idx: number) {
+
         if (!pointerData) {
             return null;
         }
@@ -632,14 +644,15 @@ reparse(src) {
         var stave = staves[idx];
 
         if (pointerData && _snapshots[pointerData.musicLine]) {
-            var ctx = new Context({
+            var ctx: Context = new Context({
                 snapshot: _snapshots[pointerData.musicLine],
                 staves: staves,
                 staveIdx: idx
             });
             _linesToUpdate[ctx.staveIdx + "_" + ctx.line] = true;
             ctx.start = pointerData.idx;
-            while (ctx.start > 0 && !stave.body[ctx.start - 1].newline) {
+            while (ctx.start > 0 && stave.body[ctx.start - 1].type !==
+                    Contracts.ModelType.NEWLINE) {
                 --ctx.start;
             }
             return ctx;
@@ -665,8 +678,8 @@ reparse(src) {
     src() {
         var staves = _staves;
 
-        var lyliteArr = [];
-        var unresolved = [];
+        var lyliteArr: Array<string> = [];
+        var unresolved: Array<(obj: Model) => boolean> = [];
         _.each(staves, (stave, sidx) => {
             if (stave.staveHeight) {
                 lyliteArr.push("#(set-global-staff-size " +
@@ -704,7 +717,7 @@ reparse(src) {
                 obj.toLylite(lyliteArr, unresolved);
 
                 for (var j = 0; j < unresolved.length; ++j) {
-                    var ret = unresolved[j](obj, lyliteArr, unresolved);
+                    var ret: boolean = unresolved[j](obj);
 
                     if (ret) {
                         unresolved.splice(j, 1);
@@ -743,7 +756,7 @@ reparse(src) {
     visualCursor() {
         return _visualCursor;
     }
-    visualCursorIs(visualCursor) {
+    visualCursorIs(visualCursor: Contracts.VisualCursor) {
         // Assign directly to keep refrences in tact.
         // Alternatively, Context could be updated with the updated
         // cursor.
@@ -755,32 +768,32 @@ reparse(src) {
         _visualCursor.annotatedPage = null;
         // Does not emit.
     }
-    isLineDirty(idx, h) {
+    isLineDirty(idx: number, h: number) {
         return _linesToUpdate[h + "_" + idx];
     }
 
-    addChangeListener(callback) { 
+    addChangeListener(callback: any) { 
         this.on(CHANGE_EVENT, callback); }
 
-    addAnnotationListener(callback) { 
+    addAnnotationListener(callback: any) { 
         this.on(ANNOTATE_EVENT, callback); }
 
-    addHistoryListener(callback) {
+    addHistoryListener(callback: any) {
         this.on(HISTORY_EVENT, callback); }
 
-    addClearHistoryListener(callback) {
+    addClearHistoryListener(callback: any) {
         this.on(CLEAR_HISTORY_EVENT, callback); }
 
-    removeChangeListener(callback) { 
+    removeChangeListener(callback: any) { 
         this.removeListener(CHANGE_EVENT, callback); } 
 
-    removeAnnotationListener(callback) { 
+    removeAnnotationListener(callback: any) { 
         this.removeListener(ANNOTATE_EVENT, callback); }
 
-    removeHistoryListener(callback) {
+    removeHistoryListener(callback: any) {
         this.removeListener(HISTORY_EVENT, callback); }
 
-    removeClearHistoryListener(callback) {
+    removeClearHistoryListener(callback: any) {
         this.removeListener(CLEAR_HISTORY_EVENT, callback); }
 }
 
@@ -789,7 +802,7 @@ reparse(src) {
  * needs to be updated, the ctx can be unfrozen from here instead of
  * recalculating the ctx from the begining of the song.
  */
-export var snapshot = (ctx) => {
+export var snapshot = (ctx: Context) => {
     _snapshots[ctx.line] = ctx.snapshot();
 };
 
@@ -798,7 +811,7 @@ export var snapshot = (ctx) => {
  * to be "backed up", it can do so without recalculating from the begining
  * of the line.
  */
-export var beamCountIs = (beamCount) => {
+export var beamCountIs = (beamCount: number) => {
     _beamBeatCount = beamCount;
 };
 
@@ -807,26 +820,16 @@ export var getBeamCount = () => {
 }
 
 var _beamBeatCount = 0;
-var _ctxs = null;
-var _cleanupFn = null;
+var _ctxs: Array<Context> = null;
+var _cleanupFn: Function = null;
 var _dirty = false;
-var _linesToUpdate = {};
-var _pageSize = null;
-var _prevActiveSong = null;
-var _selection = null;
-var _snapshots = {};
-var _staveHeight = null;
-var _staves: Array<{
-    body: Array<Model>;
-    staveHeight: number;
-    pageSize: {
-        lilypondName: string;
-    }
-    header: {
-        title: string;
-        composer: string;
-    }
-}>;
+var _linesToUpdate: { [key: string]: boolean } = {};
+var _pageSize: Contracts.PageSize = null;
+var _prevActiveSong: Contracts.Song = null;
+var _selection: Array<Model> = null;
+var _snapshots: { [key: string]: any } = {};
+var _staveHeight: number = null;
+var _staves: Array<Contracts.Stave>;
 
 var _visualCursor = {
     bar: 1,
@@ -836,7 +839,7 @@ var _visualCursor = {
     annotatedLine: <number> null,
     annotatedPage: <number> null
 };
-var _tool = null;
+var _tool: Tool = null;
 
 export var markRendererClean = () => {
     // Mark entire score as clean.
@@ -846,7 +849,7 @@ export var markRendererClean = () => {
     });
 };
 
-export var markRendererLineDirty = (line, h) => {
+export var markRendererLineDirty = (line: number, h: number ) => {
     // Mark a given line as dirty
     // NOT a Flux method.
     _linesToUpdate[h + "_" + line] = true;

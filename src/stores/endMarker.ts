@@ -11,27 +11,33 @@ import Model = require("./model");
 
 import assert = require("assert");
 import _ = require("lodash");
+
+import Context = require("./context");
+import Contracts = require("./contracts");
+import IterationStatus = require("./iterationStatus");
 var Metre = require("ripienoUtil/metre.jsx");
+import SmartCondition = require("./smartCondition");
 
 class EndMarkerModel extends Model {
-    annotateImpl(ctx) {
-        return true;
+    annotateImpl(ctx: Context): IterationStatus {
+        return IterationStatus.SUCCESS;
     }
     visible() {
         return false;
     }
-    toLylite(lylite) {
+    toLylite(lylite: Array<string>) {
     }
     prereqs = EndMarkerModel.prereqs;
-    static prereqs = [
-        [
-            function(ctx) {
+    static prereqs: Array<SmartCondition> = [
+        {
+            condition: function(ctx: Context): boolean {
                 var next = ctx.next();
-                return !next || next.barline ||
+                return !next || next.type === Contracts.ModelType.BARLINE ||
                     (ctx.body[ctx.idx + 2] &&
-                        (ctx.body[ctx.idx + 2].newline ||
-                        ctx.body[ctx.idx + 2].newpage)); },
-            function(ctx) {
+                    (ctx.body[ctx.idx + 2].type === Contracts.ModelType.NEWLINE ||
+                    ctx.body[ctx.idx + 2].type === Contracts.ModelType.NEWPAGE));
+            },
+            correction: function(ctx: Context): IterationStatus {
                 ctx.eraseCurrent();
 
                 var SongEditor = require("./songEditor"); // Recursive dependency.
@@ -41,19 +47,19 @@ class EndMarkerModel extends Model {
                     visualCursor.beat = 1;
                     visualCursor["endMarker"] = false;
                 }
-                return -1;
+                return IterationStatus.RETRY_CURRENT;
             },
-            "End markers must only exist at the end of a line, document, or bar"
-        ],
-        [
-            function(ctx) {
-                return ctx.prev().barline || !ctx.beats ||
-                    ctx.beats >= ctx.timeSignature.beats; },
-            function(ctx) {
+            description: "End markers must only exist at the end of a line, document, or bar"
+        },
+        {
+            condition: function (ctx: Context): boolean {
+                return ctx.prev().type === Contracts.ModelType.BARLINE ||
+                    !ctx.beats || ctx.beats >= ctx.timeSignature.beats; },
+            correction: function(ctx: Context): IterationStatus {
                 // XXX: extend to work on things other than 4/4
                 var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
 
-                var count;
+                var count: number;
                 var dots = false;
 
                 assert(beatsRemaining < ctx.timeSignature.beats,
@@ -67,31 +73,36 @@ class EndMarkerModel extends Model {
                         ctx.beats,
                         ctx.timeSignature,
                         ctx.beats)
-                    .map(beat => new DurationModel(_.extend(beat, {
+                    .map((beat: Contracts.PitchDuration) => new DurationModel(_.extend(beat, {
                         pitch: "r"})));
                 Array.prototype.splice.apply(ctx.body,
                     [this.idx, 0].concat(toAdd));
 
-                return -1;
+                return IterationStatus.RETRY_CURRENT;
             },
-            "Bars must not be underfilled (should be filled with rests)"
-        ],
-        [
-            function(ctx) {
-                return ctx.next() || ctx.prev().barline === "double";
+            description: "Bars must not be underfilled (should be filled with rests)"
+        },
+        {
+            condition: function(ctx: Context): boolean {
+                // TSFIX
+                return !!ctx.next() || (<any>ctx.prev())["barline"] === "double";
             },
-            function(ctx) {
-                if (ctx.prev().barline) {
-                    ctx.prev().barline = "double";
-                    return "line";
+            correction: function(ctx: Context): IterationStatus {
+                if (ctx.prev().type === Contracts.ModelType.BARLINE) {
+                    (<any>ctx.prev())["barline"] = "double"; // TSFIX
+                    return IterationStatus.RETRY_LINE;
                 } else {
                     var BarlineModel = require("./barline"); // Recursive dependency.
                     return BarlineModel.createBarline(ctx, "double");
                 }
             },
-            "Double barlines terminate a piece."
-        ]
+            description: "Double barlines terminate a piece."
+        }
     ];
+
+    get type() {
+        return Contracts.ModelType.END_MARKER;
+    }
 }
 
 Model.length; // BUG in typescriptifier

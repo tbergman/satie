@@ -6,15 +6,20 @@
 
 import Model = require("./model");
 
+import Contracts = require("./contracts");
+import Context = require("./context");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
+
 class BeginModel extends Model {
-    pianoStaff : boolean;
-    stave: number;
+    pianoStaff: boolean;
+    stave: Contracts.Stave;
     noMargin : boolean;
     braceY : number;
-    getBraceY2 : ()=>number;
-    pageSize : number;
+    getBraceY2: () => number;
+    pageSize: Contracts.PageSize;
 
-    annotateImpl(ctx) {
+    annotateImpl(ctx: Context): IterationStatus {
         this.pianoStaff = ctx.stave.pianoStaff;
         this.stave = ctx.stave;
         if (typeof window === "undefined" ||
@@ -29,7 +34,7 @@ class BeginModel extends Model {
         // be at render time!.
         this.getBraceY2 = () => ctx.nextStave().body[0].y();
         this.pageSize = ctx.pageSize;
-        return true;
+        return IterationStatus.SUCCESS;
     }
     toLylite() {
     }
@@ -37,22 +42,27 @@ class BeginModel extends Model {
         return true;
     }
 
-    static createBegin = (ctx) => {
+    static createBegin = (ctx: Context) => {
         return ctx.insertPast(new BeginModel(
             {_annotated: "createBegin"}));
     };
 
     prereqs = BeginModel.prereqs;
-    static prereqs = [
-        [
-            function(ctx) {
-                return ctx.idx === 0; },
-            function(ctx) {
+    static prereqs: Array<SmartCondition> = [
+        {
+            condition: function(ctx) {
+                return ctx.idx === 0;
+            },
+            correction: function(ctx) {
                 return ctx.eraseCurrent();
             },
-            "BeginModel must only appear at the begining of a song."
-        ]
+            description: "BeginModel must only appear at the begining of a song."
+        }
     ];
+
+    get type() {
+        return Contracts.ModelType.BEGIN;
+    }
 }
 
 Model.length; // BUG in typescriptifier

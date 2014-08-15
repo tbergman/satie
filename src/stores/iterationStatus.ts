@@ -1,19 +1,20 @@
 ﻿enum IterationStatus {
     /**
      * All of the pre-conditions of the Model were met, and
-     * annotations have been added.
+     * the annotater should continue to the next item.
      */
     SUCCESS,
 
     /**
-     * At least one of the pre-conditions of the Model were not
+     * At least one of the preconditions of the Model were not
      * met and the entire document must be re-annotated.
      */
     RETRY_ENTIRE_DOCUMENT,
 
     /**
-     * A line break was added somewhere to the current line.
-     * The current line must be re-annotated.
+     * The precondition is now met, but a line was added somewhere between
+     * where the previous line was and idx. The annotater should re-annotate
+     * the previous two lines.
      */
     LINE_CREATED,
 

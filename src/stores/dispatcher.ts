@@ -16,14 +16,15 @@
 /// <reference path="es6-promise.d.ts" />
 /// <reference path="node.d.ts" />
 
+import Contracts = require("./contracts");
 import Promise = require("es6-promise");
 import _ = require("lodash");
 import assert = require("assert");
 
 var ajax = require("ripienoUtil/ajax.jsx");
 
-var _callbacks = [];
-var _promises = [];
+var _callbacks: Array<(payload: any) => boolean> = [];
+var _promises: Array<Promise<any>> = [];
 
 var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
@@ -33,7 +34,7 @@ var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== 
  * @param {function} callback The Store"s registered callback.
  * @param {object} payload The data from the Action.
  */
-var _addPromise = function(callback, payload) {
+var _addPromise = function(callback: (payload: any) => boolean, payload: any) {
     _promises.push(new Promise.Promise(function(resolve, reject) {
         if (callback(payload)) {
             resolve(payload);
@@ -57,7 +58,7 @@ export class Dispatcher {
      * @param {function} callback The callback to be registered.
      * @return {number} The index of the callback within the _callbacks array.
      */
-    register(callback) {
+    register(callback: (payload: any) => boolean) {
         _callbacks.push(callback);
         return _callbacks.length - 1; // index
     }
@@ -68,7 +69,7 @@ export class Dispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    dispatch(action) {
+    dispatch(action: Contracts.FluxAction) {
         (FLUX_DEBUG || inAction) && console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
@@ -114,8 +115,8 @@ export var dispatch = function(url: string, verb: string, postData: any) : void 
     assert(verb, "Verb must be defined");
 
     var root = url;
-    var resource = null;
-    var query = null;
+    var resource: string = null;
+    var query: string = null;
 
     if (root.indexOf("?") !== -1) {
         query = root.substr(root.indexOf("?") + 1);
@@ -127,33 +128,37 @@ export var dispatch = function(url: string, verb: string, postData: any) : void 
     }
 
     if (verb === "GET") {
-        ajax.untrusted.getJSON(url, (response, request) => {
+        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
             Instance.dispatch({
                 description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
                 status: request.status,
                 resource: resource,
                 query: query,
                 url: url,
-                response: response
+                response: response,
+                postData: null
             });
         });
     } else if (verb in immediateActions) {
         Instance.dispatch({
             description: verb + " " + root,
             resource: resource,
+            response: null,
+            status: null,
             query: query,
             postData: postData
         });
 
         if ((verb in networkActions) && !url.indexOf("/api")) {
-            ajax.untrusted.anyJSON(verb, url, postData, (response, request) => {
+            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
                 Instance.dispatch({
                     description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
                     status: request.status,
                     resource: resource,
                     query: query,
                     url: url,
-                    response: response
+                    response: response,
+                    postData: null
                 });
             });
         }

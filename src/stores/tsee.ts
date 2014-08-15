@@ -29,7 +29,7 @@ class TSEE {
         (<any>EventEmitter.EventEmitter).prototype.setMaxListeners.call(this, n);
     }
 
-    public listeners(event: string): { Function; }[]{
+    public listeners(event: string): { Function: any; }[]{
         return (<any>EventEmitter.EventEmitter).prototype.listeners.call(this, event);
     }
 

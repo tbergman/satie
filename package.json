@@ -7,7 +7,6 @@
         "react": "~0.11.1",
         "react-bootstrap": "~0.11.1",
         "lodash": "~2.4.1",
-        "react-router-component": "git://github.com/parshap/react-router-component",
         "es6-promise": ">= 1.0.0",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-jsx": "~0.11.0",
@@ -21,7 +20,6 @@
         "envify": "~1.2.1",
         "jisonify": "~1.0.4",
         "mocha": "~1.21.4",
-        "mochify": "~1.0.2",
         "node-lessify": "~0.0.3",
         "react-tools": "~0.11.1",
         "reactify": "~0.14.0",
@@ -34,9 +32,9 @@
     "scripts": {
         "dev-server": "watchify --extension .ts -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
         "lrc-watchify": "watchify -v -o build/lrc-bundle.js -d ./src/lrc-helper.jsx --noparse lodash",
-        "build": "NODE_ENV=production browserify . | uglifyjs -cm > build/browser-bundle.js",
+        "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
-        "test": "mochify --watch --extension .ts --node $(find ./src | grep 'test/' | grep .jsx$)",
+        "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .jsx$)",
         "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.js --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node"
     },
     "author": "Josh Netterfield",

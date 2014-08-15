@@ -9,6 +9,10 @@
 import Model = require("./model");
 
 import BeginModel = require("./begin");
+import Context = require("./context");
+import Contracts = require("./contracts");
+import IterationStatus = require("./iterationStatus");
+import SmartCondition = require("./smartCondition");
 
 class ClefModel extends Model {
     isChange: boolean;
@@ -20,12 +24,13 @@ class ClefModel extends Model {
     temporary: boolean;
     selected: boolean;
 
-    annotateImpl(ctx) {
-        this.isChange = ctx.clef;
+    annotateImpl(ctx: Context): IterationStatus {
+        this.isChange = !!ctx.clef;
         this.clefName = ctx.clef = (this.clef === "detect") ? ctx.prevClef : this.clef;
         var next = ctx.next();
-        if (next.pitch || next.chord) {
-            if (next.acc) {
+        if (next.isNote) {
+            var note: Contracts.Pitch = <any> next;
+            if (note.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {
@@ -40,18 +45,18 @@ class ClefModel extends Model {
             ctx.x += 0.6 + this._annotatedSpacing/4;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        return true;
+        return IterationStatus.SUCCESS;
     }
     visible(): boolean {
         return this.isVisible !== false;
     }
-    toLylite(lylite) {
+    toLylite(lylite: Array<string>) {
         if (this["_annotated"]) {
             return;
         }
         lylite.push("\\clef " + this.clef + "\n");
     }
-    static clefIsNotRedundant = function(ctx) {
+    static clefIsNotRedundant = function (ctx: Context): boolean {
         // XXX HACK {
         if (false === this.isVisible) {
             return true;
@@ -62,7 +67,7 @@ class ClefModel extends Model {
             this.clef === "detect";
     };
 
-    static createClef = function(ctx) {
+    static createClef = function (ctx: Context): IterationStatus {
         return ctx.insertPast(new ClefModel({
             clef: (ctx.prevClef ? "detect" : "treble"),
             _annotated: "createClef"
@@ -147,30 +152,34 @@ class ClefModel extends Model {
     };
 
     prereqs = ClefModel.prereqs;
-    static prereqs = [
-        [
-            ClefModel.clefIsNotRedundant,
-            (ctx) => ctx.eraseCurrent(),
-            "A clef must not be redundant."
-        ],
-        [
-            function(ctx) {
+    static prereqs: Array<SmartCondition> = [
+        {
+            condition: ClefModel.clefIsNotRedundant,
+            correction: (ctx) => ctx.eraseCurrent(),
+            description: "A clef must not be redundant."
+        },
+        {
+            condition: function(ctx) {
                 return ctx.idx !== 0; },
-            function(ctx) {
+            correction: function(ctx) {
                 return BeginModel.createBegin(ctx);
             },
-            "Songs begin with BeginModels."
-        ],
-        [
-            function(ctx) {
+            description: "Songs begin with BeginModels."
+        },
+        {
+            condition: function(ctx) {
                 return !ctx.timeSignature || ctx.beats < ctx.timeSignature.beats; },
-            function(ctx) {
+            correction: function(ctx) {
                 var BarlineModel = require("./barline"); // Recursive dependency.
                 return BarlineModel.createBarline(ctx);
             },
-            "Barlines should be before clefs when either is possible"
-        ]
+            description: "Barlines should be before clefs when either is possible"
+        }
     ];
+
+    get type() {
+        return Contracts.ModelType.CLEF;
+    }
 }
 
 Model.length; // BUG in typescriptifier
