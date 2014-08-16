@@ -14,7 +14,7 @@ if (typeof window !== "undefined") {
 
 var SelectionRect = React.createClass({
     render: function() {
-        var Renderer = require("./renderer.jsx");
+        var Renderer = require("./renderer.ts");
         return <Group
                 key="selection"
                 style={{fontSize: this.props.fontSize*Renderer.FONT_SIZE_FACTOR + "px"}}>

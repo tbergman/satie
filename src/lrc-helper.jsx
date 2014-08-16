@@ -169,7 +169,7 @@ require("./webViews.jsx");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 var V_PADDING = renderUtil.V_PADDING;
 
-var Renderer = require("./renderer/renderer.jsx");
+var Renderer = require("./renderer/renderer.ts");
 
 
 var RendererEnv = React.createClass({

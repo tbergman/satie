@@ -26,6 +26,7 @@ export interface Mouse {
     x: number;
     y: number;
     selectionInfo?: string;
+    page: number;
 };
 
 export interface PointerData {
@@ -53,7 +54,6 @@ export interface AnnotationOpts {
     cursorBar: number;
     cursorBeat: number;
     cursorStave: number;
-    dirty: boolean;
     pointerData: PointerData;
     staveIdx: number;
     toolFn: (obj: Model, ctx: Context) => IterationStatus;

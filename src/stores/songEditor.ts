@@ -51,8 +51,9 @@ export class SongEditorStore extends TSEE {
                     _.defer(this.downloadLegacyAudio.bind(this));
                 }
                 if (activeSong !== _prevActiveSong) {
-                    _dirty = true;
+                    markRendererDirty();
                     this.clear();
+                    _prevActiveSong = activeSong;
                     this.reparse(activeSong.src);
                     this.emit(CHANGE_EVENT);
                     this.emit(ANNOTATE_EVENT);
@@ -118,12 +119,12 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /local/selection":
                 _selection = action.postData;
-                _dirty = true;
+                markRendererDirty();
                 this.emit(CHANGE_EVENT);
                 break;
             case "DELETE /local/selection":
                 _selection = null;
-                _dirty = true;
+                markRendererDirty();
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -148,7 +149,7 @@ export class SongEditorStore extends TSEE {
                 } else {
                     assert(false, "Not found");
                 }
-                _dirty = true;
+                markRendererDirty();
                 _ctxs = null;
                 _.find(_staves, s => s["staveHeight"])["staveHeight"] = _staveHeight;
                 Model.removeAnnotations(_staves);
@@ -159,7 +160,7 @@ export class SongEditorStore extends TSEE {
             case "PUT /local/pageSize":
                 this.emit(HISTORY_EVENT);
                 _pageSize = action.postData;
-                _dirty = true;
+                markRendererDirty();
                 _ctxs = null;
                 _.find(_staves, s => s["pageSize"])["pageSize"] = _pageSize;
                 Model.removeAnnotations(_staves);
@@ -183,7 +184,7 @@ export class SongEditorStore extends TSEE {
                         this.emit(CHANGE_EVENT);
                         break;
                     case "dirty":
-                        _dirty = true;
+                        markRendererDirty();
                         // don"t emit.
                         break;
                     case "lineDirty":
@@ -197,7 +198,7 @@ export class SongEditorStore extends TSEE {
                 switch (action.resource) {
                     case "dirty":
                         _.defer(() => {
-                            _dirty = false;
+                            markRendererClean();
                             // don"t emit.
                         });
                         break;
@@ -383,7 +384,6 @@ reparse(src: string) {
              * present on other staves.  Contexts are retreived from snapshots
              * when modifying a line other than the first.
              */
-            var dirty = _dirty;
             var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
                     new Context({
                         top: y,
@@ -402,7 +402,6 @@ reparse(src: string) {
                 cursorBar: cursorBar,
                 cursorBeat: cursorBeat,
                 cursorStave: cursorStave,
-                dirty: dirty,
                 pointerData: pointerData,
                 staveIdx: sidx,
                 toolFn: toolFn
@@ -413,7 +412,9 @@ reparse(src: string) {
              * re-render, which can be expensive in SVG mode, so avoid this when
              * possible. Instead, code should use SongEditorModel.markRendererLineDirty.
              */
-            _dirty = _dirty || info.dirty;
+            if (info.dirty) {
+                markRendererDirty();
+            }
             y = info.resetY ? 0 : y;
 
             if (!info.skip) {
@@ -438,17 +439,14 @@ reparse(src: string) {
             });
         }
     }
-    markDirty() {
-        _dirty = true;
-    }
     markRendererClean() {
         markRendererClean();
     }
     markRendererDirty() {
         markRendererDirty();
     }
-    markRendererLineDirty(idx: number, h: number) {
-        markRendererLineDirty(idx, h);
+    markRendererLineDirty(idx: number, lineNumber: number) {
+        markRendererLineDirty(idx, lineNumber);
     }
 
     downloadLegacyAudio() {
@@ -555,7 +553,7 @@ reparse(src: string) {
                 item.selected = null;
             });
         }
-        _dirty = true;
+        markRendererDirty();
         _selection = null;
         this.annotate();
         return true;
@@ -589,7 +587,7 @@ reparse(src: string) {
                     }
                     if (_staves[3].body[i].type === Contracts.ModelType.NEWLINE) {
                         // TODO: we don"t need to update all the lines
-                        _dirty = true;
+                        markRendererDirty();
                     }
                     if (_visualCursor.endMarker &&
                             spec.step === 1) {
@@ -849,10 +847,10 @@ export var markRendererClean = () => {
     });
 };
 
-export var markRendererLineDirty = (line: number, h: number ) => {
+export var markRendererLineDirty = (line: number, staveIdx: number ) => {
     // Mark a given line as dirty
     // NOT a Flux method.
-    _linesToUpdate[h + "_" + line] = true;
+    _linesToUpdate[staveIdx + "_" + line] = true;
 };
 
 export var markRendererDirty = () => {

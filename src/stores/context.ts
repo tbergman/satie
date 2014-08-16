@@ -8,7 +8,6 @@
  */
 
 /// <reference path="lodash.d.ts" />
-/// <reference path="timeSignature.ts" />
 
 import _ = require("lodash");
 import assert = require("assert");
@@ -16,6 +15,7 @@ import assert = require("assert");
 import Contracts = require("./contracts");
 import Model = require("./model");
 import IterationStatus = require("./iterationStatus");
+import SongEditorStore = require("./songEditor");
 var renderUtil = require("ripienoUtil/renderUtil.jsx");
 
 var _ANNOTATING = false; // To prevent annotate from being called recursively.
@@ -337,7 +337,6 @@ class Context {
         var cursorBar = opts.cursorBar === undefined ? NaN : opts.cursorBar;
         var cursorBeat = opts.cursorBeat === undefined ? NaN : opts.cursorBeat;
         var cursorStave = opts.cursorStave === undefined ? NaN : opts.cursorStave;
-        var dirty = opts.dirty || false;
         var exitCode: IterationStatus;
         var operations = 0;
         var pointerData = opts.pointerData || null;
@@ -442,31 +441,9 @@ class Context {
             /*
              * We've just added a line. So we can't quit early (see the next section)
              */
-            if (exitCode === IterationStatus.LINE_CREATED &&
-                    toolFn && !dirty /* Why? */) {
-                dirty = true;
-                cursor.annotatedObj = null;
+            if (exitCode === IterationStatus.LINE_CREATED) {
+                SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
             }
-
-            /*
-             * This is a performance hack.
-             *
-             * When we're confident a custom action has only modified one line, there
-             * is no need to continue annotating!
-             */
-            if (!doCustomAction && toolFn && !pointerData &&
-                        this.curr().type === Contracts.ModelType.NEWLINE && !dirty &&
-                    exitCode !== IterationStatus.LINE_CREATED) {
-                this.idx = -1;
-                _ANNOTATING = false; // This is a debug flag. Set to false when quitting.
-                return {
-                    cursor: cursor,
-                    operations: operations,
-                    skip: true,
-                    success: true
-                }
-            }
-
         }
 
         _ANNOTATING = false;
@@ -492,7 +469,6 @@ class Context {
         return {
             cursor: cursor,
             operations: operations,
-            dirty: dirty,
             success: true
         };
     }

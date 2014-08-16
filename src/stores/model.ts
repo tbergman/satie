@@ -87,7 +87,9 @@ class Model {
             return ret;
         }
 
-        this._key = this._generateKey(ctx);
+        if (!this._key) {
+            this._key = this._generateKey(ctx);
+        }
         return ret;
     }
 
@@ -105,10 +107,8 @@ class Model {
         this.name = Object.getPrototypeOf(this).constructor.name;
     }
 
-    _generateKey(ctx: Context) {
-        ctx.renderKey_eInBar = ctx.renderKey_eInBar || {};
-        ctx.renderKey_eInBar[this.name] = ctx.renderKey_eInBar[this.name] + 1 || "1";
-        return ctx.bar + "_" + ctx.renderKey_eInBar[this.name] + this.name;
+    _generateKey(ctx: Context): string {
+        return "" + ++lastKey;
     }
 
     key() : string {
@@ -183,5 +183,7 @@ class Model {
         }
     };
 }
+
+var lastKey: number = 0;
 
 export = Model;

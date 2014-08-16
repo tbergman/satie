@@ -1,5 +1,7 @@
 /**
- * @jsx React.DOM
+ * The main home of the renderer. The renderer accepts annotated Models and
+ * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
+ * to draw some sheet music.
  */
 
 var React = require("react");
@@ -10,11 +12,14 @@ var Molasses = require("./molasses/molasses.jsx");
 var Victoria = require("./victoria/hellogl.jsx");
 
 var isBrowser = typeof window !== "undefined";
-var useGL = (typeof libripienoclient !== "undefined") ||
+var useGL = (typeof global.libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
-var Dispatcher = require("../stores/dispatcher.ts");
-var History = require("../stores/history.ts");
+import Dispatcher = require("../stores/dispatcher");
+import Contracts = require("../stores/contracts");
+import History = require("../stores/history");
+import Model = require("../stores/model");
+import Tool = require("../stores/tool");
 var Group = require("../views/_group.jsx");
 var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
@@ -26,7 +31,7 @@ var RenderEngine = useGL ? Victoria : Molasses;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-var Renderer = React.createClass({
+var Renderer = React.createClass({displayName: 'Renderer',
     render: function() {
         PROFILER_ENABLED && console.time("render");
 
@@ -34,7 +39,7 @@ var Renderer = React.createClass({
         var y = 0;
         var staves = this.props.staves;
 
-        var pages = [];
+        var pages: Array<Page> = [];
         var firstStaveIdx = 0;
         while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
             ++firstStaveIdx;
@@ -60,102 +65,104 @@ var Renderer = React.createClass({
 
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
-        var isPianoStaff = _.reduce(staves, (memo, s) => memo + (s.body ? 1 : 0), 0) >= 2;
+        var isPianoStaff = _.reduce(staves, function (memo: number, s: Contracts.Stave) {
+            return memo + (s.body ? 1 : 0);
+        }, 0) >= 2;
 
         var vcHeight = 1.2 + (isPianoStaff ? 1.2 : 0);
 
-        var rawPages = _.map(pages, (page, pidx) =>
-            <RenderEngine
-                onClick={this.handleMouseClick}
-                onMouseDown={this.handleMouseDown}
-                onMouseUp={this.handleMouseUp}
-                onMouseLeave={this.handleMouseLeave}
-                onMouseMove={this.handleMouseMove}
-                page={page}
-                staves={staves}
-                width={this.props.raw ? mInchW/10000 + "in" : "100%"}
-                height={this.props.raw ? mInchH/10000 + "in" : "100%"}
-                widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
-                viewbox={viewbox}>
-            {/* Using staves is an anti-pattern. Ideally, we would have a getModels()
-                method in SongEditorStore or something. */}
-            {_.map(staves, (stave, idx) => {
+        var rawPages = _.map(pages, function(page: Page, pidx: number) 
+            {return RenderEngine({
+                onClick: this.handleMouseClick, 
+                onMouseDown: this.handleMouseDown, 
+                onMouseUp: this.handleMouseUp, 
+                onMouseLeave: this.handleMouseLeave, 
+                onMouseMove: this.handleMouseMove, 
+                page: page, 
+                staves: staves, 
+                width: this.props.raw ? mInchW/10000 + "in" : "100%", 
+                height: this.props.raw ? mInchH/10000 + "in" : "100%", 
+                widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize), 
+                viewbox: viewbox}, 
+            /* Using staves is an anti-pattern. Ideally, we would have a getModels()
+                method in SongEditorStore or something. */
+            _.map(staves, function(stave: Contracts.Stave, idx: number)  {
                 if (stave.header) {
                     if (page.from) {
                         return null;
                     }
                     y += renderUtil.getHeaderHeight(stave.header);
-                    return !useGL && <Header
-                        fontSize={fontSize}
-                        middle={renderUtil.mm(this.props.pageSize.width, fontSize)/2}
-                        right={renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75)}
-                        key="HEADER"
-                        model={stave.header} />;
+                    return !useGL && Header({
+                        fontSize: fontSize, 
+                        middle: renderUtil.mm(this.props.pageSize.width, fontSize)/2, 
+                        right: renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75), 
+                        key: "HEADER", 
+                        model: stave.header});
                 } else if (stave.body) {
-                    return <Group key={idx} style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                        {_.reduce(stave.body.slice(page.from, page.to), (memo, obj) => {
-                            if (obj.newline) {
+                    return Group({key: idx, style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}, 
+                        _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
+                            if (obj.type === Contracts.ModelType.NEWLINE) {
                                 memo.push([]);
                             }
                             memo[memo.length - 1].push(obj);
                             return memo;
-                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map((s, lidx) =>
-                            <LineContainer
-                                store={this.props.store}
-                                staveHeight={this.props.staveHeight}
-                                h={idx}
-                                generate={() => _.map(s, item => item.visible() && item.render())}
-                                idx={lidx + pageLines[page.idx]} key={lidx} />)}
-                    </Group>;
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(function(s: Contracts.Stave, lidx: number) 
+                            {return LineContainer({
+                                store: this.props.store, 
+                                staveHeight: this.props.staveHeight, 
+                                h: idx, 
+                                generate: function()  {return _.map(s, function(item: Model)  {return item.visible() && item.render();});}, 
+                                idx: lidx + pageLines[page.idx], key: lidx});}.bind(this))
+                    );
                 } else {
                     return null;
                 }
-            })}
-            {!pidx && this.props.tool && _.map(staves, (stave,idx) => stave.body &&
+            }.bind(this)), 
+            !pidx && this.props.tool && _.map(staves, function(stave: Contracts.Stave,idx: number)  {return stave.body &&
                 this.props.tool.render(
                     this.getCtx(idx),
                     this.state.mouse,
                     _pointerData,
                     fontSize,
-                    idx))}
-            {this.state.selectionRect && <SelectionRect
-                fontSize={fontSize}
-                x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
-                y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
-                width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
-                height={Math.abs(this.state.selectionRect.start.y -
-                        this.state.selectionRect.end.y)} />}
+                    idx);}.bind(this)), 
+            this.state.selectionRect && SelectionRect({
+                fontSize: fontSize, 
+                x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x), 
+                y: Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y), 
+                width: Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x), 
+                height: Math.abs(this.state.selectionRect.start.y -
+                        this.state.selectionRect.end.y)}), 
 
-            {(pidx === this.state.visualCursor.annotatedPage) &&
-                this.state.visualCursor && this.state.visualCursor.annotatedObj && <Group
-                        style={{fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}>
-                    <Line
-                        x1={this.state.visualCursor.annotatedObj.x() - 0.2}
-                        x2={this.state.visualCursor.annotatedObj.x() - 0.2}
-                        y1={this.state.visualCursor.annotatedObj.y() +
-                            (isPianoStaff ? 1.15 : 0) - vcHeight}
-                        y2={this.state.visualCursor.annotatedObj.y() +
-                            (isPianoStaff ? 1.15 : 0) + vcHeight}
-                        stroke={"#008CFF"}
-                        strokeWidth={0.05} />
-                </Group>}
+            (pidx === this.state.visualCursor.annotatedPage) &&
+                this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
+                        style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}, 
+                    Line({
+                        x1: this.state.visualCursor.annotatedObj.x() - 0.2, 
+                        x2: this.state.visualCursor.annotatedObj.x() - 0.2, 
+                        y1: this.state.visualCursor.annotatedObj.y() +
+                            (isPianoStaff ? 1.15 : 0) - vcHeight, 
+                        y2: this.state.visualCursor.annotatedObj.y() +
+                            (isPianoStaff ? 1.15 : 0) + vcHeight, 
+                        stroke: "#008CFF", 
+                        strokeWidth: 0.05})
+                )
 
-        </RenderEngine>);
+        );}.bind(this));
 
-        var ret;
+        var ret : Array<Object>; // React component
         if (!this.props.raw) {
-            ret = <div className="workspace" style={{top: this.props.top}}>
-                {_.map(rawPages, (rawPage, pidx) => <div className="page" 
-                    key={"page" + pidx}
-                    style={{
+            ret = React.DOM.div({className: "workspace", style: {top: this.props.top}}, 
+                _.map(rawPages, function(rawPage: any, pidx: number)  {return React.DOM.div({className: "page", 
+                    key: "page" + pidx, 
+                    style: {
                         position: "relative",
                         width: this.props.width,
                         height: this.props.height,
                         marginTop: this.props.marginTop,
-                        marginBottom: this.props.marginBottom}}>
-                    {rawPage}
-                </div>)}
-            </div>;
+                        marginBottom: this.props.marginBottom}}, 
+                    rawPage
+                );}.bind(this))
+            );
         } else {
             ret = rawPages[0];
         }
@@ -166,15 +173,15 @@ var Renderer = React.createClass({
         return ret;
     },
 
-    _getPointerData: function(mouse) {
+    _getPointerData: function(mouse: Contracts.Mouse) {
         var dynY = mouse.y;
         var dynX = mouse.x;
         var dynLine = 3;
         var foundObj = false;
-        var foundIdx;
-        var musicLine;
-        var ctxData;
-        var staveIdx;
+        var foundIdx: boolean;
+        var musicLine: number;
+        var ctxData: { beat: number; bar: number };
+        var staveIdx: number;
         var info = this.getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var h = info.h;
@@ -248,7 +255,7 @@ var Renderer = React.createClass({
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    getStaveInfoForY: function(my, page) {
+    getStaveInfoForY: function(my: number, page: number) {
         for (var h = 0; h < this.getCtxCount(); ++h) {
             var ctx = this.getCtx(h);
             if (!ctx) {
@@ -265,8 +272,8 @@ var Renderer = React.createClass({
         }
         return null;
     },
-    _elementsInBBox: function(box, mouse) {
-        var ret = [];
+    _elementsInBBox: function ( box: ClientRect, mouse: Contracts.Mouse) {
+        var ret: Array<Model> = [];
 
         for (var h = 0; h < this.getCtxCount(); ++h) {
             var ctx = this.getCtx(h);
@@ -274,7 +281,7 @@ var Renderer = React.createClass({
                 continue;
             }
             var body = this.props.staves[h].body;
-            var inRange = (min, val, max) => min < val && val < max;
+            var inRange = function(min: number, val: number, max: number)  {return min < val && val < max;};
 
             for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
                 var item = body[i];
@@ -296,19 +303,23 @@ var Renderer = React.createClass({
             } // TODO: render multiple pages
         };
     },
-    getPositionForMouse: function(event) {
+    getPositionForMouse: function(event: MouseEvent): PosInfo {
         if (useGL) {
             var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
-            var rect = event.target.getBoundingClientRect();
+            var target = <Element> event.target;
+            var rect = target.getBoundingClientRect();
 
             return {
-                x: (event.clientX - rect.left) / event.target.clientWidth * widthInSpaces,
-                y: (event.clientY - rect.top) / event.target.clientWidth * widthInSpaces,
+                x: (event.clientX - rect.left) / target.clientWidth * widthInSpaces,
+                y: (event.clientY - rect.top) / target.clientWidth * widthInSpaces,
                 page: 0,
                 selectionInfo: null
             };
         }
-        var svg_elt = event.target.farthestViewportElement || event.target;
+        var locatable: SVGLocatable = <any> event.target;
+        var target = <Element> event.target;
+
+        var svg_elt = <SVGSVGElement> (locatable.farthestViewportElement || target);
         var svg_pt = svg_elt.createSVGPoint();
         svg_pt.x = event.clientX;
         svg_pt.y = event.clientY;
@@ -316,11 +327,11 @@ var Renderer = React.createClass({
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
-            page: svg_elt.getAttribute("data-page"),
-            selectionInfo: event.target.getAttribute("data-selectioninfo")
+            page: parseInt(svg_elt.getAttribute("data-page")),
+            selectionInfo: target.getAttribute("data-selectioninfo")
         };
     },
-    handleMouseClick: function(event) {
+    handleMouseClick: function(event: MouseEvent) {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
@@ -340,10 +351,10 @@ var Renderer = React.createClass({
         }
         this.forceUpdate();
     },
-    handleMouseDown: function(event) {
+    handleMouseDown: function(event: MouseEvent) {
         if (event.button === 0) {
             if (this.props.selection) {
-                _.each(this.props.selection, s => {
+                _.each(this.props.selection, function(s: Model)  {
                     delete s.selected;
                 });
             }
@@ -363,7 +374,7 @@ var Renderer = React.createClass({
             }
         }
     },
-    handleMouseUp: function(event) {
+    handleMouseUp: function(event: MouseEvent) {
         if (event.button === 0 && this.state.selectionRect) {
             var rect = this.state.selectionRect;
             var bbox = {
@@ -374,7 +385,7 @@ var Renderer = React.createClass({
             };
             var selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
             if (selection.length) {
-                _.each(selection, s => {
+                _.each(selection, function(s: Model)  {
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
@@ -388,7 +399,7 @@ var Renderer = React.createClass({
             }
         }
     },
-    handleMouseMove: function(event) {
+    handleMouseMove: function(event: MouseEvent) {
         if (this.state.selectionRect) {
             this.setState({
                 selectionRect: {
@@ -419,7 +430,7 @@ var Renderer = React.createClass({
             mouse: null
         });
     },
-    handleMouseMoveThrottled: _.throttle(function(mouse) {
+    handleMouseMoveThrottled: _.throttle(function(mouse: MouseEvent) {
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
@@ -442,7 +453,7 @@ var Renderer = React.createClass({
         });
     }, 16 /* 60 Hz */),
 
-    getCtx: function(idx) {
+    getCtx: function(idx: number) {
         return this.props.contexts ?
             this.props.contexts[idx] :
             (this.props.store && this.props.store.ctx(idx));
@@ -467,7 +478,7 @@ var Renderer = React.createClass({
         var TieTool = require("../stores/tieTool.ts");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
-        document.onkeydown = (event) => {
+        document.onkeydown = function(event: KeyboardEvent)  {
             var keyCode = event.keyCode || event.charCode || 0;
             switch(keyCode) {
                 case 8: // backspace
@@ -495,29 +506,29 @@ var Renderer = React.createClass({
                     }
                     break;
             }
-        };
+        }.bind(this);
 
         // Handle letters or numbers
-        document.onkeypress = (event) => {
+        document.onkeypress = function(event: KeyboardEvent)  {
             var keyCode = event.keyCode || event.charCode || 0;
 
             var key = String.fromCharCode(keyCode);
 
             // Tools
-            var keyToTool = {
-                '1': () => new NoteTool("noteWhole"),
-                '2': () => new NoteTool("noteHalfUp"),
-                '3': () => new NoteTool("noteQuarterUp"),
-                '4': () => new NoteTool("note8thUp"),
-                '5': () => new NoteTool("note16thUp"),
-                '6': () => new NoteTool("note32ndUp"),
-                '7': () => new NoteTool("note64thUp"),
-                'r': () => new RestTool(),
-                '.': () => new DotTool(),
-                '~': () => new TieTool(),
-                '=': () => new AccidentalTool(1),
-                '-': () => new AccidentalTool(-1),
-                '0': () => new AccidentalTool(0)
+            var keyToTool: { [key: string]: () => Tool } = {
+                '1': function()  {return new NoteTool("noteWhole");},
+                '2': function()  {return new NoteTool("noteHalfUp");},
+                '3': function()  {return new NoteTool("noteQuarterUp");},
+                '4': function()  {return new NoteTool("note8thUp");},
+                '5': function()  {return new NoteTool("note16thUp");},
+                '6': function()  {return new NoteTool("note32ndUp");},
+                '7': function()  {return new NoteTool("note64thUp");},
+                'r': function()  {return new RestTool();},
+                '.': function()  {return new DotTool();},
+                '~': function()  {return new TieTool();},
+                '=': function()  {return new AccidentalTool(1);},
+                '-': function()  {return new AccidentalTool(-1);},
+                '0': function()  {return new AccidentalTool(0);}
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
@@ -525,7 +536,7 @@ var Renderer = React.createClass({
             } else if (this.props.tool) {
                 this.props.tool.handleKeyPressEvent(key, event);
             }
-        };
+        }.bind(this);
 
     },
     componentWillUnmount: function() {
@@ -552,17 +563,23 @@ var Renderer = React.createClass({
  *  2. We know, based on annotation, when a line needs to be updated
  *     and when it does not need to be updated.
  */
-var LineContainer = React.createClass({
+var LineContainer = React.createClass({displayName: 'LineContainer',
     render: function() {
-        return <Group>{this.props.generate()}</Group>;
+        if (PROFILER_ENABLED) {
+            console.log("Rendering line", this.props.idx);
+        }
+        return Group(null, this.props.generate());
     },
 
-    shouldComponentUpdate: function(nextProps, nextState) {
+    shouldComponentUpdate: function(nextProps: any, nextState: any) {
         var songDirty = this.props.store && this.props.store.dirty();
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.isLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
+            if (PROFILER_ENABLED) {
+                console.log("Line dirty", this.props.idx);
+            }
             this.props.store && this.props.store.handleAction({description: "DELETE /local/song",
                 resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx});
         }
@@ -574,6 +591,19 @@ var LineContainer = React.createClass({
 var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
 
 var _pointerData = {};
+
+interface Page {
+    from: number;
+    to: number;
+    idx: number;
+}
+
+interface PosInfo {
+    x: number;
+    y: number;
+    page: number;
+    selectionInfo: any;
+}
 
 module.exports = Renderer;
 module.exports.FONT_SIZE_FACTOR = FONT_SIZE_FACTOR;
