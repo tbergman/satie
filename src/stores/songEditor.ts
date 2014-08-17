@@ -460,14 +460,16 @@ reparse(src: string) {
             var bpm = 120;
             var timePerBeat = 60/bpm;
 
-            // XXX: assuming 4/4 for now 
+            var ctx = new Context({ staveIdx: h, staves: this.staves() });
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                if (obj.isNote) {
+                if (obj.type === Contracts.ModelType.TIME_SIGNATURE) {
+                    ctx.timeSignature = <any> obj; // TSFIX
+                } else if (obj.isNote) {
                     var note: Contracts.PitchDuration = <any> obj;
-                    var beats = note.getBeats();
-                    _.map(note.pitch ? [note.midiNote()] : note.midiNote(), midiNote => {
+                    var beats = note.getBeats(ctx);
+                    _.map(note.pitch ? [Contracts.midiNote(note)] : Contracts.midiNote(note), midiNote => {
                         request.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
                         request.push((delay + beats*timePerBeat - 0.019) +

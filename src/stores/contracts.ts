@@ -81,7 +81,19 @@ export interface Pitch {
     octave: number;
     temporary?: boolean;
     line?: number;
+    isRest?: boolean; // read only
+    hasFlagOrBeam?: boolean;
 };
+
+export function midiNote(p: Pitch) {
+    if (p.pitch) {
+        var DurationModel = require("./duration");
+        var base = DurationModel.chromaticScale[p.pitch] + 48;
+        return base + (p.octave || 0)*12 + (p.acc || 0);
+    }
+    return _.map(p.chord, m => midiNote.call(m));
+}
+
 
 export interface TimeSignature {
     beats: number;
@@ -93,14 +105,33 @@ export interface Tuplet {
     den: number;
 }
 
-export interface PitchDuration extends Pitch {
+export interface Duration {
     count: number;
-    getBeats: (inheritedCount?: number, inheritedTS?: TimeSignature) => number;
-    midiNote: () => any; // TSFIX
+    getBeats: (ctx: Context, inheritedCount?: number) => number;
     dots: number;
     actualDots: number;
     tuplet: Tuplet;
     actualTuplet: Tuplet;
+}
+
+export function makeDuration(spec: { count: number; dots?: number; tuplet?: Tuplet }): Duration {
+    return {
+        count: spec.count,
+        dots: spec.dots || 0,
+        tuplet: spec.tuplet || null,
+        actualTuplet: null,
+        actualDots: null,
+        getBeats(ctx: Context, inheritedCount?: number): number {
+            var Metre = require("./metre");
+            return Metre.getBeats(
+                this.count || inheritedCount,
+                this.dots, this.tuplet, ctx.timeSignature);
+        }
+    };
+}
+
+export interface PitchDuration extends Pitch, Duration {
+    tie?: boolean;
 };
 
 export interface User {

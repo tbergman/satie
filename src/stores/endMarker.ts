@@ -15,7 +15,7 @@ import _ = require("lodash");
 import Context = require("./context");
 import Contracts = require("./contracts");
 import IterationStatus = require("./iterationStatus");
-var Metre = require("ripienoUtil/metre.jsx");
+import Metre = require("./metre");
 import SmartCondition = require("./smartCondition");
 
 class EndMarkerModel extends Model {
@@ -68,11 +68,7 @@ class EndMarkerModel extends Model {
 
                 var DurationModel = require("./duration"); // Recursive dependency.
 
-                var toAdd = Metre.subtract(
-                        ctx.timeSignature.beats,
-                        ctx.beats,
-                        ctx.timeSignature,
-                        ctx.beats)
+                var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
                     .map((beat: Contracts.PitchDuration) => new DurationModel(_.extend(beat, {
                         pitch: "r"})));
                 Array.prototype.splice.apply(ctx.body,

@@ -6,6 +6,7 @@ var EventEmitter = require("events").EventEmitter;
 var _ = require("lodash");
 var assert = require("assert");
 
+var Contracts = require("./contracts.ts");
 var Dispatcher = require("./dispatcher.ts"); 
 var SessionStore = require("./session.ts"); // must be registered before PlaybackStore!
 
@@ -186,7 +187,7 @@ class PlaybackStore extends EventEmitter {
                     if (foundIdx && (obj.pitch || obj.chord)) {
                         var beats = obj.getBeats();
                         if (!USING_LEGACY_AUDIO) {
-                            _.each(obj.pitch ? [obj.midiNote()] : obj.midiNote(), midiNote => {
+                            _.each(obj.pitch ? [obj.midiNote()] : Contracts.midiNote(obj), midiNote => {
                                 var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
                                 MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {

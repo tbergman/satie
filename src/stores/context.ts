@@ -195,7 +195,8 @@ class Context {
 
         // The bars might not have been annotated yet, so it's possible we don't have
         // a time signature. We need an implied time signature to calculate bars.
-        var impliedTS: Contracts.TimeSignature = { beatType: 4, beats: 4 };
+        var tsBackup = this.timeSignature;
+        this.timeSignature = { beatType: 4, beats: 4 };
 
         for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             var allNewActives: Array<Model> = [];
@@ -211,7 +212,7 @@ class Context {
                                 }
                                 if (s.body[s.idx].type === Contracts.ModelType.TIME_SIGNATURE) {
                                     // TSFIX
-                                    impliedTS = (<any> s.body[s.idx]).timeSignature;
+                                    this.timeSignature = (<any> s.body[s.idx]).timeSignature;
                                 }
                                 newActives.push(s.body[s.idx]);
                                 allNewActives.push(s.body[s.idx]);
@@ -227,7 +228,7 @@ class Context {
                                 assert(s.body[s.idx].isNote);
                                 var pitch: Contracts.PitchDuration = <any> s.body[s.idx];
                                 impliedCount = pitch.count || impliedCount;
-                                s.beat = s.beat + pitch.getBeats(impliedCount, impliedTS);
+                                s.beat = s.beat + pitch.getBeats(this, impliedCount);
                             } else {
                                 s.beat = undefined;
                             }
@@ -249,6 +250,8 @@ class Context {
 
             actives = _.filter(actives, a => a.expires > beat);
         }
+
+        this.timeSignature = tsBackup; // The context can be reused.
     }
 
     /**

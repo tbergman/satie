@@ -51,7 +51,6 @@ class Model {
     idx: number;
     intersects: Array<Model> = null;
     inBeam: boolean;
-    name: string;
     prereqs: Array<SmartCondition>;
     placeholder: boolean;
     selected: boolean;
@@ -59,6 +58,11 @@ class Model {
     get type(): Contracts.ModelType {
         assert(false, "Not implemented");
         return Contracts.ModelType.UNKNOWN;
+    }
+
+    get note(): Contracts.PitchDuration {
+        assert(false, "Not a note.");
+        return null;
     }
 
     annotate(ctx: Context, stopping?: number): IterationStatus {
@@ -104,7 +108,6 @@ class Model {
                 self[prop] = spec[prop];
             }
         }
-        this.name = Object.getPrototypeOf(this).constructor.name;
     }
 
     _generateKey(ctx: Context): string {
@@ -148,7 +151,11 @@ class Model {
         this._y = y;
     }
 
-    get isNote() : boolean {
+    get isNote(): boolean {
+        return false;
+    }
+
+    get isRest(): boolean {
         return false;
     }
 

@@ -1,6 +1,6 @@
 import Model = require("./model");
 
-var Metre = require("ripienoUtil/metre.jsx");
+import Metre = require("./metre");
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -49,7 +49,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         this.line = DurationModel.getLine(this, ctx);
         
         if (!ctx.isBeam) {
-            ctx.beats = (ctx.beats || 0) + this.getBeats();
+            ctx.beats = (ctx.beats || 0) + this.getBeats(ctx);
         }
 
         if (!ctx.isBeam && this.inBeam) {
@@ -80,6 +80,11 @@ class DurationModel extends Model implements Contracts.PitchDuration {
     visible() {
         return !this.inBeam;
     }
+
+    get note(): Contracts.PitchDuration {
+        return this;
+    }
+
     /**
      * Returns the length of the beat, without dots or tuplet modifiers
      * that should be rendered. This can differ from the actual count
@@ -126,12 +131,12 @@ class DurationModel extends Model implements Contracts.PitchDuration {
     notehead() {
         return DurationModel.countToNotehead[this.getDisplayCount()];
     }
-    
-    isRest() {
+
+    get isRest() {
         return this.pitch === 'r';
     }
 
-    hasFlagOrBeam() {
+    get hasFlagOrBeam() {
         return DurationModel.countToIsBeamable[this.count];
     }
 
@@ -168,12 +173,13 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         lylite.push(str);
     }
 
-    getBeats(inheritedCount?: number, inheritedTS?: Contracts.TimeSignature) {
+    getBeats(ctx: Context, inheritedCount?: number) {
+        assert("start" in ctx);
         return getBeats(
             this.count || inheritedCount,
             this.getDots(),
             this.getTuplet(),
-            this.impliedTS || inheritedTS);
+            ctx.timeSignature);
     }
 
     getDots() {
@@ -182,14 +188,6 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     getTuplet() {
         return DurationModel.getTuplet(this);
-    }
-
-    midiNote() {
-        if (this.pitch) {
-            var base = DurationModel.chromaticScale[this.pitch] + 48;
-            return base + (this.octave || 0)*12 + (this.acc || 0);
-        }
-        return _.map(this.chord, m => this.midiNote.call(m));
     }
 
     containsAccidental(ctx: Context) {
@@ -239,7 +237,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
             (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.pitch];
     };
 
-    static getAverageLine = (pitch: DurationModel, ctx: Context) => {
+    static getAverageLine = (pitch: Contracts.PitchDuration, ctx: Context) => {
         var line = DurationModel.getLine(pitch, ctx, { filterTemporary: true });
         if (!isNaN(<any>line)) {
             return line;
@@ -418,11 +416,11 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     static BEAMDATA: Array<DurationModel>;
 
-    static perfectlyBeamed = function(ctx: Context) {
-        if (!this.hasFlagOrBeam()) {
+    static perfectlyBeamed = function (ctx: Context) {
+        if (!this.hasFlagOrBeam) {
             return true;
         }
-        var rebeamable = Metre.rebeamable(ctx.body, ctx.idx, ctx.timeSignature, ctx.beats);
+        var rebeamable = Metre.rebeamable(ctx.idx, ctx);
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
         }
@@ -444,12 +442,12 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     decideMiddleLineStemDirection(ctx: Context): IterationStatus {
         var prevLine: number = ctx.prev() && ctx.prev().isNote ?
-                DurationModel.getAverageLine(<DurationModel> ctx.prev(), ctx) : null;
+                DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
         var nextLine: number = ctx.next() && ctx.next().isNote ?
-                DurationModel.getAverageLine(<DurationModel> ctx.next(), ctx) : null;
+                DurationModel.getAverageLine(ctx.next().note, ctx) : null;
 
-        if ((nextLine !== null) && ctx.beats + this.getBeats() + (<DurationModel>ctx.next())
-                .getBeats(this.count, this.impliedTS) > ctx.timeSignature.beats) {
+        if ((nextLine !== null) && ctx.beats + this.getBeats(ctx) + ctx.next().note
+                .getBeats(ctx, this.count) > ctx.timeSignature.beats) {
             // Barlines aren't inserted yet.
             nextLine = null;
         }
@@ -467,7 +465,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
             check = prevLine;
         } else {
             var startsAt = ctx.beats; 
-            var endsAt = ctx.beats + this.getBeats();
+            var endsAt = ctx.beats + this.getBeats(ctx);
 
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
                 check = nextLine;
@@ -536,9 +534,9 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
         {
             condition: function(ctx) {
-                return ctx.smallest <= this.getBeats(); },
+                return ctx.smallest <= this.getBeats(ctx); },
             correction: function (ctx) {
-                ctx.smallest = this.getBeats();
+                ctx.smallest = this.getBeats(ctx);
                 return IterationStatus.RETRY_LINE;
             },
             description: "All notes, chords, and rests throughout a line must have the same spacing"
@@ -546,7 +544,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
         {
             condition: function(ctx) {
-                return (ctx.beats + this.getBeats() <= ctx.timeSignature.beats); },
+                return (ctx.beats + this.getBeats(ctx) <= ctx.timeSignature.beats); },
             correction: BarlineModel.createBarline,
             description: "The number of beats in a bar must not exceed that specified by the time signature"
         },
@@ -555,7 +553,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
             condition: function() {
                 return false; }, // re-calculate it every time
             correction: function(ctx) {
-                this.annotatedExtraWidth = (Math.log(this.getBeats()) -
+                this.annotatedExtraWidth = (Math.log(this.getBeats(ctx)) -
                         Math.log(ctx.smallest))/DurationModel.log2/3;
                 return IterationStatus.SUCCESS;
             },

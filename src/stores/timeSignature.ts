@@ -14,7 +14,7 @@ import IterationStatus = require("./iterationStatus");
 import SmartCondition = require("./smartCondition");
 import KeySignatureModel = require("./keySignature");
 
-class TimeSignatureModel extends Model {
+class TimeSignatureModel extends Model implements Contracts.TimeSignature {
     _annotatedSpacing: number;
     color: string;
     actualTS: {
@@ -27,6 +27,12 @@ class TimeSignatureModel extends Model {
         beats: number;
         beatType: number;
     };
+    get beats() {
+        return this.timeSignature.beats;
+    }
+    get beatType() {
+        return this.timeSignature.beatType;
+    }
 
     annotateImpl(ctx: Context): IterationStatus {
         var next = ctx.next();

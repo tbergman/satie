@@ -89,8 +89,8 @@ class BeamGroupModel extends Model {
         }
 
     }
-    getBeats() {
-        return this.beam[0].getBeats();
+    getBeats(ctx: Context) {
+        return this.beam[0].getBeats(ctx);
     }
     static createBeam = (ctx: Context, beam: Array<DurationModel>) => {
         return ctx.insertPast(new BeamGroupModel(
