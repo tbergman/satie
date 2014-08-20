@@ -5,30 +5,27 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import BarlineModel = require("./barline");
-import ClefModel = require("./clef");
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import EndMarkerModel = require("./endMarker");
 import KeySignatureModel = require("./keySignature");
-import IterationStatus = require("./iterationStatus");
 import NewlineModel = require("./newline");
-import SmartCondition = require("./smartCondition");
 import TimeSignatureModel = require("./timeSignature");
 
 var getBeats = Metre.getBeats;
 
-class DurationModel extends Model implements Contracts.PitchDuration {
+class DurationModel extends Model implements C.IPitchDuration {
     accidentals: any;
     actualDots: number;
     acc: any;
     accTemporary: number;
     line: any;
     count: number;
-    chord: Array<Contracts.Pitch>;
+    chord: Array<C.IPitch>;
     color: string;
     displayCount: number;
-    tuplet: Contracts.Tuplet;
-    actualTuplet: Contracts.Tuplet;
+    tuplet: C.ITuplet;
+    actualTuplet: C.ITuplet;
     annotatedExtraWidth: number;
     forceMiddleNoteDirection: number;
     flag: string;
@@ -45,21 +42,108 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         beatType: number;
     };
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        var status: C.IterationStatus = C.IterationStatus.SUCCESS;
+
+        // A key signature must exist on each line;
+        // The key signature ensures a clef exists.
+        if (!ctx.keySignature) { return KeySignatureModel.createKeySignature(ctx); }
+
+        // A time signature must exist on the first line of every page.
+        this.impliedTS = ctx.timeSignature;
+        if (!this.impliedTS) { return TimeSignatureModel.createTS(ctx); }
+
+        // A note's duration, when unspecified, is set by the previous note.
+        if (!this.count) {
+            assert(ctx.count, "Never null (the initial count is '4')");
+            this.count = ctx.count;
+        }
+
+        // Update the ctx to reflect the current note's duration.
+        ctx.count = this.count;
+
+        // All notes, chords, and rests throughout a line must have the same spacing.
+        var beats = this.getBeats(ctx);
+        if (ctx.smallest > beats) {
+            ctx.smallest = beats;
+            return C.IterationStatus.RETRY_LINE;
+        }
+
+        // The number of beats in a bar must not exceed that specified by the time signature.
+        if (ctx.beats + beats > ctx.timeSignature.beats) {
+            return BarlineModel.createBarline(ctx, C.Barline.Standard);
+        }
+
+        // Each note's width has a linear component proportional to the log of its duration.
+        this.annotatedExtraWidth = (Math.log(this.getBeats(ctx)) - Math.log(ctx.smallest)) /
+            DurationModel.log2 / 3;
+
+        // The width of a line must not exceed that specified by the page layout.
+        if ((ctx.isBeam || !this.inBeam) && (ctx.x + this.getWidth(ctx) > ctx.maxX)) {
+            status = NewlineModel.createNewline(ctx);
+        }
+        if (status !== C.IterationStatus.SUCCESS) { return status; }
+
+        // Beams must follow the beam patterns
+        if (!this.perfectlyBeamed(ctx)) {
+            var b = DurationModel.BEAMDATA;
+            DurationModel.BEAMDATA = null;
+
+            while (_.any(b, (b) => b.inBeam)) {
+                var j = b[0].idx;
+                while (ctx.body[j].inBeam) {
+                    --j;
+                }
+                while(ctx.body[j].type !== C.Type.BEAM_GROUP) {
+                    ++j;
+                }
+                var beam = (<any>ctx.body[j]).beam; // TSFIX
+                _.each(beam, (c: DurationModel) => {
+                    c.inBeam = false;
+                    return true;
+                });
+                if (j <= ctx.idx) {
+                    ctx.erasePast(j);
+                } else {
+                    ctx.eraseFuture(j);
+                }
+            }
+
+            _.each(b, function (b: DurationModel) {
+                b.inBeam = true;
+            });
+            var BeamGroupModel = require("./beamGroup"); // Recursive dependency
+            BeamGroupModel.createBeam(ctx, b);
+            return C.IterationStatus.RETRY_LINE;
+        }
+
+        // The document must end with a marker.
+        if (!ctx.next()) {
+            status = ctx.insertFuture(new EndMarkerModel({endMarker: true}));
+        }
+        if (status !== C.IterationStatus.SUCCESS) { return status; }
+
+        // Middle note directions are set by surrounding notes.
+        this.forceMiddleNoteDirection = NaN;
+        if (DurationModel.getAverageLine(this, ctx) !== 3) {
+            status = DurationModel.prototype.decideMiddleLineStemDirection(ctx);
+        }
+        if (status !== C.IterationStatus.SUCCESS) { return status; }
+
+        // Copy information the view needs from the context.
         this.line = DurationModel.getLine(this, ctx);
-        
+
         if (!ctx.isBeam) {
             ctx.beats = (ctx.beats || 0) + this.getBeats(ctx);
         }
 
         if (!ctx.isBeam && this.inBeam) {
             this._handleTie(ctx);
-            return IterationStatus.SUCCESS;
+            return C.IterationStatus.SUCCESS;
         } else if (!this.inBeam) {
             this._handleTie(ctx);
         }
         this.setX(ctx.x);
-        this._fontSize = ctx.fontSize;
         this.accidentals = DurationModel.getAccidentals(this, ctx);
         _.map(this.chord || [this.pitch], (pitch) => {
             ctx.accidentals[(<any>pitch).pitch] = (<any>pitch).acc;
@@ -68,7 +152,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
         this.flag = !this.inBeam && (this.getDisplayCount() in DurationModel.countToFlag) &&
         DurationModel.countToFlag[this.getDisplayCount()];
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     _handleTie(ctx: Context) {
         if (this.tie) {
@@ -81,7 +165,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         return !this.inBeam;
     }
 
-    get note(): Contracts.PitchDuration {
+    get note(): C.IPitchDuration {
         return this;
     }
 
@@ -115,7 +199,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         }
         return Math.max(0, accWidth - 0.3);
     }
-    
+
     getDirection() {
         return isNaN(this.forceMiddleNoteDirection) ? undefined : this.forceMiddleNoteDirection;
     }
@@ -133,14 +217,14 @@ class DurationModel extends Model implements Contracts.PitchDuration {
     }
 
     get isRest() {
-        return this.pitch === 'r';
+        return this.pitch === "r";
     }
 
     get hasFlagOrBeam() {
         return DurationModel.countToIsBeamable[this.count];
     }
 
-    _lyPitch(pitch: Contracts.Pitch) {
+    _lyPitch(pitch: C.IPitch) {
         var str = pitch.pitch;
         if (pitch.acc === 1) {
             str += "is";
@@ -192,7 +276,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     containsAccidental(ctx: Context) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
-        var pitches: Array<Contracts.Pitch> = this.chord || [<Contracts.Pitch>this];
+        var pitches: Array<C.IPitch> = this.chord || [<C.IPitch>this];
         for (var i = 0; i < pitches.length; ++i) {
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
@@ -214,7 +298,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     static log2 = Math.log(2);
 
-    static getLine = (pitch: Contracts.Pitch,
+    static getLine = (pitch: C.IPitch,
             ctx: Context, options?: { filterTemporary: boolean }): any => { // TSFIX
         options = options || {filterTemporary: false};
 
@@ -237,7 +321,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
             (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.pitch];
     };
 
-    static getAverageLine = (pitch: Contracts.PitchDuration, ctx: Context) => {
+    static getAverageLine = (pitch: C.IPitchDuration, ctx: Context) => {
         var line = DurationModel.getLine(pitch, ctx, { filterTemporary: true });
         if (!isNaN(<any>line)) {
             return line;
@@ -266,41 +350,40 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         tenor: 0.5,
 
 
-        gClef15mb: -3.5 + 3.5*2, 
-        gClef8vb: -3.5 + 3.5, 
-        gClef8va: -3.5 - 3.5, 
-        gClef15ma: -3.5 - 3.5*2, 
-        gClef8vbOld: -3.5 +3.5*2, 
-        gClef8vbCClef: -3.5 + 3.5, 
-        gClef8vbParens: -3.5 + 3.5, 
+        gClef15mb: -3.5 + 3.5*2,
+        gClef8vb: -3.5 + 3.5,
+        gClef8va: -3.5 - 3.5,
+        gClef15ma: -3.5 - 3.5*2,
+        gClef8vbOld: -3.5 +3.5*2,
+        gClef8vbCClef: -3.5 + 3.5,
+        gClef8vbParens: -3.5 + 3.5,
 
-        fClef15mb: 2.5 + 3.5*2, 
-        fClef8vb: 2.5 + 3.5, 
-        fClef8va: 2.5 - 3.5, 
-        fClef15ma: 2.5 - 3.5*2, 
+        fClef15mb: 2.5 + 3.5*2,
+        fClef8vb: 2.5 + 3.5,
+        fClef8va: 2.5 - 3.5,
+        fClef15ma: 2.5 - 3.5*2,
 
         cClef8vb: -0.5 +3.5*2,
 
-        unpitchedPercussionClef1: 0, 
-        unpitchedPercussionClef2: 0, 
-        semipitchedPercussionClef1: 0, 
-        semipitchedPercussionClef2: 0, 
-        "6stringTabClef": 0, 
+        unpitchedPercussionClef1: 0,
+        unpitchedPercussionClef2: 0,
+        semipitchedPercussionClef1: 0,
+        semipitchedPercussionClef2: 0,
+        "6stringTabClef": 0,
         "4stringTabClef": 0,
-        "bridgeClef": 0, 
+        "bridgeClef": 0,
         "accdnDiatonicClef": 0,
 
-        "cClefTriangular": -0.5, 
-        "fClefTriangular": 2.5, 
-        "cClefTriangularToFClef": 2.5, 
-        "fClefTriangularToCClef": -0.5, 
+        "cClefTriangular": -0.5,
+        "fClefTriangular": 2.5,
+        "cClefTriangularToFClef": 2.5,
+        "fClefTriangularToCClef": -0.5,
 
-        "gClefReversed": -3.5, 
-        "gClefTurned": -3.5, 
-        "cClefReversed": -0.5, 
-        "fClefReversed": 2.5, 
-        "fClefTurned": 2.5, 
-
+        "gClefReversed": -3.5,
+        "gClefTurned": -3.5,
+        "cClefReversed": -0.5,
+        "fClefReversed": 2.5,
+        "fClefTurned": 2.5
     };
     static pitchOffsets: { [key: string]: number } = {
         c: 0,
@@ -325,7 +408,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         return DurationModel.getAccidentals(this, ctx);
     }
 
-    static getAccidentals = (pitch: Contracts.Pitch, ctx: Context): Array<number> => {
+    static getAccidentals = (pitch: C.IPitch, ctx: Context): Array<number> => {
         if (pitch.chord) {
             return _.map(pitch.chord, p => DurationModel.getAccidentals(p, ctx));
         }
@@ -416,7 +499,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
     static BEAMDATA: Array<DurationModel>;
 
-    static perfectlyBeamed = function (ctx: Context) {
+    perfectlyBeamed(ctx: Context) {
         if (!this.hasFlagOrBeam) {
             return true;
         }
@@ -425,22 +508,23 @@ class DurationModel extends Model implements Contracts.PitchDuration {
             DurationModel.BEAMDATA = rebeamable;
         }
         return !rebeamable;
-    };
+    }
 
-    static chromaticScale: { [key: string]: number } =
-        { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }; //c:12
+    static chromaticScale: { [key: string]: number } = {
+        c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
+    }; // c:12
 
     static noteNames =
         ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
             "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
-    static getDots = (obj: Contracts.PitchDuration) =>
+    static getDots = (obj: C.IPitchDuration) =>
         isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
 
-    static getTuplet = (obj: Contracts.PitchDuration) =>
+    static getTuplet = (obj: C.IPitchDuration) =>
         (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj.tuplet;
 
-    decideMiddleLineStemDirection(ctx: Context): IterationStatus {
+    decideMiddleLineStemDirection(ctx: Context): C.IterationStatus {
         var prevLine: number = ctx.prev() && ctx.prev().isNote ?
                 DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
         var nextLine: number = ctx.next() && ctx.next().isNote ?
@@ -464,7 +548,7 @@ class DurationModel extends Model implements Contracts.PitchDuration {
         } else if (nextLine === null) {
             check = prevLine;
         } else {
-            var startsAt = ctx.beats; 
+            var startsAt = ctx.beats;
             var endsAt = ctx.beats + this.getBeats(ctx);
 
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
@@ -482,154 +566,19 @@ class DurationModel extends Model implements Contracts.PitchDuration {
 
         this.forceMiddleNoteDirection = (check === undefined || check >= 3) ? -1 : 1;
 
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
 
-    prereqs = DurationModel.prereqs;
-    static prereqs : Array<SmartCondition> = [
-        {
-            condition: function (ctx) {
-                return ctx.clef; },
-            correction: ClefModel.createClef,
-            description: "A clef must exist on each line."
-        },
-
-        {
-            condition: function (ctx) {
-                return ctx.keySignature;
-            },
-            correction: KeySignatureModel.createKeySignature,
-            description: "A key signature must exist on each line."
-        },
-
-        {
-            condition: function (ctx) {
-                this.impliedTS = ctx.timeSignature;
-                return this.impliedTS; },
-            correction: TimeSignatureModel.createTS,
-            description: "A time signature must exist on the first line of every page."
-        },
-
-        {
-            condition: function (ctx) {
-                return this.count;
-            },
-            correction: function (ctx) {
-                assert(ctx.count, "Never null -- starts at 4");
-                this.count = ctx.count;
-                return IterationStatus.SUCCESS;
-            },
-            description: "A note's duration, when unspecified, is set by the previous note"
-        },
-
-        {
-            condition: function (ctx) {
-                return this.count === ctx.count; },
-            correction: function (ctx) {
-                ctx.count = this.count;
-                return IterationStatus.SUCCESS;
-            },
-            description: "Updated the ctx to reflect the current note's duration"
-        },
-
-        {
-            condition: function(ctx) {
-                return ctx.smallest <= this.getBeats(ctx); },
-            correction: function (ctx) {
-                ctx.smallest = this.getBeats(ctx);
-                return IterationStatus.RETRY_LINE;
-            },
-            description: "All notes, chords, and rests throughout a line must have the same spacing"
-        },
-
-        {
-            condition: function(ctx) {
-                return (ctx.beats + this.getBeats(ctx) <= ctx.timeSignature.beats); },
-            correction: BarlineModel.createBarline,
-            description: "The number of beats in a bar must not exceed that specified by the time signature"
-        },
-
-        {
-            condition: function() {
-                return false; }, // re-calculate it every time
-            correction: function(ctx) {
-                this.annotatedExtraWidth = (Math.log(this.getBeats(ctx)) -
-                        Math.log(ctx.smallest))/DurationModel.log2/3;
-                return IterationStatus.SUCCESS;
-            },
-            description: "Each note's width has a linear component proportional to the log of its duration"
-        },
-
-        {
-            condition: function (ctx) {
-                return (!ctx.isBeam && this.inBeam /* don't check twice*/) ||
-                    (ctx.x + this.getWidth(ctx) <= ctx.maxX);
-            },
-            correction: NewlineModel.createNewline,
-            description: "The width of a line must not exceed that specified by the page layout"
-        },
-
-        {
-            condition: DurationModel.perfectlyBeamed,
-            correction: function(ctx: Context) {
-                var b = DurationModel.BEAMDATA;
-                DurationModel.BEAMDATA = null;
-
-                while (_.any(b, (b) => b.inBeam)) {
-                    var j = b[0].idx;
-                    while (ctx.body[j].inBeam) {
-                        --j;
-                    }
-                    while(ctx.body[j].type !== Contracts.ModelType.BEAM_GROUP) {
-                        ++j;
-                    }
-                    var beam = (<any>ctx.body[j]).beam; // TSFIX
-                    _.each(beam, (c: DurationModel) => {
-                        c.inBeam = false;
-                        return true;
-                    });
-                    if (j <= ctx.idx) {
-                        ctx.erasePast(j);
-                    } else {
-                        ctx.eraseFuture(j);
-                    }
-                }
-
-                _.each(b, function (b: DurationModel) {
-                    b.inBeam = true;
-                });
-                var BeamGroupModel = require("./beamGroup"); // Recursive dependency
-                BeamGroupModel.createBeam(ctx, b);
-                return IterationStatus.RETRY_LINE;
-            },
-            description: "Beams must follow the beat pattern."
-        },
-
-        {
-            condition: function (ctx) {
-                return ctx.next(); },
-            correction: function (ctx: Context): IterationStatus {
-                return ctx.insertFuture(
-                    new EndMarkerModel({endMarker: true}));
-            },
-            description: "The document must end with a marker."
-        },
-
-        {
-            condition: function (ctx) {
-                this.forceMiddleNoteDirection = false;
-                return DurationModel.getAverageLine(this, ctx) !== 3;
-            },
-            correction: DurationModel.prototype.decideMiddleLineStemDirection,
-            description: "Middle note directions are set by surrounding notes"
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.DURATION;
+        return C.Type.DURATION;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = DurationModel;

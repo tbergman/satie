@@ -1,40 +1,34 @@
 /**
  * Renders a key signature. Not responsible for calculating the width.
- *
- * @jsx React.DOM
  */
 
-var React = require("react");
+import ReactTS = require("react-typescript");
+import _ = require("lodash");
 
 var Accidental = require("./_accidental.jsx");
-var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
-var KeySignatureModel = require("../stores/keySignature.ts");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+import KeySignatureModel = require("../stores/keySignature");
 
-var _ = require("lodash");
-
-var KeySignature = React.createClass({
-    propTypes: {
-        spec: React.PropTypes.instanceOf(KeySignatureModel)
-    },
-
-    render: function() {
+export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
+    render() {
         var spec = this.props.spec;
 
-        return <Group>
-            {_.map(this.getAccidentals(), (a, idx) => <Accidental
-                key={idx /* for React */}
-                x={spec.x() + idx/4}
-                y={spec.y()}
-                line={a.line}
-                stroke={spec.color}
-                fontSize={spec.fontSize()}
-                accidental={a.accidental} />)}
-        </Group>;
-    },
+        return Group(null,
+            _.map(this.getAccidentals(), (a, idx) => Accidental({
+                key: idx, /* for React */
+                x: spec.x() + idx/4,
+                y: spec.y(),
+                line: a.line,
+                stroke: spec.color,
+                fontSize: spec.fontSize,
+                accidental: a.accidental}))
+        );
+    }
 
-    getAccidentals: function() {
+    /**
+     * Returns an array representing the position and glyphName of each accidental.
+     */
+    getAccidentals() {
         var spec = this.props.spec;
         if (!isNaN(spec.getSharpCount())) {
             return _.times(spec.getSharpCount(), i => Object({
@@ -48,9 +42,10 @@ var KeySignature = React.createClass({
             }));
         }
     }
-});
+};
 
-var standardClef = clef => {
+function standardClef(clef: string) {
+    "use strict";
     if (clef.indexOf("gClef") === 0 || clef.indexOf("treble") !== -1) {
         return "treble";
     }
@@ -67,21 +62,30 @@ var standardClef = clef => {
     return "treble";
 };
 
-// TODO: this almost looks like logic -- move to keySignature.jsx
-var sharps = {
-    //"FCGDAEB"
+// TODO: this almost looks like logic -- move to keySignature.ts
+var sharps: { [key: string]: Array<number> } = {
+    // "FCGDAEB"
     treble: [5, 3.5, 5.5, 4, 2.5, 4.5, 3],
     bass: [4, 2.5, 4.5, 3, 1.5, 3.5, 2],
     alto: [4.5, 3, 5, 3.5, 2, 4, 2.5],
-    tenor: [2, 4, 2.5, 4.5, 3, 5, 3.5],
+    tenor: [2, 4, 2.5, 4.5, 3, 5, 3.5]
 };
 
-var flats = {
-    //"BEADGCF"
+var flats: { [key: string]: Array<number> } = {
+    // "BEADGCF"
     treble: [3, 4.5, 2.5, 4, 2, 3.5, 1.5],
     bass: [2, 3.5, 1.5, 3, 1, 2.5, 0.5],
     alto: [2.5, 4, 2, 3.5, 1.5, 3, 1],
     tenor: [3.5, 5, 3, 4.5, 2.5, 4, 2]
 };
 
-module.exports = KeySignature;
+export interface IProps {
+    key: string;
+    spec: KeySignatureModel;
+}
+
+export interface IState {
+
+}
+
+export var Component = ReactTS.createReactComponent(KeySignature);

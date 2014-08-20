@@ -5,7 +5,7 @@
 var React = require("react");
 
 var Victoria = require("../renderer/victoria/hellogl.jsx");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+var renderUtil = require("ripienoUtil/renderUtil");
 
 var VG = Victoria.VG;
 

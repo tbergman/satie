@@ -8,7 +8,7 @@ var _ = require("lodash");
 var Dot = require("./_dot.jsx");
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
 
 var IDEAL_STEM_HEIGHT = 3.5;

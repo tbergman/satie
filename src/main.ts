@@ -2,10 +2,13 @@
  * The browser entrypoint.
  */
 
-var React = require("react");
-var Router = require("./router.jsx");
+/// <reference path="../node_modules/react-typescript-definitions/react.d.ts" />
+/// <reference path="../node_modules/react-typescript/declarations/react-typescript.d.ts" />
 
-global.React = React; // for Chrome devtool extension
+import React = require("react");
+global.React = React; // for Chrome devtool extension and React typescript extension
+
+import Router = require("./router");
 
 if (typeof window !== "undefined" &&
         /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i
@@ -19,6 +22,6 @@ if (typeof window !== "undefined" &&
 }
 
 React.renderComponent(
-    <Router />,
+    Router.Component(null, null),
     document.body
 );

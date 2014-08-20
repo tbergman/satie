@@ -2,13 +2,13 @@
  * Flux store for playback.
  */
 
-var EventEmitter = require("events").EventEmitter; 
-var _ = require("lodash");
-var assert = require("assert");
+import _ = require("lodash");
+import TSEE = require("./tsee");
 
-var Contracts = require("./contracts.ts");
-var Dispatcher = require("./dispatcher.ts"); 
-var SessionStore = require("./session.ts"); // must be registered before PlaybackStore!
+import Dispatcher = require("./dispatcher");
+import C = require("./contracts");
+import Model = require("./model");
+require("./session"); // Must be registered before PlaybackStore!
 
 var enabled = (typeof window !== "undefined");
 
@@ -16,12 +16,12 @@ if (!global.AudioContext && global.webkitAudioContext) {
     global.AudioContext = global.webkitAudioContext;
 }
 
-var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
+export var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 
-var Audio5js;
-var MIDI;
+var Audio5js: any;
+var MIDI: any;
 var _legacyAudioReady = false;
-var audio5js;
+var audio5js: any;
 
 if (enabled) {
     MIDI = require("midi/js/MIDI/Plugin.js");
@@ -36,10 +36,11 @@ if (enabled) {
     }
 }
 
-var CHANGE_EVENT = "change"; 
+export var CHANGE_EVENT = "change";
 
-class PlaybackStore extends EventEmitter {
+export class PlaybackStore extends TSEE {
     constructor() {
+        super();
         Dispatcher.Instance.register(this.handleAction.bind(this));
 
         _pianoLoaded = false;
@@ -51,7 +52,7 @@ class PlaybackStore extends EventEmitter {
                 global.audio5js = audio5js = new Audio5js({
                     swf_path: "/node_modules/audio5/swf/audio5js.swf",
                     throw_errors: true,
-                    ready: function(player) {
+                    ready: function(player: any) {
                         this.on("canplay", function() {
                             _legacyAudioReady = true;
                             store.emit(CHANGE_EVENT);
@@ -64,7 +65,7 @@ class PlaybackStore extends EventEmitter {
             });
         }
 
-        if (enabled) { 
+        if (enabled) {
             _.defer(() => {
                 MIDI.loadPlugin({
                     soundfontUrl: "/res/soundfonts/",
@@ -72,7 +73,7 @@ class PlaybackStore extends EventEmitter {
                     soundManagerUrl: "/res/soundmanager2.js",
                     soundManagerSwfUrl: "/res/soundManager2_swf/",
                     callback: () => {
-                        //console.log("LOADED MIDI", MIDI.api);
+                        // console.log("LOADED MIDI", MIDI.api);
                         _pianoLoaded = true;
                         MIDI.setVolume(0, 127);
                         this.emit(CHANGE_EVENT);
@@ -82,7 +83,7 @@ class PlaybackStore extends EventEmitter {
         }
     }
 
-    handleAction(action) {
+    handleAction(action: C.IFluxAction) {
         switch(action.description) {
             case "DELETE /local/song/show":
             case "PUT /local/song/show":
@@ -107,10 +108,10 @@ class PlaybackStore extends EventEmitter {
                 this.emit(CHANGE_EVENT);
                 break;
             case "POST /api/synth DONE":
-                if (action.response.cb === "" + module.exports.latestID) {
-                    var play = function() {
+                if (action.response.cb === "" + latestID) {
+                    var play = function () {
                         audio5js.load("/api/synth/mp3?tmpRef=" + action.response.tmpRef);
-                    }
+                    };
                     if (audio5js.ready) {
                         play();
                     } else {
@@ -123,7 +124,7 @@ class PlaybackStore extends EventEmitter {
         return true;
     }
 
-    _play(on) {
+    _play(on: boolean) {
         _playing = on;
         if (_playing) {
             _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
@@ -136,9 +137,8 @@ class PlaybackStore extends EventEmitter {
 
     continuePlay() {
         var SongEditorStore = require("./songEditor.ts");
-        var MAX_DELAY = 9999999999999999;
-        var anyDelay = MAX_DELAY;
-        var delays = [];
+        var beats: number;
+        var delays: Array<number> = [];
         _.each(this._remainingActions || [], m => {
             m();
         });
@@ -168,11 +168,11 @@ class PlaybackStore extends EventEmitter {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            // XXX: assuming 4/4 for now 
+            // XXX: assuming 4/4 for now
 
-            if (enabled) { 
+            if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
-                    var obj = body[i];
+                    var obj: Model = body[i];
                     foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
                             visualCursor.bar === obj.ctxData.bar);
                     if (foundIdx && USING_LEGACY_AUDIO && !foundLegacyStart) {
@@ -183,11 +183,12 @@ class PlaybackStore extends EventEmitter {
                             audio5js.pause();
                         });
                     }
-                    
-                    if (foundIdx && (obj.pitch || obj.chord)) {
-                        var beats = obj.getBeats();
+
+                    if (foundIdx && obj.isNote) {
+                        beats = obj.note.getBeats(null); // XXX: I don't think this works.
                         if (!USING_LEGACY_AUDIO) {
-                            _.each(obj.pitch ? [obj.midiNote()] : Contracts.midiNote(obj), midiNote => {
+                            _.each(obj.note.pitch ? [C.midiNote(obj.note)] :
+                                    C.midiNote(obj.note), midiNote => {
                                 var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
                                 MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
@@ -202,17 +203,17 @@ class PlaybackStore extends EventEmitter {
                         delays.push(delay);
                     }
 
-                    if (obj.pitch || obj.chord) {
-                        var beats = obj.getBeats();
+                    if (obj.isNote) {
+                        beats = obj.note.getBeats(null); // XXX: I don't think this works.
                         seek += beats*timePerBeat;
                     }
                 }
             }
         }
 
-        var delayMap = {};
-        var lastIdx;
-        _.each(delays, (delay, idx) => {
+        var delayMap: { [key: number]: boolean } = {};
+        var lastIdx: number;
+        _.each(delays, (delay: number, idx: number) => {
             if (delayMap[delay]) {
                 return;
             }
@@ -241,19 +242,19 @@ class PlaybackStore extends EventEmitter {
         });
     }
 
-    /** 
-     * @param {function} callback 
-     */ 
-    addChangeListener(callback) { 
-        this.on(CHANGE_EVENT, callback); 
+    /**
+     * @param {function} callback
+     */
+    addChangeListener(callback: Function) {
+        this.on(CHANGE_EVENT, callback);
     }
 
-    /** 
-     * @param {function} callback 
-     */ 
-    removeChangeListener(callback) { 
-        this.removeListener(CHANGE_EVENT, callback); 
-    } 
+    /**
+     * @param {function} callback
+     */
+    removeChangeListener(callback: Function) {
+        this.removeListener(CHANGE_EVENT, callback);
+    }
 
     playing() {
         return _playing;
@@ -262,13 +263,17 @@ class PlaybackStore extends EventEmitter {
     ready() {
         return _pianoLoaded && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
+
+    _remainingActions: Array<any> = [];
 }
 
-var _pianoLoaded;
-var _playing;
-var _timeoutId;
+var _pianoLoaded: boolean;
+var _playing: boolean;
+var _timeoutId: number;
 
-var hit = function(note, velocity, duration) {
+export function hit(note: any, velocity?: number, duration?: any) {
+    "use strict";
+
     if (note instanceof Array) {
         _.map(note, n => hit(n, velocity, duration));
     } else {
@@ -279,9 +284,13 @@ var hit = function(note, velocity, duration) {
     }
 };
 
-module.exports = new PlaybackStore();
-module.exports.hit = hit;
-module.exports.USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
-module.exports.latestID = 0;
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require TSEE since we extend it. This line forces the require()
+// line to not be optimized out.
+TSEE.length;
+/* tslint:enable */
 
-global.PlaybackStore = module.exports;
+export var Instance = new PlaybackStore();
+export var latestID = 0;
+global.PlaybackStore = Instance;

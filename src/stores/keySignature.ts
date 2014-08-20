@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Model for key signatures.
  */
 
 import Model = require("./model");
@@ -7,25 +7,28 @@ import Model = require("./model");
 import _ = require("lodash");
 import assert = require("assert");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import ClefModel = require("./clef");
-import IterationStatus = require("./iterationStatus");
-import SmartCondition = require("./smartCondition");
 
-var isPitch = (k: Contracts.Pitch, name: string, acc?: number) =>
+var isPitch = (k: C.IPitch, name: string, acc?: number) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
 
 class KeySignatureModel extends Model {
     clef: string;
-    keySignature: Contracts.KeySignature;
+    keySignature: C.IKeySignature;
     _annotatedSpacing: number;
     color: string;
     temporary: boolean;
     selected: boolean;
-    pitch: Contracts.Pitch;
+    pitch: C.IPitch;
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        if (!ctx.clef) {
+            return ClefModel.createClef(ctx);
+        }
+
+        // Copy information from the context that the view needs.
         this.clef = ctx.clef;
         var next = ctx.next();
         ctx.keySignature = this.keySignature;
@@ -46,10 +49,10 @@ class KeySignatureModel extends Model {
             ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
-        if (this["_annotated"]) {
+        if (this._annotated) {
             return;
         }
 
@@ -68,17 +71,17 @@ class KeySignatureModel extends Model {
     getFlatCount() {
         return KeySignatureModel.getFlatCount(this.keySignature);
     }
-    static createKeySignature = (ctx: Context): IterationStatus => {
+    static createKeySignature = (ctx: Context): C.IterationStatus => {
         return ctx.insertPast(new KeySignatureModel({
             keySignature: ctx.prevKeySignature ||
-                {pitch: {pitch: "c"}, acc: 0, mode: Contracts.MAJOR},
+                {pitch: {pitch: "c"}, acc: 0, mode: C.MAJOR},
             _annotated: "createKeySignature"
         }));
     };
 
-    static getSharpCount = (keySignature: Contracts.KeySignature): number => {
+    static getSharpCount = (keySignature: C.IKeySignature): number => {
         var k = keySignature.pitch;
-        if (keySignature.mode === Contracts.MAJOR) {
+        if (keySignature.mode === C.MAJOR) {
             if (isPitch(k, "c")) {
                 return 0;
             } else if (isPitch(k, "g")) {
@@ -98,7 +101,7 @@ class KeySignatureModel extends Model {
             } else if (isPitch(k, "g", 1)) {
                 return 7; // + fx
             }
-        } else if (keySignature.mode === Contracts.MINOR) {
+        } else if (keySignature.mode === C.MINOR) {
             if (isPitch(k, "a")) {
                 return 0;
             } else if (isPitch(k, "e")) {
@@ -125,9 +128,9 @@ class KeySignatureModel extends Model {
         return undefined;
     };
 
-    static getFlatCount = (keySignature: Contracts.KeySignature): number => {
+    static getFlatCount = (keySignature: C.IKeySignature): number => {
         var k = keySignature.pitch;
-        if (keySignature.mode === Contracts.MAJOR) {
+        if (keySignature.mode === C.MAJOR) {
             if (isPitch(k, "f")) {
                 return 1;
             } else if (isPitch(k, "b", -1)) {
@@ -145,7 +148,7 @@ class KeySignatureModel extends Model {
             } else if (isPitch(k, "f", -1)) {
                 return 7; // + bbb
             }
-        } else if (keySignature.mode === Contracts.MINOR) {
+        } else if (keySignature.mode === C.MINOR) {
             if (isPitch(k, "d")) {
                 return 1;
             } else if (isPitch(k, "g")) {
@@ -170,8 +173,8 @@ class KeySignatureModel extends Model {
         return undefined;
     };
 
-    static getAccidentals = (keySignature: Contracts.KeySignature) => {
-        var ret: Contracts.Accidentals = {};
+    static getAccidentals = (keySignature: C.IKeySignature) => {
+        var ret: C.IAccidentals = {};
 
         var flats = KeySignatureModel.getFlatCount(keySignature);
         if (flats) {
@@ -190,22 +193,16 @@ class KeySignatureModel extends Model {
     static flatCircle = "beadgcf";
     static sharpCircle = "fcgdaeb";
 
-    prereqs = KeySignatureModel.prereqs;
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function (ctx: Context): boolean {
-                return !!ctx.clef;
-            },
-            correction: ClefModel.createClef,
-            description: "A clef must exist on each line."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.KEY_SIGNATURE;
+        return C.Type.KEY_SIGNATURE;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = KeySignatureModel;

@@ -4,30 +4,31 @@
  *  - spelling rhythms according to the time signature
  */
 
+"use strict";
+
 import assert = require("assert");
 import _ = require("lodash");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
-import Model = require("./model");
 
-var _32  = Contracts.makeDuration({count: 32});
-var _32D = Contracts.makeDuration({count: 32, dots: 1});
-var _16  = Contracts.makeDuration({count: 16});
-var _16D = Contracts.makeDuration({count: 16, dots: 1});
-var _8   = Contracts.makeDuration({count: 8});
-var _8D  = Contracts.makeDuration({count: 8, dots: 1});
-var _4   = Contracts.makeDuration({count: 4});
-var _4D  = Contracts.makeDuration({count: 4, dots: 1});
-var _2   = Contracts.makeDuration({count: 2});
-var _2D  = Contracts.makeDuration({count: 2, dots: 1});
-var _1   = Contracts.makeDuration({count: 1});
+var _32  = C.makeDuration({count: 32});
+var _32D = C.makeDuration({count: 32, dots: 1});
+var _16  = C.makeDuration({count: 16});
+var _16D = C.makeDuration({count: 16, dots: 1});
+var _8   = C.makeDuration({count: 8});
+var _8D  = C.makeDuration({count: 8, dots: 1});
+var _4   = C.makeDuration({count: 4});
+var _4D  = C.makeDuration({count: 4, dots: 1});
+var _2   = C.makeDuration({count: 2});
+var _2D  = C.makeDuration({count: 2, dots: 1});
+var _1   = C.makeDuration({count: 1});
 
 var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32];
 
 // Adapted from Behind Bars (E. Gould) page 155
-var beamingPatterns: {[key: string]: Array <Contracts.Duration>} = {
+var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
     "2/16":     [_16,   _16                     ],
     "1/8":      [_8                             ],
 
@@ -82,14 +83,14 @@ var beamingPatterns: {[key: string]: Array <Contracts.Duration>} = {
     "7/4_alt":  [_2D,           _1              ],
 
     "15/8":     [_4D,  _4D,  _4D,  _4D,  _4D    ],
-    
+
     "8/4":      [_1,            _1              ],
         // "Or any other combination"...
         // There's a whole bunch, and I think composers using 8/4 are willing
         // to select the correct beaming manually
     "4/2":      [_1,            _1              ],
     "2/1":      [_1,            _1              ],
-    
+
     "18/8":     [_4D, _4D, _4D, _4D, _4D, _4D   ],
     "9/4":      [_2D,      _2D,      _2D        ]
 };
@@ -131,45 +132,49 @@ export enum Beaming {
  * @prop {undefined | "alt" | "alt2"} mod: Select an alternative beaming of the
  *                                         given time signature
  */
-export function rythmicSpellcheck(durations: Array<Contracts.PitchDuration>, ts: Contracts.TimeSignature, fix: boolean, mod: Beaming) {
+export function rythmicSpellcheck(durations: Array<C.IPitchDuration>, ts: C.ITimeSignature, fix: boolean, mod: Beaming) {
+    "use strict";
+
     var tsName = getTSString(ts);
 
     var pattern = beamingPatterns[tsName];
     assert(pattern, "Time signature must be on page 155 of Behind Bars.");
-    
+
     assert(false, "Not implemented");
-    var count = 0;
-    for (var i = 0; i < durations.length; ++i) {
-        //if (durations[i].getBeats 
-    }
 };
 
 /**
  * Returns a TS string for lookup in the beamingPatterns array.
  */
-export function getTSString(ts: Contracts.TimeSignature) {
+export function getTSString(ts: C.ITimeSignature) {
+    "use strict";
+
     return ts.beats + "/" + ts.beatType;
 }
 
 /**
  * Returns an array of Duration specs the is the result of adding "durr2" to "durr1".
  */
-export function add(durr1: Contracts.PitchDuration, durr2: Contracts.PitchDuration, ts: Contracts.TimeSignature) {
+export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITimeSignature) {
+    "use strict";
+
     assert(false, "Not implemented");
 }
 
 /**
  * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
  */
-export function subtract(durr1: Contracts.PitchDuration, beats: number,
-    ctx: Context, beatOffset?: number): Array<Contracts.Duration>;
+export function subtract(durr1: C.IPitchDuration, beats: number,
+    ctx: Context, beatOffset?: number): Array<C.IDuration>;
 export function subtract(durr1: number, beats: number,
-    ctx: Context, beatOffset?: number): Array<Contracts.Duration>;
+    ctx: Context, beatOffset?: number): Array<C.IDuration>;
 
 export function subtract(durr1: any, beats: number,
-        ctx: Context, beatOffset?: number): Array<Contracts.Duration> {
+        ctx: Context, beatOffset?: number): Array<C.IDuration> {
+    "use strict";
+
     var tsName = getTSString(ctx.timeSignature);
-    var replaceWith: Array<Contracts.Duration> = [];
+    var replaceWith: Array<C.IDuration> = [];
     var durr1Beats: number = isNaN(<any>durr1) ? durr1.getBeats(ctx) : <number> durr1;
     var beatsToFill = durr1Beats - beats;
     var bp = beamingPatterns[tsName];
@@ -229,7 +234,9 @@ export function subtract(durr1: any, beats: number,
 
 export function rebeamable(idx: number, ctx: Context):
         Array<DurationModel> {
-    //TODO: merge with 'subtract'
+    "use strict";
+
+    // TODO: merge with 'subtract'
     var body = ctx.body;
     var tsName = getTSString(ctx.timeSignature);
     var replaceWith: Array<DurationModel> = [];
@@ -254,7 +261,7 @@ export function rebeamable(idx: number, ctx: Context):
     var prevInBeam = true;
 
     for (var i = idx; !body[i].endMarker; ++i) {
-        if (body[i].type === Contracts.ModelType.BEAM_GROUP) {
+        if (body[i].type === C.Type.BEAM_GROUP) {
             if (idx !== i) {
                 needsReplacement = true;
             }
@@ -296,7 +303,9 @@ export function rebeamable(idx: number, ctx: Context):
 }
 
 export function getBeats(count: number, dots: number,
-        tuplet: Contracts.Tuplet, ts: Contracts.TimeSignature) {
+        tuplet: C.ITuplet, ts: C.ITimeSignature) {
+    "use strict";
+
     assert(ts, "Not supplying a ts is deprecated");
     var base = ts.beatType/count;
     if (tuplet) {

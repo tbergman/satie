@@ -6,7 +6,7 @@
  */
 
 var React = require("react");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+var renderUtil = require("ripienoUtil/renderUtil");
 
 var Header = React.createClass({
     propTypes: {

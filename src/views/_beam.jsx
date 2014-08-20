@@ -10,12 +10,12 @@
 
 var React = require("react");
 var _ = require("lodash");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+var renderUtil = require("ripienoUtil/renderUtil");
 
 var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
 var RenderableMixin = require("./_renderable.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 var Victoria = require("../renderer/victoria/hellogl.jsx");
 var getFontOffset = require("./_getFontOffset.jsx");
 

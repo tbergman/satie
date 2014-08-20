@@ -1,8 +1,9 @@
 %{
     var _ = require("lodash");
-    var util = require("ripienoUtil/renderUtil.jsx");
+    var util = require("ripienoUtil/renderUtil");
 
     var BarlineModel = require("./barline.ts");
+	var C = require("./contracts.ts")
     var ClefModel = require("./clef.ts");
     var EndMarkerModel = require("./endMarker.ts");
     var KeySignatureModel = require("./keySignature.ts");
@@ -388,7 +389,7 @@ partElement
         }
   | tupletMode                           { $$ = $1; }
   | 'PAGE_BREAK'                         { $$ = {append: [
-        new BarlineModel({barline: true}),
+        new BarlineModel({barline: C.Barline.Standard}),
         new NewPageModel({newpage: true}),
         new NewlineModel({newline: true})]}; }
   | 'SLUR_OPEN' partElements 'SLUR_CLOSE'

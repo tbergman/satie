@@ -5,14 +5,12 @@
 import Model = require("./model");
 
 import BeamGroupModel = require("./beamGroup");
+import C = require("./contracts");
 import ClefModel = require("./clef");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
-import IterationStatus = require("./iterationStatus");
 import TimeSignatureModel = require("./timeSignature");
-import SmartCondition = require("./smartCondition");
 
 class SlurGroupModel extends Model {
     slur: number;
@@ -26,12 +24,26 @@ class SlurGroupModel extends Model {
     m_x: number;
     m_y: number;
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // A clef must exist on each line.
+        if (!ctx.clef) {
+            return ClefModel.createClef(ctx);
+        }
+
+        // A key signature must exist on each line.
+        if (!ctx.keySignature) {
+            return KeySignatureModel.createKeySignature(ctx);
+        }
+
+        // A time signature must exist on the first line of every page.
+        if (!ctx.timeSignature) {
+            return TimeSignatureModel.createTS(ctx);
+        }
+
         var n: Array<DurationModel> = [];
         this._beam = undefined;
-        this._fontSize = ctx.fontSize;
         for (var i = ctx.idx; i < ctx.body.length && n.length < this.slur; ++i) {
-            if ((<any>ctx.body[i])["beam"]) {
+            if (ctx.body[i].type === C.Type.BEAM_GROUP) {
                 this._beam = <any> ctx.body[i]; // TSFIX
             }
             if (ctx.body[i].isNote) {
@@ -52,7 +64,7 @@ class SlurGroupModel extends Model {
             this.line2 = DurationModel.getLine(last, ctx);
             this.width = last.x() - first.x();
         }
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var count = this.slur;
@@ -76,33 +88,16 @@ class SlurGroupModel extends Model {
         });
     }
 
-    prereqs = SlurGroupModel.prereqs;
-
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function (ctx) { return !!ctx.clef; },
-            correction: ClefModel.createClef,
-            description: "A clef must exist on each line."
-        },
-
-        {
-            condition: function (ctx) { return !!ctx.keySignature; },
-            correction: KeySignatureModel.createKeySignature,
-            description: "A key signature must exist on each line."
-        },
-
-        {
-            condition: function (ctx) { return !!ctx.timeSignature; },
-            correction: TimeSignatureModel.createTS,
-            description: "A time signature must exist on the first line of every page."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.SLUR;
+        return C.Type.SLUR;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = SlurGroupModel;

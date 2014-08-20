@@ -8,7 +8,7 @@ var React = require("react");
 var _ = require("lodash");
 
 var Glyph = require("./_glyph.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
 
 var NoteMarking = React.createClass({

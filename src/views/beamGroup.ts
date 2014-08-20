@@ -5,30 +5,28 @@
  * @jsx React.DOM
  */
 
-var React = require("react");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
-var _ = require("lodash");
-var assert = require("assert");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+import ReactTS = require("react-typescript");
+import _ = require("lodash");
+import assert = require("assert");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 var Beam = require("./_beam.jsx");
-var BeamGroupModel = require("../stores/beamGroup.ts");
-var Glyph = require("./_glyph.jsx");
+import BeamGroupModel = require("../stores/beamGroup");
 var Group = require("./_group.jsx");
-var Note = require("./_note.jsx");
-var getFontOffset = require("./_getFontOffset.jsx");
+import Note = require("./_note");
 
 // The line of a chord futhest from the end of a stem.
 var getExtremeLine = Note.getExtremeLine;
 
-var BeamGroup = React.createClass({
-    render: function() { 
+export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
+    render() {
         var spec = this.props.spec;
         var children = spec.generate();
 
         // props of first and last notes.
         // The slope is usually decided based on the first and last notes.
-        var firstP, lastP;
+        var firstP: any;
+        var lastP: any;
 
         _.each(children, (note, idx) => {
             // All notes in a beam have a unique key
@@ -60,8 +58,10 @@ var BeamGroup = React.createClass({
 
         var b = line1 + stemHeight1;
 
-        var getSH = (direction, idx, line) => (b*direction +
-                (direction === 1 ? 0 : 6.9) + m*idx*direction) - direction*line;
+        function getSH(direction: number, idx: number, line: number) {
+            return (b * direction +
+                (direction === 1 ? 0 : 6.9) + m * idx * direction) - direction * line;
+        }
 
         // When the slope causes near-collisions, eliminate the slope.
         _.each(children, (note, idx) => {
@@ -74,7 +74,7 @@ var BeamGroup = React.createClass({
             }
         });
 
-        var strokeColor;
+        var strokeColor: string;
         var strokeEnabled = true;
 
         _.each(children, (note, idx) => {
@@ -94,27 +94,36 @@ var BeamGroup = React.createClass({
             }
         });
 
-        return <Group>
-            {[<Beam
-                beams={(spec.beams) || 1}
-                direction={direction}
-                key={"beam"}
-                fontSize={spec.fontSize()}
-                line1={parseFloat(line1) + parseFloat(direction*getSH(direction, 0, line1))}
-                line2={parseFloat(line2) + parseFloat(direction*getSH(direction, children.length - 1, line2))}
-                notehead1={firstP.notehead}
-                notehead2={lastP.notehead}
-                scaleFactor={spec.fontSize()*renderUtil.FONT_SIZE_FACTOR}
-                stemWidth={0.035} 
-                stroke={strokeEnabled && strokeColor}
-                tuplet={spec.tuplet}
-                tupletsTemporary={spec.tupletsTemporary}
-                width={lastP.x - firstP.x}
-                x={firstP.x /* should assert all in order */}
-                y={firstP.y /* should assert all are equal */} />].concat(
-            children)}
-        </Group>;
+        return Group(null,
+            [Beam({
+                beams: (spec.beams) || 1,
+                direction: direction,
+                key: "beam",
+                fontSize: spec.fontSize,
+                line1: parseFloat("" + line1) + direction*getSH(direction, 0, line1),
+                line2: parseFloat("" + line2) + direction*getSH(direction, children.length - 1, line2),
+                notehead1: firstP.notehead,
+                notehead2: lastP.notehead,
+                scaleFactor: spec.fontSize*renderUtil.FONT_SIZE_FACTOR,
+                stemWidth: 0.035,
+                stroke: strokeEnabled && strokeColor,
+                tuplet: spec.tuplet,
+                tupletsTemporary: spec.tupletsTemporary,
+                width: lastP.x - firstP.x,
+                x: firstP.x, /* should assert all in order */
+                y: firstP.y/* should assert all are equal */})].concat(
+            children)
+        );
     }
-});
+};
 
-module.exports = BeamGroup;
+export var Component = ReactTS.createReactComponent(BeamGroup);
+
+export interface IProps {
+    key: string;
+    spec: BeamGroupModel;
+}
+
+export interface IState {
+
+}

@@ -8,7 +8,7 @@ var React = require("react");
 var _ = require("lodash");
 
 var Line = require("./_line.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 
 var LedgerLine = React.createClass({
     propTypes: {

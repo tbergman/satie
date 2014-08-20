@@ -2,17 +2,18 @@
     "name": "ripieno",
     "version": "0.0.1",
     "description": "A music notation app for web and iOS",
-    "main": "./src/main.jsx",
+    "main": "./src/main.ts",
     "dependencies": {
-        "react": "~0.11.1",
-        "react-bootstrap": "~0.11.1",
-        "lodash": "~2.4.1",
+        "audio5": "0.1.9",
+        "body-parser": "~1.6.2",
         "es6-promise": ">= 1.0.0",
+        "express": "~4.8.2",
+        "lodash": "~2.4.1",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-jsx": "~0.11.0",
-        "express": "~4.8.2",
-        "body-parser": "~1.6.2",
-        "audio5": "0.1.9"
+        "react": "~0.11.1",
+        "react-bootstrap": "~0.11.1",
+        "react-typescript": "git://github.com/jnetterf/react-typescript"
     },
     "devDependencies": {
         "browserify": "~4.1.5",
@@ -22,6 +23,7 @@
         "mocha": "~1.21.4",
         "node-lessify": "~0.0.3",
         "react-tools": "~0.11.1",
+        "react-typescript-definitions": "git://github.com/jnetterf/react-typescript-definitions",
         "reactify": "~0.14.0",
         "statics": "~0.1.0",
         "typescriptifier": "^1.0.0",
@@ -31,11 +33,11 @@
     },
     "scripts": {
         "dev-server": "watchify --extension .ts -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
-        "lrc-watchify": "watchify -v -o build/lrc-bundle.js -d ./src/lrc-helper.jsx --noparse lodash",
+        "lrc-watchify": "watchify --extension .ts -v -o build/lrc-bundle.js -d ./src/lrc-helper.js --noparse lodash",
         "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
-        "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .jsx$)",
-        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.js --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node"
+        "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .ts$)",
+        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",

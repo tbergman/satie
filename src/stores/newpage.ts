@@ -2,13 +2,11 @@ import Model = require("./model");
 
 import _ = require("lodash");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
-import IterationStatus = require("./iterationStatus");
-import SmartCondition = require("./smartCondition");
 
 class NewPageModel extends Model {
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
         ctx.y = 0;
 
         ctx.pageLines = _.clone(ctx.pageLines);
@@ -16,13 +14,13 @@ class NewPageModel extends Model {
 
         ctx.pageStarts = _.clone(ctx.pageStarts);
         ctx.pageStarts.push(ctx.idx);
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     visible() {
         return false;
     }
     toLylite(lylite: Array<string>) {
-        if (!this["_annotated"]) {
+        if (!this._annotated) {
             lylite.push("\\pageBreak");
         }
     }
@@ -30,23 +28,24 @@ class NewPageModel extends Model {
     static createNewPage = (ctx: Context) => {
         ctx.insertPast(new NewPageModel({newpage: true, _annotated: "createNewPage"}));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i].type === Contracts.ModelType.NEWPAGE && ctx.body[i]["_annotated"]) {
+            if (ctx.body[i].type === C.Type.NEWPAGE && ctx.body[i]._annotated) {
                 ctx.eraseFuture(i);
                 --i;
             }
         }
-        return IterationStatus.RETRY_CURRENT;
+        return C.IterationStatus.RETRY_CURRENT;
     };
 
-    prereqs = NewPageModel.prereqs;
-
-    static prereqs : Array<SmartCondition> = [
-    ];
-
     get type() {
-        return Contracts.ModelType.NEWPAGE;
+        return C.Type.NEWPAGE;
     }
 }
-Model.length; // BUG in typescriptifier!
+
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = NewPageModel;

@@ -4,11 +4,11 @@
  * to draw some sheet music.
  */
 
-var React = require("react");
-var _ = require("lodash");
-var assert = require("assert");
+import React = require("react");
+import ReactTS = require("react-typescript");
+import _ = require("lodash");
 
-var Molasses = require("./molasses/molasses.jsx");
+import Molasses = require("./molasses");
 var Victoria = require("./victoria/hellogl.jsx");
 
 var isBrowser = typeof window !== "undefined";
@@ -16,30 +16,38 @@ var useGL = (typeof global.libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
 import Dispatcher = require("../stores/dispatcher");
-import Contracts = require("../stores/contracts");
+import Context = require("../stores/context");
+import C = require("../stores/contracts");
 import History = require("../stores/history");
 import Model = require("../stores/model");
+import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
 var Group = require("../views/_group.jsx");
 var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 renderUtil.useGL = useGL;
 
-var RenderEngine = useGL ? Victoria : Molasses;
+var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses.Molasses = useGL
+    ? Victoria
+    : Molasses.Component;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-var Renderer = React.createClass({displayName: 'Renderer',
-    render: function() {
-        PROFILER_ENABLED && console.time("render");
+var html = React.DOM;
+
+export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRendererState> {
+    render() {
+        if (PROFILER_ENABLED) {
+            console.time("render");
+        }
 
         var fontSize = this.props.staveHeight;
         var y = 0;
         var staves = this.props.staves;
 
-        var pages: Array<Page> = [];
+        var pages: Array<IPage> = [];
         var firstStaveIdx = 0;
         while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
             ++firstStaveIdx;
@@ -65,101 +73,110 @@ var Renderer = React.createClass({displayName: 'Renderer',
 
         // XXX: Currently we only support single and double staves.
         // isPianoStaff is set to true when there is at least 2 staves.
-        var isPianoStaff = _.reduce(staves, function (memo: number, s: Contracts.Stave) {
+        var isPianoStaff = _.reduce(staves, function (memo: number, s: C.IStave) {
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
 
         var vcHeight = 1.2 + (isPianoStaff ? 1.2 : 0);
 
-        var rawPages = _.map(pages, function(page: Page, pidx: number) 
-            {return RenderEngine({
-                onClick: this.handleMouseClick, 
-                onMouseDown: this.handleMouseDown, 
-                onMouseUp: this.handleMouseUp, 
-                onMouseLeave: this.handleMouseLeave, 
-                onMouseMove: this.handleMouseMove, 
-                page: page, 
-                staves: staves, 
-                width: this.props.raw ? mInchW/10000 + "in" : "100%", 
-                height: this.props.raw ? mInchH/10000 + "in" : "100%", 
-                widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize), 
-                viewbox: viewbox}, 
-            /* Using staves is an anti-pattern. Ideally, we would have a getModels()
-                method in SongEditorStore or something. */
-            _.map(staves, function(stave: Contracts.Stave, idx: number)  {
-                if (stave.header) {
-                    if (page.from) {
+        var rawPages = _.map(pages, function (page: IPage, pidx: number) {
+            return RenderEngine(
+                {
+                    onClick: this.handleMouseClick,
+                    onMouseDown: this.handleMouseDown,
+                    onMouseUp: this.handleMouseUp,
+                    onMouseLeave: this.handleMouseLeave,
+                    onMouseMove: this.handleMouseMove,
+                    page: page,
+                    staves: staves,
+                    width: this.props.raw ? mInchW/10000 + "in" : "100%",
+                    height: this.props.raw ? mInchH/10000 + "in" : "100%",
+                    widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
+                    viewbox: viewbox
+                },
+                /* Using staves is an anti-pattern. Ideally, we would have a getModels()
+                    method in SongEditorStore or something. */
+                _.map(staves, function(stave: C.IStave, idx: number)  {
+                    if (stave.header) {
+                        if (page.from) {
+                            return null;
+                        }
+                        y += renderUtil.getHeaderHeight(stave.header);
+                        return !useGL && Header({
+                            fontSize: fontSize,
+                            middle: renderUtil.mm(this.props.pageSize.width, fontSize)/2,
+                            right: renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75),
+                            key: "HEADER",
+                            model: stave.header});
+                    } else if (stave.body) {
+                        return Group({key: idx, style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
+                            _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
+                                if (obj.type === C.Type.NEWLINE) {
+                                    memo.push([]);
+                                }
+                                memo[memo.length - 1].push(obj);
+                                return memo;
+                            }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
+                            function (s: Array<C.IStave>, lidx: number) {
+                                return LineContainerComponent({
+                                        store: this.props.store,
+                                        staveHeight: this.props.staveHeight,
+                                        h: idx,
+                                        generate: function () {
+                                            return _.map(s, function (item: Model) {
+                                                return item.visible() && item.render();
+                                            });
+                                        },
+                                        idx: lidx + pageLines[page.idx], key: lidx
+                                    });
+                                }.bind(this))
+                        );
+                    } else {
                         return null;
                     }
-                    y += renderUtil.getHeaderHeight(stave.header);
-                    return !useGL && Header({
-                        fontSize: fontSize, 
-                        middle: renderUtil.mm(this.props.pageSize.width, fontSize)/2, 
-                        right: renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75), 
-                        key: "HEADER", 
-                        model: stave.header});
-                } else if (stave.body) {
-                    return Group({key: idx, style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}, 
-                        _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
-                            if (obj.type === Contracts.ModelType.NEWLINE) {
-                                memo.push([]);
-                            }
-                            memo[memo.length - 1].push(obj);
-                            return memo;
-                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(function(s: Contracts.Stave, lidx: number) 
-                            {return LineContainer({
-                                store: this.props.store, 
-                                staveHeight: this.props.staveHeight, 
-                                h: idx, 
-                                generate: function()  {return _.map(s, function(item: Model)  {return item.visible() && item.render();});}, 
-                                idx: lidx + pageLines[page.idx], key: lidx});}.bind(this))
-                    );
-                } else {
-                    return null;
-                }
-            }.bind(this)), 
-            !pidx && this.props.tool && _.map(staves, function(stave: Contracts.Stave,idx: number)  {return stave.body &&
-                this.props.tool.render(
-                    this.getCtx(idx),
-                    this.state.mouse,
-                    _pointerData,
-                    fontSize,
-                    idx);}.bind(this)), 
-            this.state.selectionRect && SelectionRect({
-                fontSize: fontSize, 
-                x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x), 
-                y: Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y), 
-                width: Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x), 
-                height: Math.abs(this.state.selectionRect.start.y -
-                        this.state.selectionRect.end.y)}), 
+                }.bind(this)),
+                !pidx && this.props.tool && _.map(staves, function(stave: C.IStave,idx: number)  {return stave.body &&
+                    this.props.tool.render(
+                        this.getCtx(idx),
+                        this.state.mouse,
+                        _pointerData,
+                        fontSize,
+                        idx);}.bind(this)),
+                this.state.selectionRect && SelectionRect({
+                    fontSize: fontSize,
+                    x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x),
+                    y: Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y),
+                    width: Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x),
+                    height: Math.abs(this.state.selectionRect.start.y -
+                            this.state.selectionRect.end.y)}),
 
-            (pidx === this.state.visualCursor.annotatedPage) &&
-                this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
-                        style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}}, 
-                    Line({
-                        x1: this.state.visualCursor.annotatedObj.x() - 0.2, 
-                        x2: this.state.visualCursor.annotatedObj.x() - 0.2, 
-                        y1: this.state.visualCursor.annotatedObj.y() +
-                            (isPianoStaff ? 1.15 : 0) - vcHeight, 
-                        y2: this.state.visualCursor.annotatedObj.y() +
-                            (isPianoStaff ? 1.15 : 0) + vcHeight, 
-                        stroke: "#008CFF", 
-                        strokeWidth: 0.05})
-                )
+                (pidx === this.state.visualCursor.annotatedPage) &&
+                    this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
+                            style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
+                        Line({
+                            x1: this.state.visualCursor.annotatedObj.x() - 0.2,
+                            x2: this.state.visualCursor.annotatedObj.x() - 0.2,
+                            y1: this.state.visualCursor.annotatedObj.y() +
+                                (isPianoStaff ? 1.15 : 0) - vcHeight,
+                            y2: this.state.visualCursor.annotatedObj.y() +
+                                (isPianoStaff ? 1.15 : 0) + vcHeight,
+                            stroke: "#008CFF",
+                            strokeWidth: 0.05})
+                    )
 
-        );}.bind(this));
+            );}.bind(this));
 
-        var ret : Array<Object>; // React component
+        var ret: Object; // React component
         if (!this.props.raw) {
-            ret = React.DOM.div({className: "workspace", style: {top: this.props.top}}, 
-                _.map(rawPages, function(rawPage: any, pidx: number)  {return React.DOM.div({className: "page", 
-                    key: "page" + pidx, 
+            ret = html.div({className: "workspace", style: {top: "" + this.props.top}},
+                _.map(rawPages, function(rawPage: any, pidx: number)  {return html.div({className: "page",
+                    key: "page" + pidx,
                     style: {
                         position: "relative",
                         width: this.props.width,
                         height: this.props.height,
                         marginTop: this.props.marginTop,
-                        marginBottom: this.props.marginBottom}}, 
+                        marginBottom: this.props.marginBottom}},
                     rawPage
                 );}.bind(this))
             );
@@ -167,18 +184,22 @@ var Renderer = React.createClass({displayName: 'Renderer',
             ret = rawPages[0];
         }
 
-        this.props.store && this.props.store.markRendererClean();
+        if (this.props.store) {
+            this.props.store.markRendererClean();
+        }
 
-        PROFILER_ENABLED && console.timeEnd("render");
+        if (PROFILER_ENABLED) {
+            console.timeEnd("render");
+        }
         return ret;
-    },
+    }
 
-    _getPointerData: function(mouse: Contracts.Mouse) {
+    _getPointerData(mouse: C.IMouse) : C.IPointerData {
         var dynY = mouse.y;
         var dynX = mouse.x;
         var dynLine = 3;
-        var foundObj = false;
-        var foundIdx: boolean;
+        var foundObj: Model = null;
+        var foundIdx: number;
         var musicLine: number;
         var ctxData: { beat: number; bar: number };
         var staveIdx: number;
@@ -195,17 +216,16 @@ var Renderer = React.createClass({displayName: 'Renderer',
             dynLine = Math.round((ctx.lines[i].y - mouse.y)/0.125)/2 + 3;
             var body = this.props.staves[h].body;
             for (var j = ctx.pageStarts[mouse.page];
-                    j < body.length && !body[i].newpage; ++j) {
+                    j < body.length && body[i].type !== C.Type.NEWPAGE; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
                 if (Math.abs(item.y() - dynY) < 0.001) {
-                    if ((item.keySignature ||
-                                item.timeSignature ||
-                                item.clef ||
-                                item.pitch ||
-                                item.chord) &&
+                    if ((item.type === C.Type.KEY_SIGNATURE ||
+                                item.type === C.Type.TIME_SIGNATURE ||
+                                item.type === C.Type.CLEF ||
+                                item.type === C.Type.DURATION) &&
                             Math.abs(dynX - item.x()) < 0.27 +
-                                (item.dots ? item.dots*0.2 : 0)) {
+                                (item.isNote ? item.note.dots*0.2 : 0)) {
                         dynX = item.x();
                         foundIdx = j;
                         foundObj = item;
@@ -225,12 +245,37 @@ var Renderer = React.createClass({displayName: 'Renderer',
                             staveIdx: h,
                             musicLine: musicLine,
                             ctxData: item.ctxData,
-                            obj: {
+                            obj: new Model({
                                 placeholder: true,
                                 idx: j,
                                 item: item,
-                                musicLine: musicLine
-                            }
+                                musicLine: musicLine,
+                                _annotated: null,
+                                fontSize: 0,
+                                _key: null,
+                                x: () => NaN,
+                                y: () => NaN,
+                                setX: null,
+                                setY: null,
+                                _x: NaN,
+                                _y: NaN,
+                                ctxData: null,
+                                endMarker: false,
+                                intersects: [],
+                                inBeam: false,
+                                isNote: false,
+                                isRest: false,
+                                selected: false,
+                                type: null,
+                                note: null,
+                                annotate: null,
+                                _generateKey: null,
+                                key: null,
+                                annotateImpl: null,
+                                visible: () => false,
+                                render: null,
+                                toLylite: null
+                            })
                         };
                         return _pointerData;
                     }
@@ -249,13 +294,13 @@ var Renderer = React.createClass({displayName: 'Renderer',
         };
 
         return _pointerData;
-    },
+    }
 
     /**
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    getStaveInfoForY: function(my: number, page: number) {
+    getStaveInfoForY(my: number, page: number) {
         for (var h = 0; h < this.getCtxCount(); ++h) {
             var ctx = this.getCtx(h);
             if (!ctx) {
@@ -271,8 +316,9 @@ var Renderer = React.createClass({displayName: 'Renderer',
             }
         }
         return null;
-    },
-    _elementsInBBox: function ( box: ClientRect, mouse: Contracts.Mouse) {
+    }
+
+    _elementsInBBox(box: ClientRect, mouse: C.IMouse): Array<Model> {
         var ret: Array<Model> = [];
 
         for (var h = 0; h < this.getCtxCount(); ++h) {
@@ -283,7 +329,8 @@ var Renderer = React.createClass({displayName: 'Renderer',
             var body = this.props.staves[h].body;
             var inRange = function(min: number, val: number, max: number)  {return min < val && val < max;};
 
-            for (var i = ctx.pageStarts[mouse.page]; i < body.length && !body[i].newpage; ++i) {
+            for (var i = ctx.pageStarts[mouse.page];
+                    i < body.length && body[i].type !== C.Type.NEWPAGE; ++i) {
                 var item = body[i];
                 if (inRange(box.top - 1, item.y(),
                             box.bottom + 1) &&
@@ -294,19 +341,21 @@ var Renderer = React.createClass({displayName: 'Renderer',
         }
 
         return ret;
-    },
-    getInitialState: function() {
+    }
+    getInitialState() {
         return {
             mouse: {x: 0, y: 0},
             visualCursor: this.props.store && this.props.store.visualCursor() || {
                 annotatedPage: 0
             } // TODO: render multiple pages
         };
-    },
-    getPositionForMouse: function(event: MouseEvent): PosInfo {
+    }
+
+    getPositionForMouse(event: MouseEvent): IPosInfo {
+        var target: Element;
         if (useGL) {
             var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
-            var target = <Element> event.target;
+            target = <Element> event.target;
             var rect = target.getBoundingClientRect();
 
             return {
@@ -317,7 +366,7 @@ var Renderer = React.createClass({displayName: 'Renderer',
             };
         }
         var locatable: SVGLocatable = <any> event.target;
-        var target = <Element> event.target;
+        target = <Element> event.target;
 
         var svg_elt = <SVGSVGElement> (locatable.farthestViewportElement || target);
         var svg_pt = svg_elt.createSVGPoint();
@@ -327,11 +376,12 @@ var Renderer = React.createClass({displayName: 'Renderer',
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
-            page: parseInt(svg_elt.getAttribute("data-page")),
+            page: parseInt(svg_elt.getAttribute("data-page"), 10),
             selectionInfo: target.getAttribute("data-selectioninfo")
         };
-    },
-    handleMouseClick: function(event: MouseEvent) {
+    }
+
+    handleMouseClick(event: MouseEvent) {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
@@ -350,8 +400,9 @@ var Renderer = React.createClass({displayName: 'Renderer',
             Dispatcher.PUT("/local/tool/_action", {mouseData: data, fn: fn});
         }
         this.forceUpdate();
-    },
-    handleMouseDown: function(event: MouseEvent) {
+    }
+
+    handleMouseDown(event: MouseEvent) {
         if (event.button === 0) {
             if (this.props.selection) {
                 _.each(this.props.selection, function(s: Model)  {
@@ -361,7 +412,9 @@ var Renderer = React.createClass({displayName: 'Renderer',
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
-                this.props.store && this.props.store.markRendererDirty();
+                if (this.props.store) {
+                    this.props.store.markRendererDirty();
+                }
             }
             this.setState({
                 selectionRect: {
@@ -373,15 +426,18 @@ var Renderer = React.createClass({displayName: 'Renderer',
                 Dispatcher.DELETE("/local/selection");
             }
         }
-    },
-    handleMouseUp: function(event: MouseEvent) {
+    }
+
+    handleMouseUp(event: MouseEvent) {
         if (event.button === 0 && this.state.selectionRect) {
             var rect = this.state.selectionRect;
             var bbox = {
                 left: Math.min(rect.start.x, rect.end.x),
                 right: Math.max(rect.start.x, rect.end.x),
                 top: Math.min(rect.start.y, rect.end.y),
-                bottom: Math.max(rect.start.y, rect.end.y)
+                bottom: Math.max(rect.start.y, rect.end.y),
+                width: Math.abs(rect.end.x - rect.start.x),
+                height: Math.abs(rect.end.y - rect.start.y)
             };
             var selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
             if (selection.length) {
@@ -389,7 +445,9 @@ var Renderer = React.createClass({displayName: 'Renderer',
                     s.selected = true;
                 });
                 // Bottleneck: detect lines with selected content
-                this.props.store && this.props.store.markRendererDirty();
+                if (this.props.store) {
+                    this.props.store.markRendererDirty();
+                }
             }
             this.setState({
                 selectionRect: null
@@ -398,8 +456,9 @@ var Renderer = React.createClass({displayName: 'Renderer',
                 Dispatcher.PUT("/local/selection", selection.length ? selection : null);
             }
         }
-    },
-    handleMouseMove: function(event: MouseEvent) {
+    }
+
+    handleMouseMove(event: MouseEvent) {
         if (this.state.selectionRect) {
             this.setState({
                 selectionRect: {
@@ -423,54 +482,65 @@ var Renderer = React.createClass({displayName: 'Renderer',
             return;
         }
         this.handleMouseMoveThrottled(this.getPositionForMouse(event));
-    },
-    handleMouseLeave: function() {
-        this._cleanup && this._cleanup();
+    }
+
+    handleMouseLeave() {
+        if (this._cleanup) {
+            this._cleanup();
+        }
+
         this.setState({
             mouse: null
         });
-    },
-    handleMouseMoveThrottled: _.throttle(function(mouse: MouseEvent) {
+    }
+
+    handleMouseMoveThrottled = _.throttle(function (mouse: IPosInfo) {
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            this.props.store && this.props.store.handleAction({
-                description: "PUT /local/tool",
-                resource: "hide"
-            });
-        } else if (fn) {
+            if (this.props.store) {
+                this.props.store.handleAction({
+                    description: "PUT /local/tool",
+                    resource: "hide"
+                });
+            }
+        } else if (fn && this.props.store) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            this.props.store && this.props.store.handleAction({
+            this.props.store.handleAction({
                 description: "PUT /local/tool",
                 resource: "preview",
-                postData: {mouseData: data, fn: fn}
+                postData: { mouseData: data, fn: fn }
             });
         }
 
         this.setState({
             mouse: mouse
         });
-    }, 16 /* 60 Hz */),
+    }, 16 /* 60 Hz */);
 
-    getCtx: function(idx: number) {
+    getCtx(idx: number) {
         return this.props.contexts ?
             this.props.contexts[idx] :
             (this.props.store && this.props.store.ctx(idx));
-    },
-    getCtxCount: function() {
+    }
+
+    getCtxCount() {
         return this.props.contexts ?
             this.props.contexts.length :
             (this.props.store && this.props.store.ctxCount());
-    },
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         if (isBrowser) {
             this.setupBrowserListeners();
         }
-        this.props.store && this.props.store.addAnnotationListener(this.update);
-    },
-    setupBrowserListeners: function() {
+        if (this.props.store) {
+            this.props.store.addAnnotationListener(this.update);
+        }
+    }
+
+    setupBrowserListeners() {
         var AccidentalTool = require("../stores/accidentalTool.ts");
         var DotTool = require("../stores/dotTool.ts");
         var NoteTool = require("../stores/noteTool.ts");
@@ -516,19 +586,19 @@ var Renderer = React.createClass({displayName: 'Renderer',
 
             // Tools
             var keyToTool: { [key: string]: () => Tool } = {
-                '1': function()  {return new NoteTool("noteWhole");},
-                '2': function()  {return new NoteTool("noteHalfUp");},
-                '3': function()  {return new NoteTool("noteQuarterUp");},
-                '4': function()  {return new NoteTool("note8thUp");},
-                '5': function()  {return new NoteTool("note16thUp");},
-                '6': function()  {return new NoteTool("note32ndUp");},
-                '7': function()  {return new NoteTool("note64thUp");},
-                'r': function()  {return new RestTool();},
-                '.': function()  {return new DotTool();},
-                '~': function()  {return new TieTool();},
-                '=': function()  {return new AccidentalTool(1);},
-                '-': function()  {return new AccidentalTool(-1);},
-                '0': function()  {return new AccidentalTool(0);}
+                "1": function () { return new NoteTool("noteWhole"); },
+                "2": function()  {return new NoteTool("noteHalfUp");},
+                "3": function()  {return new NoteTool("noteQuarterUp");},
+                "4": function()  {return new NoteTool("note8thUp");},
+                "5": function()  {return new NoteTool("note16thUp");},
+                "6": function()  {return new NoteTool("note32ndUp");},
+                "7": function()  {return new NoteTool("note64thUp");},
+                "r": function()  {return new RestTool();},
+                ".": function()  {return new DotTool();},
+                "~": function()  {return new TieTool();},
+                "=": function()  {return new AccidentalTool(1);},
+                "-": function()  {return new AccidentalTool(-1);},
+                "0": function()  {return new AccidentalTool(0);}
             };
             var toolFn = keyToTool[key];
             if (toolFn) {
@@ -538,23 +608,50 @@ var Renderer = React.createClass({displayName: 'Renderer',
             }
         }.bind(this);
 
-    },
-    componentWillUnmount: function() {
+    }
+
+    componentWillUnmount() {
         if (isBrowser) {
             this.clearBrowserListeners();
         }
-        this.props.store && this.props.store.removeAnnotationListener(this.update);
-    },
-    clearBrowserListeners: function() {
+        if (this.props.store) {
+            this.props.store.removeAnnotationListener(this.update);
+        }
+    }
+
+    clearBrowserListeners() {
         document.onkeypress = null;
         document.onkeydown = null;
-    },
-    update: function() {
+    }
+
+    update() {
         this.setState({
             visualCursor: this.props.store && this.props.store.visualCursor()
         });
     }
-});
+
+    _cleanup: () => void = null;
+}
+
+export var Component = ReactTS.createReactComponent(Renderer);
+
+export interface IRendererProps {
+    contexts?: Array<Context>;
+    pageSize?: C.IPageSize;
+    raw?: boolean;
+    staveHeight?: number;
+    staves?: Array<C.IStave>;
+    store?: SongEditorStore.SongEditorStore;
+    tool?: Tool;
+    top?: number;
+    selection?: Array<Model>
+}
+
+export interface IRendererState {
+    selectionRect?: IRect;
+    visualCursor?: SongEditorStore.IVisualCursor;
+    mouse?: C.IMouse;
+}
 
 
 /**
@@ -563,15 +660,15 @@ var Renderer = React.createClass({displayName: 'Renderer',
  *  2. We know, based on annotation, when a line needs to be updated
  *     and when it does not need to be updated.
  */
-var LineContainer = React.createClass({displayName: 'LineContainer',
-    render: function() {
+class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
+    render() {
         if (PROFILER_ENABLED) {
             console.log("Rendering line", this.props.idx);
         }
         return Group(null, this.props.generate());
-    },
+    }
 
-    shouldComponentUpdate: function(nextProps: any, nextState: any) {
+    shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty();
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.isLineDirty(nextProps.idx, nextProps.h);
@@ -580,30 +677,63 @@ var LineContainer = React.createClass({displayName: 'LineContainer',
             if (PROFILER_ENABLED) {
                 console.log("Line dirty", this.props.idx);
             }
-            this.props.store && this.props.store.handleAction({description: "DELETE /local/song",
-                resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx});
+            if (this.props.store) {
+                this.props.store.handleAction({
+                    description: "DELETE /local/song",
+                    query: null,
+                    resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx,
+                    response: null
+                });
+            }
         }
         return !!(songDirty || heightChanged || lineDirty);
     }
-});
+};
+
+var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
+
+interface ILineProps {
+    h: number;
+    idx: number;
+    generate: () => any;
+    staveHeight: number;
+    store: SongEditorStore.SongEditorStore;
+}
+
+interface ILineState {
+
+}
 
 // Ratio between svg coordinate system and 1mm.
-var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
+export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
 
-var _pointerData = {};
+var _pointerData: C.IPointerData = {
+    staveIdx: null,
+    obj: null,
+    musicLine: null,
+    idx: null
+};
 
-interface Page {
+interface IPage {
     from: number;
     to: number;
     idx: number;
 }
 
-interface PosInfo {
+export interface IPosInfo {
     x: number;
     y: number;
     page: number;
     selectionInfo: any;
 }
 
-module.exports = Renderer;
-module.exports.FONT_SIZE_FACTOR = FONT_SIZE_FACTOR;
+export interface IRect {
+    start: {
+        x: number;
+        y: number;
+    };
+    end: {
+        x: number;
+        y: number;
+    };
+}

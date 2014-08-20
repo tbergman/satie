@@ -10,7 +10,7 @@ var _ = require("lodash");
 var Accidental = require("./_accidental.jsx");
 var Glyph = require("./_glyph.jsx");
 var Line = require("./_line.jsx");
-var SMuFL = require("ripienoUtil/SMuFL.ts");
+var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 var getFontOffset = require("./_getFontOffset.jsx");
 
 var stemThickness = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;

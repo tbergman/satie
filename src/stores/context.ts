@@ -7,55 +7,45 @@
  * Context is the memo.
  */
 
-/// <reference path="lodash.d.ts" />
+/// <reference path="../../references/lodash.d.ts" />
 
 import _ = require("lodash");
 import assert = require("assert");
 
-import Contracts = require("./contracts");
+import C = require("./contracts");
 import Model = require("./model");
-import IterationStatus = require("./iterationStatus");
 import SongEditorStore = require("./songEditor");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
-
-var _ANNOTATING = false; // To prevent annotate from being called recursively.
-
-interface Part {
-    idx: number;
-    body: Array<Model>;
-    beat: number;
-    doIf: (action: () => any, condition: () => boolean) => any;
-};
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 class Context {
-    accidentals: Contracts.Accidentals;
+    accidentals: C.IAccidentals;
     bar: number;
-    barlineX: Array<number>
+    barlineX: Array<number>;
     beats: number;
     clef: string;
     count: number;
     fontSize: number;
     initialX: number;
     isBeam: boolean;
-    keySignature: Contracts.KeySignature;
+    keySignature: C.IKeySignature;
     line: number;
     lineSpacing: number;
     maxX: number;
     maxY: number;
     pageLines: Array<number>;
-    pageSize: Contracts.PageSize;
-    pageStarts: Array<number>
+    pageSize: C.IPageSize;
+    pageStarts: Array<number>;
     prevClef: string;
-    prevKeySignature: {};
+    prevKeySignature: C.IKeySignature;
     smallest: number;
     start: number;
-    timeSignature: Contracts.TimeSignature;
+    timeSignature: C.ITimeSignature;
     x: number;
     y: number;
-    lines: Array<{ [keys: string]: any }>; // TSFIX
-    stave: Contracts.Stave;
+    lines: Array<C.ILineSnapshot>;
+    stave: C.IStave;
     staveIdx: number;
-    staves: Array<Contracts.Stave>;
+    staves: Array<C.IStave>;
     body: Array<Model>;
     idx: number;
     renderKey_eInBar: { [key: string]: string };
@@ -73,8 +63,8 @@ class Context {
             staveIdx: number;
             snapshot?: string;
             top?: number;
-            stave?: Contracts.Stave;
-            staves: Array<Contracts.Stave>;
+            stave?: C.IStave;
+            staves: Array<C.IStave>;
         }) {
 
         assert(opts instanceof Object, "opts is a required field");
@@ -95,7 +85,6 @@ class Context {
             _.each(s, (val: any, key: string) => {
                 self[key] = val;
             });
-            
         } else {
             var noMargin = false;
             if (typeof window === "undefined" ||
@@ -125,13 +114,16 @@ class Context {
             this.x = firstX;
             this.y = renderUtil.mm(15, opts.fontSize) + opts.top;
             this.lines = [
-                {
+                <C.ILineSnapshot> {
+                    accidentals: {},
                     all: [],
-                    accidentals: [],
                     bar: 1,
                     barlineX: [],
                     beats: 0,
+                    keySignature: null,
                     line: 0,
+                    pageLines: null,
+                    pageStarts: null,
                     x: firstX,
                     y: renderUtil.mm(15, opts.fontSize) + opts.top
                 }
@@ -160,27 +152,28 @@ class Context {
         var ret = JSON.stringify(this);
         this.stave = stave;
         this.staves = staves;
-        this.body = stave["body"];
+        this.body = stave.body;
         return ret;
     }
 
     calculateIntersections() {
-        var BeamModel = require("./beamGroup");
-        var TimeSignatureModel = require("./timeSignature");
-
         // XXX FIXME: Intersections will be incorrect if an incomplete bar exists!
         var genIterators =
             () => _(this.staves)
                 .filter(s => s.body)
-                .map((s: Contracts.Stave) => {return <Part> {
-                    idx: 0,
-                    body: s.body,
-                    beat: 0,
-                    doIf: (act, cond) => { if (cond()) { return act() }; }
-                }})
+                .map((s: C.IStave) => {
+                    return <IPart> {
+                        idx: 0,
+                        body: s.body,
+                        beat: 0,
+                        doIf: (act, cond) => { if (cond()) { return act(); }; }
+                    };
+                })
                 .value();
 
-        for (var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+        var iterators: Array<IPart>;
+
+        for (iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             _.each(iterators, s => s.doIf(
                 () => {
                     s.body[s.idx].intersects = [];
@@ -189,7 +182,7 @@ class Context {
                 () => s.idx < s.body.length));
         }
 
-        var actives: Array<Contracts.ActiveIntersection> = [];
+        var actives: Array<C.IActiveIntersection> = [];
         var beat = 0;
         var impliedCount = 4;
 
@@ -198,7 +191,7 @@ class Context {
         var tsBackup = this.timeSignature;
         this.timeSignature = { beatType: 4, beats: 4 };
 
-        for(var iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+        for(iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
             var allNewActives: Array<Model> = [];
             _(iterators)
                 .map((s, sidx) => s.doIf(
@@ -210,13 +203,12 @@ class Context {
                                 if (!s.body[s.idx]) {
                                     break;
                                 }
-                                if (s.body[s.idx].type === Contracts.ModelType.TIME_SIGNATURE) {
-                                    // TSFIX
-                                    this.timeSignature = (<any> s.body[s.idx]).timeSignature;
+                                if (s.body[s.idx].type === C.Type.TIME_SIGNATURE) {
+                                    this.timeSignature = s.body[s.idx].timeSignature;
                                 }
                                 newActives.push(s.body[s.idx]);
                                 allNewActives.push(s.body[s.idx]);
-                                if (s.body[s.idx].type === Contracts.ModelType.BEAM_GROUP) {
+                                if (s.body[s.idx].type === C.Type.BEAM_GROUP) {
                                     ++s.idx;
                                     continue;
                                 }
@@ -226,7 +218,7 @@ class Context {
                             }));
                             if (s.body[s.idx]) {
                                 assert(s.body[s.idx].isNote);
-                                var pitch: Contracts.PitchDuration = <any> s.body[s.idx];
+                                var pitch: C.IPitchDuration = <any> s.body[s.idx];
                                 impliedCount = pitch.count || impliedCount;
                                 s.beat = s.beat + pitch.getBeats(this, impliedCount);
                             } else {
@@ -270,77 +262,70 @@ class Context {
      * Based on a return code, continue iterating through the stave.
      * For use in the SongEditor store.
      */
-    _nextIndex(exitCode: IterationStatus) {
+    _nextIndex(exitCode: C.IterationStatus) {
         var i = this.idx;
-        var self: { [key: string]: any } = <any> this;
+        var line: C.ILineSnapshot;
 
         switch (exitCode) {
-        case IterationStatus.SUCCESS:
-            return i + 1;
-        case IterationStatus.RETRY_ENTIRE_DOCUMENT:
-            return this.start;
-        case IterationStatus.LINE_CREATED:
-            var line = this.lines[this.line];
-            _.each(line, (v, attrib) => {
-                self[attrib] = line[attrib];
-            });
-            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
+            case C.IterationStatus.SUCCESS:
+                return i + 1;
+            case C.IterationStatus.RETRY_ENTIRE_DOCUMENT:
+                return this.start;
+            case C.IterationStatus.LINE_CREATED:
+                line = this.lines[this.line];
+                cpyline(this, line);
+                while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
+                    --i;
+                }
                 --i;
-            }
-            --i;
-            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
+                while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
+                    --i;
+                }
+                assert(i >= -1, "Was a new line really created?");
+                this.clef = null;
+                break;
+            case C.IterationStatus.RETRY_LINE:
+                line = this.lines[this.line];
+                cpyline(this, line);
                 --i;
-            }
-            assert(i >= -1, "Was a new line really created?");
-            this.clef = null;
-            break;
-        case IterationStatus.RETRY_LINE:
-            var line = this.lines[this.line];
-            _.each(line, (v, attrib) => {
-                self[attrib] = line[attrib];
-            });
-            --i;
-            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
+                while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
+                    --i;
+                }
+                this.clef = null;
+                break;
+            case C.IterationStatus.RETRY_BEAM:
+                var SongEditorStore = require("./songEditor"); // Recursive dependency.
+                this.beats = SongEditorStore.getBeamCount();
                 --i;
-            }
-            //assert(i === -1 || this.body[i]["DEBUG_line"] === this.line);
-            this.clef = null;
-            break;
-        case IterationStatus.RETRY_BEAM:
-            var SongEditorStore = require("./songEditor"); // Recursive dependency.
-            this.beats = SongEditorStore.getBeamCount();
-            --i;
-            while (i >= 0 && this.body[i].type !== Contracts.ModelType.NEWLINE) {
+                while (i >= 0 && this.body[i].type !== C.Type.BEAM_GROUP) {
+                    --i;
+                }
+                this.x = this.body[i].x();
                 --i;
-            }
-            this.x = this.body[i].x();
-            --i;
-            break;
-        case IterationStatus.RETRY_CURRENT:
-            i -= 1;
-            break;
-        default:
-            assert(false, "Invalid exitCode");
+                break;
+            case C.IterationStatus.RETRY_CURRENT:
+                i -= 1;
+                break;
+            default:
+                assert(false, "Invalid exitCode");
         }
 
         return i + 1;
     }
 
-    annotate(opts: Contracts.AnnotationOpts): any /* TSFIX */ {
+    annotate(opts: C.IAnnotationOpts): any /* TSFIX */ {
         assert(!_ANNOTATING);
         _ANNOTATING = true;
 
         this.calculateIntersections();
-        var EndMarkerModel = require("./endMarker");
-        var TimeSignatureModel = require("./timeSignature");
         var NewlineModel = require("./newline");
 
         opts = opts || <any> {}; // TSFIX
-        var cursor: Contracts.VisualCursor = opts.cursor || <any> {}; // TSFIX
+        var cursor: C.IVisualCursor = opts.cursor || <any> {}; // TSFIX
         var cursorBar = opts.cursorBar === undefined ? NaN : opts.cursorBar;
         var cursorBeat = opts.cursorBeat === undefined ? NaN : opts.cursorBeat;
         var cursorStave = opts.cursorStave === undefined ? NaN : opts.cursorStave;
-        var exitCode: IterationStatus;
+        var exitCode: C.IterationStatus;
         var operations = 0;
         var pointerData = opts.pointerData || null;
         var sidx = opts.staveIdx || 0;
@@ -365,7 +350,7 @@ class Context {
             /*
              * Custom actions are things such as inserting a note.
              */
-            var doCustomAction = pointerData && 
+            var doCustomAction = pointerData &&
                 pointerData.staveIdx === sidx &&
                 (this.body[this.idx] === pointerData.obj ||
                     (pointerData.obj && pointerData.obj.placeholder &&
@@ -386,7 +371,7 @@ class Context {
                     ((!cursor.beat && !cursor.annotatedObj) ||
                     this.beats === cursor.beat) &&
                     ((this.curr().isNote && !cursor.endMarker) || (cursor.endMarker &&
-                    this.curr()["endMarker"]))) &&
+                    this.curr().type === C.Type.END_MARKER))) &&
                 (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
                         this.beats > cursorBeat)) &&
                 (!cursor.annotatedObj);
@@ -413,15 +398,15 @@ class Context {
             if (doCustomAction) {
                 // HACK HACK HACK -- we don't want to call annotate, because we can't
                 // process the exit code, but the note tools needs to have a valid timeSignature
-                if (this.curr().type === Contracts.ModelType.TIME_SIGNATURE) {
-                    this["timeSignature"] = (<any>this.curr()).timeSignature; // TSFIX
+                if (this.curr().type === C.Type.TIME_SIGNATURE) {
+                    this.timeSignature = (<any>this.curr()).timeSignature;
                 }
                 exitCode = toolFn(this.curr(), this);
                 pointerData = undefined;
             } else {
                 exitCode = this.curr().annotate(this, stopping);
-                if (stopping && !--stopping) {
-                    assert(false, "Aborting.");
+            if (stopping && !--stopping) {
+                assert(false, "Aborting.");
                 }
             }
 
@@ -430,7 +415,7 @@ class Context {
              * annotated visual cursor information. We just called annotate(), so
              * this is the earliest we can do that.
              */
-            shouldUpdateVC = shouldUpdateVC && exitCode === IterationStatus.SUCCESS;
+            shouldUpdateVC = shouldUpdateVC && exitCode === C.IterationStatus.SUCCESS;
 
             if (shouldUpdateVC) {
                 cursorStave = sidx;
@@ -444,7 +429,7 @@ class Context {
             /*
              * We've just added a line. So we can't quit early (see the next section)
              */
-            if (exitCode === IterationStatus.LINE_CREATED) {
+            if (exitCode === C.IterationStatus.LINE_CREATED) {
                 SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
             }
         }
@@ -464,7 +449,6 @@ class Context {
 
         this.idx = this.body.length - 1;
 
-        var NewlineModel = require("./newline"); // Recursive dependency.
         NewlineModel.semiJustify(this);
 
         this.idx = -1;
@@ -495,26 +479,25 @@ class Context {
         return this.body[this.nextIdx(cond, skip, allowBeams)];
     }
     nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        var BeamGroupModel = require("./beamGroup");
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
-        for (i = skip; this.body[this.idx + i] && (
-            (this.body[this.idx + i].type === Contracts.ModelType.BEAM_GROUP && !allowBeams) ||
-            (cond && !cond(this.body[this.idx + i]))); ++i) {
+        i = skip;
+        while (this.body[this.idx + i] && (
+                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (cond && !cond(this.body[this.idx + i])))) {
+            ++i;
         }
         return this.idx + i;
     }
     beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
-        var BeamModel = require("./beamGroup");
-
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
-        return (this.body[idx + 1].type === Contracts.ModelType.BEAM_GROUP) ?
-            (<any>this.body[idx + 1]).beam : null
+        return (this.body[idx + 1].type === C.Type.BEAM_GROUP) ?
+            (<any>this.body[idx + 1]).beam : null;
     }
-    removeFollowingBeam(idx?: number, past?: boolean): IterationStatus {
+    removeFollowingBeam(idx?: number, past?: boolean): C.IterationStatus {
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
@@ -530,19 +513,19 @@ class Context {
         return this.body[this.idx - 1];
     }
 
-    eraseCurrent(): IterationStatus {
+    eraseCurrent(): C.IterationStatus {
         this.body.splice(this.idx, 1);
-        return IterationStatus.RETRY_CURRENT;
+        return C.IterationStatus.RETRY_CURRENT;
     }
-    eraseFuture(idx: number): IterationStatus {
+    eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
         this.body.splice(idx, 1);
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
-    erasePast(idx: number): IterationStatus {
+    erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
         this.body.splice(idx, 1);
-        return IterationStatus.RETRY_ENTIRE_DOCUMENT;
+        return C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
     }
     /**
      * Inserts an element somewhere BEFORE the current element.
@@ -554,8 +537,8 @@ class Context {
         idx = (idx === null || idx === undefined) ? this.idx : idx;
         assert(idx <= this.idx, "Otherwise, use 'insertFuture'");
         this.body.splice(idx, 0, obj);
-        return this.idx === idx ? IterationStatus.RETRY_CURRENT :
-            IterationStatus.RETRY_ENTIRE_DOCUMENT;
+        return this.idx === idx ? C.IterationStatus.RETRY_CURRENT :
+            C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
     }
     /**
      * Inserts an element somewhere AFTER the current element.
@@ -563,25 +546,87 @@ class Context {
      * @param{num} idx: The absolute position to insert an element at.
      *     By default, one after current position.
      */
-    insertFuture(obj: Model, idx?: number): IterationStatus {
+    insertFuture(obj: Model, idx?: number): C.IterationStatus {
         idx = (idx === null || idx === undefined) ? (this.idx + 1) : idx;
         assert(idx > this.idx, "Otherwise, use 'insertPast'");
         this.body.splice(idx, 0, obj);
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
 
     /**
      * STAVES
      */
-    currStave(): Contracts.Stave {
+    currStave(): C.IStave {
         return this.stave;
     }
-    nextStave(): Contracts.Stave {
+    nextStave(): C.IStave {
         return this.staves[this.staveIdx + 1];
     }
-    prevStave(): Contracts.Stave {
+    prevStave(): C.IStave {
         return this.staves[this.staveIdx - 1];
     }
+}
+
+var _ANNOTATING = false; // To prevent annotate from being called recursively.
+
+interface IPart {
+    idx: number;
+    body: Array<Model>;
+    beat: number;
+    doIf: (action: () => any, condition: () => boolean) => any;
+};
+
+function cpyline(ctx: Context, line: C.ILineSnapshot) {
+    "use strict";
+
+    _.each(line, (v, attrib) => {
+        switch (attrib) {
+            case "accidentals":
+                ctx.accidentals = line.accidentals;
+                break;
+            case "all":
+                // Ignored
+                break;
+            case "bar":
+                ctx.bar = line.bar;
+                break;
+            case "barlineX":
+                ctx.barlineX = line.barlineX;
+                break;
+            case "beats":
+                ctx.beats = line.beats;
+                break;
+            case "keySignature":
+                ctx.keySignature = line.keySignature;
+                break;
+            case "line":
+                if (line.line !== null) {
+                    // TODO(jnetterf): Make sure line.line is as expected.
+                    ctx.line = line.line;
+                }
+                break;
+            case "pageLines":
+                if (line.pageLines !== null) {
+                    // TODO(jnetterf): Make sure line.pageLines is as expected.
+                    ctx.pageLines = line.pageLines;
+                }
+                break;
+            case "pageStarts":
+                if (line.pageStarts !== null) {
+                    // TODO(jnetterf): Make sure line.pageStarts is as expected.
+                    ctx.pageStarts = line.pageStarts;
+                }
+                break;
+            case "x":
+                ctx.x = line.x;
+                break;
+            case "y":
+                ctx.y = line.y;
+                break;
+            default:
+                assert(false, "Not reached");
+        }
+    });
 }
 
 export = Context;

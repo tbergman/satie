@@ -6,20 +6,24 @@
 
 import Model = require("./model");
 
-import Contracts = require("./contracts");
+import C = require("./contracts");
 import Context = require("./context");
-import IterationStatus = require("./iterationStatus");
-import SmartCondition = require("./smartCondition");
 
 class BeginModel extends Model {
     pianoStaff: boolean;
-    stave: Contracts.Stave;
+    stave: C.IStave;
     noMargin : boolean;
     braceY : number;
     getBraceY2: () => number;
-    pageSize: Contracts.PageSize;
+    pageSize: C.IPageSize;
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // BeginModel must only appear at the begining of a song.
+        if (ctx.idx !== 0) {
+            return ctx.eraseCurrent();
+        }
+
+        // Copy information from the context needed for the view
         this.pianoStaff = ctx.stave.pianoStaff;
         this.stave = ctx.stave;
         if (typeof window === "undefined" ||
@@ -34,9 +38,10 @@ class BeginModel extends Model {
         // be at render time!.
         this.getBraceY2 = () => ctx.nextStave().body[0].y();
         this.pageSize = ctx.pageSize;
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     toLylite() {
+        // pass
     }
     visible() {
         return true;
@@ -47,24 +52,16 @@ class BeginModel extends Model {
             {_annotated: "createBegin"}));
     };
 
-    prereqs = BeginModel.prereqs;
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function(ctx) {
-                return ctx.idx === 0;
-            },
-            correction: function(ctx) {
-                return ctx.eraseCurrent();
-            },
-            description: "BeginModel must only appear at the begining of a song."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.BEGIN;
+        return C.Type.BEGIN;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = BeginModel;

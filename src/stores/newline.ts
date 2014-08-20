@@ -1,21 +1,32 @@
 import Model = require("./model");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
-import IterationStatus = require("./iterationStatus");
 import NewPageModel = require("./newpage");
-import SmartCondition = require("./smartCondition");
-var renderUtil = require("ripienoUtil/renderUtil.jsx");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
 
 class NewlineModel extends Model {
     annotatedExtraWidth: number;
     lineSpacing: number;
-    pageSize: Contracts.PageSize;
+    pageSize: C.IPageSize;
     DEBUG_line: number;
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // Pages should not overflow.
+        if (ctx.y + ctx.lineSpacing > ctx.maxY) {
+            return NewPageModel.createNewPage(ctx);
+        }
+
+        // Notes should be full justfied within a line.
+        // This requirement should be last so that it only happens once
+        // per line.
+        if (ctx.maxX - ctx.x > 0.01) {
+            this.justify(ctx);
+        }
+
+        // Copy information from the context that the view needs.
         this.lineSpacing = ctx.lineSpacing;
         this.pageSize = ctx.pageSize;
 
@@ -30,45 +41,56 @@ class NewlineModel extends Model {
         ////////////////////////////////////////
         ++ctx.line;
         ////////////////////////////////////////
-        
+
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
+                accidentals: null,
+                all: null,
+                bar: null,
+                barlineX: null,
+                beats: null,
+                keySignature: null,
                 line: ctx.line,
+                pageLines: null,
+                pageStarts: null,
+                x: null,
+                y: null
             };
         }
 
-        ctx.lines[ctx.line]["accidentals"] = [];
-        ctx.lines[ctx.line]["all"] = [];
-        ctx.lines[ctx.line]["bar"] = ctx.bar;
-        ctx.lines[ctx.line]["barlineX"] = [];
-        ctx.lines[ctx.line]["beats"] = 0;
-        ctx.lines[ctx.line]["x"] = ctx.x;
-        ctx.lines[ctx.line]["y"] = ctx.y;
-        ctx.lines[ctx.line]["pageLines"] = ctx.pageLines;
-        ctx.lines[ctx.line]["pageStarts"] = ctx.pageStarts;
-        ctx.lines[ctx.line]["keySignature"] = ctx.prevKeySignature;
+        ctx.lines[ctx.line].accidentals = {};
+        ctx.lines[ctx.line].all = [];
+        ctx.lines[ctx.line].bar = ctx.bar;
+        ctx.lines[ctx.line].barlineX = [];
+        ctx.lines[ctx.line].beats = 0;
+        ctx.lines[ctx.line].x = ctx.x;
+        ctx.lines[ctx.line].y = ctx.y;
+        ctx.lines[ctx.line].pageLines = ctx.pageLines;
+        ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
+        ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
         this.DEBUG_line = ctx.line;
 
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
         SongEditorStore.snapshot(ctx);
 
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
-    justify(ctx: Context): IterationStatus {
+    justify(ctx: Context): C.IterationStatus {
         var diff = ctx.maxX - ctx.x;
+        var i: number;
         var l = 0;
-        for (var i = ctx.idx - 1; i >= 0; --i) {
+        for (i = ctx.idx - 1; i >= 0; --i) {
             if (ctx.body[i].isNote) {
                 ++l;
             }
-            if (ctx.body[i].type === Contracts.ModelType.NEWLINE) {
+            if (ctx.body[i].type === C.Type.NEWLINE) {
                 break;
             }
         }
         diff -= 0.001; // adjust for bad floating point arithmetic
         var xOffset = diff;
-        for (var i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].type === Contracts.ModelType.NEWLINE) {
+        for (i = ctx.idx - 1; i >= 0; --i) {
+            if (ctx.body[i].type === C.Type.NEWLINE) {
                 break;
             }
             if (ctx.body[i].isNote) {
@@ -79,8 +101,8 @@ class NewlineModel extends Model {
                 xOffset -= diff/l;
             }
             var newX = ctx.body[i].x() + xOffset;
-            if (ctx.body[i].type === Contracts.ModelType.BARLINE &&
-                    (!ctx.body[i + 1] || ctx.body[i + 1].type !== Contracts.ModelType.NEWLINE)) {
+            if (ctx.body[i].type === C.Type.BARLINE &&
+                    (!ctx.body[i + 1] || ctx.body[i + 1].type !== C.Type.NEWLINE)) {
                 if (ctx.lines[ctx.line - 1] &&
                         _.any((<any>ctx.lines[ctx.line - 1]).barlineX, // TSFIX
                             (x:number) => Math.abs(x - newX) < 0.15)) {
@@ -91,13 +113,13 @@ class NewlineModel extends Model {
 
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
-                    for (j = i - 1; j >= 0 && ctx.body[j].type !== Contracts.ModelType.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].type !== C.Type.BARLINE; --j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
-                    for (j = i - 1; j >= 0 && ctx.body[j].type !== Contracts.ModelType.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].type !== C.Type.BARLINE; --j) {
                         ctx.body[j].setX(ctx.body[j].x() + remaining);
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
@@ -107,14 +129,14 @@ class NewlineModel extends Model {
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
-                            Contracts.ModelType.BARLINE; ++j) {
+                            C.Type.BARLINE; ++j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
-                            Contracts.ModelType.BARLINE; ++j) {
+                            C.Type.BARLINE; ++j) {
                         ctx.body[j].setX(ctx.body[j].x() + remaining);
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
@@ -126,29 +148,29 @@ class NewlineModel extends Model {
             }
             ctx.body[i].setX(newX);
         }
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
         lylite.push("\n");
     }
-    static createNewline = (ctx: Context): IterationStatus => {
+    static createNewline = (ctx: Context): C.IterationStatus => {
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {
             (<any>ctx.body[fidx]).annotatedExtraWidth = undefined; // TSFIX
-            if (ctx.body[fidx].type === Contracts.ModelType.BARLINE) {
+            if (ctx.body[fidx].type === C.Type.BARLINE) {
                 break;
             }
         }
-        if (ctx.body[fidx + 1].type === Contracts.ModelType.NEWPAGE) {
-            return IterationStatus.SUCCESS;
+        if (ctx.body[fidx + 1].type === C.Type.NEWPAGE) {
+            return C.IterationStatus.SUCCESS;
         }
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
             if (ctx.body[i]._annotated) {
-                if (ctx.body[i].type === Contracts.ModelType.NEWLINE ||
-                        ctx.body[i].type === Contracts.ModelType.CLEF ||
-                        ctx.body[i].type === Contracts.ModelType.TIME_SIGNATURE ||
-                        ctx.body[i].type === Contracts.ModelType.KEY_SIGNATURE) {
+                if (ctx.body[i].type === C.Type.NEWLINE ||
+                        ctx.body[i].type === C.Type.CLEF ||
+                        ctx.body[i].type === C.Type.TIME_SIGNATURE ||
+                        ctx.body[i].type === C.Type.KEY_SIGNATURE) {
                     ctx.eraseFuture(i);
                     --i;
                 }
@@ -156,16 +178,16 @@ class NewlineModel extends Model {
         }
         ctx.insertPast(new NewlineModel({ newline: true, _annotated: "createNewline" }), fidx + 1);
         NewlineModel.removeNextNewline(ctx, fidx + 2);
-        return IterationStatus.LINE_CREATED;
+        return C.IterationStatus.LINE_CREATED;
     };
 
     static removeNextNewline = (ctx: Context, start?: number) => {
         start = start || ctx.idx;
         for (var i = start; i < ctx.body.length; ++i) {
-            if (ctx.body[i].type === Contracts.ModelType.NEWLINE) {
+            if (ctx.body[i].type === C.Type.NEWLINE) {
                 ctx.body.splice(i, 1);
                 for (var j = i; j < ctx.body.length &&
-                        ctx.body[j].type !== Contracts.ModelType.BEAM_GROUP &&
+                        ctx.body[j].type !== C.Type.BEAM_GROUP &&
                         !ctx.body[j].isNote; ++j) {
                     if (ctx.body[j]._annotated) {
                         ctx.eraseFuture(j);
@@ -184,14 +206,16 @@ class NewlineModel extends Model {
      */
     static semiJustify = (ctx: Context) => {
         var fullJustify = false;
+        var i: number;
+
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
             fullJustify = true;
         }
         var n = 0;
-        for (var i = ctx.idx; i >= 0 && (ctx.body[i].type !==
-                    Contracts.ModelType.NEWLINE); --i) {
+        for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
+                    C.Type.NEWLINE); --i) {
             if (ctx.body[i].isNote) {
                 ++n;
             }
@@ -207,8 +231,8 @@ class NewlineModel extends Model {
                 nw = (1 - weight)*nw;
                 lw = nw * n;
             }
-            for (var i = ctx.idx; i >= 0 && ctx.body[i].type !==
-                    Contracts.ModelType.NEWLINE; --i) {
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !==
+                    C.Type.NEWLINE; --i) {
                 if (ctx.body[i].isNote) {
                     lw -= nw;
                 }
@@ -217,31 +241,16 @@ class NewlineModel extends Model {
         }
     };
 
-    prereqs = NewlineModel.prereqs;
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function (ctx) {
-                return ctx.y + ctx.lineSpacing < ctx.maxY;
-            },
-            correction: NewPageModel.createNewPage,
-            description: "Pages should not overflow"
-        },
-        {
-            // This requirement should be last so that it only happens once
-            // per line.
-            condition: function(ctx) {
-                return ctx.maxX - ctx.x <= 0.01; },
-            correction: function(ctx: Context): IterationStatus {
-                return (<NewlineModel>this).justify(ctx); },
-            description: "Notes should be full justfied within a line."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.NEWLINE;
+        return C.Type.NEWLINE;
     }
 }
 
-Model.length; // BUG in typescriptifier!
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = NewlineModel;

@@ -6,35 +6,41 @@ import Model = require("./model");
 
 import _ = require("lodash");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import ClefModel = require("./clef");
 import DurationModel = require("./duration");
-import IterationStatus = require("./iterationStatus");
-import SmartCondition = require("./smartCondition");
 import KeySignatureModel = require("./keySignature");
 
-class TimeSignatureModel extends Model implements Contracts.TimeSignature {
-    _annotatedSpacing: number;
-    color: string;
-    actualTS: {
-        beats: number;
-        beatType: number;
+class TimeSignatureModel extends Model implements C.ITimeSignature {
+    constructor(spec: { timeSignature: C.ITimeSignature }) {
+        super(spec);
+        this._timeSignature = spec.timeSignature;
     }
-    temporary: boolean;
-    selected: boolean;
-    timeSignature: {
-        beats: number;
-        beatType: number;
-    };
     get beats() {
-        return this.timeSignature.beats;
+        return this._timeSignature.beats;
     }
     get beatType() {
-        return this.timeSignature.beatType;
+        return this._timeSignature.beatType;
+    }
+    set timeSignature(ts: C.ITimeSignature) {
+        this._timeSignature = _.clone(ts);
+
+    }
+    get timeSignature(): C.ITimeSignature {
+        return this._timeSignature;
     }
 
-    annotateImpl(ctx: Context): IterationStatus {
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // A clef must exist on each line.
+        var status: C.IterationStatus = C.IterationStatus.SUCCESS;
+        if (!ctx.clef) { status = ClefModel.createClef(ctx); }
+        if (status !== C.IterationStatus.SUCCESS) { return status; }
+
+        // A key signature must exist on each line
+        if (!ctx.keySignature) { status = KeySignatureModel.createKeySignature(ctx); }
+        if (status !== C.IterationStatus.SUCCESS) { return status; }
+
         var next = ctx.next();
         if (next.isNote) {
             if (_.any(_.filter(next.intersects, (l: DurationModel) => l.isNote),
@@ -49,52 +55,44 @@ class TimeSignatureModel extends Model implements Contracts.TimeSignature {
         }
 
         ctx.x += 0.7 + this._annotatedSpacing/4;
-        ctx.timeSignature = this.actualTS || this.timeSignature;
+        ctx.timeSignature = this.actualTS || this._timeSignature;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
         if (this._annotated) {
             return;
         }
 
-        lylite.push("\\time " + this.timeSignature.beats + "/" + this.timeSignature.beatType);
+        lylite.push("\\time " + this._timeSignature.beats + "/" + this._timeSignature.beatType);
     }
 
-    static createTS = (ctx: Context): IterationStatus => {
+    static createTS = (ctx: Context): C.IterationStatus => {
         return ctx.insertPast(new TimeSignatureModel({
             timeSignature: {
-                beats: 4, 
+                beats: 4,
                 beatType: 4,
                 commonRepresentation: true
             }, _annotated: "createTS"}));
     };
 
-    prereqs = TimeSignatureModel.prereqs;
-
-    static prereqs : Array<SmartCondition> = [
-        {
-            condition: function (ctx) {
-                return !!ctx.clef;
-            },
-            correction: ClefModel.createClef,
-            description: "A clef must exist on each line."
-        },
-
-        {
-            condition: function (ctx) {
-                return !!ctx["keySignature"];
-            },
-            correction: KeySignatureModel.createKeySignature,
-            description: "A key signature must exist on each line."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.TIME_SIGNATURE;
+        return C.Type.TIME_SIGNATURE;
     }
+
+    _annotatedSpacing: number;
+    color: string;
+    actualTS: C.ITimeSignature;
+    temporary: boolean;
+    selected: boolean;
+    private _timeSignature: C.ITimeSignature = null;
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = TimeSignatureModel;

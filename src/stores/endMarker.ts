@@ -12,95 +12,80 @@ import Model = require("./model");
 import assert = require("assert");
 import _ = require("lodash");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
-import IterationStatus = require("./iterationStatus");
 import Metre = require("./metre");
-import SmartCondition = require("./smartCondition");
 
 class EndMarkerModel extends Model {
-    annotateImpl(ctx: Context): IterationStatus {
-        return IterationStatus.SUCCESS;
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // End markers must only exist at the end of a line, document, or bar
+        var next = ctx.next();
+        if (next && next.type !== C.Type.BARLINE &&
+                (!ctx.body[ctx.idx + 2] ||
+                (ctx.body[ctx.idx + 2].type !== C.Type.NEWLINE &&
+                ctx.body[ctx.idx + 2].type !== C.Type.NEWPAGE))) {
+            ctx.eraseCurrent();
+
+            var SongEditor = require("./songEditor"); // Recursive dependency.
+            var visualCursor = SongEditor.Instance.visualCursor();
+            if (visualCursor.type === C.Type.END_MARKER && visualCursor.bar === ctx.bar) {
+                visualCursor.bar++;
+                visualCursor.beat = 1;
+                visualCursor.endMarker = false;
+            }
+            return C.IterationStatus.RETRY_CURRENT;
+        }
+
+        // Bars must not be underfilled (should be filled with rests)
+        if ( ctx.prev().type !== C.Type.BARLINE &&
+                    ctx.beats && ctx.beats < ctx.timeSignature.beats) {
+            // XXX: extend to work on things other than 4/4
+            var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
+
+            assert(beatsRemaining < ctx.timeSignature.beats,
+                "Don't run this on entirely blank bars!");
+
+            var DurationModel = require("./duration"); // Recursive dependency.
+
+            var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
+                .map((beat: C.IPitchDuration) => new DurationModel(_.extend(beat, {
+                    pitch: "r"})));
+            Array.prototype.splice.apply(ctx.body,
+                [this.idx, 0].concat(toAdd));
+
+            return C.IterationStatus.RETRY_CURRENT;
+        }
+
+        // Double barlines terminate a piece.
+        if (!ctx.next() && (ctx.prev().type !== C.Type.BARLINE ||
+                ctx.prev().barline !== C.Barline.Double)) {
+            if (ctx.prev().type === C.Type.BARLINE) {
+                ctx.prev().barline = C.Barline.Double;
+                return C.IterationStatus.RETRY_LINE;
+            } else {
+                var BarlineModel = require("./barline"); // Recursive dependency.
+                return BarlineModel.createBarline(ctx, "double");
+            }
+        }
+
+        return C.IterationStatus.SUCCESS;
     }
     visible() {
         return false;
     }
     toLylite(lylite: Array<string>) {
+        // pass
     }
-    prereqs = EndMarkerModel.prereqs;
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function(ctx: Context): boolean {
-                var next = ctx.next();
-                return !next || next.type === Contracts.ModelType.BARLINE ||
-                    (ctx.body[ctx.idx + 2] &&
-                    (ctx.body[ctx.idx + 2].type === Contracts.ModelType.NEWLINE ||
-                    ctx.body[ctx.idx + 2].type === Contracts.ModelType.NEWPAGE));
-            },
-            correction: function(ctx: Context): IterationStatus {
-                ctx.eraseCurrent();
-
-                var SongEditor = require("./songEditor"); // Recursive dependency.
-                var visualCursor = SongEditor.Instance.visualCursor();
-                if (visualCursor["endMarker"] && visualCursor.bar === ctx.bar) {
-                    visualCursor.bar++;
-                    visualCursor.beat = 1;
-                    visualCursor["endMarker"] = false;
-                }
-                return IterationStatus.RETRY_CURRENT;
-            },
-            description: "End markers must only exist at the end of a line, document, or bar"
-        },
-        {
-            condition: function (ctx: Context): boolean {
-                return ctx.prev().type === Contracts.ModelType.BARLINE ||
-                    !ctx.beats || ctx.beats >= ctx.timeSignature.beats; },
-            correction: function(ctx: Context): IterationStatus {
-                // XXX: extend to work on things other than 4/4
-                var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
-
-                var count: number;
-                var dots = false;
-
-                assert(beatsRemaining < ctx.timeSignature.beats,
-                    "Don't run this on entirely blank bars!");
-                var val = 2;
-
-                var DurationModel = require("./duration"); // Recursive dependency.
-
-                var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
-                    .map((beat: Contracts.PitchDuration) => new DurationModel(_.extend(beat, {
-                        pitch: "r"})));
-                Array.prototype.splice.apply(ctx.body,
-                    [this.idx, 0].concat(toAdd));
-
-                return IterationStatus.RETRY_CURRENT;
-            },
-            description: "Bars must not be underfilled (should be filled with rests)"
-        },
-        {
-            condition: function(ctx: Context): boolean {
-                // TSFIX
-                return !!ctx.next() || (<any>ctx.prev())["barline"] === "double";
-            },
-            correction: function(ctx: Context): IterationStatus {
-                if (ctx.prev().type === Contracts.ModelType.BARLINE) {
-                    (<any>ctx.prev())["barline"] = "double"; // TSFIX
-                    return IterationStatus.RETRY_LINE;
-                } else {
-                    var BarlineModel = require("./barline"); // Recursive dependency.
-                    return BarlineModel.createBarline(ctx, "double");
-                }
-            },
-            description: "Double barlines terminate a piece."
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.END_MARKER;
+        return C.Type.END_MARKER;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = EndMarkerModel;

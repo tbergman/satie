@@ -2,17 +2,16 @@
  * @jsx React.DOM
  */
 
+import ReactTS = require("react-typescript");
 import _ = require("lodash");
 
 import Model = require("./model");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
 import ClefModel = require("./clef");
-import IterationStatus = require("./iterationStatus");
 import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
-import SmartCondition = require("./smartCondition");
 import TimeSignatureModel = require("./timeSignature");
 
 class BeamGroupModel extends Model {
@@ -21,9 +20,30 @@ class BeamGroupModel extends Model {
     beams: number;
     beam: Array<DurationModel>;
 
-    annotateImpl(ctx: Context): IterationStatus {
-        var mret = IterationStatus.RETRY_ENTIRE_DOCUMENT;
-        this._fontSize = ctx.fontSize;
+    annotateImpl(ctx: Context): C.IterationStatus {
+        // A clef must exist on each line.
+        if (!ctx.clef) {
+            return ClefModel.createClef(ctx);
+        }
+
+        // A key signature must exist on each line.
+        if (!ctx.keySignature) {
+            return KeySignatureModel.createKeySignature(ctx);
+        }
+
+        // A time signature must exist on the first line of every page.
+        if (!ctx.timeSignature) {
+            return TimeSignatureModel.createTS(ctx);
+        }
+
+        // A beam must have at least two notes.
+        if (this.beam.length < 2) {
+            _.each(this.beam, o => o.inBeam = false);
+            ctx.eraseCurrent();
+            return C.IterationStatus.RETRY_CURRENT;
+        }
+
+        var mret = C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet;
@@ -43,14 +63,14 @@ class BeamGroupModel extends Model {
             var ret = b.annotate(ctx);
             ctx.isBeam = undefined;
             mret = ret;
-            return (mret === IterationStatus.SUCCESS);
+            return (mret === C.IterationStatus.SUCCESS);
         })) {
             return mret;
         }
-        return IterationStatus.SUCCESS;
+        return C.IterationStatus.SUCCESS;
     }
-    generate() {
-        return _.map(this.beam, b => b.render());
+    generate(): Array<ReactTS.ReactComponentBase<any, any>> {
+        return <any> _.map(this.beam, b => b.render());
     }
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var tuplet = this.tuplet;
@@ -121,50 +141,16 @@ class BeamGroupModel extends Model {
         return 1;
     };
 
-    prereqs = BeamGroupModel.prereqs;
-    static prereqs: Array<SmartCondition> = [
-        {
-            condition: function (ctx) {
-                return !!ctx.clef;
-            },
-            correction: ClefModel.createClef,
-            description: "A clef must exist on each line."
-        },
-
-        {
-            condition: function (ctx) {
-                return !!ctx.keySignature;
-            },
-            correction: KeySignatureModel.createKeySignature,
-            description: "A key signature must exist on each line."
-        },
-
-        {
-            condition: function (ctx) {
-                return !!ctx.timeSignature;
-            },
-            correction: TimeSignatureModel.createTS,
-            description: "A time signature must exist on the first line of every page."
-        },
-
-        {
-            condition: function(ctx) {
-                return this.beam.length > 1; },
-            correction: function (ctx) {
-                var self: BeamGroupModel = this;
-                _.each(self.beam, o => o.inBeam = false);
-                ctx.eraseCurrent();
-                return IterationStatus.RETRY_CURRENT;
-            },
-            description: "A beam must have at least two notes"
-        }
-    ];
-
     get type() {
-        return Contracts.ModelType.BEAM_GROUP;
+        return C.Type.BEAM_GROUP;
     }
 }
 
-Model.length; // BUG in typescriptifier
+/* tslint:disable */
+// TS is overly aggressive about optimizing out require() statements.
+// We require Model since we extend it. This line forces the require()
+// line to not be optimized out.
+Model.length;
+/* tslint:enable */
 
 export = BeamGroupModel;

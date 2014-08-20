@@ -10,9 +10,9 @@
  *           precondition is satisfied and false otherwise.
  *        2. a function which accepts a ctx, stave, and idx and performs
  *           actions which make the precondition true. The exit code is one
- *           of those described in IterationStatus.
+ *           of those described in C.IterationStatus.
  *        3. A description of the precondition, in English, for debugging.
- *             
+ *
  *   - annotateImpl: adds any missing information (default values) not provided
  *      by the parser, adds any missing elements (e.g., clefs, time signatures,
  *      line breaks) to stave.body
@@ -24,70 +24,50 @@
  * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
  */
 
-/// <reference path="node.d.ts" />
-/// <reference path="lodash.d.ts" />
-/// <reference path="es6-promise.d.ts" />
-/// <reference path="../promos/scales/scaleGenerator.d.ts" />
+/// <reference path="../../references/node.d.ts" />
+/// <reference path="../../references/lodash.d.ts" />
+/// <reference path="../../references/es6-promise.d.ts" />
 
 import assert = require("assert");
-import _ = require("lodash");
 
+import C = require("./contracts");
 import Context = require("./context");
-import Contracts = require("./contracts");
-import IterationStatus = require("./iterationStatus");
-import SmartCondition = require("./smartCondition");
 
 class Model {
     _annotated: string; // Reason for being created.
-    _fontSize: number;
+    private _fontSize: number;
     _key: string;
     _x: number;
     _y: number;
-    ctxData: {
-        bar: number;
-        beat: number;
-    };
+    ctxData: C.IVisualCursor;
     endMarker: boolean;
     idx: number;
     intersects: Array<Model> = null;
     inBeam: boolean;
-    prereqs: Array<SmartCondition>;
     placeholder: boolean;
     selected: boolean;
 
-    get type(): Contracts.ModelType {
+    get type(): C.Type {
         assert(false, "Not implemented");
-        return Contracts.ModelType.UNKNOWN;
+        return C.Type.UNKNOWN;
     }
 
-    get note(): Contracts.PitchDuration {
+    get note(): C.IPitchDuration {
         assert(false, "Not a note.");
         return null;
     }
 
-    annotate(ctx: Context, stopping?: number): IterationStatus {
+    annotate(ctx: Context, stopping?: number): C.IterationStatus {
         if (!this.inBeam) {
             this.setX(ctx.x);
             this.setY(ctx.y);
         }
         this.idx = ctx.idx;
         this._fontSize = ctx.fontSize;
-        for (var i = 0; i < this.prereqs.length; ++i) {
-            if (!this.prereqs[i].condition.call(this, ctx)) {
-                var exitCode: IterationStatus =
-                        this.prereqs[i].correction.call(this, ctx);
-                if (stopping) {
-                    console.warn(" -" + this.prereqs[i].description,
-                        "(code: " + exitCode + ")");
-                }
-                if (exitCode !== IterationStatus.SUCCESS) {
-                    return exitCode;
-                }
-            }
-        }
 
-        var ret: IterationStatus = this.annotateImpl(ctx);
-        if (ret !== IterationStatus.SUCCESS) {
+        var ret: C.IterationStatus = this.annotateImpl(ctx);
+        assert(ret !== undefined);
+        if (ret !== C.IterationStatus.SUCCESS) {
             return ret;
         }
 
@@ -118,11 +98,21 @@ class Model {
         return this._key;
     }
 
-    fontSize() {
+    get fontSize() {
         return this._fontSize;
     }
 
-    annotateImpl(ctx: Context): IterationStatus {
+    get timeSignature(): C.ITimeSignature {
+        assert(false, "Not a time signature");
+        return null;
+    }
+
+    get barline(): C.Barline {
+        assert(false, "Not a barline");
+        return null;
+    }
+
+    annotateImpl(ctx: Context): C.IterationStatus {
         assert(false, "Not implemented");
         return null; // Not reached
     }
@@ -163,20 +153,20 @@ class Model {
         assert(false, "Not implemented");
     }
 
-    static setView = function (View: (opts: { key: string; spec: Model }) => any ) {
-        this.prototype.render = function() {
+    static setView = function (View: (opts: { key: string; spec: Model }) => any) {
+        this.prototype.render = function () {
             return View({
                 key: this.key(),
                 spec: this
-            })
-        }
-    }
+            });
+        };
+    };
 
     /**
-    * Given an array of staves, remove all annotated objects
-    * created through a Model.
-    */
-    static removeAnnotations = (staves: Array<Contracts.Stave>) => {
+     * Given an array of staves, remove all annotated objects
+     * created through a Model.
+     */
+    static removeAnnotations = (staves: Array<C.IStave>) => {
         for (var i = 0; i < staves.length; ++i) {
             for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
                 var item = staves[i].body[j];

@@ -13,14 +13,14 @@
  * See also ripieno
  */
 
-/// <reference path="es6-promise.d.ts" />
-/// <reference path="node.d.ts" />
+/// <reference path="../../references/es6-promise.d.ts" />
+/// <reference path="../../references/node.d.ts" />
 
-import Contracts = require("./contracts");
 import Promise = require("es6-promise");
 import _ = require("lodash");
 import assert = require("assert");
 
+import C = require("./contracts");
 var ajax = require("ripienoUtil/ajax.jsx");
 
 var _callbacks: Array<(payload: any) => boolean> = [];
@@ -69,11 +69,13 @@ export class Dispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    dispatch(action: Contracts.FluxAction) {
-        (FLUX_DEBUG || inAction) && console.log(action.description +
+    dispatch(action: C.IFluxAction) {
+        if (FLUX_DEBUG || inAction) {
+            console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
                 (action.postData ? [action.postData] : []), [action]);
+        }
 
         if (inAction) {
             assert(false, "Queueing an action during an action is a violation of Flux");
@@ -84,13 +86,15 @@ export class Dispatcher {
         });
 
         this.inAction = true;
+        /* tslint:disable */
         Promise.Promise
             .all(_promises)
             .then(_clearPromises)
-            ["catch"]((err) => {
+            ["catch"]((err) => { // For support with IE 6.
                 inAction = false;
                 console.warn("Exception occured in promise", err);
             });
+        /* tslint:enable */
     }
 }
 
