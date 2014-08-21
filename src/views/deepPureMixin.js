@@ -13,8 +13,9 @@
 */
 var DeepPureMixin = {
   shouldComponentUpdate: function(nextProps, nextState) {
-    return !definitelyEqual(this.props, nextProps) ||
-           !definitelyEqual(this.state, nextState);
+    var ret = !definitelyEqual(this.props, nextProps) ||
+              !definitelyEqual(this.state, nextState);
+    return ret;
   }
 };
 

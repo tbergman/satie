@@ -119,6 +119,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
                             function (s: Array<C.IStave>, lidx: number) {
                                 return LineContainerComponent({
+                                        isCurrent: this.state.visualCursor.annotatedLine ===
+                                            lidx + pageLines[page.idx],
                                         store: this.props.store,
                                         staveHeight: this.props.staveHeight,
                                         h: idx,
@@ -579,7 +581,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }.bind(this);
 
         // Handle letters or numbers
-        document.onkeypress = function(event: KeyboardEvent)  {
+        document.onkeypress = _.throttle((event: KeyboardEvent) => {
             var keyCode = event.keyCode || event.charCode || 0;
 
             var key = String.fromCharCode(keyCode);
@@ -606,7 +608,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             } else if (this.props.tool) {
                 this.props.tool.handleKeyPressEvent(key, event);
             }
-        }.bind(this);
+        }, 70);
 
     }
 
@@ -687,8 +689,18 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
                 });
             }
         }
-        return !!(songDirty || heightChanged || lineDirty);
+        if (songDirty || heightChanged || lineDirty) {
+            // Throttle updating, unless we're on the active line.
+            if (this.props.isCurrent) {
+                return true;
+            } else {
+                _.defer(this.updateIfNeeded);
+            }
+        }
+        return false;
     }
+
+    updateIfNeeded = _.throttle(() => this.forceUpdate(), 20, { leading: false });
 };
 
 var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
@@ -698,9 +710,10 @@ var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
 // }
 
 interface ILineProps {
+    generate: () => any;
     h: number;
     idx: number;
-    generate: () => any;
+    isCurrent: boolean;
     staveHeight: number;
     store: SongEditorStore.SongEditorStore;
 }
