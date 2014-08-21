@@ -26,14 +26,24 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         // props of first and last notes.
         // The slope is usually decided based on the first and last notes.
         var firstP: any;
+        var firstX: number;
+        var firstY: number;
+
         var lastP: any;
+        var lastX: number;
+        var lastY: number;
 
         _.each(children, (note, idx) => {
             // All notes in a beam have a unique key
             note.props.key = "child-" + idx;
 
-            firstP = firstP || note.props;
-            lastP = note.props;
+            firstP = firstP || note.props.children.props; // YUCK: add refs or something.
+            firstX = firstX || note.props.x;
+            firstY = firstY || note.props.y;
+
+            lastP = note.props.children.props; // YUCK: add refs or something.
+            lastX = note.props.x;
+            lastY = note.props.y;
         });
 
         var direction = BeamGroupModel.decideDirection(firstP.line, lastP.line);
@@ -67,7 +77,7 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         _.each(children, (note, idx) => {
             // Using -direction means that we'll be finding the closest note to the
             // beam. This will help us avoid collisions.
-            var sh = getSH(direction, idx, getExtremeLine(note.props.line, -direction));
+            var sh = getSH(direction, idx, getExtremeLine(note.props.children.props.line, -direction)); // YUCK
             if (sh < 3) {
                 b += direction*(3 - sh);
                 m = 0;
@@ -78,12 +88,13 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         var strokeEnabled = true;
 
         _.each(children, (note, idx) => {
-            note.props.direction = direction;
-            note.props.stemHeight = getSH(direction, idx,
-                getExtremeLine(note.props.line, direction));
+            var props = note.props.children.props; // YUCK
+            props.direction = direction;
+            props.stemHeight = getSH(direction, idx,
+                getExtremeLine(props.line, direction));
 
-            assert(note.props.strokes || note.props.stroke);
-            var stroke = note.props.stroke || note.props.strokes[0];
+            assert(props.strokes || props.stroke);
+            var stroke = props.stroke || props.strokes[0];
 
             if (strokeColor !== stroke && strokeColor) {
                 strokeEnabled = false;
@@ -109,9 +120,9 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
                 stroke: strokeEnabled && strokeColor,
                 tuplet: spec.tuplet,
                 tupletsTemporary: spec.tupletsTemporary,
-                width: lastP.x - firstP.x,
-                x: firstP.x, /* should assert all in order */
-                y: firstP.y/* should assert all are equal */})].concat(
+                width: lastX - firstX,
+                x: firstX, /* should assert all in order */
+                y: firstY/* should assert all are equal */})].concat(
             children)
         );
     }

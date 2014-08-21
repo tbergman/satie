@@ -6,7 +6,10 @@
 /// <reference path="../node_modules/react-typescript/declarations/react-typescript.d.ts" />
 
 import React = require("react");
+var ReactPerf = require("react/lib/ReactDefaultPerf");
 global.React = React; // for Chrome devtool extension and React typescript extension
+global.ReactPerf = ReactPerf;
+ReactPerf.start();
 
 import Router = require("./router");
 

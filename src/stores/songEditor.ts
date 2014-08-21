@@ -454,10 +454,6 @@ export class SongEditorStore extends TSEE {
     markRendererDirty() {
         markRendererDirty();
     }
-    markRendererLineDirty(idx: number, lineNumber: number) {
-        markRendererLineDirty(idx, lineNumber);
-    }
-
     downloadLegacyAudio() {
         var request: Array<string> = [];
         for (var h = 0; h < this.ctxCount(); ++h) {

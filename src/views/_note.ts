@@ -11,30 +11,28 @@ import React = require("react");
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
+var DeepPureMixin = require("./deepPureMixin");
 
 var Accidental = require("./_accidental.jsx");
 var Dot = require("./_dot.jsx");
 var Flag = require("./_flag.jsx");
-var Glyph = require("./_glyph.jsx");
 var Group = require("./_group.jsx");
 var LedgerLine = require("./_ledgerLine.jsx");
 var NoteHead = require("./_noteHead.jsx");
-var NoteMarking = require("./_noteMarking.jsx");
 var NoteStem = require("./_noteStem.jsx");
-var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
-var getFontOffset = require("./_getFontOffset.jsx");
 
 export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
         var direction = this.getDirection();
         var lines = this.getLines();
-        var lowestLine = this.getLowestLine(); // XXX(profile) make more efficient
         var linesObj: { [key: string]: boolean } = {};
         var linesOffset: { [key: string]: number } = {};
-        for (var i = 0; i < lines.length; ++i) {
+        var i: number;
+
+        for (i = 0; i < lines.length; ++i) {
             linesObj[lines[i]] = true;
         }
-        for (var i = 0; i < lines.length; ++i) {
+        for (i = 0; i < lines.length; ++i) {
             if (linesObj[lines[i] - 0.5]) {
                 var x = 0.5;
                 for (var j = lines[i] - 1; linesObj[j]; j -= 0.5) {
@@ -108,46 +106,6 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         );
     }
 
-    shouldComponentUpdate(nextProps: IProps) {
-        // TODO: check children
-        if ((this.props.strokes && this.props.strokes.length) !==
-                (nextProps.strokes && nextProps.strokes.length)) {
-            return true;
-        } else if (this.props.strokes) {
-            for (var i = 0; i < nextProps.strokes.length; ++i) {
-                if (nextProps.strokes[i] !== this.props.strokes[i]) {
-                    return true;
-                }
-            }
-        }
-
-        var p = !this.props.accStrokes;
-        var p2 = !nextProps.accStrokes;
-
-        if (p !== p2) {
-            return true;
-        } else if (nextProps.accStrokes) {
-            if (nextProps.accStrokes.length !== this.props.accStrokes.length) {
-                return true;
-            }
-            for (var i = 0; i < nextProps.accStrokes.length; ++i) {
-                if (nextProps.accStrokes[i] !== this.props.accStrokes[i]) {
-                    return true;
-                }
-            }
-        }
-        return this.props.accStrokes !== nextProps.accStrokes ||
-            this.props.accidentals !== nextProps.accidentals ||
-            this.props.dotted !== nextProps.dotted ||
-            this.props.flag !== nextProps.flag ||
-            this.props.hasStem !== nextProps.hasStem ||
-            this.props.line !== nextProps.line ||
-            this.props.notehead !== nextProps.notehead ||
-            this.props.stemHeight !== nextProps.stemHeight ||
-            this.props.tieTo !== nextProps.tieTo ||
-            this.props.x !== nextProps.x ||
-            this.props.y !== nextProps.y;
-    }
     getDefaultProps(): IProps {
         return <IProps> {
             x: 0,
@@ -306,7 +264,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         }
 
         var fullWidth = this.props.tieTo - this.props.x;
-        return Tie.Component({key: "tie_0", 
+        return Tie.Component({key: "tie_0",
             spec: {
                 direction: -this.getDirection(),
                 x: () => this.props.x + fullWidth/8 + 0.15,
@@ -317,11 +275,13 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 fontSize: this.props.fontSize}});
     }
 };
+Note.applyMixins(DeepPureMixin);
 
 var IDEAL_STEM_HEIGHT = 3.5;
 var MIN_STEM_HEIGHT = 2.5;
 
 export function getExtremeLine(line: any, direction: number) {
+    "use strict";
     if (!isNaN(line*1)) {
         return line*1;
     } else if (direction === 1) {
@@ -343,6 +303,7 @@ export interface IProps {
     flag?: string;
     fontSize?: number;
     hasStem?: boolean;
+    key?: string;
     line?: any;
     notehead?: string;
     secondaryStroke?: any;

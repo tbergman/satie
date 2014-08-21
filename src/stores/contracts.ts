@@ -60,12 +60,12 @@ export interface IDuration {
     /**
      * The number of dots to be played, if different from dots.
      */
-    actualDots: number;
+    actualDots?: number;
 
     /**
      * The tuplet to be displayed, if different from tuplet.
      */
-    actualTuplet: ITuplet;
+    actualTuplet?: ITuplet;
 
     /**
      * The base of the note, as encoded by Lilypond.
@@ -86,7 +86,7 @@ export interface IDuration {
      * @param ctx with a valid timeSignature, for computing beats.
      * @param inheritedCount the count to use if duration's count is null.
      */
-    getBeats: (ctx: Context, inheritedCount?: number) => number;
+    getBeats?: (ctx: Context, inheritedCount?: number) => number;
 
     /**
      * The displayed tuplet, or null.

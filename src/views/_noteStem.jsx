@@ -8,6 +8,7 @@ var React = require("react");
 var _ = require("lodash");
 
 var Accidental = require("./_accidental.jsx");
+var DeepPureMixin = require("./deepPureMixin");
 var Glyph = require("./_glyph.jsx");
 var Line = require("./_line.jsx");
 var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
@@ -16,6 +17,7 @@ var getFontOffset = require("./_getFontOffset.jsx");
 var stemThickness = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;
 
 var NoteStem = React.createClass({
+	mixins: {DeepPureMixin},
     propTypes: {
         height: React.PropTypes.number.isRequired,
         direction: React.PropTypes.oneOf([1, -1]).isRequired,

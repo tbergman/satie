@@ -15,6 +15,7 @@ import TimeSignatureModel = require("./timeSignature");
 var getBeats = Metre.getBeats;
 
 class DurationModel extends Model implements C.IPitchDuration {
+    _beats: number;
     accidentals: any;
     actualDots: number;
     acc: any;
@@ -59,6 +60,8 @@ class DurationModel extends Model implements C.IPitchDuration {
             this.count = ctx.count;
         }
 
+        this._beats = this.getBeats(ctx, null, !ctx.fast);
+
         // Update the ctx to reflect the current note's duration.
         ctx.count = this.count;
 
@@ -79,7 +82,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             DurationModel.log2 / 3;
 
         // The width of a line must not exceed that specified by the page layout.
-        if ((ctx.isBeam || !this.inBeam) && (ctx.x + this.getWidth(ctx) > ctx.maxX)) {
+        if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
             status = NewlineModel.createNewline(ctx);
         }
         if (status !== C.IterationStatus.SUCCESS) { return status; }
@@ -125,7 +128,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // Middle note directions are set by surrounding notes.
         this.forceMiddleNoteDirection = NaN;
-        if (DurationModel.getAverageLine(this, ctx) !== 3) {
+        if (!ctx.fast && DurationModel.getAverageLine(this, ctx) !== 3) {
             status = DurationModel.prototype.decideMiddleLineStemDirection(ctx);
         }
         if (status !== C.IterationStatus.SUCCESS) { return status; }
@@ -144,10 +147,14 @@ class DurationModel extends Model implements C.IPitchDuration {
             this._handleTie(ctx);
         }
         this.setX(ctx.x);
-        this.accidentals = DurationModel.getAccidentals(this, ctx);
-        _.map(this.chord || [this.pitch], (pitch) => {
-            ctx.accidentals[(<any>pitch).pitch] = (<any>pitch).acc;
-        });
+        this.accidentals = this.getAccidentals(ctx);
+        if (this.pitch) {
+            ctx.accidentals[this.pitch.pitch] = this.pitch.acc;
+        } else {
+            for (var i = 0; i < this.chord.length; ++i) {
+                ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
+            }
+        }
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
         this.flag = !this.inBeam && (this.getDisplayCount() in DurationModel.countToFlag) &&
@@ -257,8 +264,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         lylite.push(str);
     }
 
-    getBeats(ctx: Context, inheritedCount?: number) {
-        assert("start" in ctx);
+    getBeats(ctx: Context, inheritedCount?: number, force?: boolean) {
+        if (!force && this._beats) {
+            return this._beats;
+        }
         return getBeats(
             this.count || inheritedCount,
             this.getDots(),
@@ -404,28 +413,28 @@ class DurationModel extends Model implements C.IPitchDuration {
         3: "b"
     };
 
-    getAccidentals(ctx: Context): Array<number> {
-        return DurationModel.getAccidentals(this, ctx);
+    private getAccidentals(ctx: Context) {
+        var chord: Array<C.IPitch> = this.chord || <any> [this];
+        var result = new Array(chord.length || 1);
+        for (var i = 0; i < result.length; ++i) {
+            var pitch: C.IPitch = chord[i];
+            var actual = pitch.acc;
+            var target = ctx.accidentals[pitch.pitch];
+            if (actual === target) {
+                result[i] = NaN; // no accidental
+                continue;
+            }
+
+            if (!actual) {
+                ctx.accidentals[pitch.pitch] = undefined;
+                result[i] = 0; // natural
+                continue;
+            }
+
+            result[i] = actual;
+        }
+        return result;
     }
-
-    static getAccidentals = (pitch: C.IPitch, ctx: Context): Array<number> => {
-        if (pitch.chord) {
-            return _.map(pitch.chord, p => DurationModel.getAccidentals(p, ctx));
-        }
-
-        var actual = pitch.acc;
-        var target = ctx.accidentals[pitch.pitch];
-        if (actual === target) {
-            return undefined; // no accidental
-        }
-
-        if (!actual) {
-            delete ctx.accidentals[pitch.pitch];
-            return [0]; // natural
-        }
-
-        return [actual];
-    };
 
     static countToNotehead: { [key: string]: string } = {
         0.25: "noteheadDoubleWhole",

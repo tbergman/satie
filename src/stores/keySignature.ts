@@ -174,7 +174,16 @@ class KeySignatureModel extends Model {
     };
 
     static getAccidentals = (keySignature: C.IKeySignature) => {
-        var ret: C.IAccidentals = {};
+        var ret: C.IAccidentals = {
+            // This would increase speed:
+//            "a": null,
+//            "b": null,
+//            "c": null,
+//            "d": null,
+//            "e": null,
+//            "f": null,
+//            "g": null
+        };
 
         var flats = KeySignatureModel.getFlatCount(keySignature);
         if (flats) {

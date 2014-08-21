@@ -225,7 +225,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                 item.type === C.Type.CLEF ||
                                 item.type === C.Type.DURATION) &&
                             Math.abs(dynX - item.x()) < 0.27 +
-                                (item.isNote ? item.note.dots*0.2 : 0)) {
+                                (item.isNote ? (item.note.dots||0)*0.2 : 0)) {
                         dynX = item.x();
                         foundIdx = j;
                         foundObj = item;
@@ -644,7 +644,8 @@ export interface IRendererProps {
     store?: SongEditorStore.SongEditorStore;
     tool?: Tool;
     top?: number;
-    selection?: Array<Model>
+    selection?: Array<Model>;
+    height?: number;
 }
 
 export interface IRendererState {
@@ -691,6 +692,10 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
 };
 
 var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
+// Version without caching:
+// function LineContainerComponent(props: ILineProps, children?: any) {
+//     return props.generate();
+// }
 
 interface ILineProps {
     h: number;

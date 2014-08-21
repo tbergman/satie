@@ -177,27 +177,7 @@ class NewlineModel extends Model {
             }
         }
         ctx.insertPast(new NewlineModel({ newline: true, _annotated: "createNewline" }), fidx + 1);
-        NewlineModel.removeNextNewline(ctx, fidx + 2);
         return C.IterationStatus.LINE_CREATED;
-    };
-
-    static removeNextNewline = (ctx: Context, start?: number) => {
-        start = start || ctx.idx;
-        for (var i = start; i < ctx.body.length; ++i) {
-            if (ctx.body[i].type === C.Type.NEWLINE) {
-                ctx.body.splice(i, 1);
-                for (var j = i; j < ctx.body.length &&
-                        ctx.body[j].type !== C.Type.BEAM_GROUP &&
-                        !ctx.body[j].isNote; ++j) {
-                    if (ctx.body[j]._annotated) {
-                        ctx.eraseFuture(j);
-                        --j;
-                    }
-                }
-                return;
-            }
-        }
-        return;
     };
 
     /**

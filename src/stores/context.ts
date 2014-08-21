@@ -24,6 +24,7 @@ class Context {
     beats: number;
     clef: string;
     count: number;
+    fast: boolean;
     fontSize: number;
     initialX: number;
     isBeam: boolean;
@@ -144,6 +145,8 @@ class Context {
      * of lines have changed.
      */
     snapshot() {
+        // In particular, we do not want to stringify staves, which are cyclic
+        // and huge.
         var stave = this.stave;
         var staves = this.staves;
         this.stave = null;
@@ -156,8 +159,7 @@ class Context {
         return ret;
     }
 
-    calculateIntersections() {
-        // XXX FIXME: Intersections will be incorrect if an incomplete bar exists!
+    private _calculateIntersections() {
         var genIterators =
             () => _(this.staves)
                 .filter(s => s.body)
@@ -213,9 +215,11 @@ class Context {
                                     continue;
                                 }
                             } while (s.body[s.idx] && !s.body[s.idx].isNote);
+
                             actives = actives.concat(_.map(newActives, a => {
                                 return {obj: a, expires: s.beat};
                             }));
+
                             if (s.body[s.idx]) {
                                 assert(s.body[s.idx].isNote);
                                 var pitch: C.IPitchDuration = <any> s.body[s.idx];
@@ -249,20 +253,20 @@ class Context {
     /**
      * Start iterating through the stave (for annotating)
      */
-    _begin() {
+    private _begin() {
         this.idx = this.start;
     }
     /**
      * Iteration condition (for annotating)
      */
-    _atEnd() {
+    private _atEnd() {
         return this.idx >= this.body.length;
     }
     /**
      * Based on a return code, continue iterating through the stave.
      * For use in the SongEditor store.
      */
-    _nextIndex(exitCode: C.IterationStatus) {
+    private _nextIndex(exitCode: C.IterationStatus) {
         var i = this.idx;
         var line: C.ILineSnapshot;
 
@@ -274,6 +278,9 @@ class Context {
             case C.IterationStatus.LINE_CREATED:
                 line = this.lines[this.line];
                 cpyline(this, line);
+                if ((<any>line).DEBUG_line) {
+                    assert(this.line === (<any>line).DEBUG_line);
+                }
                 while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
                     --i;
                 }
@@ -317,7 +324,7 @@ class Context {
         assert(!_ANNOTATING);
         _ANNOTATING = true;
 
-        this.calculateIntersections();
+        this._calculateIntersections();
         var NewlineModel = require("./newline");
 
         opts = opts || <any> {}; // TSFIX
@@ -332,6 +339,7 @@ class Context {
         var toolFn = opts.toolFn || null;
         var stopping = 0;
         var initialLength = this.body.length;
+        var enableFastModeAtBar: number = null;
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
@@ -391,7 +399,7 @@ class Context {
             /*
              * THIS IS THE PART OF THE FUNCTION YOU CARE ABOUT!
              *
-             * We usually call annotatei() on the Model at this.curr(). We can also
+             * We usually call annotate() on the Model at this.curr(). We can also
              * run a custom action (passed in as 'toolFn') to add a note, edit a note,
              * etc.
              */
@@ -402,11 +410,15 @@ class Context {
                     this.timeSignature = (<any>this.curr()).timeSignature;
                 }
                 exitCode = toolFn(this.curr(), this);
-                pointerData = undefined;
+                pointerData = null;
+
+                // All current operations can make changes that require slow mode for
+                // up to 2 bars.
+                enableFastModeAtBar = this.bar + 2;
             } else {
                 exitCode = this.curr().annotate(this, stopping);
-            if (stopping && !--stopping) {
-                assert(false, "Aborting.");
+                if (stopping && !--stopping) {
+                    assert(false, "Aborting.");
                 }
             }
 
@@ -426,11 +438,18 @@ class Context {
                 cursor.annotatedPage = this.pageStarts.length - 1;
             }
 
-            /*
-             * We've just added a line. So we can't quit early (see the next section)
-             */
             if (exitCode === C.IterationStatus.LINE_CREATED) {
+                if (this.line === cursor.annotatedLine) {
+                    cursor.annotatedLine = null;
+                    cursor.annotatedObj = null;
+                    cursor.annotatedPage = null;
+                }
                 SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
+            }
+
+            if (enableFastModeAtBar !== null && enableFastModeAtBar <= this.bar) {
+                this.fast = true;
+                enableFastModeAtBar = null;
             }
         }
 
@@ -476,7 +495,16 @@ class Context {
      * @param{bool} allowBeams: True if beams should not be skipped.
      */
     next(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        return this.body[this.nextIdx(cond, skip, allowBeams)];
+        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower!
+        var i: number;
+        skip = (skip === undefined || skip === null) ? 1 : skip;
+        i = skip;
+        while (this.body[this.idx + i] && (
+                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (cond && !cond(this.body[this.idx + i])))) {
+            ++i;
+        }
+        return this.body[this.idx + i];
     }
     nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
         var i: number;
@@ -580,12 +608,15 @@ function cpyline(ctx: Context, line: C.ILineSnapshot) {
     "use strict";
 
     _.each(line, (v, attrib) => {
+        if ((<any>line)[attrib] === null) {
+            return;
+        }
         switch (attrib) {
             case "accidentals":
                 ctx.accidentals = line.accidentals;
                 break;
             case "all":
-                // Ignored
+                (<any>ctx).all = (<any>line).all;
                 break;
             case "bar":
                 ctx.bar = line.bar;
@@ -600,22 +631,13 @@ function cpyline(ctx: Context, line: C.ILineSnapshot) {
                 ctx.keySignature = line.keySignature;
                 break;
             case "line":
-                if (line.line !== null) {
-                    // TODO(jnetterf): Make sure line.line is as expected.
-                    ctx.line = line.line;
-                }
+                ctx.line = line.line;
                 break;
             case "pageLines":
-                if (line.pageLines !== null) {
-                    // TODO(jnetterf): Make sure line.pageLines is as expected.
-                    ctx.pageLines = line.pageLines;
-                }
+                ctx.pageLines = line.pageLines;
                 break;
             case "pageStarts":
-                if (line.pageStarts !== null) {
-                    // TODO(jnetterf): Make sure line.pageStarts is as expected.
-                    ctx.pageStarts = line.pageStarts;
-                }
+                ctx.pageStarts = line.pageStarts;
                 break;
             case "x":
                 ctx.x = line.x;
