@@ -2,6 +2,7 @@
  * Flux store for playback.
  */
 
+import assert = require("assert");
 import _ = require("lodash");
 import TSEE = require("./tsee");
 
@@ -136,7 +137,8 @@ export class PlaybackStore extends TSEE {
     }
 
     continuePlay() {
-        var SongEditorStore = require("./songEditor.ts");
+        var SongEditorStore = require("./songEditor");
+        var Context = require("./context"); // Recursive.
         var beats: number;
         var delays: Array<number> = [];
         _.each(this._remainingActions || [], m => {
@@ -170,6 +172,12 @@ export class PlaybackStore extends TSEE {
 
             // XXX: assuming 4/4 for now
 
+            var ctx = new Context({
+                stave: SongEditorStore.Instance.staves()[h],
+                staveIdx: h,
+                staves: SongEditorStore.Instance.staves()
+            });
+
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
                     var obj: Model = body[i];
@@ -184,18 +192,25 @@ export class PlaybackStore extends TSEE {
                         });
                     }
 
+                    if (obj.type === C.Type.TIME_SIGNATURE) {
+                        ctx.timeSignature = obj.timeSignature;
+                    }
+
                     if (foundIdx && obj.isNote) {
-                        beats = obj.note.getBeats(null); // XXX: I don't think this works.
-                        if (!USING_LEGACY_AUDIO) {
+                        beats = obj.note.getBeats(ctx);
+                        if (!USING_LEGACY_AUDIO && !obj.isRest) {
                             _.each(obj.note.pitch ? [C.midiNote(obj.note)] :
                                     C.midiNote(obj.note), midiNote => {
                                 var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
+                                assert(a);
                                 MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
                                     this._remainingActions.push(() =>
                                         global.clearInterval(a));
                                 } else {
-                                    this._remainingActions.push(() => a.stop());
+                                    this._remainingActions.push(function () {
+                                        a.stop();
+                                    });
                                 }
                             });
                         }
@@ -204,7 +219,7 @@ export class PlaybackStore extends TSEE {
                     }
 
                     if (obj.isNote) {
-                        beats = obj.note.getBeats(null); // XXX: I don't think this works.
+                        beats = obj.note.getBeats(ctx);
                         seek += beats*timePerBeat;
                     }
                 }
