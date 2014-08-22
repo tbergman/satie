@@ -422,12 +422,12 @@ export class SongEditorStore extends TSEE {
             }
             y = info.resetY ? 0 : y;
 
-            if (!info.skip) {
-                if (PROFILER_ENABLED) {
-                    console.log("Annotation efficiency: " +
-                        (info.operations / stave.body.length));
-                }
+            if (PROFILER_ENABLED) {
+                console.log("Ops:", info.operations, "\tscore:",
+                    (info.operations / stave.body.length));
+            }
 
+            if (!info.skip) {
                 _ctxs.length = sidx;
                 _ctxs[sidx] = context;
                 y += 2.25;

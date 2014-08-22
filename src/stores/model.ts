@@ -48,7 +48,6 @@ class Model {
     selected: boolean;
 
     get type(): C.Type {
-        assert(false, "Not implemented");
         return C.Type.UNKNOWN;
     }
 

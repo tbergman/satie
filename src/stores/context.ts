@@ -340,6 +340,7 @@ class Context {
         var stopping = 0;
         var initialLength = this.body.length;
         var enableFastModeAtBar: number = null;
+        var canExitEarly = !!opts.toolFn;
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
@@ -445,11 +446,23 @@ class Context {
                     cursor.annotatedPage = null;
                 }
                 SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
+                canExitEarly = false;
             }
 
             if (enableFastModeAtBar !== null && enableFastModeAtBar <= this.bar) {
                 this.fast = true;
                 enableFastModeAtBar = null;
+            }
+
+            if (canExitEarly && !pointerData && this.curr().type === C.Type.NEWLINE) {
+                _ANNOTATING = false;
+                return {
+                    cursor: cursor,
+                    operations: operations,
+                    resetY: true,
+                    skip: true,
+                    success: true
+                };
             }
         }
 
