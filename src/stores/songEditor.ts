@@ -39,6 +39,7 @@ export class SongEditorStore extends TSEE {
 
     handleAction(action: C.IFluxAction) {
         var activeSong: C.ISong;
+        var h: number;
         var i: number;
         switch(action.description) {
             case "GET /api/song":
@@ -133,7 +134,7 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /local/staveHeight":
                 this.emit(HISTORY_EVENT);
-                var h = Math.round(_staveHeight*100)/100;
+                h = Math.round(_staveHeight*100)/100;
 
                 if (action.resource === "larger") {
                     for (i = renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
@@ -167,6 +168,30 @@ export class SongEditorStore extends TSEE {
                 _ctxs = null;
                 _.find(_staves, s => s.pageSize).pageSize = _pageSize;
                 Model.removeAnnotations(_staves);
+                this.annotate();
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "PUT /local/hmargin":
+                this.emit(HISTORY_EVENT);
+                switch (action.resource) {
+                    case "increase":
+                        if (_paper.leftMargin < 50) {
+                            _paper.leftMargin += 1;
+                            _paper.rightMargin += 1;
+                        }
+                        break;
+                    case "decrease":
+                        if (_paper.leftMargin > -1) { // so it can go to -1
+                            _paper.leftMargin -= 1;
+                            _paper.rightMargin -= 1;
+                        }
+                        break;
+                    default:
+                        assert(false, "Not reached");
+                }
+                Model.removeAnnotations(_staves);
+                this.markRendererDirty();
                 this.annotate();
                 this.emit(CHANGE_EVENT);
                 break;
@@ -217,46 +242,53 @@ export class SongEditorStore extends TSEE {
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
                     // Remove the item directly before the ctx.
-                    for (i = 0; i < _staves[3].body.length; ++i) {
-                        if (_staves[3].body[i] === _visualCursor.annotatedObj) {
-                            --i;
+                    for (h = 0; h < _staves.length; ++h) {
+                        // XXX: It's likely the developer will need to adjust this
+                        // logic to allow for multiple staves.
+                        if (!_staves[h].body) {
+                            continue;
+                        }
+                        for (i = 0; i < _staves[h].body.length; ++i) {
+                            if (_staves[h].body[i] === _visualCursor.annotatedObj) {
+                                --i;
+                                break;
+                            }
+                        }
+                        if (i === _staves[h].body.length) {
+                            console.warn("Cursor not found");
                             break;
                         }
-                    }
-                    if (i === _staves[3].body.length) {
-                        console.warn("Cursor not found");
-                        break;
-                    }
-                    while(i >= 0 && !_staves[3].body[i].isNote &&
-                            _staves[3].body[i].type !== C.Type.BARLINE) {
-                        --i;
-                    }
-                    var obj = _staves[3].body[i];
-                    if (obj) {
-                        var line = _visualCursor.annotatedLine;
-                        this.stepCursor({
-                            step: -1,
-                            skipThroughBars: false
-                        });
-
-                        // Remove items based on a whitelist.
-                        if (obj.isNote) {
-                            // The stepCursor call above invalidates _visualCursor
-                            // DO NOT CHECK _visualCursor HERE!!!
-                            var EraseTool = require("./eraseTool"); // Recursive dependency.
-                            var etool = new EraseTool();
-                            this.annotate(
-                                {
-                                    obj: obj,
-                                    musicLine: line,
-                                    idx: i,
-                                    staveIdx: this._activeStaveIdx
-                                },
-                                etool.splice.bind(etool, false));
-                        } else {
-                            this.annotate();
+                        while (i >= 0 && !_staves[h].body[i].isNote &&
+                            _staves[h].body[i].type !== C.Type.BARLINE) {
+                            --i;
                         }
-                        this.emit(ANNOTATE_EVENT);
+                        var obj = _staves[h].body[i];
+                        if (obj) {
+                            var line = _visualCursor.annotatedLine;
+                            this.stepCursor({
+                                step: -1,
+                                skipThroughBars: false
+                            });
+
+                            // Remove items based on a whitelist.
+                            if (obj.isNote) {
+                                // The stepCursor call above invalidates _visualCursor
+                                // DO NOT CHECK _visualCursor HERE!!!
+                                var EraseTool = require("./eraseTool"); // Recursive dependency.
+                                var etool = new EraseTool();
+                                this.annotate(
+                                    {
+                                        obj: obj,
+                                        musicLine: line,
+                                        idx: i,
+                                        staveIdx: this._activeStaveIdx
+                                    },
+                                    etool.splice.bind(etool, false));
+                            } else {
+                                this.annotate();
+                            }
+                            this.emit(ANNOTATE_EVENT);
+                        }
                     }
                 } else {
                     _visualCursor = null;
@@ -272,25 +304,32 @@ export class SongEditorStore extends TSEE {
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj: Model = null;
                         var prevIdx: number;
-                        for (i = 0; i < _staves[3].body.length; ++i) {
-                            if (_staves[3].body[i] === _visualCursor.annotatedObj) {
-                                prevObj = _staves[3].body[i - 1];
-                                prevIdx = i - 1;
-                                if (prevObj.type === C.Type.BEAM_GROUP) {
-                                    prevObj = _staves[3].body[i - 2];
+                        for (h = 0; h < _staves.length; ++h) {
+                            if (!_staves[h].body) {
+                                continue;
+                            }
+                            // XXX: It's likely the developer will need to adjust this logic
+                            // for multiple staves.
+                            for (i = 0; i < _staves[h].body.length; ++i) {
+                                if (_staves[h].body[i] === _visualCursor.annotatedObj) {
+                                    prevObj = _staves[h].body[i - 1];
+                                    prevIdx = i - 1;
+                                    if (prevObj.type === C.Type.BEAM_GROUP) {
+                                        prevObj = _staves[h].body[i - 2];
+                                    }
                                 }
                             }
+                            this.annotate(
+                                {
+                                    obj: prevObj,
+                                    musicLine: _visualCursor.annotatedLine,
+                                    idx: prevIdx,
+                                    staveIdx: this._activeStaveIdx
+                                },
+                                _tool.visualCursorAction(action.postData));
+                            this.emit(ANNOTATE_EVENT);
+                            break;
                         }
-                        this.annotate(
-                            {
-                                obj: prevObj,
-                                musicLine: _visualCursor.annotatedLine,
-                                idx: prevIdx,
-                                staveIdx: this._activeStaveIdx
-                            },
-                            _tool.visualCursorAction(action.postData));
-                        this.emit(ANNOTATE_EVENT);
-                        break;
 
                     case undefined:
                     case null:
@@ -319,6 +358,7 @@ export class SongEditorStore extends TSEE {
         _staveHeight = null;
         _prevActiveSong = null;
         _pageSize = null;
+        _paper = null;
         _tool = null;
         _selection = null;
         this.visualCursorIs({
@@ -329,10 +369,12 @@ export class SongEditorStore extends TSEE {
 
     reparse(src: string) {
         _staves = lylite.parse(src);
-        renderUtil.addDefaults(_staves);
+        C.addDefaults(_staves);
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
         _pageSize = _.find(_staves, s => s.pageSize).pageSize;
+        _paper = _.find(_staves, s => s.paper).paper;
+
         for (var i = 0; i < _staves.length; ++i) {
             if (_staves[i].body) {
                 this._activeStaveIdx = i;
@@ -396,7 +438,9 @@ export class SongEditorStore extends TSEE {
                         isFirstLine: true,
                         pageSize: pageSize || _pageSize,
                         staves: staves,
-                        staveIdx: sidx
+                        staveIdx: sidx,
+                        leftMargin: _paper.leftMargin,
+                        rightMargin: _paper.rightMargin
                     });
 
             /*
@@ -572,68 +616,75 @@ export class SongEditorStore extends TSEE {
             return;
         }
         var obj = _visualCursor.annotatedObj;
-        for (var i = 0; i < _staves[3].body.length; ++i) {
-            if (_staves[3].body[i] === obj) {
-                if ((!_staves[3].body[i + 1] ||
-                            _staves[3].body[i + 1].type !== C.Type.BARLINE ||
-                            _staves[3].body[i + 1].barline === C.Barline.Double) &&
+        for (var h = 0; h < _staves.length; ++h) {
+            if (!_staves[h].body) {
+                continue;
+            }
+            // XXX: It's likely the author will need to adjust this logic for multiple
+            // staves.
+            for (var i = 0; i < _staves[h].body.length; ++i) {
+                if (_staves[h].body[i] === obj) {
+                    if ((!_staves[h].body[i + 1] ||
+                        _staves[h].body[i + 1].type !== C.Type.BARLINE ||
+                        _staves[h].body[i + 1].barline === C.Barline.Double) &&
                         spec.loopThroughEnd) {
-                    this.visualCursorIs({
-                        beat: 0,
-                        bar: 1
-                    });
+                        this.visualCursorIs({
+                            beat: 0,
+                            bar: 1
+                        });
+                        break;
+                    }
+                    var cd = _staves[h].body[i].ctxData;
+                    var throughBar = false;
+                    while (_staves[h].body[i += spec.step]) {
+                        if (!_staves[h].body[i]) {
+                            break;
+                        }
+                        if (_staves[h].body[i].type === C.Type.BARLINE) {
+                            throughBar = true;
+                        }
+                        if (_staves[h].body[i].type === C.Type.NEWLINE) {
+                            // TODO: we don't need to update all the lines
+                            markRendererDirty();
+                        }
+                        if (_visualCursor.endMarker &&
+                            spec.step === 1) {
+                            var last = _staves[h].body[_staves[h].body.length - 1];
+                            assert(last.endMarker);
+                            if (last.ctxData.bar !== _visualCursor.bar + 1) {
+                                this.visualCursorIs({
+                                    beat: 0,
+                                    bar: _visualCursor.bar + 1
+                                });
+                            }
+                            break;
+                        } else if (cd.bar !== _staves[h].body[i].ctxData.bar ||
+                            cd.beat !== _staves[h].body[i].ctxData.beat) {
+
+                            if (spec.skipThroughBars) {
+                                while (_staves[h].body[i + 1] &&
+                                    (_staves[h].body[i].endMarker ||
+                                    _staves[h].body[i].type === C.Type.BARLINE)) {
+                                    ++i;
+                                }
+                            }
+                            this.visualCursorIs(
+                                _staves[h].body[i].ctxData);
+
+                            // If we're walking through a bar, make up for that.
+                            if (throughBar) {
+                                if (spec.step < 0) {
+                                    _visualCursor.endMarker = true;
+                                } else {
+                                    _visualCursor.beat = 0;
+                                    _visualCursor.bar++;
+                                }
+                            }
+                            break;
+                        }
+                    }
                     break;
                 }
-                var cd = _staves[3].body[i].ctxData;
-                var throughBar = false;
-                while (_staves[3].body[i += spec.step]) {
-                    if (!_staves[3].body[i]) {
-                        break;
-                    }
-                    if (_staves[3].body[i].type === C.Type.BARLINE) {
-                        throughBar = true;
-                    }
-                    if (_staves[3].body[i].type === C.Type.NEWLINE) {
-                        // TODO: we don"t need to update all the lines
-                        markRendererDirty();
-                    }
-                    if (_visualCursor.endMarker &&
-                            spec.step === 1) {
-                        var last = _staves[3].body[_staves[3].body.length -1];
-                        assert(last.endMarker);
-                        if (last.ctxData.bar !== _visualCursor.bar +1) {
-                            this.visualCursorIs({
-                                beat: 0,
-                                bar: _visualCursor.bar + 1
-                            });
-                        }
-                        break;
-                    } else if (cd.bar !== _staves[3].body[i].ctxData.bar ||
-                            cd.beat !== _staves[3].body[i].ctxData.beat) {
-
-                        if (spec.skipThroughBars) {
-                            while (_staves[3].body[i + 1] &&
-                                    (_staves[3].body[i].endMarker ||
-                                    _staves[3].body[i].type === C.Type.BARLINE)) {
-                                ++i;
-                            }
-                        }
-                        this.visualCursorIs(
-                            _staves[3].body[i].ctxData);
-
-                        // If we're walking through a bar, make up for that.
-                        if (throughBar) {
-                            if (spec.step < 0) {
-                                _visualCursor.endMarker = true;
-                            } else {
-                                _visualCursor.beat = 0;
-                                _visualCursor.bar++;
-                            }
-                        }
-                        break;
-                    }
-                }
-                break;
             }
         }
         // Does not emit
@@ -681,27 +732,55 @@ export class SongEditorStore extends TSEE {
     pageSize() {
         return _pageSize;
     }
+    paper() {
+        return _paper;
+    }
     src() {
         var staves = _staves;
 
         var lyliteArr: Array<string> = [];
         var unresolved: Array<(obj: Model) => boolean> = [];
         _.each(staves, (stave, sidx) => {
-            if (stave.staveHeight) {
+            if (stave.body) {
+                lyliteArr.push("\\new Staff {");
+
+                var body = stave.body;
+                for (var i = 0; i < body.length; ++i) {
+                    var obj = body[i];
+                    obj.toLylite(lyliteArr, unresolved);
+
+                    for (var j = 0; j < unresolved.length; ++j) {
+                        var ret: boolean = unresolved[j](obj);
+
+                        if (ret) {
+                            unresolved.splice(j, 1);
+                            --j;
+                        }
+                    }
+                }
+
+                lyliteArr.push("}\n");
+            } else if (stave.staveHeight) {
                 lyliteArr.push("#(set-global-staff-size " +
                     stave.staveHeight*renderUtil.ptPerMM + ")\n");
-                return;
-            }
-            if (stave.pageSize) {
+            } else if (stave.pageSize) {
                 if (!stave.pageSize.lilypondName) {
                     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
                     return;
                 }
                 lyliteArr.push("#(set-default-paper-size \"" +
                     stave.pageSize.lilypondName + "\")\n");
-                return;
-            }
-            if (stave.header) {
+            } else if (stave.paper) {
+                lyliteArr.push("\\paper {");
+                if (stave.paper.leftMargin) {
+                    lyliteArr.push("left-margin=" + stave.paper.leftMargin + "\n");
+                }
+                if (stave.paper.rightMargin) {
+                    lyliteArr.push("right-margin=" + stave.paper.rightMargin + "\n");
+                }
+                lyliteArr.push("}\n");
+
+            } else if (stave.header) {
                 lyliteArr.push("\\header {");
                 if (stave.header.title) {
                     // XXX: XSS
@@ -712,27 +791,7 @@ export class SongEditorStore extends TSEE {
                     lyliteArr.push("composer=\"" + stave.header.composer + "\"");
                 }
                 lyliteArr.push("}\n");
-                return;
             }
-
-            lyliteArr.push("\\new Staff {");
-
-            var body = stave.body;
-            for (var i = 0; i < body.length; ++i) {
-                var obj = body[i];
-                obj.toLylite(lyliteArr, unresolved);
-
-                for (var j = 0; j < unresolved.length; ++j) {
-                    var ret: boolean = unresolved[j](obj);
-
-                    if (ret) {
-                        unresolved.splice(j, 1);
-                        --j;
-                    }
-                }
-            }
-
-            lyliteArr.push("}\n");
         });
         var lyliteStr = lyliteArr.join(" ");
         return lyliteStr;
@@ -831,6 +890,7 @@ var _cleanupFn: Function = null;
 var _dirty = false;
 var _linesToUpdate: { [key: string]: boolean } = {};
 var _pageSize: C.IPageSize = null;
+var _paper: C.Paper = null;
 var _prevActiveSong: C.ISong = null;
 var _selection: Array<Model> = null;
 var _snapshots: { [key: string]: any } = {};

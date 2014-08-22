@@ -60,6 +60,8 @@ class Context {
                 unit: string;
                 width: number;
             };
+            leftMargin?: number;
+            rightMargin?: number;
             isFirstLine?: boolean;
             staveIdx: number;
             snapshot?: string;
@@ -77,6 +79,8 @@ class Context {
             unit: "mm",
             width: 210
         };
+        opts.leftMargin = opts.leftMargin || 15.25;
+        opts.rightMargin = opts.rightMargin || 15.25;
         opts.top = opts.top || 2.75;
 
         var self: { [index: string]: any } = <any> this;
@@ -93,8 +97,9 @@ class Context {
                 // XXX: HACK!!!
                 noMargin = true;
             }
-            var initialX = renderUtil.mm(15, opts.fontSize) + 1/4;
-            var firstX = renderUtil.mm(opts.isFirstLine && !noMargin ? 30 : 15, opts.fontSize) + 1/4;
+            var initialX = renderUtil.mm(opts.leftMargin, opts.fontSize);
+            var firstX = initialX +
+                renderUtil.mm(opts.isFirstLine && !noMargin ? 15 : 0, opts.fontSize);
 
             this.accidentals = {};
             this.bar = 1;
@@ -105,7 +110,7 @@ class Context {
             this.initialX = initialX;
             this.line = 0;
             this.lineSpacing = 3.3;
-            this.maxX = renderUtil.mm(opts.pageSize.width - 15, opts.fontSize);
+            this.maxX = renderUtil.mm(opts.pageSize.width - opts.rightMargin, opts.fontSize);
             this.maxY = renderUtil.mm(opts.pageSize.height - 15, opts.fontSize);
             this.pageLines = [0];
             this.pageSize = opts.pageSize;
@@ -311,6 +316,7 @@ class Context {
                 --i;
                 break;
             case C.IterationStatus.RETRY_CURRENT:
+            case C.IterationStatus.RETRY_CURRENT_THEN_STOP:
                 i -= 1;
                 break;
             default:
@@ -340,7 +346,8 @@ class Context {
         var stopping = 0;
         var initialLength = this.body.length;
         var enableFastModeAtBar: number = null;
-        var canExitEarly = !!opts.toolFn;
+        var canExitAtNewline = !!opts.toolFn;
+        var canExitOnNextSuccess = false;
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
@@ -446,7 +453,11 @@ class Context {
                     cursor.annotatedPage = null;
                 }
                 SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
-                canExitEarly = false;
+                canExitAtNewline = false;
+            } else if (exitCode === C.IterationStatus.RETRY_CURRENT_THEN_STOP) {
+                // Force positions to stay the same, then enable this for a performance
+                // boost.
+                // canExitOnNextSuccess = true;
             }
 
             if (enableFastModeAtBar !== null && enableFastModeAtBar <= this.bar) {
@@ -454,7 +465,8 @@ class Context {
                 enableFastModeAtBar = null;
             }
 
-            if (canExitEarly && !pointerData && this.curr().type === C.Type.NEWLINE) {
+            if ((canExitAtNewline && !pointerData && this.curr().type === C.Type.NEWLINE) ||
+                (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
                 return {
                     cursor: cursor,

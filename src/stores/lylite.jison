@@ -34,7 +34,7 @@
 
 "\header"             return 'SET_HEADER'
 
-"\paper"			  return 'PAPER'
+"\paper"			  return 'SET_PAPER'
 
 "\new"                return 'NEW'
 "Staff"               return 'NEW_STAFF'
@@ -139,7 +139,7 @@
 "set-global-staff-size" return 'SET_STAFF_SIZE'
 "set-default-paper-size" return 'SET_PAPER_SIZE'
 
-[a-zA-Z\u266d]+             return 'STRING'
+[a-zA-Z\u266d-]+             return 'STRING'
 \"(?:[^"\\]|\\.)*\"   return 'STRING'
 
 "'"                   return 'SINGLE_QUOTE'
@@ -256,6 +256,7 @@ parts
   : /*empty*/                          { $$ = []; }
   | parts globalExpr                   { $$ = $1.concat($2); }
   | parts header                       { $$ = $1.concat({header: $2}); }
+  | parts paper                        { $$ = $1.concat({paper: $2}); }
   | parts musicExpr                    { $$ = $1.concat({body: $2}); }
   | parts 'NEW' 'NEW_STAFF' musicExpr  { $$ = $1.concat({body: $4}); }
   | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
@@ -308,7 +309,10 @@ pianoStaff
 
 header
   : 'SET_HEADER' 'LBRACE' headerElements 'RBRACE' { $$ = $3; }
-  | 'PAPER' 'LPRACE' headerElements 'RBRACE'	  { $$ = $3; }
+  ;
+
+paper
+  : 'SET_PAPER'  'LBRACE' headerElements 'RBRACE' { $$ = new C.Paper($3); }
   ;
 
 headerElements
@@ -331,6 +335,11 @@ headerElement
             $$ = {};
             $$[$1] = $3;
         }
+  | 'STRING' 'EQ' 'NUMBER'
+		{
+			$$ = {};
+			$$[$1] = parseFloat($3);
+		}
   ;
 
 musicExpr

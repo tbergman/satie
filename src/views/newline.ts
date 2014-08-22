@@ -9,7 +9,6 @@ import ReactTS = require("react-typescript");
 
 import NewlineModel = require("../stores/newline");
 var StaveLines = require("./_staveLines.jsx");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
@@ -17,8 +16,8 @@ export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
 
         return StaveLines({
                 key: spec.key(),
-                width: renderUtil.mm(spec.pageSize.width - 30, spec.fontSize),
-                x: renderUtil.mm(15, spec.fontSize),
+                width: spec.width,
+                x: spec.begin,
                 y: spec.y() + spec.lineSpacing});
     }
 };

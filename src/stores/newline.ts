@@ -11,6 +11,8 @@ class NewlineModel extends Model {
     annotatedExtraWidth: number;
     lineSpacing: number;
     pageSize: C.IPageSize;
+    width: number;
+    begin: number;
     DEBUG_line: number;
 
     annotateImpl(ctx: Context): C.IterationStatus {
@@ -22,7 +24,7 @@ class NewlineModel extends Model {
         // Notes should be full justfied within a line.
         // This requirement should be last so that it only happens once
         // per line.
-        if (ctx.maxX - ctx.x > 0.01) {
+        if (ctx.maxX - ctx.x > 0.001) {
             this.justify(ctx);
         }
 
@@ -37,6 +39,16 @@ class NewlineModel extends Model {
         ctx.smallest = 10000;
         delete ctx.clef;
         delete ctx.keySignature;
+
+        this.begin = ctx.initialX;
+        this.width = ctx.maxX - ctx.x;
+
+
+        /**
+         * Padding between begining of stave and the clef.
+         * This value should also be changed in BeginModel.
+         */
+        ctx.x += 0.2;
 
         ////////////////////////////////////////
         ++ctx.line;
@@ -87,7 +99,7 @@ class NewlineModel extends Model {
                 break;
             }
         }
-        diff -= 0.001; // adjust for bad floating point arithmetic
+        diff -= 0.0001; // adjust for bad floating point arithmetic
         var xOffset = diff;
         for (i = ctx.idx - 1; i >= 0; --i) {
             if (ctx.body[i].type === C.Type.NEWLINE) {

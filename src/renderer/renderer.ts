@@ -79,7 +79,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         var vcHeight = 1.2 + (isPianoStaff ? 1.2 : 0);
 
-        var rawPages = _.map(pages, function (page: IPage, pidx: number) {
+        var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return RenderEngine(
                 {
                     onClick: this.handleMouseClick,
@@ -96,7 +96,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 },
                 /* Using staves is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */
-                _.map(staves, function(stave: C.IStave, idx: number)  {
+                _.map(staves, (stave: C.IStave, idx: number) => {
                     if (stave.header) {
                         if (page.from) {
                             return null;
@@ -104,8 +104,11 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         y += renderUtil.getHeaderHeight(stave.header);
                         return !useGL && Header({
                             fontSize: fontSize,
-                            middle: renderUtil.mm(this.props.pageSize.width, fontSize)/2,
-                            right: renderUtil.mm(this.props.pageSize.width - 15, fontSize*0.75),
+                            middle: renderUtil.mm(this.props.pageSize.width/2 +
+                                this.props.paper.rightMargin -
+                                this.props.paper.leftMargin, fontSize),
+                            right: renderUtil.mm(this.props.pageSize.width -
+                                this.props.paper.rightMargin, fontSize * 0.75),
                             key: "HEADER",
                             model: stave.header});
                     } else if (stave.body) {
@@ -136,7 +139,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     } else {
                         return null;
                     }
-                }.bind(this)),
+                }),
                 !pidx && this.props.tool && _.map(staves, function(stave: C.IStave,idx: number)  {return stave.body &&
                     this.props.tool.render(
                         this.getCtx(idx),
@@ -166,7 +169,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             strokeWidth: 0.05})
                     )
 
-            );}.bind(this));
+            );});
 
         var ret: Object; // React component
         if (!this.props.raw) {
@@ -353,7 +356,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         };
     }
 
-    getPositionForMouse(event: MouseEvent): IPosInfo {
+    getPositionForMouse(event: React.MouseEvent): IPosInfo {
         var target: Element;
         if (useGL) {
             var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
@@ -383,7 +386,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         };
     }
 
-    handleMouseClick(event: MouseEvent) {
+    handleMouseClick(event: React.MouseEvent) {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
@@ -404,7 +407,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         this.forceUpdate();
     }
 
-    handleMouseDown(event: MouseEvent) {
+    handleMouseDown(event: React.MouseEvent) {
         if (event.button === 0) {
             if (this.props.selection) {
                 _.each(this.props.selection, function(s: Model)  {
@@ -430,7 +433,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
     }
 
-    handleMouseUp(event: MouseEvent) {
+    handleMouseUp(event: React.MouseEvent) {
         if (event.button === 0 && this.state.selectionRect) {
             var rect = this.state.selectionRect;
             var bbox = {
@@ -460,7 +463,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
     }
 
-    handleMouseMove(event: MouseEvent) {
+    handleMouseMove(event: React.MouseEvent) {
         if (this.state.selectionRect) {
             this.setState({
                 selectionRect: {
@@ -648,6 +651,7 @@ export interface IRendererProps {
     top?: number;
     selection?: Array<Model>;
     height?: number;
+    paper?: C.Paper;
 }
 
 export interface IRendererState {

@@ -6,6 +6,7 @@ import _ = require("lodash");
 
 import Model = require("./model");
 import Context = require("./context");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 /**
  * Used to hold current accidentals in a bar.
@@ -137,10 +138,30 @@ export interface IError {
  * A request to the Ripieno server and/or internal store.
  */
 export interface IFluxAction {
+    /**
+     * The path and verb of the resource, such as "PUT /local/selection"
+     */
     description: string;
+
+    /**
+     * The parsed JSON response from the server, if this is a server request.
+     */
     response: any;
+
+    /**
+     * For requests like "PUT /foo/bar/_qui", "qui".
+     */
     resource?: string;
+
+    /**
+     * For requests like "GET /api/song?userId=blah&another=query",
+     * "userId=blah&another=query"
+     */
     query: string;
+
+    /**
+     * For PUT and POST requests, the unstringified JSON postData.
+     */
     postData: any;
 };
 
@@ -183,7 +204,15 @@ export enum IterationStatus {
      * met and an item has been inserted in place of the current
      * item.
      */
-    RETRY_CURRENT
+    RETRY_CURRENT,
+
+    /**
+     * Retry the element at the current position, and stop iterating
+     * after the next SUCCESS. This may seem like a fairly strange case.
+     * It's used to make super-fast previews where positioning does not
+     * change.
+     */
+    RETRY_CURRENT_THEN_STOP
 };
 
 /**
@@ -275,6 +304,48 @@ export interface IPageSize {
      */
     width: number;
 };
+
+/**
+ * Margin settings and such. See also Paper.
+ */
+export class Paper {
+    constructor(spec: { "left-margin": number; "right-margin": number; }) {
+        this["left-margin"] = spec["left-margin"];
+        this["right-margin"] = spec["right-margin"];
+    }
+
+    /**
+     * Left margin in mm (Lilypond's name)
+     */
+    "left-margin": number;
+
+    /**
+     * Left margin in mm.
+     */
+    get leftMargin() {
+        return this["left-margin"];
+    }
+    set leftMargin(m: number) {
+        this["left-margin"] = m;
+    }
+
+
+
+    /**
+     * Left margin in mm (Lilypond's name)
+     */
+    "right-margin": number;
+
+    /**
+     * Right margin in mm.
+     */
+    get rightMargin() {
+        return this["right-margin"];
+    }
+    set rightMargin(m: number) {
+        this["right-margin"] = m;
+    }
+}
 
 /**
  * Represents zero or more concurrent pitches, such as a note, rest, or chord.
@@ -370,6 +441,13 @@ export interface IStave {
      * The physical (printout) size of the page.
      */
     pageSize?: IPageSize;
+
+    /**
+     * Margin settings and such.
+     * 
+     * See also pageSize.
+     */
+    paper?: Paper;
 
     /**
      * Printed information about the piece.
@@ -523,4 +601,22 @@ export function midiNote(p: IPitch) {
         return base + (p.octave || 0)*12 + (p.acc || 0);
     }
     return _.map(p.chord, m => midiNote(m));
+}
+
+export function addDefaults(staves: IStave[]) {
+    "use strict";
+    if (!_.any(staves, function(s) { return s.staveHeight; })) {
+        staves.splice(0, 0, {staveHeight: renderUtil.defaultStaveHeight()});
+    }
+    if (!_.any(staves, function(s) { return s.pageSize; })) {
+        staves.splice(0, 0, {pageSize: renderUtil.defaultPageSize()});
+    }
+    if (!_.any(staves, function(s) { return s.paper; })) {
+        staves.splice(0, 0, {
+            paper: new Paper({
+                "left-margin": 15.25,
+                "right-margin": 15.25
+            })
+        });
+    }
 }
