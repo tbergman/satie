@@ -500,11 +500,12 @@ export class SongEditorStore extends TSEE {
     }
     downloadLegacyAudio() {
         var request: Array<string> = [];
-        for (var h = 0; h < this.ctxCount(); ++h) {
-            if (!this.staves()[h].body) {
+        var staves = this.staves();
+        for (var h = 0; h < staves.length; ++h) {
+            if (!staves[h].body) {
                 continue;
             }
-            var body = this.staves()[h].body;
+            var body = staves[h].body;
             var delay = 0;
             var bpm = 120;
             var timePerBeat = 60/bpm;

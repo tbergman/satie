@@ -157,7 +157,7 @@ export class PlaybackStore extends TSEE {
 
         var seek = 0;
         var foundLegacyStart = false;
-        var startTime = MIDI.Player.ctx.currentTime + 0.01;
+        var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
         for (var h = 0; h < SongEditorStore.Instance.ctxCount(); ++h) {
             var body = SongEditorStore.Instance.staves()[h].body;

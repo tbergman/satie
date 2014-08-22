@@ -21,7 +21,7 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import C = require("./contracts");
-var ajax = require("ripienoUtil/ajax.jsx");
+import ajax = require("../../node_modules/ripienoUtil/ajax");
 
 var _callbacks: Array<(payload: any) => boolean> = [];
 var _promises: Array<Promise<any>> = [];
