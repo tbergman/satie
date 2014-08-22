@@ -34,6 +34,8 @@
 
 "\header"             return 'SET_HEADER'
 
+"\paper"			  return 'PAPER'
+
 "\new"                return 'NEW'
 "Staff"               return 'NEW_STAFF'
 "PianoStaff"          return 'NEW_PIANO_STAFF'
@@ -306,6 +308,7 @@ pianoStaff
 
 header
   : 'SET_HEADER' 'LBRACE' headerElements 'RBRACE' { $$ = $3; }
+  | 'PAPER' 'LPRACE' headerElements 'RBRACE'	  { $$ = $3; }
   ;
 
 headerElements
