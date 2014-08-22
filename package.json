@@ -37,7 +37,8 @@
         "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
         "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .ts$)",
-        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node"
+        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node",
+        "chore-debug": "browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",
