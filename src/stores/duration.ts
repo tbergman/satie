@@ -65,16 +65,23 @@ class DurationModel extends Model implements C.IPitchDuration {
         // Update the ctx to reflect the current note's duration.
         ctx.count = this.count;
 
-        // All notes, chords, and rests throughout a line must have the same spacing.
         var beats = this.getBeats(ctx);
-        if (ctx.smallest > beats) {
-            ctx.smallest = beats;
-            return C.IterationStatus.RETRY_LINE;
-        }
 
         // The number of beats in a bar must not exceed that specified by the time signature.
         if (ctx.beats + beats > ctx.timeSignature.beats) {
             return BarlineModel.createBarline(ctx, C.Barline.Standard);
+        }
+
+        // Check rhythmic spelling
+        if (!this.inBeam) {
+            status = Metre.rythmicSpellcheck(ctx, true);
+            if (status !== C.IterationStatus.SUCCESS) { return status; }
+        }
+
+        // All notes, chords, and rests throughout a line must have the same spacing.
+        if (ctx.smallest > beats) {
+            ctx.smallest = beats;
+            return C.IterationStatus.RETRY_LINE;
         }
 
         // Each note's width has a linear component proportional to the log of its duration.

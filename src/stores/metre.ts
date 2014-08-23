@@ -102,45 +102,108 @@ export enum Beaming {
 };
 
 /**
- * Checks if a bar ("durations") is rhythmically spelled correctly according
- * to the time signature ("ts"), and optionally fixes errors (if "fix" is set).
+ * Checks if a durations is rhythmically spelled correctly within its context
+ * according to the time signature ("ts"), and optionally fixes errors (if "fix"
+ * is set).
  *
- * It returns true if all of the following conditions are met:
+ * It returns C.IterationStatus.SUCCESS if all of the following conditions are met:
  *
- *  1. Beamable notes are beamed if beamable in the above chart
- *
- *  2. Beamable notes are not beamed if not beamable in the above chart
- *
- *  3. Rests and ties are not more verbose than needed according to
+ *  1. Rests and ties are not more verbose than needed according to
  *     the above chart.
  *
- *  4. Rests and untied, undotted notes either fill an integer number
+ *  2. Rests and untied, undotted notes either fill an integer number
  *     of segments, or less than 1
  *
- * These conditions are overly strict. They're a good guess at what the user
- * wanted to convey, but the user can override any of these rules. Thus the 
- * function also returns true if the 'force' property is set on all elements of
- * "durations" that fail any of the above properties.
+ * These conditions can be overly strict. They're a good guess at what the user
+ * wanted to convey, but the user can override any of these rules. If _annotate
+ * is set to true, rhythmicSpellcheck won't change anything.
  *
  * Otherwise, the function returns false. To correct the rhythmic spelling, run
- * correctMetre
+ * correctMetre.
  *
- * @prop durations: array of Durations representing a bar.
- *      All elements without a 'count' property are ignored.
- * @prop ts: TimeSignature to check against
+ * @prop context: Give timeSignature, and current idx.
  * @prop fix: If true, correct any errors
- * @prop {undefined | "alt" | "alt2"} mod: Select an alternative beaming of the
- *                                         given time signature
  */
-export function rythmicSpellcheck(durations: Array<C.IPitchDuration>, ts: C.ITimeSignature, fix: boolean, mod: Beaming) {
+export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     "use strict";
 
-    var tsName = getTSString(ts);
+    var tsName = getTSString(ctx.timeSignature);
 
     var pattern = beamingPatterns[tsName];
-    assert(pattern, "Time signature must be on page 155 of Behind Bars.");
+    assert(pattern, "Time signature must be one of the ones on page 155 of Behind Bars.");
 
-    assert(false, "Not implemented");
+    var _e = 0.00000001;
+
+    var beat = 0;
+    var pidx = 0;
+    var currElt: C.IDuration = pattern[0];
+    while (beat + currElt.getBeats(ctx) <= ctx.beats) {
+        ++pidx;
+        beat += currElt.getBeats(ctx);
+        currElt = pattern[pidx];
+    }
+    var be = currElt.getBeats(ctx);
+
+    var curr = ctx.body[ctx.idx];
+    var next = ctx.body[ctx.idx + 1];
+    // Fix rests that aren't allowed.
+    // (XXX: TODO!!!)
+
+    // Combine rests that can be combined.
+    if (curr.isRest && next.isRest && !curr.note.dots) {
+        var n1 = curr.note;
+        var n2 = next.note;
+        var n1b = n1.getBeats(ctx);
+        var n2b = n2.getBeats(ctx);
+        var b1 = ctx.beats;
+        var b2 = b1 + n1b;
+        var b3 = b2 + n2b;
+        var alike = n1b === n2b;
+
+        // Combine like rests that are not offset.
+        if (alike && Math.abs(b1 % n1b) < _e &&
+                // It doesn't pass the next beam barrier...
+                (b3 - (beat + be) < _e) ||
+                // or it completely fills the next barrier...
+                (pattern[pidx + 1] && Math.abs(b3 - (beat + be + pattern[pidx + 1]
+                    .getBeats(ctx))) < _e)) {
+            n1.count /= 2; // Double the length.
+            (<any>n1)._beats = null; // Kill optimizer.
+            ctx.eraseFuture(ctx.idx + 1);
+            return C.IterationStatus.RETRY_LINE;
+        }
+
+        // Combine rests that start on a beat and end on a barrier.
+        // The largest acceptable dotted note is the biggest one smaller than the beat.
+        // XXX ^^ implement dotted notes.
+        if (Math.abs(b1 % 1) < _e) {
+            var ok = false;
+            var pb = beat;
+            for (var h = pidx; h < pattern.length; ++h) {
+                if (pb + pattern[h].getBeats(ctx) === b3) {
+                    ok = true;
+                    break;
+                }
+                pb += pattern[h].getBeats(ctx);
+            }
+            if (ok) {
+                // We can combine them.
+                var ncb = ctx.timeSignature.beatType / (n1b + n2b);
+                for (var po2 = 128; po2 >= 1 / 32; po2 /= 2) {
+                    if (Math.abs(ncb - po2) < _e) {
+                        ctx.eraseFuture(ctx.idx + 1);
+                        n1.actualDots = n1.dots = 0;
+                        n1.actualTuplet = n1.tuplet = null;
+                        n1.count = po2;
+                        (<any>n1)._beats = null; // Kill optimizer.
+                        return C.IterationStatus.RETRY_LINE;
+                    }
+                }
+            }
+        }
+    }
+
+    return C.IterationStatus.SUCCESS;
 };
 
 /**
