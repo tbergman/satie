@@ -140,6 +140,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                     if (selIdx === -1) {
                                                         selIdx = h++;
                                                         selProps = {
+                                                            key: "selectionrect-" + Math.random(),
                                                             x: s[i].x(),
                                                             y: s[i].y() - 1 / 2,
                                                             height: 1,
@@ -582,7 +583,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var AccidentalTool = require("../stores/accidentalTool.ts");
         var DotTool = require("../stores/dotTool.ts");
         var NoteTool = require("../stores/noteTool.ts");
-        var RestTool = require("../stores/restTool.ts");
         var TieTool = require("../stores/tieTool.ts");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
@@ -635,7 +635,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 "5": function()  {return new NoteTool("note16thUp");},
                 "6": function()  {return new NoteTool("note32ndUp");},
                 "7": function()  {return new NoteTool("note64thUp");},
-                "r": function()  {return new RestTool();},
                 ".": function()  {return new DotTool();},
                 "~": function()  {return new TieTool();},
                 "=": function()  {return new AccidentalTool(1);},

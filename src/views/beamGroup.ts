@@ -1,8 +1,6 @@
 /**
  * React component which draws notes and a beam given a collection
  * of notes that can be beamed.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");
@@ -37,11 +35,13 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
             // All notes in a beam have a unique key
             note.props.key = "child-" + idx;
 
-            firstP = firstP || note.props.children.props; // YUCK: add refs or something.
+            firstP = firstP || (note.props.isNote ? note.props : note.props.children.props);
+                // YUCK: add refs or something.
             firstX = firstX || note.props.x;
             firstY = firstY || note.props.y;
 
-            lastP = note.props.children.props; // YUCK: add refs or something.
+            lastP = note.props.isNote ? note.props : note.props.children.props;
+                // YUCK: add refs or something.
             lastX = note.props.x;
             lastY = note.props.y;
         });
@@ -77,7 +77,8 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         _.each(children, (note, idx) => {
             // Using -direction means that we'll be finding the closest note to the
             // beam. This will help us avoid collisions.
-            var sh = getSH(direction, idx, getExtremeLine(note.props.children.props.line, -direction)); // YUCK
+            var sh = getSH(direction, idx, getExtremeLine(
+                (note.props.isNote ? note.props : note.props.children.props).line, -direction)); // YUCK
             if (sh < 3) {
                 b += direction*(3 - sh);
                 m = 0;
@@ -88,7 +89,7 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         var strokeEnabled = true;
 
         _.each(children, (note, idx) => {
-            var props = note.props.children.props; // YUCK
+            var props = (note.props.isNote ? note.props : note.props.children.props); // YUCK
             props.direction = direction;
             props.stemHeight = getSH(direction, idx,
                 getExtremeLine(props.line, direction));

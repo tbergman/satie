@@ -25,6 +25,11 @@ export function Component(props: IProps) {
     //     NoteMarking({fontSize: spec.fontSize(), marking: m, key: idx})
     // );
 
+    /**
+     * Mode to reduce unneeded renders.
+     */
+    var zeroOffsetMode = !renderUtil.useGL && !spec.isRest && !spec.tie;
+
     if (spec.isRest) {
         return Rest({
                 dotted: spec.dots,
@@ -39,30 +44,36 @@ export function Component(props: IProps) {
         );
     }
 
-    return html.g({
-        key: spec.key(),
-        x: spec.x(), // for beam
-        y: spec.y(), // for beam
-        transform: "translate(" + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x() +
-            "," + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y() + ")"
-    },
-    Note.Component({
-        accStrokes: spec.getAccStrokes(),
-        accidentals: spec.accidentals,
-        dotted: spec.dots,
-        direction: spec.getDirection(),
-        flag: spec.flag,
-        hasStem: spec.hasStem(),
-        line: spec.line,
-        notehead: spec.notehead(),
-        fontSize: spec.fontSize,
-        secondaryStroke: spec.color,
-        strokes: spec.getStrokes(),
-        tieTo: spec.tieTo && spec.tieTo.x(),
-        x: spec.tie ? spec.x() : null, // TODO: Get rid of 'x' here to avoid wasted renders
-        y: spec.tie ? spec.y(): null},
-    null
-    ));
+    var note = Note.Component({
+            accidentals: spec.accidentals,
+            accStrokes: spec.getAccStrokes(),
+            direction: spec.getDirection(),
+            dotted: spec.dots,
+            flag: spec.flag,
+            fontSize: spec.fontSize,
+            hasStem: spec.hasStem(),
+            isNote: true,
+            key: spec.key(),
+            line: spec.line,
+            notehead: spec.notehead(),
+            secondaryStroke: spec.color,
+            strokes: spec.getStrokes(),
+            tieTo: spec.tieTo && spec.tieTo.x(),
+            x: zeroOffsetMode ? 0 : spec.x(),
+            y: zeroOffsetMode ? 0 : spec.y()},
+        null);
+
+    if (zeroOffsetMode) {
+        return html.g({
+                key: spec.key(),
+                x: spec.x(), // for beam
+                y: spec.y(), // for beam
+                transform: "translate(" + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x() +
+                "," + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y() + ")"},
+            note);
+    } else {
+        return note;
+    }
 }
 
 export interface IProps {

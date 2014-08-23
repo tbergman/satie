@@ -64,7 +64,7 @@ class EndMarkerModel extends Model {
                 return C.IterationStatus.RETRY_LINE;
             } else {
                 var BarlineModel = require("./barline"); // Recursive dependency.
-                return BarlineModel.createBarline(ctx, "double");
+                return BarlineModel.createBarline(ctx, C.Barline.Double);
             }
         }
 

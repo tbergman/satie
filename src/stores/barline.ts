@@ -11,6 +11,7 @@ import Context = require("./context");
 import DurationModel = require("./duration");
 import EndMarkerModel = require("./endMarker");
 import KeySignatureModel = require("./keySignature");
+import TimeSignatureModel = require("./timeSignature");
 
 class BarlineModel extends Model {
     constructor(spec: { barline: C.Barline }) {
@@ -20,6 +21,10 @@ class BarlineModel extends Model {
     annotateImpl(ctx: Context): C.IterationStatus {
         var i: number;
         var okay: boolean;
+
+        // A time signature must exist on the first line of every page.
+        if (!ctx.timeSignature) { return TimeSignatureModel.createTS(ctx); }
+
         if (this.barline !== C.Barline.Double) {
             // At least one note must exist before a barline on every line.
             okay = false;
@@ -40,6 +45,23 @@ class BarlineModel extends Model {
                 }
             }
             if (!okay) { return ctx.eraseCurrent(); }
+        } else { // ... so we have a double barline...
+            // The document cannot be entirely empty.
+            okay = false;
+            for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+                if (ctx.body[i].isNote) {
+                    okay = true;
+                    break;
+                }
+            }
+            if (!okay) {
+                var DurationModel = require("./duration"); // Recursive.
+                ctx.insertPast(new DurationModel({
+                    beats: ctx.timeSignature.beatType,
+                    pitch: "r"
+                }));
+                return C.IterationStatus.RETRY_LINE; // Because I was too lazy above to fill the bar.
+            }
         }
 
         // Barlines followed by newlines do not have any right padding

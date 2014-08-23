@@ -67,15 +67,24 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         var beats = this.getBeats(ctx);
 
-        // The number of beats in a bar must not exceed that specified by the time signature.
-        if (ctx.beats + beats > ctx.timeSignature.beats) {
-            return BarlineModel.createBarline(ctx, C.Barline.Standard);
-        }
+        // We do allow notes longer than a bar (e.g., multi-measure rests).
+        // In these cases, we do very few rhythm checks.
+        if (this.getBeats(ctx) > ctx.timeSignature.beats) {
+            // Obviously ctx.beats + beats doesn't fit...
+            if (ctx.beats >= ctx.timeSignature.beats) {
+                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+            }
+        } else {
+            // The number of beats in a bar must not exceed that specified by the time signature.
+            if (ctx.beats + beats > ctx.timeSignature.beats) {
+                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+            }
 
-        // Check rhythmic spelling
-        if (!this.inBeam) {
-            status = Metre.rythmicSpellcheck(ctx, true);
-            if (status !== C.IterationStatus.SUCCESS) { return status; }
+            // Check rhythmic spelling
+            if (!this.inBeam) {
+                status = Metre.rythmicSpellcheck(ctx, true);
+                if (status !== C.IterationStatus.SUCCESS) { return status; }
+            }
         }
 
         // All notes, chords, and rests throughout a line must have the same spacing.
@@ -231,6 +240,11 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get isRest() {
+        if (this.chord && this.chord.length === 1 && this.chord[0].pitch === "r") {
+            // This isn't valid, so once we stop this case from occuring,
+            // remove this logic.
+            return true;
+        }
         return this.pitch === "r";
     }
     set isRest(r: boolean) {
@@ -335,7 +349,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 .map(p => DurationModel.getLine(p, ctx))
                 .value();
         }
-        if (pitch.pitch === "r") {
+        if (pitch.isRest) {
             return 3;
         }
         return DurationModel.clefOffsets[ctx.clef] +

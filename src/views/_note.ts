@@ -56,8 +56,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 // XXX(profile) make more efficient
                 NoteHead({
                     key: idx + "l",
-                    x: (linesOffset[line] || 0),
-                    y: 0,
+                    x: this.props.x + (linesOffset[line] || 0),
+                    y: this.props.y,
                     fontSize: this.props.fontSize,
                     line: line,
                     stroke: this.props.strokes[idx],
@@ -66,13 +66,13 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     idx: idx,
                     key: idx + "d",
                     stroke: this.props.strokes[0],
-                    x: 0,
-                    y: 0,
+                    x: this.props.x,
+                    y: this.props.y,
                     fontSize: this.props.fontSize,
                     line: line})): null)).concat([
             this.props.hasStem && NoteStem({
-                x: 0,
-                y: 0,
+                x: this.props.x,
+                y: this.props.y,
                 key: "stem",
                 direction: direction,
                 line: this.getStartingLine(),
@@ -82,8 +82,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 notehead: this.props.notehead}),
             this.props.flag && Flag({
                 key: "flag",
-                x: 0,
-                y: 0,
+                x: this.props.x,
+                y: this.props.y,
                 line: this.getHeightDeterminingLine(),
                 stroke: this.props.secondaryStroke,
                 flag: this.props.flag,
@@ -93,8 +93,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
             this.props.children && _.map(this.props.children, (element: { props: IProps }, idx: number) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
-                element.props.x = 0;
-                element.props.y = 0;
+                element.props.x = this.props.x;
+                element.props.y = this.props.y;
                 element.props.idx = idx;
                 element.props.notehead = this.props.notehead;
                 element.props.fontSize = this.props.fontSize;
@@ -189,8 +189,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     key: idx + "low",
                     line: -idx,
                     notehead: this.props.notehead,
-                    x: 0,
-                    y: 0})));
+                    x: this.props.x,
+                    y: this.props.y})));
         }
         if (highest > 5.5) {
             ret = ret.concat(_.times(Math.floor(highest - 5), idx =>
@@ -198,8 +198,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     key: idx + "high",
                     line: 6 + idx,
                     notehead: this.props.notehead,
-                    x: 0,
-                    y: 0})));
+                    x: this.props.x,
+                    y: this.props.y})));
         }
         assert(ret.length);
         return ret;
@@ -244,8 +244,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                         assert(0, "Not reached");
                 }
                 return Accidental({
-                    x: - this.accidentalSpacing(),
-                    y: 0,
+                    x: this.props.x - this.accidentalSpacing(),
+                    y: this.props.y,
                     stroke: this.props.accStrokes[idx],
                     fontSize: this.props.fontSize,
                     line: l[idx],
@@ -264,12 +264,11 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         }
 
         var fullWidth = this.props.tieTo - this.props.x;
-
         return Tie.Component({key: "tie_0",
             spec: {
                 direction: -this.getDirection(),
-                x: () => fullWidth/8 + 0.15,
-                y: () => 0,
+                x: () => this.props.x + fullWidth/8 + 0.15,
+                y: () => this.props.y,
                 line1: this.getStartingLine(),
                 line2: this.getStartingLine(),
                 width: fullWidth*0.75,

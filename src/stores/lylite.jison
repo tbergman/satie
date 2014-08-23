@@ -456,7 +456,7 @@ pitchOrChord
 beatType
   : NUMBER
         {
-            assert(parseInt($1, 10), "beatType must be non-null");
+            assert(parseFloat($1, 10), "beatType must be non-null");
             $$ = {count: $1};
         }
   ;

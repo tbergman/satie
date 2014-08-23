@@ -137,10 +137,15 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     var beat = 0;
     var pidx = 0;
     var currElt: C.IDuration = pattern[0];
-    while (beat + currElt.getBeats(ctx) <= ctx.beats) {
+    while (currElt && beat + currElt.getBeats(ctx) <= ctx.beats) {
         ++pidx;
         beat += currElt.getBeats(ctx);
         currElt = pattern[pidx];
+    }
+    if (!currElt) {
+        // The note exceeds the length of a bar.
+        // XXX: Validate the note.
+        return C.IterationStatus.SUCCESS;
     }
     var be = currElt.getBeats(ctx);
 
@@ -173,7 +178,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
             m.pitch = n1.pitch;
             m.chord = n1.chord;
         });
-        var DurationModel = require("./duration"); // Recursive.
+            var DurationModel = require("./duration"); // Recursive.
         Array.prototype.splice.apply(ctx.body, [ctx.idx, 1].concat(
             replaceWith.map(m => new DurationModel(m))));
         var after = ctx.idx + replaceWith.length;
@@ -194,7 +199,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
         var alike = n1b === n2b;
 
         // Combine like rests that are not offset.
-        if (alike && Math.abs(b1 % n1b) < _e && (
+        if (alike && Math.abs(b1 % 1) < _e && (
                 // It doesn't pass the next beam barrier...
                 (b3 - (beat + be) < _e) ||
                 // or it completely fills the next barrier...

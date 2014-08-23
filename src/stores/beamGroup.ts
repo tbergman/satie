@@ -1,7 +1,3 @@
-/**
- * @jsx React.DOM
- */
-
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 
