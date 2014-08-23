@@ -21,7 +21,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     acc: any;
     accTemporary: number;
     line: any;
-    count: number;
+    _count: number;
     chord: Array<C.IPitch>;
     color: string;
     displayCount: number;
@@ -55,7 +55,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (!this.impliedTS) { return TimeSignatureModel.createTS(ctx); }
 
         // A note's duration, when unspecified, is set by the previous note.
-        if (!this.count) {
+        if (!this._count) {
             assert(ctx.count, "Never null (the initial count is '4')");
             this.count = ctx.count;
         }
@@ -588,6 +588,14 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.forceMiddleNoteDirection = (check === undefined || check >= 3) ? -1 : 1;
 
         return C.IterationStatus.SUCCESS;
+    }
+
+    get count() {
+        return this._count;
+    }
+    set count(n: number) {
+        this._count = n;
+        this._beats = null; // Kill optimizer.
     }
 
     get type() {

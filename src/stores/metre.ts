@@ -146,36 +146,66 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
 
     var curr = ctx.body[ctx.idx];
     var next = ctx.body[ctx.idx + 1];
-    // Fix rests that aren't allowed.
-    // (XXX: TODO!!!)
+
+    var n1 = curr.note;
+    var n1b = n1.getBeats(ctx);
+    var b1 = ctx.beats;
+    var b2 = b1 + n1b;
+
+    // Seperate durations that cross a boundary and only partially fill that boundary.
+    // This isn't a problem if it completely fills another part.
+    var bExcess: number;
+    if (Math.abs(b1 % 1) < _e) {
+        bExcess = b2 - (beat + currElt.getBeats(ctx));
+        for (var p = pidx + 1; p < pattern.length && bExcess > 0; ++p) {
+            if (bExcess - pattern[p].getBeats(ctx) >= 0) {
+                bExcess -= pattern[p].getBeats(ctx);
+            }
+        }
+    } else if (Math.floor(b2) !== Math.floor(b1)) {
+        bExcess = b2 - Math.ceil(b1);
+    }
+    if (bExcess > 0) {
+        var replaceWith = subtract(n1, bExcess, ctx).concat(
+            subtract(n1, n1.getBeats(ctx) - bExcess, ctx));
+        replaceWith.forEach((m: any) => {
+            // Ideally there would be a PitchDuration constructor that would do this for us.
+            m.pitch = n1.pitch;
+            m.chord = n1.chord;
+        });
+        var DurationModel = require("./duration"); // Recursive.
+        Array.prototype.splice.apply(ctx.body, [ctx.idx, 1].concat(
+            replaceWith.map(m => new DurationModel(m))));
+        var after = ctx.idx + replaceWith.length;
+        if (!n1.isRest) {
+            for (var i = ctx.idx; i < after - 1; ++i) {
+                ctx.body[i].note.tie = true;
+            }
+        }
+
+        return C.IterationStatus.RETRY_CURRENT;
+    }
 
     // Combine rests that can be combined.
-    if (curr.isRest && next.isRest && !curr.note.dots) {
-        var n1 = curr.note;
+    if (curr.isRest && next.isRest) {
         var n2 = next.note;
-        var n1b = n1.getBeats(ctx);
         var n2b = n2.getBeats(ctx);
-        var b1 = ctx.beats;
-        var b2 = b1 + n1b;
         var b3 = b2 + n2b;
         var alike = n1b === n2b;
 
         // Combine like rests that are not offset.
-        if (alike && Math.abs(b1 % n1b) < _e &&
+        if (alike && Math.abs(b1 % n1b) < _e && (
                 // It doesn't pass the next beam barrier...
                 (b3 - (beat + be) < _e) ||
                 // or it completely fills the next barrier...
                 (pattern[pidx + 1] && Math.abs(b3 - (beat + be + pattern[pidx + 1]
-                    .getBeats(ctx))) < _e)) {
+                    .getBeats(ctx))) < _e))) {
             n1.count /= 2; // Double the length.
-            (<any>n1)._beats = null; // Kill optimizer.
             ctx.eraseFuture(ctx.idx + 1);
             return C.IterationStatus.RETRY_LINE;
         }
 
         // Combine rests that start on a beat and end on a barrier.
-        // The largest acceptable dotted note is the biggest one smaller than the beat.
-        // XXX ^^ implement dotted notes.
         if (Math.abs(b1 % 1) < _e) {
             var ok = false;
             var pb = beat;
@@ -190,13 +220,19 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
                 // We can combine them.
                 var ncb = ctx.timeSignature.beatType / (n1b + n2b);
                 for (var po2 = 128; po2 >= 1 / 32; po2 /= 2) {
-                    if (Math.abs(ncb - po2) < _e) {
-                        ctx.eraseFuture(ctx.idx + 1);
-                        n1.actualDots = n1.dots = 0;
-                        n1.actualTuplet = n1.tuplet = null;
-                        n1.count = po2;
-                        (<any>n1)._beats = null; // Kill optimizer.
-                        return C.IterationStatus.RETRY_LINE;
+                    // The largest acceptable dotted note is the
+                    // biggest one smaller than the beat. In addition,
+                    // for readability, we don't go beyond 3 dots.
+                    var maxDot = po2 >= ctx.timeSignature.beatType ? 3 : 0;
+                    for (var dots = 0; dots <= maxDot; ++dots) {
+                        var dotFactor = Math.pow(1.5, dots);
+                        if (Math.abs(ncb*dotFactor - po2) < _e) {
+                            ctx.eraseFuture(ctx.idx + 1);
+                            n1.actualDots = n1.dots = dots;
+                            n1.actualTuplet = n1.tuplet = null;
+                            n1.count = po2;
+                            return C.IterationStatus.RETRY_LINE;
+                        }
                     }
                 }
             }
@@ -224,14 +260,16 @@ export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITim
     assert(false, "Not implemented");
 }
 
-/**
- * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
- */
 export function subtract(durr1: C.IPitchDuration, beats: number,
     ctx: Context, beatOffset?: number): Array<C.IDuration>;
 export function subtract(durr1: number, beats: number,
     ctx: Context, beatOffset?: number): Array<C.IDuration>;
 
+/**
+ * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
+ * 
+ * @param beatOffset number of beats after the current beat that durr1 is located.
+ */
 export function subtract(durr1: any, beats: number,
         ctx: Context, beatOffset?: number): Array<C.IDuration> {
     "use strict";

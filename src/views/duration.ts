@@ -59,8 +59,8 @@ export function Component(props: IProps) {
         secondaryStroke: spec.color,
         strokes: spec.getStrokes(),
         tieTo: spec.tieTo && spec.tieTo.x(),
-        x: 0,
-        y: 0},
+        x: spec.tie ? spec.x() : null, // TODO: Get rid of 'x' here to avoid wasted renders
+        y: spec.tie ? spec.y(): null},
     null
     ));
 }

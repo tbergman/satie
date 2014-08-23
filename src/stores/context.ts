@@ -359,7 +359,7 @@ class Context {
             ++operations;
             if (operations/initialLength > 500 && !stopping) {
                 console.warn("Detected loop or severe inefficency.");
-                console.warn("Here are some conditions that need to be satisfied:");
+                console.warn("Going into verbose mode for 20 elements, then stopping.");
                 stopping = 20;
             }
 
@@ -424,9 +424,15 @@ class Context {
                 // up to 2 bars.
                 enableFastModeAtBar = this.bar + 2;
             } else {
+                if (stopping) {
+                    console.log("Annotating @" + this.idx + " which is ", this.curr());
+                }
                 exitCode = this.curr().annotate(this, stopping);
-                if (stopping && !--stopping) {
-                    assert(false, "Aborting.");
+                if (stopping) {
+                    console.log("  => exit code:", C.IterationStatus[exitCode]);
+                    if (!--stopping) {
+                        assert(false, "Aborting.");
+                    }
                 }
             }
 
