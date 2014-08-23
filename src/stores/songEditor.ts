@@ -29,16 +29,19 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
 export class SongEditorStore extends TSEE {
     _activeStaveIdx: number;
+    private _changesPending: boolean;
+    private _allChangesSent: boolean = true;
 
     constructor() {
+        super();
         this.clear();
 
         Dispatcher.Instance.register(this.handleAction.bind(this));
-        super();
     }
 
     handleAction(action: C.IFluxAction) {
         var activeSong: C.ISong;
+        var activeID: string;
         var h: number;
         var i: number;
         switch(action.description) {
@@ -62,6 +65,37 @@ export class SongEditorStore extends TSEE {
                 this.clear();
                 this.emit(CHANGE_EVENT);
                 this.emit(CLEAR_HISTORY_EVENT);
+                break;
+
+            case "PUT /api/song":
+                activeSong = SessionStore.Instance.activeSong();
+                activeID = activeSong ? activeSong._id : null;
+                if (action.resource === activeID) {
+                    _savesInTransit++;
+                }
+                this._allChangesSent = true;
+                break;
+
+            case "PUT /api/song DONE":
+                activeSong = SessionStore.Instance.activeSong();
+                activeID = activeSong ? activeSong._id : null;
+                if (action.resource === activeID) {
+                    _savesInTransit--;
+                    assert(_savesInTransit >= 0);
+                    if (!_savesInTransit && this._allChangesSent) {
+                        this._changesPending = false;
+                    }
+                }
+                break;
+
+            case "PUT /api/song ERROR":
+                alert("Could not save changes. Check your Internet connection.");
+                activeSong = SessionStore.Instance.activeSong();
+                activeID = activeSong ? activeSong._id : null;
+                if (action.resource === activeID) {
+                    _savesInTransit--;
+                }
+                this.changesPending = true;
                 break;
 
             case "PUT /local/song/forceUpdate":
@@ -241,6 +275,7 @@ export class SongEditorStore extends TSEE {
 
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
+                    this.emit(HISTORY_EVENT);
                     // Remove the item directly before the ctx.
                     for (h = 0; h < _staves.length; ++h) {
                         // XXX: It's likely the developer will need to adjust this
@@ -299,8 +334,11 @@ export class SongEditorStore extends TSEE {
 
                 break;
             case "POST /local/visualCursor":
-                switch (<any>action.resource) { // TSFIX
+                switch (action.resource) {
                     case "ptr":
+                        if (_tool) {
+                            this.emit(HISTORY_EVENT);
+                        }
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj: Model = null;
                         var prevIdx: number;
@@ -333,7 +371,6 @@ export class SongEditorStore extends TSEE {
 
                     case undefined:
                     case null:
-                    case false:
                         if (action.postData.bar) {
                             this.visualCursorIs(action.postData);
                         } else if (action.postData.step) {
@@ -346,6 +383,8 @@ export class SongEditorStore extends TSEE {
                         this.annotate();
                         this.emit(ANNOTATE_EVENT);
                         break;
+                    default:
+                        assert(false, "Invalid value");
                 }
                 break;
         }
@@ -722,20 +761,15 @@ export class SongEditorStore extends TSEE {
     }
 
     tool() {
-        return _tool;
-    }
+        return _tool; }
     staves() {
-        return _staves;
-    }
+        return _staves; }
     staveHeight() {
-        return _staveHeight;
-    }
+        return _staveHeight; }
     pageSize() {
-        return _pageSize;
-    }
+        return _pageSize; }
     paper() {
-        return _paper;
-    }
+        return _paper; }
     src() {
         var staves = _staves;
 
@@ -861,6 +895,24 @@ export class SongEditorStore extends TSEE {
 
     removeClearHistoryListener(callback: any) {
         this.removeListener(CLEAR_HISTORY_EVENT, callback); }
+
+    get changesPending() {
+        return this._changesPending;
+    }
+
+    set changesPending(pending: boolean) {
+        assert(pending === true, "Only SongEditor can clear pending changes");
+        this._allChangesSent = false;
+        this.throttledAutosave();
+        this._changesPending = pending; }
+
+    throttledAutosave = _.throttle(() => {
+        console.log("Autosave");
+        var active = SessionStore.Instance.activeSong();
+        if (active) {
+            Dispatcher.PUT("/api/song/_" + active._id, { data: this.src() });
+        }
+    }, 2800, { leading: false });
 }
 
 /**
@@ -927,6 +979,8 @@ export var markRendererDirty = () => {
     // NOT a Flux method.
     _dirty = true;
 };
+
+var _savesInTransit: number = 0;
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

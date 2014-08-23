@@ -115,7 +115,7 @@ var networkActions = {
     DELETE: true
 };
 
-export var dispatch = function(url: string, verb: string, postData: any) : void {
+export var dispatch = function(url: string, verb: string, postData: any, cb?: () => void) : void {
     assert(verb, "Verb must be defined");
 
     var root = url;
@@ -164,20 +164,62 @@ export var dispatch = function(url: string, verb: string, postData: any) : void 
                     response: response,
                     postData: null
                 });
+
+                if (cb) {
+                    cb();
+                }
             });
+        } else {
+            assert(!cb, "Callbacks are only necessary for network actions.");
         }
     }
 };
 
-export var DELETE = function(url: string, p?: any) {
-    dispatch(url, "DELETE", p);
+
+/**
+ * Dispatch a Flux-style event.
+ * 
+ * @param cb The callback should not be used for any logic that could potentially
+ * take place in the stores. If a callback is specified, the request must
+ * be a network request. The callback will be called regardless of whether
+ * the event suceeded or not.
+ */
+export var DELETE = function(url: string, p?: any, cb?: () => void) {
+    dispatch(url, "DELETE", p, cb);
 };
-export var PUT = function(url: string, p?: any) {
-    dispatch(url, "PUT", p);
+
+/**
+ * Dispatch a Flux-style event.
+ * 
+ * @param cb The callback should not be used for any logic that could potentially
+ * take place in the stores. If a callback is specified, the request must
+ * be a network request. The callback will be called regardless of whether
+ * the event suceeded or not.
+ */
+export var PUT = function(url: string, p?: any, cb?: () => void) {
+    dispatch(url, "PUT", p, cb);
 };
-export var POST = function(url: string, p?: any) {
-    dispatch(url, "POST", p);
+
+/**
+ * Dispatch a Flux-style event.
+ * 
+ * @param cb The callback should not be used for any logic that could potentially
+ * take place in the stores. If a callback is specified, the request must
+ * be a network request. The callback will be called regardless of whether
+ * the event suceeded or not.
+ */
+export var POST = function(url: string, p?: any, cb?: () => void) {
+    dispatch(url, "POST", p, cb);
 };
-export var GET = function(url: string, p?: any) {
-    dispatch(url, "GET", p);
+
+/**
+ * Dispatch a Flux-style event.
+ * 
+ * @param cb The callback should not be used for any logic that could potentially
+ * take place in the stores. If a callback is specified, the request must
+ * be a network request. The callback will be called regardless of whether
+ * the event suceeded or not.
+ */
+export var GET = function(url: string, p?: any, cb?: () => void) {
+    dispatch(url, "GET", p, cb);
 };
