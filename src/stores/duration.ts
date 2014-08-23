@@ -226,6 +226,11 @@ class DurationModel extends Model implements C.IPitchDuration {
     get isRest() {
         return this.pitch === "r";
     }
+    set isRest(r: boolean) {
+        assert(!!r, "Instead, set the exact pitch or chord...");
+        this.chord = null;
+        this.pitch = "r";
+    }
 
     get hasFlagOrBeam() {
         return DurationModel.countToIsBeamable[this.count];

@@ -88,6 +88,12 @@ export class SongEditorStore extends TSEE {
                 }
                 break;
 
+            case "POST /local/selection":
+                if (action.resource === "eraseAll") {
+                    this.eraseSelection();
+                }
+                break;
+
             case "PUT /api/song ERROR":
                 alert("Could not save changes. Check your Internet connection.");
                 activeSong = SessionStore.Instance.activeSong();
@@ -649,6 +655,55 @@ export class SongEditorStore extends TSEE {
         _selection = null;
         this.annotate();
         return true;
+    }
+
+    eraseSelection() {
+        this.emit(HISTORY_EVENT);
+        var staves = this.staves();
+        for (var h = 0; h < staves.length; ++h) {
+            if (!staves[h].body) {
+                continue;
+            }
+            var body = staves[h].body;
+            var removeEntireBarStartingAt: number = 0;
+            for (var i = 0; i < body.length; ++i) {
+                var type = body[i].type;
+                if (type === C.Type.CLEF || type === C.Type.BEGIN ||
+                        type === C.Type.KEY_SIGNATURE ||
+                        type === C.Type.TIME_SIGNATURE) {
+                    // We'll have to eventually have a way of getting rid of/hiding
+                    // these...
+                    removeEntireBarStartingAt = i + 1;
+                    body[i].selected = false;
+                    continue;
+                }
+
+                if (type === C.Type.DURATION && body[i].selected) {
+                    body[i].note.isRest = true;
+                }
+
+                if (type === C.Type.BARLINE) {
+                    if (removeEntireBarStartingAt !== null) {
+                        var delCount = i - removeEntireBarStartingAt;
+                        body.splice(removeEntireBarStartingAt, delCount);
+                        i -= delCount;
+                    }
+                    removeEntireBarStartingAt = i;
+                } else if (type === C.Type.END_MARKER) {
+                    // Pass.
+                } else if (!body[i].selected) {
+                    removeEntireBarStartingAt = null;
+                }
+                body[i].selected = false;
+            }
+        }
+
+        // This isn't very efficient, obviously.
+        Model.removeAnnotations(_staves);
+        _selection = null;
+        this.annotate();
+        this.markRendererDirty();
+        this.emit(CHANGE_EVENT);
     }
 
     stepCursor(spec: any) {

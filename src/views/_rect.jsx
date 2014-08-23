@@ -14,6 +14,7 @@ var Rect = React.createClass({
     renderSVG: function() {
         return <rect
             className={this.props.className}
+			opacity={this.props.opacity || 1.0}
             x={this.props.x + "em"}
             y={this.props.y + "em"}
             stroke={this.props.stroke}

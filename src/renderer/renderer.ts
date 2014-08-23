@@ -22,6 +22,7 @@ import History = require("../stores/history");
 import Model = require("../stores/model");
 import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
+var Rect = require("../views/_rect.jsx");
 var Group = require("../views/_group.jsx");
 var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
@@ -120,7 +121,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                 memo[memo.length - 1].push(obj);
                                 return memo;
                             }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
-                            function (s: Array<C.IStave>, lidx: number) {
+                            function (s: Array<Model>, lidx: number) {
                                 return LineContainerComponent({
                                         isCurrent: this.state.visualCursor.annotatedLine ===
                                             lidx + pageLines[page.idx],
@@ -128,9 +129,36 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                         staveHeight: this.props.staveHeight,
                                         h: idx,
                                         generate: function () {
-                                            return _.map(s, function (item: Model) {
-                                                return item.visible() && item.render();
-                                            });
+                                            var components = new Array(s.length * 2);
+                                            var h = 0;
+                                            // I think selected items currently HAVE to
+                                            // be consecutive, but this could change.
+                                            var selIdx = -1;
+                                            var selProps: any = null;
+                                            for (var i = 0; i < s.length; ++i) {
+                                                if (s[i].selected) {
+                                                    if (selIdx === -1) {
+                                                        selIdx = h++;
+                                                        selProps = {
+                                                            x: s[i].x(),
+                                                            y: s[i].y() - 1 / 2,
+                                                            height: 1,
+                                                            fill: "#75A1D0",
+                                                            opacity: 0.33
+                                                        };
+                                                    }
+                                                }
+                                                if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
+                                                    selProps.width = s[i].x() - selProps.x;
+                                                    components[selIdx] = Rect(selProps);
+                                                    selIdx = -1;
+                                                }
+                                                if (s[i].visible()) {
+                                                    components[h++] = s[i].render();
+                                                }
+                                            }
+                                            components.length = h;
+                                            return components;
                                         },
                                         idx: lidx + pageLines[page.idx], key: lidx
                                     });
@@ -444,21 +472,26 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 width: Math.abs(rect.end.x - rect.start.x),
                 height: Math.abs(rect.end.y - rect.start.y)
             };
-            var selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
-            if (selection.length) {
-                _.each(selection, function(s: Model)  {
+            _selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
+            if (_selection.length) {
+                _.each(_selection, function(s: Model)  {
                     s.selected = true;
+                    _.each(s.intersects, function (intersect: Model) {
+                        intersect.selected = true;
+                    });
                 });
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {
                     this.props.store.markRendererDirty();
                 }
+            } else {
+                _selection = null;
             }
             this.setState({
                 selectionRect: null
             });
-            if (selection.length) {
-                Dispatcher.PUT("/local/selection", selection.length ? selection : null);
+            if (_selection) {
+                Dispatcher.PUT("/local/selection", _selection.length ? _selection : null);
             }
         }
     }
@@ -555,9 +588,13 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = function(event: KeyboardEvent)  {
             var keyCode = event.keyCode || event.charCode || 0;
-            switch(keyCode) {
+            switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
                 case 8: // backspace
+                case 46: // delete
                     event.preventDefault(); // don't navigate backwards
+                    if (_selection) {
+                        Dispatcher.POST("/local/selection/_eraseAll");
+                    }
                     if (this.props.tool) {
                         this.props.tool.handleKeyPressEvent("backspace", event);
                     }
@@ -666,6 +703,12 @@ export interface IRendererState {
  *  1. React prefers deeper trees to shallower trees.
  *  2. We know, based on annotation, when a line needs to be updated
  *     and when it does not need to be updated.
+ * 
+ * Sometimes, the goal of a piece of code gets lost in optimizations.
+ * This code is equivilant to the following unoptimized component:
+ *     function LineContainerComponent(props: ILineProps, children?: any) {
+ *         return props.generate();
+ *     }
  */
 class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     render() {
@@ -708,10 +751,8 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
 };
 
 var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
-// Version without caching:
-// function LineContainerComponent(props: ILineProps, children?: any) {
-//     return props.generate();
-// }
+
+var _selection: Array<Model> = null;
 
 interface ILineProps {
     generate: () => any;
