@@ -231,6 +231,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
 
     // Seperate durations that cross a boundary and only partially fill that boundary.
     // This isn't a problem if it completely fills another part.
+    // XXX: Make a way to disable this when needed.
     var bExcess: number;
     if (Math.abs(b1 % 1) < _e) {
         bExcess = b2 - (beat + currElt.getBeats(ctx));
@@ -264,7 +265,8 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     }
 
     // Combine rests that can be combined.
-    if (curr.isRest && next.isRest) {
+
+    if (curr.isRest && next.isRest && ctx.curr().source !== C.Source.USER) {
         var n2 = next.note;
         var n2b = n2.getBeats(ctx);
         var b3 = b2 + n2b;

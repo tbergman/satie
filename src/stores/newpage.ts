@@ -20,15 +20,15 @@ class NewPageModel extends Model {
         return false;
     }
     toLylite(lylite: Array<string>) {
-        if (!this._annotated) {
+        if (!this.source) {
             lylite.push("\\pageBreak");
         }
     }
 
     static createNewPage = (ctx: Context) => {
-        ctx.insertPast(new NewPageModel({newpage: true, _annotated: "createNewPage"}));
+        ctx.insertPast(new NewPageModel({newpage: true, source: C.Source.ANNOTATOR}));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i].type === C.Type.NEWPAGE && ctx.body[i]._annotated) {
+            if (ctx.body[i].type === C.Type.NEWPAGE && ctx.body[i].source) {
                 ctx.eraseFuture(i);
                 --i;
             }

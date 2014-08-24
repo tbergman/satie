@@ -12,7 +12,6 @@ import C = require("./contracts");
 import Context = require("./context");
 
 class ClefModel extends Model {
-    _annotated: string;
     _annotatedSpacing: number;
     clef: string;
     clefName: string;
@@ -66,7 +65,7 @@ class ClefModel extends Model {
         return this.isVisible !== false;
     }
     toLylite(lylite: Array<string>) {
-        if (this._annotated) {
+        if (this.source === C.Source.ANNOTATOR) {
             return;
         }
         lylite.push("\\clef " + this.clef + "\n");
@@ -85,7 +84,7 @@ class ClefModel extends Model {
     static createClef = function (ctx: Context): C.IterationStatus {
         return ctx.insertPast(new ClefModel({
             clef: (ctx.prevClef ? "detect" : "treble"),
-            _annotated: "createClef"
+            source: C.Source.ANNOTATOR
         }));
     };
 

@@ -284,7 +284,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                 idx: j,
                                 item: item,
                                 musicLine: musicLine,
-                                _annotated: null,
+                                Source: C.Source.ANNOTATOR,
                                 fontSize: 0,
                                 _key: null,
                                 x: () => NaN,

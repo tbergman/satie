@@ -178,7 +178,7 @@ class NewlineModel extends Model {
             return C.IterationStatus.SUCCESS;
         }
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i]._annotated) {
+            if (ctx.body[i].source) {
                 if (ctx.body[i].type === C.Type.NEWLINE ||
                         ctx.body[i].type === C.Type.CLEF ||
                         ctx.body[i].type === C.Type.TIME_SIGNATURE ||
@@ -188,7 +188,7 @@ class NewlineModel extends Model {
                 }
             }
         }
-        ctx.insertPast(new NewlineModel({ newline: true, _annotated: "createNewline" }), fidx + 1);
+        ctx.insertPast(new NewlineModel({ newline: true, source: C.Source.ANNOTATOR }), fidx + 1);
         return C.IterationStatus.LINE_CREATED;
     };
 

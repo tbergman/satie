@@ -34,7 +34,7 @@ import C = require("./contracts");
 import Context = require("./context");
 
 class Model {
-    _annotated: string; // Reason for being created.
+    source: C.Source;
     private _fontSize: number;
     _key: string;
     _x: number;
@@ -169,7 +169,7 @@ class Model {
         for (var i = 0; i < staves.length; ++i) {
             for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
                 var item = staves[i].body[j];
-                if (item._annotated) {
+                if (item.source) {
                     staves[i].body.splice(j, 1);
                     --j;
                 } else if (item.inBeam) {

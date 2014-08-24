@@ -52,7 +52,7 @@ class KeySignatureModel extends Model {
         return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
-        if (this._annotated) {
+        if (this.source) {
             return;
         }
 
@@ -75,7 +75,7 @@ class KeySignatureModel extends Model {
         return ctx.insertPast(new KeySignatureModel({
             keySignature: ctx.prevKeySignature ||
                 {pitch: {pitch: "c"}, acc: 0, mode: C.MAJOR},
-            _annotated: "createKeySignature"
+            source: C.Source.ANNOTATOR
         }));
     };
 

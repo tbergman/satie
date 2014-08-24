@@ -110,7 +110,7 @@ class BeamGroupModel extends Model {
     }
     static createBeam = (ctx: Context, beam: Array<DurationModel>) => {
         return ctx.insertPast(new BeamGroupModel(
-            {beam: beam, _annotated: "createBeam"}));
+            {beam: beam, source: C.Source.ANNOTATOR}));
     };
 
     static decideDirection = function(firstLine: any, lastLine: any) {

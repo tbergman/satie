@@ -419,6 +419,23 @@ export interface ISong {
 };
 
 /**
+ * The original creator of an element. This is used as a HINT to Ripieno to decide whether
+ * or not it is okay to modify the element.
+ */
+export enum Source {
+    /**
+     * The element was created directly from an action performed by the user. This does not
+     * include annotations from such an action.
+     */
+    USER = 0,
+
+    /**
+     * The element was created to satisfy the annotation engine.
+     */
+    ANNOTATOR
+}
+
+/**
  * A composite of all possible stave parts.
  */
 export interface IStave {
