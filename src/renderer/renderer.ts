@@ -589,11 +589,16 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         document.onkeydown = function(event: KeyboardEvent)  {
             var keyCode = event.keyCode || event.charCode || 0;
             switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
+                case 27: // escape
+                    Dispatcher.PUT("/local/tool", null);
+                    break;
                 case 8: // backspace
                 case 46: // delete
                     event.preventDefault(); // don't navigate backwards
                     if (_selection) {
                         Dispatcher.POST("/local/selection/_eraseAll");
+                    } else if (!this.props.tool) {
+                        Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                     }
                     if (this.props.tool) {
                         this.props.tool.handleKeyPressEvent("backspace", event);
@@ -641,6 +646,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 "-": function()  {return new AccidentalTool(-1);},
                 "0": function()  {return new AccidentalTool(0);}
             };
+            if (!this.props.tool && key.charCodeAt(0) >= "a".charCodeAt(0) &&
+                    key.charCodeAt(0) <= "g".charCodeAt(0)) {
+                Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+            }
             var toolFn = keyToTool[key];
             if (toolFn) {
                 Dispatcher.PUT("/local/tool", toolFn());
