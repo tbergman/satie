@@ -568,8 +568,17 @@ class Context {
         beam.forEach(p => p.inBeam = false);
         return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
-    prev() {
-        return this.body[this.idx - 1];
+    prev(condition?: (m: Model) => boolean) {
+        if (!condition) {
+            return this.body[this.idx - 1];
+        } else {
+            for (var i = this.idx - 1; i >= 0; --i) {
+                if (condition(this.body[i])) {
+                    return this.body[i];
+                }
+            }
+            return null;
+        }
     }
 
     eraseCurrent(): C.IterationStatus {
