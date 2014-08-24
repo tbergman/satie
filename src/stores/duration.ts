@@ -45,6 +45,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     annotateImpl(ctx: Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
+        var i: number;
+        var j: number;
 
         // A key signature must exist on each line;
         // The key signature ensures a clef exists.
@@ -77,7 +79,31 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else {
             // The number of beats in a bar must not exceed that specified by the time signature.
             if (ctx.beats + beats > ctx.timeSignature.beats) {
-                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+                var overfill = ctx.beats + beats - ctx.timeSignature.beats;
+                if (beats === overfill) {
+                    return BarlineModel.createBarline(ctx, C.Barline.Standard);
+                } else {
+                    var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(t));
+                    var addAfterBar = Metre.subtract(this, beats - overfill, ctx).map(t => new DurationModel(t));
+                    for (i = 0; i < replaceWith.length; ++i) {
+                        replaceWith[i].pitch = this.pitch;
+                        replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                        if (i + 1 !== replaceWith.length || addAfterBar.length) {
+                            replaceWith[i].tie = true;
+                        }
+                    }
+                    for (i = 0; i < addAfterBar.length; ++i) {
+                        addAfterBar[i].pitch = this.pitch;
+                        addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                        if (i + 1 !== addAfterBar.length) {
+                            addAfterBar[i].tie = true;
+                        }
+                    }
+                    BarlineModel.createBarline(ctx, C.Barline.Standard);
+                    Array.prototype.splice.apply(ctx.body, [ctx.idx, 0].concat(<any[]>replaceWith));
+                    Array.prototype.splice.apply(ctx.body, [ctx.idx + 1 + replaceWith.length, 1].concat(<any[]>addAfterBar));
+                    return C.IterationStatus.RETRY_LINE;
+                }
             }
 
             // Check rhythmic spelling
@@ -109,7 +135,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             DurationModel.BEAMDATA = null;
 
             while (_.any(b, (b) => b.inBeam)) {
-                var j = b[0].idx;
+                j = b[0].idx;
                 while (ctx.body[j].inBeam) {
                     --j;
                 }
@@ -167,7 +193,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.pitch) {
             ctx.accidentals[this.pitch.pitch] = this.pitch.acc;
         } else {
-            for (var i = 0; i < this.chord.length; ++i) {
+            for (i = 0; i < this.chord.length; ++i) {
                 ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
             }
         }

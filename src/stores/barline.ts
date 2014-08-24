@@ -10,6 +10,7 @@ import C = require("./contracts");
 import Context = require("./context");
 import DurationModel = require("./duration");
 import EndMarkerModel = require("./endMarker");
+import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
 import TimeSignatureModel = require("./timeSignature");
 
@@ -25,27 +26,27 @@ class BarlineModel extends Model {
         // A time signature must exist on the first line of every page.
         if (!ctx.timeSignature) { return TimeSignatureModel.createTS(ctx); }
 
-        if (this.barline !== C.Barline.Double) {
-            // At least one note must exist before a barline on every line.
-            okay = false;
-            for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
-                if (ctx.body[i].isNote) {
-                    okay = true;
-                    break;
-                }
+        // At least one note must exist before a barline on every line.
+        okay = false;
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+            if (ctx.body[i].isNote) {
+                okay = true;
+                break;
             }
-            if (!okay) { return ctx.eraseCurrent(); }
+        }
+        if (!okay) { return ctx.eraseCurrent(); }
 
-            // At least one note must exist between barlines.
-            okay = false;
-            for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.BARLINE; --i) {
-                if (ctx.body[i].isNote || ctx.body[i].type === C.Type.NEWLINE) {
-                    okay = true;
-                    break;
-                }
+        // At least one note must exist between barlines.
+        okay = false;
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.BARLINE; --i) {
+            if (ctx.body[i].isNote || ctx.body[i].type === C.Type.NEWLINE) {
+                okay = true;
+                break;
             }
-            if (!okay) { return ctx.eraseCurrent(); }
-        } else { // ... so we have a double barline...
+        }
+        if (!okay) { return ctx.eraseCurrent(); }
+
+        if (this.barline === C.Barline.Double) {
             // The document cannot be entirely empty.
             okay = false;
             for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
@@ -56,11 +57,15 @@ class BarlineModel extends Model {
             }
             if (!okay) {
                 var DurationModel = require("./duration"); // Recursive.
-                ctx.insertPast(new DurationModel({
-                    beats: ctx.timeSignature.beatType,
-                    pitch: "r"
-                }));
-                return C.IterationStatus.RETRY_LINE; // Because I was too lazy above to fill the bar.
+                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w));
+                for (i = 0; i < whole.length; ++i) {
+                    whole[i].pitch = "r";
+                    if (i + 1 !== whole.length) {
+                        whole[i].tie = true;
+                    }
+                }
+                Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(whole));
+                return C.IterationStatus.SUCCESS;
             }
         }
 
@@ -111,6 +116,9 @@ class BarlineModel extends Model {
         lylite.push("|");
     }
 
+    /**
+     * Creates a barline directly before the current element (i.e., at ctx.idx).
+     */
     static createBarline = (ctx: Context, mode: C.Barline): C.IterationStatus => {
         mode = mode || C.Barline.Standard;
 

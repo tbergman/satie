@@ -53,7 +53,7 @@ class EndMarkerModel extends Model {
             Array.prototype.splice.apply(ctx.body,
                 [this.idx, 0].concat(toAdd));
 
-            return C.IterationStatus.RETRY_CURRENT;
+            return C.IterationStatus.RETRY_LINE; // we really need a RETRY_BAR...
         }
 
         // Double barlines terminate a piece.

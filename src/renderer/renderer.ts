@@ -150,7 +150,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                     }
                                                 }
                                                 if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
-                                                    selProps.width = s[i].x() - selProps.x;
+                                                    selProps.width = Math.abs(s[i].x() - selProps.x);
                                                     components[selIdx] = Rect(selProps);
                                                     selIdx = -1;
                                                 }

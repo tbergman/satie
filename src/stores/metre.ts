@@ -23,7 +23,11 @@ var _4   = C.makeDuration({count: 4});
 var _4D  = C.makeDuration({count: 4, dots: 1});
 var _2   = C.makeDuration({count: 2});
 var _2D  = C.makeDuration({count: 2, dots: 1});
+var _2DD = C.makeDuration({count: 2, dots: 2});
 var _1   = C.makeDuration({count: 1});
+var _1D  = C.makeDuration({count: 1, dots: 1});
+var _1DD = C.makeDuration({count: 1, dots: 2});
+var _05  = C.makeDuration({ count: 1 / 2 });
 
 var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32];
 
@@ -45,7 +49,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
     "3/8":      [_4D                            ],
 
     "4/8":      [_4,    _4                      ],
-    "2/4":      [_4,    _4                      ],
+    "2/4":      [_2                             ],
     "1/2":      [_2                             ],
 
     "9/16":     [_8D,   _8D,    _8D             ],
@@ -55,7 +59,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
 
     "12/16":    [_8D,   _8D,    _8D,    _8D     ],
     "6/8":      [_4D,           _4D             ],
-    "3/4":      [_4,       _4,       _4         ],
+    "3/4":      [_2D                            ],   // << XXX: Provided it doesn't give the illusion of 6/8.
 
     "7/8":      [_4,            _8D             ],
     "7/8_alt":  [_8D,           _4              ],
@@ -94,6 +98,74 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
     "18/8":     [_4D, _4D, _4D, _4D, _4D, _4D   ],
     "9/4":      [_2D,      _2D,      _2D        ]
 };
+
+var wholeNotePatterns: {[key: string]: Array <C.IDuration>} = {
+    "2/16":     [_8                             ],
+    "1/8":      [_8                             ],
+
+    "3/16":     [_8D                            ],
+
+    "4/16":     [_4                             ],
+    "2/8":      [_4                             ],
+    "1/4":      [_4                             ],
+
+    "5/16":     [_8D,   _8                      ],
+    "5/16_alt": [_8,    _8D                     ],
+
+    "6/16":     [_4D                            ],
+    "3/8":      [_4D                            ],
+
+    "4/8":      [_2                             ],
+    "2/4":      [_2                             ],
+    "1/2":      [_2                             ],
+
+    "9/16":     [_4D,   _8D                     ],
+
+    "5/8":      [_4D,   _4                      ],
+    "5/8_alt":  [_4,    _4D                     ],
+
+    "12/16":    [_2D                            ],
+    "6/8":      [_2D                            ],
+    "3/4":      [_2D                            ],
+
+    "7/8":      [_2DD                           ],
+    "7/8_alt":  [_2DD                           ],
+
+    "8/8":      [_1            ],
+    "8/8_alt":  [_1            ],
+    "8/8_alt2": [_1            ],
+    "4/4":      [_1            ],
+    "2/2":      [_1            ],
+    "1/1":      [_1                             ],  // << If only they were all like this...
+
+    "9/8":      [_2D,   _4D                     ],
+
+    "10/8":     [_2,    _2D                     ],
+    "10/8_alt": [_4D,   _2,     _4D             ],
+    "10/8_alt2":[_2D,   _2                      ],
+    "5/4":      [_2D,           _2              ],
+    "5/4_alt":  [_2,            _2D             ],
+
+    "12/8":     [_1D                            ],
+    "6/4":      [_1D                            ],
+    "3/2":      [_1D                            ],
+
+    "7/4":      [_1DD                           ],
+    "7/4_alt":  [_1DD                           ],
+
+    "15/8":     [_2D,  _2D,  _4D                ],
+
+    "8/4":      [_05                            ],
+        // "Or any other combination"...
+        // There's a whole bunch, and I think composers using 8/4 are willing
+        // to select the correct beaming manually
+    "4/2":      [_1,            _1              ],
+    "2/1":      [_1,            _1              ],
+
+    "18/8":     [_1D,           _2D             ],
+    "9/4":      [_1D,           _2D             ]
+};
+
 
 export enum Beaming {
     Default,
@@ -425,3 +497,14 @@ export function getBeats(count: number, dots: number,
     }
     return total;
 };
+
+/**
+ * Returns a spec array for a whole note. Note that in some time signatures,
+ * a whole note is composed of several notes, so the length of the array is not
+ * always 1.
+ */
+export function wholeNote(ctx: Context): Array<C.IDuration> {
+    "use strict";
+    var tsName = getTSString(ctx.timeSignature);
+    return wholeNotePatterns[tsName];
+}
