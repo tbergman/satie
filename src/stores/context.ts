@@ -568,11 +568,15 @@ class Context {
         beam.forEach(p => p.inBeam = false);
         return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
+    /**
+     * If a condition is given, searches backwards starting at the CURRENT
+     * item. Otherwise, returns the item directly before the current item.
+     */
     prev(condition?: (m: Model) => boolean) {
         if (!condition) {
             return this.body[this.idx - 1];
         } else {
-            for (var i = this.idx - 1; i >= 0; --i) {
+            for (var i = this.idx; i >= 0; --i) {
                 if (condition(this.body[i])) {
                     return this.body[i];
                 }

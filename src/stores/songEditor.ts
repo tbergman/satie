@@ -2,7 +2,6 @@
  * Flux store for the song being edited.
  */
 
-
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -340,11 +339,14 @@ export class SongEditorStore extends TSEE {
 
                 break;
             case "POST /local/visualCursor":
+
                 switch (action.resource) {
                     case "ptr":
-                        if (_tool) {
-                            this.emit(HISTORY_EVENT);
+                    case "octave":
+                        if (!_tool) {
+                            return;
                         }
+                        this.emit(HISTORY_EVENT);
                         assert(_visualCursor && _visualCursor.annotatedObj);
                         var prevObj: Model = null;
                         var prevIdx: number;
@@ -374,6 +376,10 @@ export class SongEditorStore extends TSEE {
                             this.emit(ANNOTATE_EVENT);
                             break;
                         }
+
+                    case "togglePlay":
+                        // Not handled here;
+                        break;
 
                     case undefined:
                     case null:

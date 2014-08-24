@@ -583,12 +583,17 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var AccidentalTool = require("../stores/accidentalTool.ts");
         var DotTool = require("../stores/dotTool.ts");
         var NoteTool = require("../stores/noteTool.ts");
+        var RestTool = require("../stores/restTool.ts");
         var TieTool = require("../stores/tieTool.ts");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = function(event: KeyboardEvent)  {
             var keyCode = event.keyCode || event.charCode || 0;
             switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
+                case 32: // space
+                    event.preventDefault(); // don't navigate backwards
+                    Dispatcher.POST("/local/visualCursor/_togglePlay", null);
+                    break;
                 case 27: // escape
                     Dispatcher.PUT("/local/tool", null);
                     break;
@@ -611,6 +616,18 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 case 39: // right arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
                     Dispatcher.POST("/local/visualCursor", {step: 1});
+                    break;
+                case 38: // up arrow
+                    if (this.props.tool instanceof NoteTool) {
+                        event.preventDefault(); // scroll by mouse only
+                        Dispatcher.POST("/local/visualCursor/_octave", { delta: 1 });
+                    }
+                    break;
+                case 40:
+                    if (this.props.tool instanceof NoteTool) {
+                        event.preventDefault(); // scroll by mouse only
+                        Dispatcher.POST("/local/visualCursor/_octave", { delta: -1 });
+                    }
                     break;
                 case 90: // 'z'
                     event.preventDefault(); // we control all undo behaviour
@@ -646,9 +663,14 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 "-": function()  {return new AccidentalTool(-1);},
                 "0": function()  {return new AccidentalTool(0);}
             };
-            if (!this.props.tool && key.charCodeAt(0) >= "a".charCodeAt(0) &&
+            if (!this.props.tool) {
+                if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
                     key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                    Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                } else if (key === "r") {
+                    console.log("!!!");
+                    Dispatcher.PUT("/local/tool", new RestTool());
+                }
             }
             var toolFn = keyToTool[key];
             if (toolFn) {

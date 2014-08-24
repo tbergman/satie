@@ -35,6 +35,7 @@ export function Component(props: IProps) {
                 dotted: spec.dots,
                 line: 3,
                 key: spec.key(),
+                isNote: true, // In this context, we mean not a wrapper.
                 fontSize: spec.fontSize,
                 notehead: spec.getRestHead(),
                 stroke: spec.color,
