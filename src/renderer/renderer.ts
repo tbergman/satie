@@ -1,8 +1,4 @@
 /**
- * @file The main home of the renderer. The renderer accepts annotated Models and
- * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
- * to draw some sheet music.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -42,6 +38,11 @@ var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") 
 
 var html = React.DOM;
 
+/**
+ * The main home of the renderer. The renderer accepts annotated Models and
+ * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
+ * to draw some sheet music.
+ */
 export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRendererState> {
     render() {
         if (PROFILER_ENABLED) {
@@ -781,7 +782,11 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
         return false;
     }
 
-    updateIfNeeded = _.throttle(() => this.forceUpdate(), 20, { leading: false });
+    updateIfNeeded = _.throttle(() => {
+        if (this.isMounted()) {
+            this.forceUpdate();
+        }
+    }, 20, { leading: false });
 };
 
 var LineContainerComponent = ReactTS.createReactComponent(LineContainer);

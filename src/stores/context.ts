@@ -1,11 +1,4 @@
 /**
- * @file Contexts are iterators in the annotation pipeline that hold information
- * such as the current beat, what accidentals have been set, and what
- * accidentals are present on other staffs.
- *
- * If you think of annotation as a 'reduce' on all the elements across staffs,
- * Context is the memo.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -21,6 +14,14 @@ import Model = require("./model");
 import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
+/**
+ * Contexts are iterators in the annotation pipeline that hold information
+ * such as the current beat, what accidentals have been set, and what
+ * accidentals are present on other staffs.
+ *
+ * If you think of annotation as a 'reduce' on all the elements across staffs,
+ * Context is the memo.
+ */
 class Context {
     accidentals: C.IAccidentals;
     bar: number;
@@ -475,7 +476,7 @@ class Context {
                 enableFastModeAtBar = null;
             }
 
-            if ((canExitAtNewline && !pointerData && this.curr().type === C.Type.NEWLINE) ||
+            if ((canExitAtNewline && !pointerData && this.curr().type === C.Type.NEWLINE && cursor.annotatedObj) ||
                 (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
                 return {
