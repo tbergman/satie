@@ -1,7 +1,10 @@
 /**
- * Utilities for:
- *  - rhythm arithmetic
- *  - spelling rhythms according to the time signature
+ * @file Utilities for rhythm arithmetic and spelling rhythms according to the
+ * time signature.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 "use strict";

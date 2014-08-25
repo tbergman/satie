@@ -1,6 +1,9 @@
 /**
- * Sets the React renderer as the active view for all
- * Models.
+ * @file Sets the React renderer as the active view for all Models.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import BarlineModel = require("./stores/barline");
@@ -22,12 +25,16 @@ import SlurView = require("./views/slur");
 import TimeSignatureModel = require("./stores/timeSignature");
 import TimeSignatureView = require("./views/timeSignature");
 
-BarlineModel.setView(BarlineView.Component);
-BeginModel.setView(BeginView.Component);
-BeamGroupModel.setView(BeamGroupView.Component);
-ClefModel.setView(ClefView.Component);
-DurationModel.setView(DurationView.Component);
-KeySignatureModel.setView(KeySignatureView.Component);
-NewlineModel.setView(NewlineView.Component);
-SlurModel.setView(SlurView.Component);
-TimeSignatureModel.setView(TimeSignatureView.Component);
+(function () {
+    "use strict";
+
+    BarlineModel.setView(BarlineView.Component);
+    BeginModel.setView(BeginView.Component);
+    BeamGroupModel.setView(BeamGroupView.Component);
+    ClefModel.setView(ClefView.Component);
+    DurationModel.setView(DurationView.Component);
+    KeySignatureModel.setView(KeySignatureView.Component);
+    NewlineModel.setView(NewlineView.Component);
+    SlurModel.setView(SlurView.Component);
+    TimeSignatureModel.setView(TimeSignatureView.Component);
+} ());

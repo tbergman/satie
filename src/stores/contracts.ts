@@ -1,5 +1,9 @@
-﻿/*
- * Holds interfaces, enums, and utilites used throughout Ripieno.
+﻿/**
+ * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import _ = require("lodash");
@@ -393,7 +397,10 @@ export interface ISession {
     user: IUser;
     remoteSongsSynced: boolean;
     isLoading: boolean;
-    state: string; // LoggedIn, LoggedOut
+    /**
+     * Either LoggedIn or LoggedOut
+     */
+    state: string;
 };
 
 /**
@@ -416,6 +423,11 @@ export interface ISong {
      * Lylite source for the song.
      */
     src: string;
+
+    /**
+     * The title. This should always match the title at the top of the page.
+     */
+    title: string;
 };
 
 /**

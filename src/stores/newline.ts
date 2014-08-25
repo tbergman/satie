@@ -1,3 +1,13 @@
+/**
+ * @file A manual or automatic hint that a new line should be created. This file
+ * modifies the context on each new line. It's also used to render the staff and
+ * piano stave for everything but the first line of each page. See also begin.ts.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
+
 import Model = require("./model");
 
 import C = require("./contracts");

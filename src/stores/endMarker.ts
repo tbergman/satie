@@ -1,10 +1,10 @@
 /**
- * A marker for the end of lines and bars.
- *
- * It's to help with positioning and other logic.
- * It is not rendered.
- *
- * @jsx React.DOM
+ * @file A marker for the end of lines and bars. Its purpose is to help with
+ * positioning and other logic. It is not rendered.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import Model = require("./model");

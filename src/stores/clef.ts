@@ -1,8 +1,10 @@
 /**
- * The ClefModel is read by the Clef component and written by a ClefTool or
- * by another Model to satsify a precondition.
- *
- * Part of the Ripieno webapp. (C) Josh Netterfield 2014.
+ * @file The clef model is created by a ClefTool or another model to satisfy
+ * a precondition and is read by the Clef view component.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import Model = require("./model");

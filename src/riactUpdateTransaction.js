@@ -1,6 +1,14 @@
+/**
+ * @file A React transaction that doesn't render anything but still runs
+ * render() and componentDidMount() and stuff like that.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
+
 var CallbackQueue = require("react/lib/CallbackQueue");
 var PooledClass = require("react/lib/PooledClass");
-var ReactInputSelection = require("react/lib/ReactInputSelection");
 var ReactPutListenerQueue = require("react/lib/ReactPutListenerQueue");
 var Transaction = require("react/lib/Transaction");
 

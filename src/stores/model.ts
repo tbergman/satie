@@ -1,5 +1,5 @@
 /**
- * Subclasses of Models handle the gap between the abstract representation of
+ * @file Subclasses of Models handle the gap between the abstract representation of
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
  * (which is done by components in ./primitives).
  *
@@ -22,6 +22,10 @@
  *
  * To see the kind of information held by Models, in your web browser's
  * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 /// <reference path="../../references/node.d.ts" />

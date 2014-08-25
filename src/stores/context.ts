@@ -1,10 +1,14 @@
 /**
- * Contexts are iterators in the annotation pipeline that hold information
+ * @file Contexts are iterators in the annotation pipeline that hold information
  * such as the current beat, what accidentals have been set, and what
- * accidentals are present on other staves.
+ * accidentals are present on other staffs.
  *
- * If you think of annotation as a 'reduce' on all the elements across staves,
+ * If you think of annotation as a 'reduce' on all the elements across staffs,
  * Context is the memo.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 /// <reference path="../../references/lodash.d.ts" />

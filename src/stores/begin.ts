@@ -1,7 +1,9 @@
 /**
- * Appears at the very begining of a stave.
- *
- * @jsx React.DOM
+ * @file Appears at the very beginning of a staff.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import Model = require("./model");

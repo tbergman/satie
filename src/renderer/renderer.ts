@@ -1,7 +1,11 @@
 /**
- * The main home of the renderer. The renderer accepts annotated Models and
+ * @file The main home of the renderer. The renderer accepts annotated Models and
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import React = require("react");

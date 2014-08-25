@@ -1,3 +1,15 @@
+/**
+ * @file Model for a beam. Notes that make up a beam are not children of a beam.
+ * Rather, they show up directly following a beam. This is somewhat fragile, but
+ * makes things like duration spell-checking a bit simpler. Notes in beams are
+ * annotated in two passes. They are both annotated in BeamGroupModel and again
+ * independently, just as any other model would be.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
+
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 

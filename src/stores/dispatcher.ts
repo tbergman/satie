@@ -1,16 +1,16 @@
 /**
- * Dispatcher based on the Flux TodoMVC Tutorial.
+ * @file Dispatcher based on the Flux TodoMVC Tutorial.
  * http://facebook.github.io/react/docs/flux-todo-list.html
- *
- * "Flux is the application architecture that Facebook
- * uses for building client-side web applications. It
- * complements React"s composable view components by
- * utilizing a unidirectional data flow. It"s more of
- * a pattern rather than a formal framework, and you
- * can start using Flux immediately without a lot of
- * new code."
- *
- * See also ripieno
+ * 
+ * "Flux is the application architecture that Facebook uses for building
+ * client-side web applications. It complements React"s composable view
+ * components by utilizing a unidirectional data flow. It's more of a pattern
+ * rather than a formal framework, and you can start using Flux immediately
+ * without a lot of new code."
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 /// <reference path="../../references/es6-promise.d.ts" />
@@ -54,7 +54,7 @@ var _clearPromises = function() {
 
 export class Dispatcher {
     /**
-     * Register a Store"s callback so that it may be invoked by an action.
+     * Register a Store's callback so that it may be invoked by an action.
      * @param {function} callback The callback to be registered.
      * @return {number} The index of the callback within the _callbacks array.
      */
@@ -142,6 +142,10 @@ export var dispatch = function(url: string, verb: string, postData: any, cb?: ()
                 response: response,
                 postData: null
             });
+
+            if (cb) {
+                cb();
+            }
         });
     } else if (verb in immediateActions) {
         Instance.dispatch({

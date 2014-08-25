@@ -1,7 +1,10 @@
 /**
- * The Ripieno client library C API implementation. JS helper.
- *
- * Copyright (C) Josh Netterfield 2014. All rights reserved.
+ * @file Entry point for the JavaScript component of the Ripieno client
+ * C library. Does evil stuff. Don't look to closely.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 /*jshint undef:false*/

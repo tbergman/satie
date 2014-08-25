@@ -1,3 +1,12 @@
+/**
+ * @file A duration is a chord (if chord is set, and pitch is null), a pitch
+ * (if pitch is [a-g]), or a rest (if pitch is "r").
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
+
 import Model = require("./model");
 
 import Metre = require("./metre");
@@ -64,7 +73,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         this._beats = this.getBeats(ctx, null, !ctx.fast);
 
-        // Update the ctx to reflect the current note's duration.
+        // Update the context to reflect the current note's duration.
         ctx.count = this.count;
 
         var beats = this.getBeats(ctx);
@@ -267,7 +276,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get isRest() {
         if (this.chord && this.chord.length === 1 && this.chord[0].pitch === "r") {
-            // This isn't valid, so once we stop this case from occuring,
+            // This isn't valid, so once we stop this case from occurring,
             // remove this logic.
             return true;
         }

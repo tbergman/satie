@@ -1,5 +1,9 @@
 /**
- * Flux store for the song being edited.
+ * @file Flux store for the song being edited.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import _ = require("lodash");
@@ -281,10 +285,10 @@ export class SongEditorStore extends TSEE {
             case "DELETE /local/visualCursor":
                 if (action.resource === "ptr") {
                     this.emit(HISTORY_EVENT);
-                    // Remove the item directly before the ctx.
+                    // Remove the item directly before the context.
                     for (h = 0; h < _staves.length; ++h) {
                         // XXX: It's likely the developer will need to adjust this
-                        // logic to allow for multiple staves.
+                        // logic to allow for multiple staffs.
                         if (!_staves[h].body) {
                             continue;
                         }
@@ -310,7 +314,7 @@ export class SongEditorStore extends TSEE {
                                 skipThroughBars: false
                             });
 
-                            // Remove items based on a whitelist.
+                            // Remove items based on a white-list.
                             if (obj.isNote) {
                                 // The stepCursor call above invalidates _visualCursor
                                 // DO NOT CHECK _visualCursor HERE!!!
@@ -355,7 +359,7 @@ export class SongEditorStore extends TSEE {
                                 continue;
                             }
                             // XXX: It's likely the developer will need to adjust this logic
-                            // for multiple staves.
+                            // for multiple staffs.
                             for (i = 0; i < _staves[h].body.length; ++i) {
                                 if (_staves[h].body[i] === _visualCursor.annotatedObj) {
                                     prevObj = _staves[h].body[i - 1];
@@ -464,7 +468,7 @@ export class SongEditorStore extends TSEE {
         var y = 0;
         while (!staves.every((stave, sidx) => {
             /*
-             * Process staves that aren"t actually staves.
+             * Process staffs that aren't actually staffs.
              * (Headers, authors, etc.)
              */
             if (stave.header) {
@@ -479,7 +483,7 @@ export class SongEditorStore extends TSEE {
              *
              * Contexts are iterators that hold information such as the current
              * beat, what accidentals have been set, and what accidentals are
-             * present on other staves.  Contexts are retreived from snapshots
+             * present on other staffs.  Contexts are retrieved from snapshots
              * when modifying a line other than the first.
              */
             var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
@@ -607,7 +611,7 @@ export class SongEditorStore extends TSEE {
                 }
 
                 assert(body[i] === item, "The selection must be in song order.");
-                assert(accidentals, "A key signature must preceed any note.");
+                assert(accidentals, "A key signature must precede any note.");
 
                 if (!item.isNote) {
                     return;
@@ -722,7 +726,7 @@ export class SongEditorStore extends TSEE {
                 continue;
             }
             // XXX: It's likely the author will need to adjust this logic for multiple
-            // staves.
+            // staffs.
             for (var i = 0; i < _staves[h].body.length; ++i) {
                 if (_staves[h].body[i] === obj) {
                     if ((!_staves[h].body[i + 1] ||
@@ -816,7 +820,7 @@ export class SongEditorStore extends TSEE {
             return ctx;
         } else {
             // We don't store snapshots for the 0th line, but we still need
-            // to force it to be re-renderered.
+            // to force it to be re-rendered.
             _linesToUpdate[idx + "_0"] = true;
         }
     }
@@ -900,7 +904,7 @@ export class SongEditorStore extends TSEE {
     }
     ctx(idx: any) {
         if (idx === undefined) {
-            console.warn("Calling ctx without an index is deprecated.");
+            console.warn("Calling context without an index is deprecated.");
             console.trace();
         }
         if (idx === undefined || idx.first) {
@@ -918,7 +922,7 @@ export class SongEditorStore extends TSEE {
         return _visualCursor;
     }
     visualCursorIs(visualCursor: C.IVisualCursor) {
-        // Assign directly to keep refrences in tact.
+        // Assign directly to keep references in tact.
         // Alternatively, Context could be updated with the updated
         // cursor.
         _visualCursor.bar = visualCursor.bar;
@@ -968,7 +972,6 @@ export class SongEditorStore extends TSEE {
         this._changesPending = pending; }
 
     throttledAutosave = _.throttle(() => {
-        console.log("Autosave");
         var active = SessionStore.Instance.activeSong();
         if (active) {
             Dispatcher.PUT("/api/song/_" + active._id, { data: this.src() });
@@ -977,17 +980,17 @@ export class SongEditorStore extends TSEE {
 }
 
 /**
- * Called at the end of begining of every line so that when a certain line
- * needs to be updated, the ctx can be unfrozen from here instead of
- * recalculating the ctx from the begining of the song.
+ * Called at the end of beginning of every line so that when a certain line
+ * needs to be updated, the context can be unfrozen from here instead of
+ * recalculating the context from the beginning of the song.
  */
 export var snapshot = (ctx: Context) => {
     _snapshots[ctx.line] = ctx.snapshot();
 };
 
 /**
- * Called at the begining of every beam. Called so that if the annotater has
- * to be "backed up", it can do so without recalculating from the begining
+ * Called at the beginning of every beam. Called so that if the annotator has
+ * to be "backed up", it can do so without recalculating from the beginning
  * of the line.
  */
 export var beamCountIs = (beamCount: number) => {
