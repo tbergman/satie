@@ -140,7 +140,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                             var selIdx = -1;
                                             var selProps: any = null;
                                             for (var i = 0; i < s.length; ++i) {
-                                                if (s[i].selected) {
+                                                if (s[i].selected && s[i].type !== C.Type.NEWLINE) {
                                                     if (selIdx === -1) {
                                                         selIdx = h++;
                                                         selProps = {

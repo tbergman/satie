@@ -16,23 +16,32 @@ import C = require("./contracts");
 import Context = require("./context");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
 
-var _32  = C.makeDuration({count: 32});
-var _32D = C.makeDuration({count: 32, dots: 1});
-var _16  = C.makeDuration({count: 16});
-var _16D = C.makeDuration({count: 16, dots: 1});
-var _8   = C.makeDuration({count: 8});
-var _8D  = C.makeDuration({count: 8, dots: 1});
-var _4   = C.makeDuration({count: 4});
-var _4D  = C.makeDuration({count: 4, dots: 1});
-var _2   = C.makeDuration({count: 2});
-var _2D  = C.makeDuration({count: 2, dots: 1});
-var _2DD = C.makeDuration({count: 2, dots: 2});
-var _1   = C.makeDuration({count: 1});
-var _1D  = C.makeDuration({count: 1, dots: 1});
-var _1DD = C.makeDuration({count: 1, dots: 2});
-var _05  = C.makeDuration({ count: 1 / 2 });
+var _512  = C.makeDuration({count: 512});
+var _512D = C.makeDuration({count: 512, dots: 1});
+var _256  = C.makeDuration({count: 256});
+var _256D = C.makeDuration({count: 256, dots: 1});
+var _128  = C.makeDuration({count: 128});
+var _128D = C.makeDuration({count: 128, dots: 1});
+var _64   = C.makeDuration({count: 64});
+var _64D  = C.makeDuration({count: 64, dots: 1});
+var _32   = C.makeDuration({count: 32});
+var _32D  = C.makeDuration({count: 32, dots: 1});
+var _16   = C.makeDuration({count: 16});
+var _16D  = C.makeDuration({count: 16, dots: 1});
+var _8    = C.makeDuration({count: 8});
+var _8D   = C.makeDuration({count: 8, dots: 1});
+var _4    = C.makeDuration({count: 4});
+var _4D   = C.makeDuration({count: 4, dots: 1});
+var _2    = C.makeDuration({count: 2});
+var _2D   = C.makeDuration({count: 2, dots: 1});
+var _2DD  = C.makeDuration({count: 2, dots: 2});
+var _1    = C.makeDuration({count: 1});
+var _1D   = C.makeDuration({count: 1, dots: 1});
+var _1DD  = C.makeDuration({count: 1, dots: 2});
+var _05   = C.makeDuration({ count: 1 / 2 });
 
-var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32];
+var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
+    _64D, _64, _128D, _128, _256D, _256, _512D, _512];
 
 // Adapted from Behind Bars (E. Gould) page 155
 var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
@@ -62,7 +71,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
 
     "12/16":    [_8D,   _8D,    _8D,    _8D     ],
     "6/8":      [_4D,           _4D             ],
-    "3/4":      [_2D                            ],   // << XXX: Provided it doesn't give the illusion of 6/8.
+    "3/4":      [_2D                            ],  // << XXX: Provided it doesn't give the illusion of 6/8.
 
     "7/8":      [_4,            _8D             ],
     "7/8_alt":  [_8D,           _4              ],
@@ -186,7 +195,7 @@ export enum Beaming {
  *  1. Rests and ties are not more verbose than needed according to
  *     the above chart.
  *
- *  2. Rests and untied, undotted notes either fill an integer number
+ *  2. Rests and untied, non-dotted notes either fill an integer number
  *     of segments, or less than 1
  *
  * These conditions can be overly strict. They're a good guess at what the user
@@ -196,7 +205,7 @@ export enum Beaming {
  * Otherwise, the function returns false. To correct the rhythmic spelling, run
  * correctMetre.
  *
- * @prop context: Give timeSignature, and current idx.
+ * @prop context: Give timeSignature, and current index.
  * @prop fix: If true, correct any errors
  */
 export function rythmicSpellcheck(ctx: Context, fix: boolean) {
@@ -232,7 +241,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     var b1 = ctx.beats;
     var b2 = b1 + n1b;
 
-    // Seperate durations that cross a boundary and only partially fill that boundary.
+    // Separate durations that cross a boundary and only partially fill that boundary.
     // This isn't a problem if it completely fills another part.
     // XXX: Make a way to disable this when needed.
     var bExcess: number;
@@ -243,9 +252,10 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
                 bExcess -= pattern[p].getBeats(ctx);
             }
         }
-    } else if (Math.floor(b2) !== Math.floor(b1)) {
-        bExcess = b2 - Math.ceil(b1);
+    } else if ((b1 % n1b > _e) && (b2 % n1b > _e)) {
+        bExcess = b2 - (b1 + (b2 % n1b));
     }
+
     if (bExcess > 0) {
         var replaceWith = subtract(n1, bExcess, ctx).concat(
             subtract(n1, n1.getBeats(ctx) - bExcess, ctx));
@@ -276,7 +286,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
         var alike = n1b === n2b;
 
         // Combine like rests that are not offset.
-        if (alike && Math.abs(b1 % 1) < _e && (
+        if (alike && (b3 % (n1b*2)) < _e && (
                 // It doesn't pass the next beam barrier...
                 (b3 - (beat + be) < _e) ||
                 // or it completely fills the next barrier...
@@ -287,16 +297,36 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
             return C.IterationStatus.RETRY_LINE;
         }
 
-        // Combine rests that start on a beat and end on a barrier.
+        // Combine any number of rests that start on a beat and end on a barrier.
         if (Math.abs(b1 % 1) < _e) {
             var ok = false;
-            var pb = beat;
-            for (var h = pidx; h < pattern.length; ++h) {
-                if (pb + pattern[h].getBeats(ctx) === b3) {
-                    ok = true;
-                    break;
+            var pb: number;
+            var toErase = 1;
+            var jdx = ctx.idx + 1;
+            while (!ok) {
+                pb = beat;
+                for (var h = pidx; h < pattern.length; ++h) {
+                    if (pb + pattern[h].getBeats(ctx) === b3) {
+                        ok = true;
+                        break;
+                    }
+                    pb += pattern[h].getBeats(ctx);
                 }
-                pb += pattern[h].getBeats(ctx);
+                if (!ok) {
+                    ++jdx;
+                    ++toErase;
+                    while (ctx.body[jdx].type === C.Type.BEAM_GROUP ||
+                            ctx.body[jdx].type === C.Type.SLUR) {
+                        ++jdx;
+                    }
+                    if (ctx.body[jdx] && ctx.body[jdx].isNote) {
+                        var newBeats = ctx.body[jdx].note.getBeats(ctx);
+                        b3 += newBeats;
+                        n2b += newBeats;
+                    } else {
+                        break;
+                    }
+                }
             }
             if (ok) {
                 // We can combine them.
@@ -309,7 +339,9 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
                     for (var dots = 0; dots <= maxDot; ++dots) {
                         var dotFactor = Math.pow(1.5, dots);
                         if (Math.abs(ncb*dotFactor - po2) < _e) {
-                            ctx.eraseFuture(ctx.idx + 1);
+                            _.times(toErase, function () {
+                                ctx.eraseFuture(ctx.idx + 1);
+                            });
                             n1.actualDots = n1.dots = dots;
                             n1.actualTuplet = n1.tuplet = null;
                             n1.count = po2;
