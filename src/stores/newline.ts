@@ -1,8 +1,4 @@
 /**
- * @file A manual or automatic hint that a new line should be created. This file
- * modifies the context on each new line. It's also used to render the staff and
- * piano stave for everything but the first line of each page. See also begin.ts.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -17,25 +13,23 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
 
+/**
+ * A manual or automatic hint that a new line should be created. This file
+ * modifies the context on each new line. It's also used to render the staff and
+ * piano stave for everything but the first line of each page. See also begin.ts.
+ */
 class NewlineModel extends Model {
-    annotatedExtraWidth: number;
-    lineSpacing: number;
-    pageSize: C.IPageSize;
-    width: number;
-    begin: number;
-    DEBUG_line: number;
-
     annotateImpl(ctx: Context): C.IterationStatus {
         // Pages should not overflow.
         if (ctx.y + ctx.lineSpacing > ctx.maxY) {
             return NewPageModel.createNewPage(ctx);
         }
 
-        // Notes should be full justfied within a line.
+        // Notes should be full justified within a line.
         // This requirement should be last so that it only happens once
         // per line.
         if (ctx.maxX - ctx.x > 0.001) {
-            this.justify(ctx);
+            this._justify(ctx);
         }
 
         // Copy information from the context that the view needs.
@@ -53,9 +47,8 @@ class NewlineModel extends Model {
         this.begin = ctx.initialX;
         this.width = ctx.maxX - ctx.x;
 
-
-        /**
-         * Padding between begining of stave and the clef.
+        /*
+         * 0.2 is the padding between beginning of stave and the clef.
          * This value should also be changed in BeginModel.
          */
         ctx.x += 0.2;
@@ -97,7 +90,20 @@ class NewlineModel extends Model {
 
         return C.IterationStatus.SUCCESS;
     }
-    justify(ctx: Context): C.IterationStatus {
+
+    toLylite(lylite: Array<string>) {
+        lylite.push("\n");
+    }
+
+    get type() {
+        return C.Type.NEWLINE;
+    }
+
+    /**
+     * Spaces things out to fill the entire page width, while maintaining
+     * proportional widths.
+     */
+    private _justify(ctx: Context): C.IterationStatus {
         var diff = ctx.maxX - ctx.x;
         var i: number;
         var l = 0;
@@ -116,9 +122,8 @@ class NewlineModel extends Model {
                 break;
             }
             if (ctx.body[i].isNote) {
-                // TSFIX
-                (<any>ctx.body[i]).annotatedExtraWidth =
-                    ((<any>ctx.body[i]).annotatedExtraWidth || 0) +
+                ctx.body[i].annotatedExtraWidth =
+                    (ctx.body[i].annotatedExtraWidth || 0) +
                     diff/l;
                 xOffset -= diff/l;
             }
@@ -148,6 +153,7 @@ class NewlineModel extends Model {
                         }
                     }
 
+
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
@@ -172,14 +178,12 @@ class NewlineModel extends Model {
         }
         return C.IterationStatus.SUCCESS;
     }
-    toLylite(lylite: Array<string>) {
-        lylite.push("\n");
-    }
+
     static createNewline = (ctx: Context): C.IterationStatus => {
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {
-            (<any>ctx.body[fidx]).annotatedExtraWidth = undefined; // TSFIX
+            ctx.body[fidx].annotatedExtraWidth = 0;
             if (ctx.body[fidx].type === C.Type.BARLINE) {
                 break;
             }
@@ -198,12 +202,17 @@ class NewlineModel extends Model {
                 }
             }
         }
-        ctx.insertPast(new NewlineModel({ newline: true, source: C.Source.ANNOTATOR }), fidx + 1);
+
+        ctx.insertPast(new NewlineModel({
+            newline: true,
+            source: C.Source.ANNOTATOR
+        }), fidx + 1);
+
         return C.IterationStatus.LINE_CREATED;
     };
 
     /**
-     * Given an incomplete line ending at idx, spreads out the line
+     * Given an incomplete line ending at current index, spreads out the line
      * comfortably.
      */
     static semiJustify = (ctx: Context) => {
@@ -223,10 +232,10 @@ class NewlineModel extends Model {
             }
         }
         if (n) {
-            var lw = ctx.maxX - 3 - ctx.curr().x();
+            var lw = ctx.maxX - 3 - ctx.curr.x();
             var nw = lw/n;
             if (fullJustify) {
-                lw = ctx.maxX - ctx.curr().x();
+                lw = ctx.maxX - ctx.curr.x();
                 nw = lw/n;
             } else {
                 var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
@@ -243,9 +252,12 @@ class NewlineModel extends Model {
         }
     };
 
-    get type() {
-        return C.Type.NEWLINE;
-    }
+    DEBUG_line: number;
+    annotatedExtraWidth: number;
+    begin: number;
+    lineSpacing: number;
+    pageSize: C.IPageSize;
+    width: number;
 }
 
 /* tslint:disable */

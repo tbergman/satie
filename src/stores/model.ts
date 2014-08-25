@@ -1,5 +1,20 @@
 /**
- * @file Subclasses of Models handle the gap between the abstract representation of
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
+
+/// <reference path="../../references/node.d.ts" />
+/// <reference path="../../references/lodash.d.ts" />
+/// <reference path="../../references/es6-promise.d.ts" />
+
+import assert = require("assert");
+
+import C = require("./contracts");
+import Context = require("./context");
+
+/**
+ * Subclasses of Models handle the gap between the abstract representation of
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
  * (which is done by components in ./primitives).
  *
@@ -22,21 +37,7 @@
  *
  * To see the kind of information held by Models, in your web browser's
  * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
- * 
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
-
-/// <reference path="../../references/node.d.ts" />
-/// <reference path="../../references/lodash.d.ts" />
-/// <reference path="../../references/es6-promise.d.ts" />
-
-import assert = require("assert");
-
-import C = require("./contracts");
-import Context = require("./context");
-
 class Model {
     source: C.Source;
     private _fontSize: number;
@@ -142,6 +143,16 @@ class Model {
 
     setY(y: number) : void {
         this._y = y;
+    }
+
+    get annotatedExtraWidth(): number {
+        return 0;
+    }
+    set annotatedExtraWidth(w: number) {
+        if (w !== 0) {
+            assert(false, "This element does not support annotatedExtraWidth " +
+                "because its not a note");
+        }
     }
 
     get isNote(): boolean {

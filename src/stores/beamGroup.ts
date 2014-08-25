@@ -1,10 +1,4 @@
 /**
- * @file Model for a beam. Notes that make up a beam are not children of a beam.
- * Rather, they show up directly following a beam. This is somewhat fragile, but
- * makes things like duration spell-checking a bit simpler. Notes in beams are
- * annotated in two passes. They are both annotated in BeamGroupModel and again
- * independently, just as any other model would be.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -22,10 +16,26 @@ import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
 import TimeSignatureModel = require("./timeSignature");
 
+/*/
+ * Model for a beam. Notes that make up a beam are not children of a beam.
+ * Rather, they show up directly following a beam. This is somewhat fragile, but
+ * makes things like duration spell-checking a bit simpler. Notes in beams are
+ * annotated in two passes. They are both annotated in BeamGroupModel and again
+ * independently, just as any other model would be.
+ */
 class BeamGroupModel extends Model {
     tuplet: any;
     tupletsTemporary: boolean;
-    beams: number;
+
+    /**
+     * The number of lines in the beam (1-9), or VARIABLE.
+     */
+    beams: C.IBeamCount;
+
+    /**
+     * The beam counts if beams is VARIABLE.
+     */
+    variableBeams: Array<number>;
     beam: Array<DurationModel>;
 
     annotateImpl(ctx: Context): C.IterationStatus {
@@ -58,10 +68,13 @@ class BeamGroupModel extends Model {
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
         SongEditorStore.beamCountIs(ctx.beats);
 
-        this.beams = 1;
-        if (this.beam.length) {
-            // TODO: variable beams
-            this.beams = this.beam[0].count / 8;
+        var b1 = this.beam[0].count;
+        if (_.all(this.beam, b => b.count === b1)) {
+            this.beams = Math.round(Math.log(this.beam[0].count) / Math.log(2)) - 2;
+        } else {
+            this.beams = C.IBeamCount.VARIABLE;
+            this.variableBeams = _.map(this.beam,
+                b => Math.round(Math.log(b.count) / Math.log(2)) - 2);
         }
 
         if (!this.beam.every(b => {

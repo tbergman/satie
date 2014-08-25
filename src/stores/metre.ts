@@ -16,32 +16,34 @@ import C = require("./contracts");
 import Context = require("./context");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
 
-var _512  = C.makeDuration({count: 512});
-var _512D = C.makeDuration({count: 512, dots: 1});
-var _256  = C.makeDuration({count: 256});
-var _256D = C.makeDuration({count: 256, dots: 1});
-var _128  = C.makeDuration({count: 128});
-var _128D = C.makeDuration({count: 128, dots: 1});
-var _64   = C.makeDuration({count: 64});
-var _64D  = C.makeDuration({count: 64, dots: 1});
-var _32   = C.makeDuration({count: 32});
-var _32D  = C.makeDuration({count: 32, dots: 1});
-var _16   = C.makeDuration({count: 16});
-var _16D  = C.makeDuration({count: 16, dots: 1});
-var _8    = C.makeDuration({count: 8});
-var _8D   = C.makeDuration({count: 8, dots: 1});
-var _4    = C.makeDuration({count: 4});
-var _4D   = C.makeDuration({count: 4, dots: 1});
-var _2    = C.makeDuration({count: 2});
-var _2D   = C.makeDuration({count: 2, dots: 1});
-var _2DD  = C.makeDuration({count: 2, dots: 2});
-var _1    = C.makeDuration({count: 1});
-var _1D   = C.makeDuration({count: 1, dots: 1});
-var _1DD  = C.makeDuration({count: 1, dots: 2});
-var _05   = C.makeDuration({ count: 1 / 2 });
+var _1024  = C.makeDuration({count: 1024});
+var _1024D = C.makeDuration({count: 1024, dots: 1});
+var _512   = C.makeDuration({count: 512});
+var _512D  = C.makeDuration({count: 512, dots: 1});
+var _256   = C.makeDuration({count: 256});
+var _256D  = C.makeDuration({count: 256, dots: 1});
+var _128   = C.makeDuration({count: 128});
+var _128D  = C.makeDuration({count: 128, dots: 1});
+var _64    = C.makeDuration({count: 64});
+var _64D   = C.makeDuration({count: 64, dots: 1});
+var _32    = C.makeDuration({count: 32});
+var _32D   = C.makeDuration({count: 32, dots: 1});
+var _16    = C.makeDuration({count: 16});
+var _16D   = C.makeDuration({count: 16, dots: 1});
+var _8     = C.makeDuration({count: 8});
+var _8D    = C.makeDuration({count: 8, dots: 1});
+var _4     = C.makeDuration({count: 4});
+var _4D    = C.makeDuration({count: 4, dots: 1});
+var _2     = C.makeDuration({count: 2});
+var _2D    = C.makeDuration({count: 2, dots: 1});
+var _2DD   = C.makeDuration({count: 2, dots: 2});
+var _1     = C.makeDuration({count: 1});
+var _1D    = C.makeDuration({count: 1, dots: 1});
+var _1DD   = C.makeDuration({count: 1, dots: 2});
+var _05    = C.makeDuration({ count: 1 / 2 });
 
 var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
-    _64D, _64, _128D, _128, _256D, _256, _512D, _512];
+    _64D, _64, _128D, _128, _256D, _256, _512D, _512, _1024D, _1024];
 
 // Adapted from Behind Bars (E. Gould) page 155
 var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
@@ -279,7 +281,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
 
     // Combine rests that can be combined.
 
-    if (curr.isRest && next.isRest && ctx.curr().source !== C.Source.USER) {
+    if (curr.isRest && next.isRest && ctx.curr.source !== C.Source.USER) {
         var n2 = next.note;
         var n2b = n2.getBeats(ctx);
         var b3 = b2 + n2b;
@@ -395,7 +397,7 @@ export function subtract(durr1: any, beats: number,
     var bp = beamingPatterns[tsName];
     var currBeat = ctx.beats + (beatOffset || 0);
 
-    while (true) {
+    for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;
         var bpCount = 0;
         while (bp[bpIdx] &&
@@ -444,7 +446,7 @@ export function subtract(durr1: any, beats: number,
             }
         });
     }
-    assert(false, "Not reached");
+    throw new C.InvalidDurationError();
 }
 
 export function rebeamable(idx: number, ctx: Context):

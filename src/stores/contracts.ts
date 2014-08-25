@@ -1,10 +1,10 @@
 ﻿/**
- * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
- * 
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
- */
+  * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
+  *
+  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+  * Unauthorized copying of this file, via any medium is strictly prohibited.
+  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+  */
 
 import _ = require("lodash");
 
@@ -53,6 +53,23 @@ export interface IAnnotationOpts {
 export enum Barline {
     Standard,
     Double
+}
+
+/**
+ * The stupid enumeration is the way it because I didn't know how to make a type
+ * that is either a number or variable.
+ */
+export enum IBeamCount {
+    VARIABLE = -1,
+    ONE = 1,
+    TWO = 2,
+    THREE = 3,
+    FOUR = 4,
+    FIVE = 5,
+    SIX = 6,
+    SEVEN = 7,
+    EIGHT = 8,
+    NINE = 9
 }
 
 /**
@@ -169,10 +186,13 @@ export interface IFluxAction {
     postData: any;
 };
 
+export class InvalidDurationError {
+}
+
 export enum IterationStatus {
     /**
      * All of the pre-conditions of the Model were met, and
-     * the annotater should continue to the next item.
+     * the annotator should continue to the next item.
      */
     SUCCESS,
 
@@ -184,7 +204,7 @@ export enum IterationStatus {
 
     /**
      * The precondition is now met, but a line was added somewhere between
-     * where the previous line was and idx. The annotater should re-annotate
+     * where the previous line was an idx. The annotator should re-annotate
      * the previous two lines.
      */
     LINE_CREATED,
@@ -566,7 +586,7 @@ export interface IVisualCursor {
 
     /**
      * LSD of cursor position. Represents the beat directly before the
-     * cursor, so if it's at the begining of bar, it is beat 0.
+     * cursor, so if it's at the beginning of bar, it is beat 0.
      */
     beat: number;
 
@@ -632,6 +652,11 @@ export function midiNote(p: IPitch) {
     return _.map(p.chord, m => midiNote(m));
 }
 
+/**
+ * Adds default stave height, page size, and paper size.
+ * 
+ * Used for document creation, importing, ...
+ */
 export function addDefaults(staves: IStave[]) {
     "use strict";
     if (!_.any(staves, function(s) { return s.staveHeight; })) {

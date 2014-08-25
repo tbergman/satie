@@ -1,6 +1,7 @@
 /**
- * React component which draws notes and a beam given a collection
- * of notes that can be beamed.
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import ReactTS = require("react-typescript");
@@ -8,15 +9,16 @@ import _ = require("lodash");
 import assert = require("assert");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
-var Beam = require("./_beam.jsx");
+import Beam = require("./_beam");
 import BeamGroupModel = require("../stores/beamGroup");
 var Group = require("./_group.jsx");
 import Note = require("./_note");
 
-// The line of a chord futhest from the end of a stem.
-var getExtremeLine = Note.getExtremeLine;
-
-export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
+/**
+ * React component which draws notes and a beam given a collection
+ * of notes that can be beamed.
+ */
+export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {
         var spec = this.props.spec;
         var children = spec.generate();
@@ -31,6 +33,8 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         var lastX: number;
         var lastY: number;
 
+        var childX: Array<number> = [];
+
         _.each(children, (note, idx) => {
             // All notes in a beam have a unique key
             note.props.key = "child-" + idx;
@@ -44,6 +48,8 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
                 // YUCK: add refs or something.
             lastX = note.props.x;
             lastY = note.props.y;
+
+            childX.push(lastX);
         });
 
         var direction = BeamGroupModel.decideDirection(firstP.line, lastP.line);
@@ -51,7 +57,7 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         var line1 = getExtremeLine(firstP.line, direction);
         var line2 = getExtremeLine(lastP.line, direction);
 
-        // y = mx + b
+        // y = m*x + b
         var m = children.length ? (line2 - line1)/(children.length - 1) : 0;
         var stemHeight1 = 3.5;
         var stemHeight2 = 3.5;
@@ -107,13 +113,17 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, IState> {
         });
 
         return Group(null,
-            [Beam({
+            [<React.ReactComponent<any,any>> Beam.Component({
                 beams: (spec.beams) || 1,
+                variableBeams: spec.variableBeams,
+                variableX: spec.variableBeams ? childX : null,
                 direction: direction,
                 key: "beam",
                 fontSize: spec.fontSize,
-                line1: parseFloat("" + line1) + direction*getSH(direction, 0, line1),
-                line2: parseFloat("" + line2) + direction*getSH(direction, children.length - 1, line2),
+                line1: parseFloat("" + line1) +
+                    direction * getSH(direction, 0, line1),
+                line2: parseFloat("" + line2) +
+                    direction * getSH(direction, children.length - 1, line2),
                 notehead1: firstP.notehead,
                 notehead2: lastP.notehead,
                 scaleFactor: spec.fontSize*renderUtil.FONT_SIZE_FACTOR,
@@ -136,6 +146,7 @@ export interface IProps {
     spec: BeamGroupModel;
 }
 
-export interface IState {
-
-}
+/**
+ * The line of a chord furthest from the end of a stem.
+ */
+var getExtremeLine = Note.getExtremeLine;

@@ -1,6 +1,4 @@
 /**
- * @file The model for single and double barlines.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -18,11 +16,10 @@ import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
 import TimeSignatureModel = require("./timeSignature");
 
+/**
+ * The model for single and double barlines.
+ */
 class BarlineModel extends Model {
-    constructor(spec: { barline: C.Barline }) {
-        super(spec);
-        this._barline = spec.barline;
-    }
     annotateImpl(ctx: Context): C.IterationStatus {
         var i: number;
         var okay: boolean;
@@ -38,7 +35,20 @@ class BarlineModel extends Model {
                 break;
             }
         }
-        if (!okay) { return ctx.eraseCurrent(); }
+        if (!okay) {
+            if (i === -1) { // Beginning of document.
+                var DurationModel_r = require("./duration"); // Recursive.
+                var fullRest = Metre.wholeNote(ctx)
+                    .map(spec => new DurationModel_r(spec));
+                _.each(fullRest, (r) => {
+                    r.isRest = true;
+                    ctx.insertPast(r);
+                });
+                return C.IterationStatus.RETRY_CURRENT;
+            } else {
+                return ctx.eraseCurrent();
+            }
+        }
 
         // At least one note must exist between barlines.
         okay = false;
@@ -90,7 +100,7 @@ class BarlineModel extends Model {
             this.annotatedAccidentalSpacing = 0;
         }
 
-        // A barline must be preceeded by an endline marker.
+        // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
             return ctx.insertPast(new EndMarkerModel({ endMarker: true }));
         }
@@ -116,6 +126,12 @@ class BarlineModel extends Model {
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
         return C.IterationStatus.SUCCESS;
     }
+
+    constructor(spec: { barline: C.Barline }) {
+        super(spec);
+        this._barline = spec.barline;
+    }
+
     toLylite(lylite: Array<string>) {
         lylite.push("|");
     }
@@ -126,11 +142,11 @@ class BarlineModel extends Model {
     static createBarline = (ctx: Context, mode: C.Barline): C.IterationStatus => {
         mode = mode || C.Barline.Standard;
 
-        if (ctx.curr().type === C.Type.BEAM_GROUP) {
+        if (ctx.curr.type === C.Type.BEAM_GROUP) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 delete ctx.body[j].inBeam;
-                if (ctx.body[j] === ctx.curr()) {
+                if (ctx.body[j] === ctx.curr) {
                     ctx.insertFuture(new BarlineModel({ barline: mode }), j);
                     ++j;
                 }
@@ -150,8 +166,8 @@ class BarlineModel extends Model {
         this._barline = barline;
     }
 
-    annotatedAccidentalSpacing: number;
     private _barline: C.Barline;
+    annotatedAccidentalSpacing: number;
     color: string;
     height: number;
     newlineNext: boolean;

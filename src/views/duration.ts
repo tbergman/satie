@@ -1,8 +1,7 @@
 /**
- * This is a pseudo-component to maintain compatibility with
- * GroupBridgeView. At some point, GroupBridgeView should be
- * rewritten so we can enjoy the full performance benefits
- * of components here.
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
 import React = require("react");
@@ -15,6 +14,12 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 var html = React.DOM;
 
+/**
+ * This is a pseudo-component to maintain compatibility with
+ * GroupBridgeView. At some point, GroupBridgeView should be
+ * rewritten so we can enjoy the full performance benefits
+ * of components here.
+ */
 export function Component(props: IProps) {
     "use strict";
     var spec = props.spec;
@@ -32,12 +37,12 @@ export function Component(props: IProps) {
 
     if (spec.isRest) {
         return Rest({
-                dotted: spec.dots,
+                dotted: spec.displayDots,
                 line: 3,
                 key: spec.key(),
                 isNote: true, // In this context, we mean not a wrapper.
                 fontSize: spec.fontSize,
-                notehead: spec.getRestHead(),
+                notehead: spec.restHead,
                 stroke: spec.color,
                 x: spec.x(),
                 y: spec.y()},
@@ -47,18 +52,18 @@ export function Component(props: IProps) {
 
     var note = Note.Component({
             accidentals: spec.accidentals,
-            accStrokes: spec.getAccStrokes(),
-            direction: spec.getDirection(),
-            dotted: spec.dots,
+            accStrokes: spec.accStrokes,
+            direction: spec.direction,
+            dotted: spec.displayDots,
             flag: spec.flag,
             fontSize: spec.fontSize,
-            hasStem: spec.hasStem(),
+            hasStem: spec.hasStem,
             isNote: true,
             key: spec.key(),
             line: spec.line,
-            notehead: spec.notehead(),
+            notehead: spec.notehead,
             secondaryStroke: spec.color,
-            strokes: spec.getStrokes(),
+            strokes: spec.strokes,
             tieTo: spec.tieTo && spec.tieTo.x(),
             x: zeroOffsetMode ? 0 : spec.x(),
             y: zeroOffsetMode ? 0 : spec.y()},

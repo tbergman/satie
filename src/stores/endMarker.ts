@@ -1,7 +1,4 @@
 /**
- * @file A marker for the end of lines and bars. Its purpose is to help with
- * positioning and other logic. It is not rendered.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -16,6 +13,10 @@ import C = require("./contracts");
 import Context = require("./context");
 import Metre = require("./metre");
 
+/**
+ * A marker for the end of lines and bars. Its purpose is to help with
+ * positioning and other logic. It is not rendered.
+ */
 class EndMarkerModel extends Model {
     annotateImpl(ctx: Context): C.IterationStatus {
         // End markers must only exist at the end of a line, document, or bar
@@ -36,7 +37,7 @@ class EndMarkerModel extends Model {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
-        // Bars must not be underfilled (should be filled with rests)
+        // Bars must not be under-filled (should be filled with rests)
         if ( ctx.prev().type !== C.Type.BARLINE &&
                     ctx.beats && ctx.beats < ctx.timeSignature.beats) {
             // XXX: extend to work on things other than 4/4
