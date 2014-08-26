@@ -12,32 +12,18 @@ import Model = require("./model");
 import C = require("./contracts");
 import Context = require("./context");
 import ClefModel = require("./clef");
-import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
+import KeySignatureModel = require("./keySignature");
 import TimeSignatureModel = require("./timeSignature");
 
 /*/
  * Model for a beam. Notes that make up a beam are not children of a beam.
  * Rather, they show up directly following a beam. This is somewhat fragile, but
- * makes things like duration spell-checking a bit simpler. Notes in beams are
- * annotated in two passes. They are both annotated in BeamGroupModel and again
+ * makes things like duration spell-checking a bit simpler. Beamed DurationModels
+ * are annotated in two passes. They are both annotated in BeamGroupModel and again
  * independently, just as any other model would be.
  */
 class BeamGroupModel extends Model {
-    tuplet: any;
-    tupletsTemporary: boolean;
-
-    /**
-     * The number of lines in the beam (1-9), or VARIABLE.
-     */
-    beams: C.IBeamCount;
-
-    /**
-     * The beam counts if beams is VARIABLE.
-     */
-    variableBeams: Array<number>;
-    beam: Array<DurationModel>;
-
     annotateImpl(ctx: Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.clef) {
@@ -90,9 +76,14 @@ class BeamGroupModel extends Model {
         }
         return C.IterationStatus.SUCCESS;
     }
+
+    /**
+     * Renders the beam
+     */
     generate(): Array<ReactTS.ReactComponentBase<any, any>> {
         return <any> _.map(this.beam, b => b.render());
     }
+
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var tuplet = this.tuplet;
         var count = this.beam.length;
@@ -130,9 +121,11 @@ class BeamGroupModel extends Model {
         }
 
     }
+
     getBeats(ctx: Context) {
         return this.beam[0].getBeats(ctx);
     }
+
     static createBeam = (ctx: Context, beam: Array<DurationModel>) => {
         return ctx.insertPast(new BeamGroupModel(
             {beam: beam, source: C.Source.ANNOTATOR}));
@@ -165,6 +158,24 @@ class BeamGroupModel extends Model {
     get type() {
         return C.Type.BEAM_GROUP;
     }
+
+    /**
+     * Notes in the beam
+     */
+    beam: Array<DurationModel>;
+
+    /**
+     * The number of lines in the beam (1-9), or VARIABLE.
+     */
+    beams: C.IBeamCount;
+
+    /**
+     * The beam counts if beams is VARIABLE.
+     */
+    variableBeams: Array<number>;
+
+    tuplet: any;
+    tupletsTemporary: boolean;
 }
 
 /* tslint:disable */

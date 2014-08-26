@@ -82,6 +82,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
     "8/8_alt":  [_4D,   _4,     _4D             ],
     "8/8_alt2": [_4,    _4D,    _4D             ],
     "4/4":      [_2,            _2              ],
+    "4/4_clean":  [_4,    _4,     _4,    _4       ],
     "2/2":      [_2,            _2              ],
     "1/1":      [_1                             ],  // << If only they were all like this...
 
@@ -449,13 +450,19 @@ export function subtract(durr1: any, beats: number,
     throw new C.InvalidDurationError();
 }
 
-export function rebeamable(idx: number, ctx: Context):
-        Array<DurationModel> {
+/**
+ * If there is a "better" way to beam the notes starting at "idx", return an array
+ * of notes that make up that beam, else
+ *  return null.
+ * 
+ * @param idx the index where the beam would start
+ * @param alt a string representing an alternative beaming. See beamingPatterns.
+ */
+export function rebeamable(idx: number, ctx: Context, alt?: string): Array<DurationModel> {
     "use strict";
 
-    // TODO: merge with 'subtract'
     var body = ctx.body;
-    var tsName = getTSString(ctx.timeSignature);
+    var tsName = getTSString(ctx.timeSignature) + (alt ? "_" + alt : "");
     var replaceWith: Array<DurationModel> = [];
     var bp = beamingPatterns[tsName];
     var currBeat = ctx.beats;
@@ -488,6 +495,16 @@ export function rebeamable(idx: number, ctx: Context):
             if (body[i].note.isRest || !body[i].note.hasFlagOrBeam || body[i].note.temporary) {
                 break;
             }
+
+            if (tsName === "4/4" && body[i].note.count >= 16) {
+                var alternativeOption = rebeamable(idx, ctx, "clean");
+                if (alternativeOption) {
+                    return alternativeOption;
+                } else {
+                    return null;
+                }
+            }
+
             var bBeats = body[i].note.getBeats(ctx, prevCount);
 
             var bpBeats = getBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.timeSignature);

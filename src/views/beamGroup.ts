@@ -26,14 +26,10 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
         // props of first and last notes.
         // The slope is usually decided based on the first and last notes.
         var firstP: any;
-        var firstX: number;
-        var firstY: number;
-
         var lastP: any;
-        var lastX: number;
-        var lastY: number;
 
-        var childX: Array<number> = [];
+        var Xs: Array<number> = [];
+        var Ys: Array<number> = [];
 
         _.each(children, (note, idx) => {
             // All notes in a beam have a unique key
@@ -41,15 +37,12 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
 
             firstP = firstP || (note.props.isNote ? note.props : note.props.children.props);
                 // YUCK: add refs or something.
-            firstX = firstX || note.props.x;
-            firstY = firstY || note.props.y;
 
             lastP = note.props.isNote ? note.props : note.props.children.props;
                 // YUCK: add refs or something.
-            lastX = note.props.x;
-            lastY = note.props.y;
 
-            childX.push(lastX);
+            Xs.push(note.props.x);
+            Ys.push(note.props.y);
         });
 
         var direction = BeamGroupModel.decideDirection(firstP.line, lastP.line);
@@ -116,7 +109,7 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
             [<React.ReactComponent<any,any>> Beam.Component({
                 beams: (spec.beams) || 1,
                 variableBeams: spec.variableBeams,
-                variableX: spec.variableBeams ? childX : null,
+                variableX: spec.variableBeams ? Xs : null,
                 direction: direction,
                 key: "beam",
                 fontSize: spec.fontSize,
@@ -131,9 +124,9 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
                 stroke: strokeEnabled && strokeColor,
                 tuplet: spec.tuplet,
                 tupletsTemporary: spec.tupletsTemporary,
-                width: lastX - firstX,
-                x: firstX, /* should assert all in order */
-                y: firstY/* should assert all are equal */})].concat(
+                width: Xs[Xs.length - 1] - Xs[0],
+                x: Xs[0], /* should assert all in order */
+                y: Ys[0]/* should assert all are equal */})].concat(
             children)
         );
     }

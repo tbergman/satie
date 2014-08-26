@@ -385,7 +385,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get count() {
-        return this._count;
+        return 1*this._count;
     }
 
     set count(n: number) {
