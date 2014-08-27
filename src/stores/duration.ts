@@ -48,18 +48,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         ctx.count = this.count;
 
         var beats = this.getBeats(ctx);
+        this._isWholeBar = this.getBeats(ctx) === ctx.timeSignature.beats;
 
-        // Whole-measure rests should be centered.
-        this._centered = this.isRest && beats === ctx.timeSignature.beats;
-
-        // We do allow notes longer than a bar (e.g., multi-measure rests).
-        // In these cases, we do very few rhythm checks.
-        if (this.getBeats(ctx) > ctx.timeSignature.beats) {
-            // Obviously ctx.beats + beats doesn't fit...
-            if (ctx.beats >= ctx.timeSignature.beats) {
-                return BarlineModel.createBarline(ctx, C.Barline.Standard);
-            }
-        } else {
+        // Make sure the bar is not overfilled. Multibar rests are okay.
+        if (this.getBeats(ctx) > ctx.timeSignature.beats && ctx.beats >= ctx.timeSignature.beats) {
+            return BarlineModel.createBarline(ctx, C.Barline.Standard);
+        } else if (!this.isMultibar) {
             // The number of beats in a bar must not exceed that specified by the time signature.
             if (ctx.beats + beats > ctx.timeSignature.beats) {
                 var overfill = ctx.beats + beats - ctx.timeSignature.beats;
@@ -187,109 +181,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return C.IterationStatus.SUCCESS;
     }
 
-    visible() {
-        return !this.inBeam;
-    }
-
-    get note(): C.IPitchDuration {
-        return this;
-    }
-
-    /**
-     * Returns the length of the beat, without dots or tuplet modifiers
-     * that should be rendered. This can differ from the actual count
-     * during a preview, for example.
-     */
-    get displayCount(): number {
-        return this._displayCount || this.count;
-    }
-    set displayCount(c: number) {
-        this._displayCount = c;
-    }
-
-    /**
-     * Returns the number of dots that should be rendered. This can differ
-     * from the actual number of dots during a preview, for example.
-     */
-    get displayDots(): number {
-        return this._displayDots || this.dots;
-    }
-
-    set displayDots(c: number) {
-        this._displayDots = c;
-    }
-
-    get restHead() {
-        return DurationModel.countToRest[this.count];
-    }
-
-    get accStrokes() {
-        if (this.chord) {
-            return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "black");
-        }
-        return [this.accTemporary ? "#A5A5A5" : "black"];
-    }
-
-    getAccWidth(ctx: Context) {
-        var accWidth: number = 0;
-        var accTmp: any = this.getAccidentals(ctx);
-        if (accTmp) {
-            var acc: Array<number> = (accTmp instanceof Array) ? accTmp : [accTmp];
-            var max = _.reduce(acc, (memo: number, t: number) =>
-                Math.max(Math.abs(t || 0), memo), 0);
-            accWidth = max*0.15;
-        }
-        return Math.max(0, accWidth - 0.3);
-    }
-
-    getWidth(ctx: Context) {
-        return 0.67 + (this.annotatedExtraWidth || 0);
-    }
-
-    get hasStem() {
-        return DurationModel.countToHasStem[this.displayCount];
-    }
-
-    get notehead() {
-        return DurationModel.countToNotehead[this.displayCount];
-    }
-
-    toLylite(lylite: Array<string>) {
-        var str: string;
-        if (this.pitch) {
-            str = this._lyPitch(this);
-        } else if (this.chord) {
-            str = "< " + _.map(this.chord, a => this._lyPitch(a)).join(" ") + " >";
-        }
-        str += this.count;
-        if (this.dots) {
-            _.times(this.dots, d => str += ".");
-        }
-        if (this.tie) {
-            str += "~";
-        }
-        lylite.push(str);
-    }
-
-    getBeats(ctx: Context, inheritedCount?: number, force?: boolean) {
-        if (!force && this._beats) {
-            return this._beats;
-        }
-        return getBeats(
-            this.count || inheritedCount,
-            this.getDots(),
-            this.getTuplet(),
-            ctx.timeSignature);
-    }
-
-    getDots() {
-        return DurationModel.getDots(this);
-    }
-
-    getTuplet() {
-        return DurationModel.getTuplet(this);
-    }
-
     containsAccidental(ctx: Context) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord || [<C.IPitch>this];
@@ -299,16 +190,6 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
         }
     }
-
-    get strokes() {
-        if (this.chord) {
-            return _.map(this.chord, c => c.temporary ?
-                    "#A5A5A5" :
-                    (this.selected ? "#75A1D0" : "black"));
-        }
-        return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black" )];
-    }
-
     perfectlyBeamed(ctx: Context) {
         if (!this.hasFlagOrBeam) {
             return true;
@@ -365,23 +246,81 @@ class DurationModel extends Model implements C.IPitchDuration {
         return C.IterationStatus.SUCCESS;
     }
 
+
+    visible() {
+        return !this.inBeam;
+    }
+
+
+    getAccWidth(ctx: Context) {
+        var accWidth: number = 0;
+        var accTmp: any = this.getAccidentals(ctx);
+        if (accTmp) {
+            var acc: Array<number> = (accTmp instanceof Array) ? accTmp : [accTmp];
+            var max = _.reduce(acc, (memo: number, t: number) =>
+                Math.max(Math.abs(t || 0), memo), 0);
+            accWidth = max*0.15;
+        }
+        return Math.max(0, accWidth - 0.3);
+    }
+
+    getWidth(ctx: Context) {
+        return 0.67 + (this.annotatedExtraWidth || 0);
+    }
+
+    toLylite(lylite: Array<string>) {
+        var str: string;
+        if (this.pitch) {
+            str = this._lyPitch(this);
+        } else if (this.chord) {
+            str = "< " + _.map(this.chord, a => this._lyPitch(a)).join(" ") + " >";
+        }
+        str += this.count;
+        if (this.dots) {
+            _.times(this.dots, d => str += ".");
+        }
+        if (this.tie) {
+            str += "~";
+        }
+        lylite.push(str);
+    }
+
+    getBeats(ctx: Context, inheritedCount?: number, force?: boolean) {
+        if (!force && this._beats) {
+            return this._beats;
+        }
+        return getBeats(
+            this.count || inheritedCount,
+            this.getDots(),
+            this.getTuplet(),
+            ctx.timeSignature);
+    }
+
+    getDots() {
+        return DurationModel.getDots(this);
+    }
+
+    getTuplet() {
+        return DurationModel.getTuplet(this);
+    }
+
+    get isWholebar() {
+        return this._isWholeBar;
+    }
+
+    get accStrokes() {
+        if (this.chord) {
+            return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "black");
+        }
+        return [this.accTemporary ? "#A5A5A5" : "black"];
+    }
+
     get annotatedExtraWidth() {
         return this._annotatedExtraWidth;
     }
 
     set annotatedExtraWidth(w: number) {
         this._annotatedExtraWidth = w;
-    }
-
-    /**
-     * Centered within a bar. Only full-bar rests are centered.
-     */
-    get centered() {
-        return this._centered;
-    }
-
-    set centered(c: boolean) {
-        assert(false, "Private");
     }
 
     get count() {
@@ -406,8 +345,41 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._beats = null; // Kill optimizer.
     }
 
+
+    /**
+     * Returns the length of the beat, without dots or tuplet modifiers
+     * that should be rendered. This can differ from the actual count
+     * during a preview, for example.
+     */
+    get displayCount(): number {
+        return this._displayCount || this.count;
+    }
+    set displayCount(c: number) {
+        this._displayCount = c;
+    }
+
+    /**
+     * Returns the number of dots that should be rendered. This can differ
+     * from the actual number of dots during a preview, for example.
+     */
+    get displayDots(): number {
+        return this._displayDots || this.dots;
+    }
+
+    set displayDots(c: number) {
+        this._displayDots = c;
+    }
+
+    get hasStem() {
+        return DurationModel.countToHasStem[this.displayCount];
+    }
+
     get hasFlagOrBeam() {
         return DurationModel.countToIsBeamable[this.count];
+    }
+
+    get isMultibar() {
+        return this.count < 1;
     }
 
     get isRest() {
@@ -427,6 +399,30 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get isNote() : boolean {
         return true;
+    }
+
+    get note(): C.IPitchDuration {
+        return this;
+    }
+
+    get notehead() {
+        return DurationModel.countToNotehead[this.displayCount];
+    }
+
+    get restHead() {
+        if (this.isWholebar) {
+            return DurationModel.countToRest["1"];
+        }
+        return DurationModel.countToRest[this.count];
+    }
+
+    get strokes() {
+        if (this.chord) {
+            return _.map(this.chord, c => c.temporary ?
+                    "#A5A5A5" :
+                    (this.selected ? "#75A1D0" : "black"));
+        }
+        return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black" )];
     }
 
     get type() {
@@ -678,11 +674,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     private _annotatedExtraWidth: number;
     private _beats: number;
-    private _centered: boolean;
     private _count: number;
     private _displayCount: number;
     private _displayDots: number;
     private _dots: number;
+    private _isWholeBar: boolean;
     acc: any;
     accidentals: any;
     accTemporary: number;

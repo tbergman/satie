@@ -16,178 +16,6 @@ import C = require("./contracts");
 import Context = require("./context");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
 
-var _1024  = C.makeDuration({count: 1024});
-var _1024D = C.makeDuration({count: 1024, dots: 1});
-var _512   = C.makeDuration({count: 512});
-var _512D  = C.makeDuration({count: 512, dots: 1});
-var _256   = C.makeDuration({count: 256});
-var _256D  = C.makeDuration({count: 256, dots: 1});
-var _128   = C.makeDuration({count: 128});
-var _128D  = C.makeDuration({count: 128, dots: 1});
-var _64    = C.makeDuration({count: 64});
-var _64D   = C.makeDuration({count: 64, dots: 1});
-var _32    = C.makeDuration({count: 32});
-var _32D   = C.makeDuration({count: 32, dots: 1});
-var _16    = C.makeDuration({count: 16});
-var _16D   = C.makeDuration({count: 16, dots: 1});
-var _8     = C.makeDuration({count: 8});
-var _8D    = C.makeDuration({count: 8, dots: 1});
-var _4     = C.makeDuration({count: 4});
-var _4D    = C.makeDuration({count: 4, dots: 1});
-var _2     = C.makeDuration({count: 2});
-var _2D    = C.makeDuration({count: 2, dots: 1});
-var _2DD   = C.makeDuration({count: 2, dots: 2});
-var _1     = C.makeDuration({count: 1});
-var _1D    = C.makeDuration({count: 1, dots: 1});
-var _1DD   = C.makeDuration({count: 1, dots: 2});
-var _05    = C.makeDuration({ count: 1 / 2 });
-
-var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
-    _64D, _64, _128D, _128, _256D, _256, _512D, _512, _1024D, _1024];
-
-// Adapted from Behind Bars (E. Gould) page 155
-var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
-    "2/16":     [_16,   _16                     ],
-    "1/8":      [_8                             ],
-
-    "3/16":     [_8D                            ],
-
-    "4/16":     [_8,    _8                      ],
-    "2/8":      [_8,    _8                      ],
-    "1/4":      [_4                             ],
-
-    "5/16":     [_8D,   _8                      ],
-    "5/16_alt": [_8,    _8D                     ],
-
-    "6/16":     [_8D,   _8D                     ],
-    "3/8":      [_4D                            ],
-
-    "4/8":      [_4,    _4                      ],
-    "2/4":      [_2                             ],
-    "1/2":      [_2                             ],
-
-    "9/16":     [_8D,   _8D,    _8D             ],
-
-    "5/8":      [_4D,   _4                      ],
-    "5/8_alt":  [_4,    _4D                     ],
-
-    "12/16":    [_8D,   _8D,    _8D,    _8D     ],
-    "6/8":      [_4D,           _4D             ],
-    "3/4":      [_2D                            ],  // << XXX: Provided it doesn't give the illusion of 6/8.
-
-    "7/8":      [_4,            _8D             ],
-    "7/8_alt":  [_8D,           _4              ],
-
-    "8/8":      [_4D,   _4D,    _4              ],
-    "8/8_alt":  [_4D,   _4,     _4D             ],
-    "8/8_alt2": [_4,    _4D,    _4D             ],
-    "4/4":      [_2,            _2              ],
-    "4/4_clean":  [_4,    _4,     _4,    _4       ],
-    "2/2":      [_2,            _2              ],
-    "1/1":      [_1                             ],  // << If only they were all like this...
-
-    "9/8":      [_4D,   _4D,    _4D             ],
-
-    "10/8":     [_2,    _4D,    _4D             ],
-    "10/8_alt": [_4D,   _2,     _4D             ],
-    "10/8_alt2":[_4D,   _4D,    _2              ],
-    "5/4":      [_2D,           _2              ],
-    "5/4_alt":  [_2,            _2D             ],
-
-    "12/8":     [_4D,   _4D,    _4D,    _4D     ],
-    "6/4":      [_2D,           _2D             ],
-    "3/2":      [_2D,       _2,      _2         ],
-
-    "7/4":      [_1,            _2D             ],
-    "7/4_alt":  [_2D,           _1              ],
-
-    "15/8":     [_4D,  _4D,  _4D,  _4D,  _4D    ],
-
-    "8/4":      [_1,            _1              ],
-        // "Or any other combination"...
-        // There's a whole bunch, and I think composers using 8/4 are willing
-        // to select the correct beaming manually
-    "4/2":      [_1,            _1              ],
-    "2/1":      [_1,            _1              ],
-
-    "18/8":     [_4D, _4D, _4D, _4D, _4D, _4D   ],
-    "9/4":      [_2D,      _2D,      _2D        ]
-};
-
-var wholeNotePatterns: {[key: string]: Array <C.IDuration>} = {
-    "2/16":     [_8                             ],
-    "1/8":      [_8                             ],
-
-    "3/16":     [_8D                            ],
-
-    "4/16":     [_4                             ],
-    "2/8":      [_4                             ],
-    "1/4":      [_4                             ],
-
-    "5/16":     [_8D,   _8                      ],
-    "5/16_alt": [_8,    _8D                     ],
-
-    "6/16":     [_4D                            ],
-    "3/8":      [_4D                            ],
-
-    "4/8":      [_2                             ],
-    "2/4":      [_2                             ],
-    "1/2":      [_2                             ],
-
-    "9/16":     [_4D,   _8D                     ],
-
-    "5/8":      [_4D,   _4                      ],
-    "5/8_alt":  [_4,    _4D                     ],
-
-    "12/16":    [_2D                            ],
-    "6/8":      [_2D                            ],
-    "3/4":      [_2D                            ],
-
-    "7/8":      [_2DD                           ],
-    "7/8_alt":  [_2DD                           ],
-
-    "8/8":      [_1            ],
-    "8/8_alt":  [_1            ],
-    "8/8_alt2": [_1            ],
-    "4/4":      [_1            ],
-    "2/2":      [_1            ],
-    "1/1":      [_1                             ],  // << If only they were all like this...
-
-    "9/8":      [_2D,   _4D                     ],
-
-    "10/8":     [_2,    _2D                     ],
-    "10/8_alt": [_4D,   _2,     _4D             ],
-    "10/8_alt2":[_2D,   _2                      ],
-    "5/4":      [_2D,           _2              ],
-    "5/4_alt":  [_2,            _2D             ],
-
-    "12/8":     [_1D                            ],
-    "6/4":      [_1D                            ],
-    "3/2":      [_1D                            ],
-
-    "7/4":      [_1DD                           ],
-    "7/4_alt":  [_1DD                           ],
-
-    "15/8":     [_2D,  _2D,  _4D                ],
-
-    "8/4":      [_05                            ],
-        // "Or any other combination"...
-        // There's a whole bunch, and I think composers using 8/4 are willing
-        // to select the correct beaming manually
-    "4/2":      [_1,            _1              ],
-    "2/1":      [_1,            _1              ],
-
-    "18/8":     [_1D,           _2D             ],
-    "9/4":      [_1D,           _2D             ]
-};
-
-
-export enum Beaming {
-    Default,
-    Alt1,
-    Alt2
-};
-
 /**
  * Checks if a durations is rhythmically spelled correctly within its context
  * according to the time signature ("ts"), and optionally fixes errors (if "fix"
@@ -211,6 +39,7 @@ export enum Beaming {
  * @prop context: Give timeSignature, and current index.
  * @prop fix: If true, correct any errors
  */
+
 export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     "use strict";
 
@@ -496,7 +325,8 @@ export function rebeamable(idx: number, ctx: Context, alt?: string): Array<Durat
                 break;
             }
 
-            if (tsName === "4/4" && body[i].note.count >= 16) {
+            if (tsName === "4/4" && body[i].note.count >= 16 ||
+                tsName === "2/4" && body[i].note.count >= 8) {
                 var alternativeOption = rebeamable(idx, ctx, "clean");
                 if (alternativeOption) {
                     return alternativeOption;
@@ -564,3 +394,176 @@ export function wholeNote(ctx: Context): Array<C.IDuration> {
     var tsName = getTSString(ctx.timeSignature);
     return wholeNotePatterns[tsName];
 }
+
+var _1024  = C.makeDuration({count: 1024});
+var _1024D = C.makeDuration({count: 1024, dots: 1});
+var _512   = C.makeDuration({count: 512});
+var _512D  = C.makeDuration({count: 512, dots: 1});
+var _256   = C.makeDuration({count: 256});
+var _256D  = C.makeDuration({count: 256, dots: 1});
+var _128   = C.makeDuration({count: 128});
+var _128D  = C.makeDuration({count: 128, dots: 1});
+var _64    = C.makeDuration({count: 64});
+var _64D   = C.makeDuration({count: 64, dots: 1});
+var _32    = C.makeDuration({count: 32});
+var _32D   = C.makeDuration({count: 32, dots: 1});
+var _16    = C.makeDuration({count: 16});
+var _16D   = C.makeDuration({count: 16, dots: 1});
+var _8     = C.makeDuration({count: 8});
+var _8D    = C.makeDuration({count: 8, dots: 1});
+var _4     = C.makeDuration({count: 4});
+var _4D    = C.makeDuration({count: 4, dots: 1});
+var _2     = C.makeDuration({count: 2});
+var _2D    = C.makeDuration({count: 2, dots: 1});
+var _2DD   = C.makeDuration({count: 2, dots: 2});
+var _1     = C.makeDuration({count: 1});
+var _1D    = C.makeDuration({count: 1, dots: 1});
+var _1DD   = C.makeDuration({count: 1, dots: 2});
+var _05    = C.makeDuration({ count: 1 / 2 });
+
+var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
+    _64D, _64, _128D, _128, _256D, _256, _512D, _512, _1024D, _1024];
+
+// Adapted from Behind Bars (E. Gould) page 155
+var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
+    "2/16":     [_16,   _16                     ],
+    "1/8":      [_8                             ],
+
+    "3/16":     [_8D                            ],
+
+    "4/16":     [_8,    _8                      ],
+    "2/8":      [_8,    _8                      ],
+    "1/4":      [_4                             ],
+
+    "5/16":     [_8D,   _8                      ],
+    "5/16_alt": [_8,    _8D                     ],
+
+    "6/16":     [_8D,   _8D                     ],
+    "3/8":      [_4D                            ],
+
+    "4/8":      [_4,    _4                      ],
+    "2/4":      [_2                             ],
+    "2/4_clean": [_4,    _4                     ],
+    "1/2":      [_2                             ],
+
+    "9/16":     [_8D,   _8D,    _8D             ],
+
+    "5/8":      [_4D,   _4                      ],
+    "5/8_alt":  [_4,    _4D                     ],
+
+    "12/16":    [_8D,   _8D,    _8D,    _8D     ],
+    "6/8":      [_4D,           _4D             ],
+    "3/4":      [_2D                            ],  // << XXX: Provided it doesn't give the illusion of 6/8.
+
+    "7/8":      [_4,            _8D             ],
+    "7/8_alt":  [_8D,           _4              ],
+
+    "8/8":      [_4D,   _4D,    _4              ],
+    "8/8_alt":  [_4D,   _4,     _4D             ],
+    "8/8_alt2": [_4,    _4D,    _4D             ],
+    "4/4":      [_2,            _2              ],
+    "4/4_clean":  [_4,    _4,     _4,    _4     ],
+    "2/2":      [_2,            _2              ],
+    "1/1":      [_1                             ],  // << If only they were all like this...
+
+    "9/8":      [_4D,   _4D,    _4D             ],
+
+    "10/8":     [_2,    _4D,    _4D             ],
+    "10/8_alt": [_4D,   _2,     _4D             ],
+    "10/8_alt2":[_4D,   _4D,    _2              ],
+    "5/4":      [_2D,           _2              ],
+    "5/4_alt":  [_2,            _2D             ],
+
+    "12/8":     [_4D,   _4D,    _4D,    _4D     ],
+    "6/4":      [_2D,           _2D             ],
+    "3/2":      [_2D,       _2,      _2         ],
+
+    "7/4":      [_1,            _2D             ],
+    "7/4_alt":  [_2D,           _1              ],
+
+    "15/8":     [_4D,  _4D,  _4D,  _4D,  _4D    ],
+
+    "8/4":      [_1,            _1              ],
+        // "Or any other combination"...
+        // There's a whole bunch, and I think composers using 8/4 are willing
+        // to select the correct beaming manually
+    "4/2":      [_1,            _1              ],
+    "2/1":      [_1,            _1              ],
+
+    "18/8":     [_4D, _4D, _4D, _4D, _4D, _4D   ],
+    "9/4":      [_2D,      _2D,      _2D        ]
+};
+
+var wholeNotePatterns: {[key: string]: Array <C.IDuration>} = {
+    "2/16":     [_8                             ],
+    "1/8":      [_8                             ],
+
+    "3/16":     [_8D                            ],
+
+    "4/16":     [_4                             ],
+    "2/8":      [_4                             ],
+    "1/4":      [_4                             ],
+
+    "5/16":     [_8D,   _8                      ],
+    "5/16_alt": [_8,    _8D                     ],
+
+    "6/16":     [_4D                            ],
+    "3/8":      [_4D                            ],
+
+    "4/8":      [_2                             ],
+    "2/4":      [_2                             ],
+    "1/2":      [_2                             ],
+
+    "9/16":     [_4D,   _8D                     ],
+
+    "5/8":      [_4D,   _4                      ],
+    "5/8_alt":  [_4,    _4D                     ],
+
+    "12/16":    [_2D                            ],
+    "6/8":      [_2D                            ],
+    "3/4":      [_2D                            ],
+
+    "7/8":      [_2DD                           ],
+    "7/8_alt":  [_2DD                           ],
+
+    "8/8":      [_1            ],
+    "8/8_alt":  [_1            ],
+    "8/8_alt2": [_1            ],
+    "4/4":      [_1            ],
+    "2/2":      [_1            ],
+    "1/1":      [_1                             ],  // << If only they were all like this...
+
+    "9/8":      [_2D,   _4D                     ],
+
+    "10/8":     [_2,    _2D                     ],
+    "10/8_alt": [_4D,   _2,     _4D             ],
+    "10/8_alt2":[_2D,   _2                      ],
+    "5/4":      [_2D,           _2              ],
+    "5/4_alt":  [_2,            _2D             ],
+
+    "12/8":     [_1D                            ],
+    "6/4":      [_1D                            ],
+    "3/2":      [_1D                            ],
+
+    "7/4":      [_1DD                           ],
+    "7/4_alt":  [_1DD                           ],
+
+    "15/8":     [_2D,  _2D,  _4D                ],
+
+    "8/4":      [_05                            ],
+        // "Or any other combination"...
+        // There's a whole bunch, and I think composers using 8/4 are willing
+        // to select the correct beaming manually
+    "4/2":      [_1,            _1              ],
+    "2/1":      [_1,            _1              ],
+
+    "18/8":     [_1D,           _2D             ],
+    "9/4":      [_1D,           _2D             ]
+};
+
+
+export enum Beaming {
+    Default,
+    Alt1,
+    Alt2
+};

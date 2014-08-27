@@ -17,24 +17,6 @@ import DurationModel = require("./duration");
 import KeySignatureModel = require("./keySignature");
 
 class TimeSignatureModel extends Model implements C.ITimeSignature {
-    constructor(spec: { timeSignature: C.ITimeSignature }) {
-        super(spec);
-        this._timeSignature = spec.timeSignature;
-    }
-    get beats() {
-        return this._timeSignature.beats;
-    }
-    get beatType() {
-        return this._timeSignature.beatType;
-    }
-    set timeSignature(ts: C.ITimeSignature) {
-        this._timeSignature = _.clone(ts);
-
-    }
-    get timeSignature(): C.ITimeSignature {
-        return this._timeSignature;
-    }
-
     annotateImpl(ctx: Context): C.IterationStatus {
         // A clef must exist on each line.
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
@@ -63,6 +45,12 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
         return C.IterationStatus.SUCCESS;
     }
+
+    constructor(spec: { timeSignature: C.ITimeSignature }) {
+        super(TimeSignatureModel.normalize(spec));
+        this._timeSignature = spec.timeSignature;
+    }
+
     toLylite(lylite: Array<string>) {
         if (this.source === C.Source.ANNOTATOR) {
             return;
@@ -80,8 +68,31 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
             }, source: C.Source.ANNOTATOR}));
     };
 
+    get beats() {
+        return this._timeSignature.beats;
+    }
+    get beatType() {
+        return this._timeSignature.beatType;
+    }
+    set timeSignature(ts: C.ITimeSignature) {
+        this._timeSignature = _.clone(ts);
+
+    }
+    get timeSignature(): C.ITimeSignature {
+        return this._timeSignature;
+    }
+
     get type() {
         return C.Type.TIME_SIGNATURE;
+    }
+
+    /**
+     * Make sure all beats are represented as numbers, not strings.
+     */
+    private static normalize(spec: { timeSignature: C.ITimeSignature }) {
+        spec.timeSignature.beats *= 1;
+        spec.timeSignature.beatType *= 1;
+        return spec;
     }
 
     _annotatedSpacing: number;

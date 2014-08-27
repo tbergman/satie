@@ -4,8 +4,6 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../../references/lodash.d.ts" />
-
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -320,6 +318,148 @@ class Context {
         return ret;
     }
 
+    /*
+     * ITEMS ON THE CURRENT STAVE
+     */
+
+    /**
+     * Element at current index.
+     */
+    get curr(): Model {
+        return this.body[this.idx];
+    }
+
+    /**
+     * Returns the next element in the stave, skipping over beams by default.
+     *
+     * @param condition: Optional delegate accepting a Model. Returns false
+     *     when it should be skipped.
+     * @param skip: Start looking at Models <skip> after current.
+     *     1 if unspecified.
+     * @param allowBeams: True if beams should not be skipped.
+     */
+    next(condition?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
+        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower!
+        var i: number;
+        skip = (skip === undefined || skip === null) ? 1 : skip;
+        i = skip;
+        while (this.body[this.idx + i] && (
+                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (condition && !condition(this.body[this.idx + i])))) {
+            ++i;
+        }
+        return this.body[this.idx + i];
+    }
+
+    nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
+        var i: number;
+        skip = (skip === undefined || skip === null) ? 1 : skip;
+        i = skip;
+        while (this.body[this.idx + i] && (
+                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (cond && !cond(this.body[this.idx + i])))) {
+            ++i;
+        }
+        return this.idx + i;
+    }
+
+    beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
+        // Must return .beam
+        if (idx === null || idx === undefined) {
+            idx = this.idx;
+        }
+        return (this.body[idx + 1].type === C.Type.BEAM_GROUP) ?
+            (<any>this.body[idx + 1]).beam : null;
+    }
+
+    removeFollowingBeam(idx?: number, past?: boolean): C.IterationStatus {
+        if (idx === null || idx === undefined) {
+            idx = this.idx;
+        }
+
+        assert(past || idx >= this.idx, "Set past to true if you are " +
+                "removing an already-processed beam (this is inefficient)");
+        var beam = this.beamFollows(idx);
+        assert(beam, "There must be a beam to remove");
+        beam.forEach(p => p.inBeam = false);
+        return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
+    }
+
+    /**
+     * If a condition is given, searches backwards starting at the CURRENT
+     * item. Otherwise, returns the item directly before the current item.
+     */
+    prev(condition?: (m: Model) => boolean) {
+        if (!condition) {
+            return this.body[this.idx - 1];
+        } else {
+            for (var i = this.idx; i >= 0; --i) {
+                if (condition(this.body[i])) {
+                    return this.body[i];
+                }
+            }
+            return null;
+        }
+    }
+
+    eraseCurrent(): C.IterationStatus {
+        this.body.splice(this.idx, 1);
+        return C.IterationStatus.RETRY_CURRENT;
+    }
+
+    eraseFuture(idx: number): C.IterationStatus {
+        assert(idx > this.idx, "Invalid use of eraseFuture");
+        this.body.splice(idx, 1);
+        return C.IterationStatus.SUCCESS;
+    }
+
+    erasePast(idx: number): C.IterationStatus {
+        assert(idx <= this.idx, "Invalid use of erasePast");
+        this.body.splice(idx, 1);
+        return C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
+    }
+    /**
+     * Inserts an element somewhere BEFORE the current element.
+     *
+     * @param index The absolute position to insert an element at.
+     *     By default, just before current position.
+     */
+    insertPast(obj: Model, index?: number): any {
+        index = (index === null || index === undefined) ? this.idx : index;
+        assert(index <= this.idx, "Otherwise, use 'insertFuture'");
+        this.body.splice(index, 0, obj);
+        return this.idx === index ? C.IterationStatus.RETRY_CURRENT :
+            C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
+    }
+
+    /**
+     * Inserts an element somewhere AFTER the current element.
+     *
+     * @param index: The absolute position to insert an element at.
+     *     By default, one after current position.
+     */
+    insertFuture(obj: Model, index?: number): C.IterationStatus {
+        index = (index === null || index === undefined) ? (this.idx + 1) : index;
+        assert(index > this.idx, "Otherwise, use 'insertPast'");
+        this.body.splice(index, 0, obj);
+        return C.IterationStatus.SUCCESS;
+    }
+
+    /**
+     * STAVES
+     */
+    currStave(): C.IStave {
+        return this.stave;
+    }
+
+    nextStave(): C.IStave {
+        return this.staves[this.staveIdx + 1];
+    }
+
+    prevStave(): C.IStave {
+        return this.staves[this.staveIdx - 1];
+    }
+
     /**
      * Iteration condition (for annotating)
      */
@@ -482,139 +622,6 @@ class Context {
         }
 
         return i + 1;
-    }
-
-    /*
-     * ITEMS ON THE CURRENT STAVE
-     */
-
-    /**
-     * Element at current index.
-     */
-    get curr(): Model {
-        return this.body[this.idx];
-    }
-
-    /**
-     * Returns the next element in the stave, skipping over beams by default.
-     *
-     * @param condition: Optional delegate accepting a Model. Returns false
-     *     when it should be skipped.
-     * @param skip: Start looking at Models <skip> after current.
-     *     1 if unspecified.
-     * @param allowBeams: True if beams should not be skipped.
-     */
-    next(condition?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower!
-        var i: number;
-        skip = (skip === undefined || skip === null) ? 1 : skip;
-        i = skip;
-        while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
-                (condition && !condition(this.body[this.idx + i])))) {
-            ++i;
-        }
-        return this.body[this.idx + i];
-    }
-    nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        var i: number;
-        skip = (skip === undefined || skip === null) ? 1 : skip;
-        i = skip;
-        while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
-                (cond && !cond(this.body[this.idx + i])))) {
-            ++i;
-        }
-        return this.idx + i;
-    }
-    beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
-        // Must return .beam
-        if (idx === null || idx === undefined) {
-            idx = this.idx;
-        }
-        return (this.body[idx + 1].type === C.Type.BEAM_GROUP) ?
-            (<any>this.body[idx + 1]).beam : null;
-    }
-    removeFollowingBeam(idx?: number, past?: boolean): C.IterationStatus {
-        if (idx === null || idx === undefined) {
-            idx = this.idx;
-        }
-
-        assert(past || idx >= this.idx, "Set past to true if you are " +
-                "removing an already-processed beam (this is inefficient)");
-        var beam = this.beamFollows(idx);
-        assert(beam, "There must be a beam to remove");
-        beam.forEach(p => p.inBeam = false);
-        return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
-    }
-    /**
-     * If a condition is given, searches backwards starting at the CURRENT
-     * item. Otherwise, returns the item directly before the current item.
-     */
-    prev(condition?: (m: Model) => boolean) {
-        if (!condition) {
-            return this.body[this.idx - 1];
-        } else {
-            for (var i = this.idx; i >= 0; --i) {
-                if (condition(this.body[i])) {
-                    return this.body[i];
-                }
-            }
-            return null;
-        }
-    }
-
-    eraseCurrent(): C.IterationStatus {
-        this.body.splice(this.idx, 1);
-        return C.IterationStatus.RETRY_CURRENT;
-    }
-    eraseFuture(idx: number): C.IterationStatus {
-        assert(idx > this.idx, "Invalid use of eraseFuture");
-        this.body.splice(idx, 1);
-        return C.IterationStatus.SUCCESS;
-    }
-    erasePast(idx: number): C.IterationStatus {
-        assert(idx <= this.idx, "Invalid use of erasePast");
-        this.body.splice(idx, 1);
-        return C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
-    }
-    /**
-     * Inserts an element somewhere BEFORE the current element.
-     *
-     * @param index The absolute position to insert an element at.
-     *     By default, just before current position.
-     */
-    insertPast(obj: Model, index?: number): any {
-        index = (index === null || index === undefined) ? this.idx : index;
-        assert(index <= this.idx, "Otherwise, use 'insertFuture'");
-        this.body.splice(index, 0, obj);
-        return this.idx === index ? C.IterationStatus.RETRY_CURRENT :
-            C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
-    }
-    /**
-     * Inserts an element somewhere AFTER the current element.
-     *
-     * @param index: The absolute position to insert an element at.
-     *     By default, one after current position.
-     */
-    insertFuture(obj: Model, index?: number): C.IterationStatus {
-        index = (index === null || index === undefined) ? (this.idx + 1) : index;
-        assert(index > this.idx, "Otherwise, use 'insertPast'");
-        this.body.splice(index, 0, obj);
-        return C.IterationStatus.SUCCESS;
-    }
-
-    /**
-     * STAVES
-     */
-    currStave(): C.IStave {
-        return this.stave;
-    }
-    nextStave(): C.IStave {
-        return this.staves[this.staveIdx + 1];
-    }
-    prevStave(): C.IStave {
-        return this.staves[this.staveIdx - 1];
     }
 
     accidentals: C.IAccidentals;
