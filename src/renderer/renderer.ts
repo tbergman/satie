@@ -31,8 +31,7 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 renderUtil.useGL = useGL;
 
 var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses.Molasses = useGL
-    ? Victoria
-    : Molasses.Component;
+    ? Victoria : Molasses.Component;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
@@ -174,13 +173,13 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         return null;
                     }
                 }),
-                !pidx && this.props.tool && _.map(staves, function(stave: C.IStave,idx: number)  {return stave.body &&
+                this.props.tool && _.map(staves, (stave: C.IStave,idx: number) => stave.body &&
                     this.props.tool.render(
                         this.getCtx(idx),
                         this.state.mouse,
                         _pointerData,
                         fontSize,
-                        idx);}.bind(this)),
+                        pidx)),
                 this.state.selectionRect && SelectionRect({
                     fontSize: fontSize,
                     x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x),
