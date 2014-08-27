@@ -64,7 +64,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
-        if (this.source) {
+        if (this.source === C.Source.ANNOTATOR) {
             return;
         }
 
