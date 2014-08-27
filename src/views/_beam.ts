@@ -164,7 +164,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
      */
     private _getYOffset() {
         if (this.getDirection() === -1) {
-            return 0.040;
+            return 0.025;
         }
         return 0.005;
     }

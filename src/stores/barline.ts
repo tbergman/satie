@@ -147,7 +147,12 @@ class BarlineModel extends Model {
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 delete ctx.body[j].inBeam;
                 if (ctx.body[j] === ctx.curr) {
-                    ctx.insertFuture(new BarlineModel({ barline: mode }), j);
+                    var newBarline = new BarlineModel({ barline: mode });
+                    if (j === ctx.idx) {
+                        ctx.insertPast(newBarline);
+                    } else {
+                        ctx.insertFuture(newBarline, j);
+                    }
                     ++j;
                 }
             }
