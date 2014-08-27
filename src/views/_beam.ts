@@ -33,7 +33,8 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
                     return _.times(beams, beam => {
                         var x2: number;
                         if (this.props.variableBeams[idx - 1] <= beam) {
-                            if (this.props.variableX[idx + 1] && this.props.variableBeams[idx + 1] === beams) {
+                            if (this.props.variableX[idx + 1] &&
+                                    this.props.variableBeams[idx + 1] === beams) {
                                 return null;
                             }
                             x2 = (this.props.variableX[idx - 1] + this.props.variableX[idx]*3) / 4;

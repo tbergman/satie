@@ -17,6 +17,8 @@
     var NewlineModel = require("./newline.ts");
     var NewPageModel = require("./newpage.ts");
     var TimeSignatureModel = require("./timeSignature.ts");
+
+	var readingCommonTS = true;
 %}
 
 %options flex
@@ -46,6 +48,10 @@
 "\new"                return 'NEW'
 "Staff"               return 'NEW_STAFF'
 "PianoStaff"          return 'NEW_PIANO_STAFF'
+
+"\numericTimeSignature" return 'NUM_TS'
+"\defaultTimeSignature" return 'COMMON_TS'
+
 
 "\("                  return 'PH_SLUR_OPEN'
 "\)"                  return 'PH_SLUR_CLOSE'
@@ -398,7 +404,13 @@ partElement
         {
             assert(parseInt($2, 0), "Numerator must be non-null");
             assert(parseInt($4, 0), "Denominator must be non-null");
-            $$ = new TimeSignatureModel({timeSignature: {beats: $2, beatType: $4} });
+            $$ = new TimeSignatureModel({
+				timeSignature: {
+					beats: $2,
+					beatType: $4,
+					commonRepresentation: readingCommonTS}
+				}
+			);
         }
   | relativeMode                         { $$ = $1; }
   | completePitchOrChord                
@@ -434,6 +446,16 @@ partElement
             // TODO
             $$ = undefined;
         }
+  | 'NUM_TS'
+		{
+			readingCommonTS = false;
+			$$ = undefined;
+		}
+  | 'COMMON_TS'
+		{
+			readingCommonTS = true;
+			$$ = undefined;
+		}
   ;
 
 completePitchOrChord 

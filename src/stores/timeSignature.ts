@@ -55,6 +55,11 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         if (this.source === C.Source.ANNOTATOR) {
             return;
         }
+        if (!this._timeSignature.commonRepresentation) {
+            lylite.push("\\numericTimeSignature");
+        } else {
+            lylite.push("\\defaultTimeSignature");
+        }
 
         lylite.push("\\time " + this._timeSignature.beats + "/" + this._timeSignature.beatType);
     }
