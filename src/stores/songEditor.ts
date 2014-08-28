@@ -343,7 +343,6 @@ export class SongEditorStore extends TSEE {
 
                 break;
             case "POST /local/visualCursor":
-
                 switch (action.resource) {
                     case "ptr":
                     case "octave":
@@ -369,14 +368,27 @@ export class SongEditorStore extends TSEE {
                                     }
                                 }
                             }
-                            this.annotate(
-                                {
-                                    obj: prevObj,
-                                    musicLine: _visualCursor.annotatedLine,
-                                    idx: prevIdx,
-                                    staveIdx: this._activeStaveIdx
-                                },
-                                _tool.visualCursorAction(action.postData));
+                            if (action.postData === "dot") {
+                                var DotTool = require("./dotTool");
+                                var tmpTool = new DotTool();
+                                this.annotate(
+                                    {
+                                        obj: prevObj,
+                                        musicLine: _visualCursor.annotatedLine,
+                                        idx: prevIdx,
+                                        staveIdx: this._activeStaveIdx
+                                    },
+                                    tmpTool.visualCursorAction(action.postData));
+                            } else {
+                                this.annotate(
+                                    {
+                                        obj: prevObj,
+                                        musicLine: _visualCursor.annotatedLine,
+                                        idx: prevIdx,
+                                        staveIdx: this._activeStaveIdx
+                                    },
+                                    _tool.visualCursorAction(action.postData));
+                            }
                             this.emit(ANNOTATE_EVENT);
                             break;
                         }

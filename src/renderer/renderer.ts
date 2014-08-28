@@ -661,7 +661,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 "5": function()  {return new NoteTool("note16thUp");},
                 "6": function()  {return new NoteTool("note32ndUp");},
                 "7": function()  {return new NoteTool("note64thUp");},
-                ".": function()  {return new DotTool();},
                 "~": function()  {return new TieTool();},
                 "=": function()  {return new AccidentalTool(1);},
                 "-": function()  {return new AccidentalTool(-1);},
@@ -672,8 +671,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     key.charCodeAt(0) <= "g".charCodeAt(0)) {
                     Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                 } else if (key === "r") {
-                    console.log("!!!");
                     Dispatcher.PUT("/local/tool", new RestTool());
+                } else if (key === ".") {
+                    Dispatcher.PUT("/local/tool", new DotTool());
                 }
             }
             var toolFn = keyToTool[key];
