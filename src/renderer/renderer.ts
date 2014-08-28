@@ -140,7 +140,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                             var selIdx = -1;
                                             var selProps: any = null;
                                             for (var i = 0; i < s.length; ++i) {
-                                                if (s[i].selected && s[i].type !== C.Type.NEWLINE) {
+                                                if (s[i].selected && s[i].type !== C.Type.NEWLINE &&
+                                                        s[i].type !== C.Type.END_MARKER) {
                                                     if (selIdx === -1) {
                                                         selIdx = h++;
                                                         selProps = {
@@ -479,7 +480,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             };
             _selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
             if (_selection.length) {
-                _.each(_selection, function(s: Model)  {
+                _.each(_selection, function (s: Model) {
                     s.selected = true;
                     _.each(s.intersects, function (intersect: Model) {
                         intersect.selected = true;
