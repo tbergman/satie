@@ -416,6 +416,7 @@ partElement
   | completePitchOrChord                
         {
             var DurationModel = require("./duration.ts");
+			$1.source = C.Source.USER;
             $$ = new DurationModel($1);
         }
   | tupletMode                           { $$ = $1; }
