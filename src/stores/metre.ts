@@ -17,15 +17,14 @@ import Context = require("./context");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
 
 /**
- * Checks if a durations is rhythmically spelled correctly within its context
- * according to the time signature ("ts"), and optionally fixes errors (if "fix"
- * is set).
+ * Checks if the duration at the current index is rhythmically spelled correctly
+ * within its context according to the time signature ("ts"), and fixes errors
+ * if it is not.
  *
  * It returns C.IterationStatus.SUCCESS if all of the following conditions are met:
  *
  *  1. Rests and ties are not more verbose than needed according to
  *     the above chart.
- *
  * 
  *  2. Rests and untied, non-dotted notes either fill an integer number
  *     of segments, or less than 1
@@ -38,10 +37,13 @@ import DurationModel = require("./duration"); // For symbols only. Do not call.
  * correctMetre.
  *
  * @prop context: Give timeSignature, and current index.
- * @prop fix: If true, correct any errors
  */
-export function rythmicSpellcheck(ctx: Context, fix: boolean) {
+export function rythmicSpellcheck(ctx: Context) {
     "use strict";
+
+    if (!ctx.curr.isNote || ctx.curr.source === C.Source.USER) {
+        return C.IterationStatus.SUCCESS;
+    }
 
     var tsName = getTSString(ctx.timeSignature);
 
@@ -86,6 +88,8 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
         }
     } else if ((b1 % n1b > _e) && (b2 % n1b > _e)) {
         bExcess = b2 - (b1 + (b2 % n1b));
+    } else if (tsName === "3/4" && Math.abs(n1b - 1.5) < _e) {
+        bExcess = 0.5;
     }
 
     if (bExcess > 0) {
@@ -94,7 +98,7 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
         replaceWith.forEach((m: any) => {
             // Ideally there would be a PitchDuration constructor that would do this for us.
             m.pitch = n1.pitch;
-            m.chord = n1.chord;
+            m.chord = n1.chord ? JSON.parse(JSON.stringify(n1.chord)) : null;
         });
 
         var DurationModel = require("./duration"); // Recursive.
@@ -177,6 +181,11 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
                     // biggest one smaller than the beat. In addition,
                     // for readability, we don't go beyond 3 dots.
                     var maxDot = (ncb === ctx.timeSignature.beats || po2 >= ctx.timeSignature.beatType) ? 3 : 0;
+
+                    // Exception: in 3/4, dotted quarter notes are not allowed.
+                    if (tsName === "3/4" && ncb === 1) {
+                        maxDot = 0;
+                    }
                     for (var dots = 0; dots <= maxDot; ++dots) {
                         var dotFactor = Math.pow(1.5, dots);
                         if (Math.abs(ncb - ctx.timeSignature.beatType/po2*dotFactor) < _e) {
@@ -215,16 +224,21 @@ export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITim
     assert(false, "Not implemented");
 }
 
-export function subtract(durr1: C.IPitchDuration, beats: number,
-    ctx: Context, beatOffset?: number): Array<C.IDuration>;
-export function subtract(durr1: number, beats: number,
-    ctx: Context, beatOffset?: number): Array<C.IDuration>;
-
 /**
  * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
+export function subtract(durr1: C.IPitchDuration, beats: number,
+    ctx: Context, beatOffset?: number): Array<C.IDuration>;
+/**
+ * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
+ * 
+ * @param beatOffset number of beats after the current beat that durr1 is located.
+ */
+export function subtract(durr1: number, beats: number,
+    ctx: Context, beatOffset?: number): Array<C.IDuration>;
+
 export function subtract(durr1: any, beats: number,
         ctx: Context, beatOffset?: number): Array<C.IDuration> {
     "use strict";

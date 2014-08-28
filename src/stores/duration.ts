@@ -60,19 +60,19 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (beats === overfill) {
                     return BarlineModel.createBarline(ctx, C.Barline.Standard);
                 } else {
-                    var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(t));
-                    var addAfterBar = Metre.subtract(this, beats - overfill, ctx).map(t => new DurationModel(t));
+                    var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
+                    var addAfterBar = Metre.subtract(this, beats - overfill, ctx).map(t => new DurationModel(<any>t));
                     for (i = 0; i < replaceWith.length; ++i) {
                         replaceWith[i].pitch = this.pitch;
                         replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
-                        if (i + 1 !== replaceWith.length || addAfterBar.length) {
+                        if (i + 1 !== replaceWith.length || addAfterBar.length && !this.isRest) {
                             replaceWith[i].tie = true;
                         }
                     }
                     for (i = 0; i < addAfterBar.length; ++i) {
                         addAfterBar[i].pitch = this.pitch;
                         addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
-                        if (i + 1 !== addAfterBar.length) {
+                        if (i + 1 !== addAfterBar.length && !this.isRest) {
                             addAfterBar[i].tie = true;
                         }
                     }
@@ -85,7 +85,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
             // Check rhythmic spelling
             if (!this.inBeam) {
-                status = Metre.rythmicSpellcheck(ctx, true);
+                status = Metre.rythmicSpellcheck(ctx);
                 if (status !== C.IterationStatus.SUCCESS) { return status; }
             }
         }
@@ -179,6 +179,11 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.flag = !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
         DurationModel.countToFlag[this.displayCount];
         return C.IterationStatus.SUCCESS;
+    }
+
+    constructor(spec: C.IPitchDuration) {
+        super(spec);
+        this._tie = spec.tie;
     }
 
     containsAccidental(ctx: Context) {
@@ -394,6 +399,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(!!r, "Instead, set the exact pitch or chord...");
         this.chord = null;
         this.pitch = "r";
+        this.tie = false;
     }
 
     get isNote() : boolean {
@@ -426,6 +432,15 @@ class DurationModel extends Model implements C.IPitchDuration {
                     (this.selected ? "#75A1D0" : "black"));
         }
         return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black" )];
+    }
+
+    get tie() {
+        return this._tie;
+    }
+
+    set tie(t: boolean) {
+        assert(!this.isRest || !t);
+        this._tie = t;
     }
 
     get type() {
@@ -682,6 +697,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _displayDots: number;
     private _dots: number;
     private _isWholeBar: boolean;
+    private _tie: boolean;
     acc: any;
     accidentals: any;
     accTemporary: number;
@@ -700,7 +716,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     relative: boolean;
     selected: boolean;
     temporary: boolean;
-    tie: boolean;
     tieTo: DurationModel;
     tuplet: C.ITuplet;
 }
