@@ -304,10 +304,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return DurationModel.getTuplet(this);
     }
 
-    get isWholebar() {
-        return this._isWholeBar;
-    }
-
     get accStrokes() {
         if (this.chord) {
             return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "black");
@@ -363,6 +359,9 @@ class DurationModel extends Model implements C.IPitchDuration {
      * from the actual number of dots during a preview, for example.
      */
     get displayDots(): number {
+        if (this.isWholebar && this.isRest) {
+            return 0;
+        }
         return this._displayDots || this.dots;
     }
 
@@ -399,6 +398,10 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get isNote() : boolean {
         return true;
+    }
+
+    get isWholebar() {
+        return this._isWholeBar;
     }
 
     get note(): C.IPitchDuration {

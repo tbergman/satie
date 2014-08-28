@@ -26,6 +26,7 @@ import DurationModel = require("./duration"); // For symbols only. Do not call.
  *  1. Rests and ties are not more verbose than needed according to
  *     the above chart.
  *
+ * 
  *  2. Rests and untied, non-dotted notes either fill an integer number
  *     of segments, or less than 1
  *
@@ -39,7 +40,6 @@ import DurationModel = require("./duration"); // For symbols only. Do not call.
  * @prop context: Give timeSignature, and current index.
  * @prop fix: If true, correct any errors
  */
-
 export function rythmicSpellcheck(ctx: Context, fix: boolean) {
     "use strict";
 
@@ -96,7 +96,8 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
             m.pitch = n1.pitch;
             m.chord = n1.chord;
         });
-            var DurationModel = require("./duration"); // Recursive.
+
+        var DurationModel = require("./duration"); // Recursive.
         Array.prototype.splice.apply(ctx.body, [ctx.idx, 1].concat(
             replaceWith.map(m => new DurationModel(m))));
         var after = ctx.idx + replaceWith.length;
@@ -129,7 +130,9 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
             return C.IterationStatus.RETRY_LINE;
         }
 
-        // Combine any number of rests that start on a beat and end on a barrier.
+        // Combine any number of rests that:
+        //    - start on a beat and end on a barrier OR
+        //    - can be combined to form a whole bar rest
         if (Math.abs(b1 % 1) < _e) {
             var ok = false;
             var pb: number;
@@ -142,6 +145,12 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
                         ok = true;
                         break;
                     }
+                    if (wholeNotePatterns[tsName].length === 1 &&
+                            wholeNotePatterns[tsName][0].getBeats(ctx) === b3) {
+                        ok = true;
+                        break;
+                    }
+
                     pb += pattern[h].getBeats(ctx);
                 }
                 if (!ok) {
@@ -162,15 +171,15 @@ export function rythmicSpellcheck(ctx: Context, fix: boolean) {
             }
             if (ok) {
                 // We can combine them.
-                var ncb = ctx.timeSignature.beatType / (n1b + n2b);
+                var ncb = n1b + n2b;
                 for (var po2 = 128; po2 >= 1 / 32; po2 /= 2) {
                     // The largest acceptable dotted note is the
                     // biggest one smaller than the beat. In addition,
                     // for readability, we don't go beyond 3 dots.
-                    var maxDot = po2 >= ctx.timeSignature.beatType ? 3 : 0;
+                    var maxDot = (ncb === ctx.timeSignature.beats || po2 >= ctx.timeSignature.beatType) ? 3 : 0;
                     for (var dots = 0; dots <= maxDot; ++dots) {
                         var dotFactor = Math.pow(1.5, dots);
-                        if (Math.abs(ncb*dotFactor - po2) < _e) {
+                        if (Math.abs(ncb - ctx.timeSignature.beatType/po2*dotFactor) < _e) {
                             _.times(toErase, function () {
                                 ctx.eraseFuture(ctx.idx + 1);
                             });
