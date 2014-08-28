@@ -166,7 +166,7 @@ class Context {
                 enableFastModeAtBar = null;
             }
 
-            if ((canExitAtNewline && !pointerData && this.curr.type === C.Type.NEWLINE && cursor.annotatedObj) ||
+            if ((canExitAtNewline && !pointerData && this.curr && this.curr.type === C.Type.NEWLINE && cursor.annotatedObj) ||
                 (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
                 return {

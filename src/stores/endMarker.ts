@@ -19,8 +19,16 @@ import Metre = require("./metre");
  */
 class EndMarkerModel extends Model {
     annotateImpl(ctx: Context): C.IterationStatus {
-        // End markers must only exist at the end of a line, document, or bar
         var next = ctx.next();
+        var prev = ctx.prev();
+
+        // End markers must not touch other end markers.
+        if (next && next.type === C.Type.END_MARKER || prev && prev.type === C.Type.END_MARKER) {
+            ctx.eraseCurrent();
+            return C.IterationStatus.RETRY_LINE;
+        }
+
+        // End markers must only exist at the end of a line, document, or bar
         if (next && next.type !== C.Type.BARLINE &&
                 (!ctx.body[ctx.idx + 2] ||
                 (ctx.body[ctx.idx + 2].type !== C.Type.NEWLINE &&
@@ -38,7 +46,7 @@ class EndMarkerModel extends Model {
         }
 
         // Bars must not be under-filled (should be filled with rests)
-        if ( ctx.prev().type !== C.Type.BARLINE &&
+        if (prev.type !== C.Type.BARLINE &&
                     ctx.beats && ctx.beats < ctx.timeSignature.beats) {
             // XXX: extend to work on things other than 4/4
             var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
@@ -58,10 +66,10 @@ class EndMarkerModel extends Model {
         }
 
         // Double barlines terminate a piece.
-        if (!ctx.next() && (ctx.prev().type !== C.Type.BARLINE ||
-                ctx.prev().barline !== C.Barline.Double)) {
-            if (ctx.prev().type === C.Type.BARLINE) {
-                ctx.prev().barline = C.Barline.Double;
+        if (!ctx.next() && (prev.type !== C.Type.BARLINE ||
+            prev.barline !== C.Barline.Double)) {
+            if (prev.type === C.Type.BARLINE) {
+                prev.barline = C.Barline.Double;
                 return C.IterationStatus.RETRY_LINE;
             } else {
                 var BarlineModel = require("./barline"); // Recursive dependency.
