@@ -231,6 +231,12 @@ export enum IterationStatus {
     RETRY_CURRENT,
 
     /**
+     * Like RETRY_CURRENT, but explicitly state that the entire
+     * remainder of the document must be re-annotated.
+     */
+    RETRY_CURRENT_NO_OPTIMIZATIONS,
+
+    /**
      * Retry the element at the current position, and stop iterating
      * after the next SUCCESS. This may seem like a fairly strange case.
      * It's used to make super-fast previews where positioning does not

@@ -56,7 +56,7 @@ class KeySignatureModel extends Model {
         return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {
-        if (this.source) {
+        if (this.source === C.Source.ANNOTATOR) {
             return;
         }
 

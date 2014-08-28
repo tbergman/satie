@@ -161,6 +161,10 @@ class Context {
                 // canExitOnNextSuccess = true;
             }
 
+            if (exitCode === C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS) {
+                canExitAtNewline = false;
+            }
+
             if (enableFastModeAtBar !== null && enableFastModeAtBar <= this.bar) {
                 this.fast = true;
                 enableFastModeAtBar = null;
@@ -615,6 +619,7 @@ class Context {
                 break;
             case C.IterationStatus.RETRY_CURRENT:
             case C.IterationStatus.RETRY_CURRENT_THEN_STOP:
+            case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
                 i -= 1;
                 break;
             default:
