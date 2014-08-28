@@ -34,10 +34,10 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
                         var x2: number;
                         if (this.props.variableBeams[idx - 1] <= beam) {
                             if (this.props.variableX[idx + 1] &&
-                                    this.props.variableBeams[idx + 1] === beams) {
+                                this.props.variableBeams[idx + 1] === beams) {
                                 return null;
                             }
-                            x2 = (this.props.variableX[idx - 1] + this.props.variableX[idx]*3) / 4;
+                            x2 = (this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) / 4;
                         } else {
                             x2 = this.props.variableX[idx - 1];
                         }
@@ -54,8 +54,8 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
                             stroke: this.props.stroke,
                             fill: this.props.stroke,
                             strokeWidth: 0
-                        })
-                    })
+                        });
+                    });
                 }),
                 this._tuplet()
             );

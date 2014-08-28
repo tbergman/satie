@@ -1,6 +1,7 @@
 /**
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Un
+ * authorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
@@ -18,13 +19,13 @@ var useGL = (typeof global.libripienoclient !== "undefined") ||
 import Dispatcher = require("../stores/dispatcher");
 import Context = require("../stores/context");
 import C = require("../stores/contracts");
+import Header = require("../views/_header");
 import History = require("../stores/history");
 import Model = require("../stores/model");
 import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
 var Rect = require("../views/_rect.jsx");
 var Group = require("../views/_group.jsx");
-var Header = require("../views/_header.jsx");
 var Line = require("../views/_line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
@@ -76,8 +77,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
 
-        // XXX: Currently we only support single and double staves.
-        // isPianoStaff is set to true when there is at least 2 staves.
+        // XXX: Currently we only support single and double staffs.
+        // isPianoStaff is set to true when there is at least 2 staffs.
         var isPianoStaff = _.reduce(staves, function (memo: number, s: C.IStave) {
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
@@ -231,6 +232,30 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             console.timeEnd("render");
         }
         return ret;
+    }
+
+    componentWillReceiveProps(newProps: IRendererProps) {
+        if (this.props.tool !== newProps.tool) {
+            if (this.props.tool) {
+                this.props.tool.toolWillBeUnactive();
+            }
+            if (newProps.tool) {
+                newProps.tool.toolWillBeActive();
+            }
+        }
+    }
+
+    componentDidMount() {
+        if (isBrowser) {
+            this.setupBrowserListeners();
+        }
+        if (this.props.store) {
+            this.props.store.addAnnotationListener(this.update);
+        }
+
+        if (this.props.tool) {
+            this.props.tool.toolWillBeActive();
+        }
     }
 
     _getPointerData(mouse: C.IMouse) : C.IPointerData {
@@ -538,7 +563,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         });
     }
 
-    handleMouseMoveThrottled = _.throttle(function (mouse: IPosInfo) {
+    handleMouseMoveThrottled = _.throttle((mouse: IPosInfo) => {
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
@@ -546,6 +571,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (this.props.store) {
                 this.props.store.handleAction({
                     description: "PUT /local/tool",
+                    response: null,
+                    query: null,
+                    postData: null,
                     resource: "hide"
                 });
             }
@@ -554,6 +582,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             this.props.store.handleAction({
                 description: "PUT /local/tool",
                 resource: "preview",
+                response: null,
+                query: null,
                 postData: { mouseData: data, fn: fn }
             });
         }
@@ -575,15 +605,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             (this.props.store && this.props.store.ctxCount());
     }
 
-    componentDidMount() {
-        if (isBrowser) {
-            this.setupBrowserListeners();
-        }
-        if (this.props.store) {
-            this.props.store.addAnnotationListener(this.update);
-        }
-    }
-
     setupBrowserListeners() {
         var AccidentalTool = require("../stores/accidentalTool.ts");
         var DotTool = require("../stores/dotTool.ts");
@@ -592,7 +613,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var TieTool = require("../stores/tieTool.ts");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
-        document.onkeydown = function(event: KeyboardEvent)  {
+        document.onkeydown = (event: KeyboardEvent) => {
+            if (this.props.store.metadataModalVisible) {
+                return;
+            }
             var keyCode = event.keyCode || event.charCode || 0;
             switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
                 case 32: // space
@@ -645,10 +669,13 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     }
                     break;
             }
-        }.bind(this);
+        };
 
         // Handle letters or numbers
         document.onkeypress = _.throttle((event: KeyboardEvent) => {
+            if (this.props.store.metadataModalVisible) {
+                return;
+            }
             var keyCode = event.keyCode || event.charCode || 0;
 
             var key = String.fromCharCode(keyCode);

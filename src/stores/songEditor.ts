@@ -1,6 +1,4 @@
 /**
- * @file Flux store for the song being edited.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -30,11 +28,10 @@ var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") 
 
 var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
+/**
+ * Flux store for the song being edited.
+ */
 export class SongEditorStore extends TSEE {
-    _activeStaveIdx: number;
-    private _changesPending: boolean;
-    private _allChangesSent: boolean = true;
-
     constructor() {
         super();
         this.clear();
@@ -95,6 +92,16 @@ export class SongEditorStore extends TSEE {
                 if (action.resource === "eraseAll") {
                     this.eraseSelection();
                 }
+                break;
+
+            case "PUT /local/metadataModal":
+                this._metadataModalVisible = true;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/metadataModal":
+                this._metadataModalVisible = false;
+                this.emit(CHANGE_EVENT);
                 break;
 
             case "PUT /api/song ERROR":
@@ -983,12 +990,25 @@ export class SongEditorStore extends TSEE {
         this.throttledAutosave();
         this._changesPending = pending; }
 
+    get metadataModalVisible() {
+        return this._metadataModalVisible;
+    }
+
+    set metadataModalVisible(visible: boolean) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
+
     throttledAutosave = _.throttle(() => {
         var active = SessionStore.Instance.activeSong();
         if (active) {
-            Dispatcher.PUT("/api/song/_" + active._id, { data: this.src() });
+            Dispatcher.PUT("/api/song/_" + active._id, { src: this.src() });
         }
     }, 2800, { leading: false });
+
+    _activeStaveIdx: number;
+    private _changesPending: boolean;
+    private _allChangesSent: boolean = true;
+    private _metadataModalVisible: boolean = false;
 }
 
 /**

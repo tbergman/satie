@@ -186,6 +186,27 @@ export interface IFluxAction {
     postData: any;
 };
 
+/**
+ * A header is a child of staves, and includes the title and other basic
+ * information.
+ */
+export interface IHeader {
+    title: string;
+    composer: string;
+
+    /**
+     * True if the title should be rendered as a link, usually because
+     * it is being hovered.
+     */
+    titleHovered?: boolean;
+
+    /**
+     * True if the composer should be rendered as a link, usually because
+     * it is being hovered.
+     */
+    composerHovered?: boolean;
+}
+
 export class InvalidDurationError {
 }
 
@@ -454,6 +475,11 @@ export interface ISong {
      * The title. This should always match the title at the top of the page.
      */
     title: string;
+
+    /**
+     * The composer. Should match the composer in the header.
+     */
+    composer: string;
 };
 
 /**
@@ -507,10 +533,7 @@ export interface IStave {
     /**
      * Printed information about the piece.
      */
-    header?: {
-        title: string;
-        composer: string;
-    }
+    header?: IHeader;
 };
 
 /**
