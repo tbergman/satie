@@ -146,9 +146,9 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (status !== C.IterationStatus.SUCCESS) { return status; }
 
         // Middle note directions are set by surrounding notes.
-        this.forceMiddleNoteDirection = NaN;
-        if (!ctx.fast && DurationModel.getAverageLine(this, ctx) !== 3) {
-            status = DurationModel.prototype.decideMiddleLineStemDirection(ctx);
+        if (!ctx.fast && DurationModel.getAverageLine(this, ctx) === 3) {
+            this.forceMiddleNoteDirection = NaN;
+            status = this.decideMiddleLineStemDirection(ctx);
         }
         if (status !== C.IterationStatus.SUCCESS) { return status; }
 

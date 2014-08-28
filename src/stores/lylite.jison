@@ -430,7 +430,10 @@ partElement
         }
   | 'SET_KEY' 'STRING' 'KEY_MODE'
         {
-            $$ = new KeySignatureModel({keySignature: {pitch: parsePitch($2), mode: $3}});
+            $$ = new KeySignatureModel({
+				keySignature: {pitch: parsePitch($2), mode: $3},
+				source: C.Source.USER
+			});
         }
   | 'BEAM_OPEN'
         {
