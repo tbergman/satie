@@ -5,10 +5,12 @@
  */
 
 import React = require("react");
+import _ = require("lodash");
 import assert = require("assert");
 
 import DurationModel = require("../stores/duration");
 import Note = require("./_note");
+var NoteMarking = require("./_noteMarking.jsx");
 var Rest = require("./_rest.jsx");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
@@ -26,9 +28,9 @@ export function Component(props: IProps) {
     assert(spec instanceof DurationModel);
 
     // TODO(jnetterf): Accents. i.e.,
-    // var markings = _.map(spec.accents || [], (m, idx) =>
-    //     NoteMarking({fontSize: spec.fontSize(), marking: m, key: idx})
-    // );
+    var markings = _.map(spec.displayMarkings || [], (m, idx) =>
+        NoteMarking({fontSize: spec.fontSize, marking: m, key: idx})
+    );
 
     /**
      * Mode to reduce unneeded renders.
@@ -46,7 +48,7 @@ export function Component(props: IProps) {
                 stroke: spec.color,
                 x: spec.x(),
                 y: spec.y()},
-            null
+            markings
         );
     }
 
@@ -67,7 +69,7 @@ export function Component(props: IProps) {
             tieTo: spec.tieTo && spec.tieTo.x(),
             x: zeroOffsetMode ? 0 : spec.x(),
             y: zeroOffsetMode ? 0 : spec.y()},
-        null);
+        markings);
 
     if (zeroOffsetMode) {
         return html.g({

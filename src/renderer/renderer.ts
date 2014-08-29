@@ -1,7 +1,6 @@
 /**
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Un
- * authorized copying of this file, via any medium is strictly prohibited.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
@@ -12,10 +11,6 @@ import _ = require("lodash");
 import Molasses = require("./molasses");
 var Victoria = require("./victoria/hellogl.jsx");
 
-var isBrowser = typeof window !== "undefined";
-var useGL = (typeof global.libripienoclient !== "undefined") ||
-    (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
-
 import Dispatcher = require("../stores/dispatcher");
 import Context = require("../stores/context");
 import C = require("../stores/contracts");
@@ -24,11 +19,16 @@ import History = require("../stores/history");
 import Model = require("../stores/model");
 import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 var Rect = require("../views/_rect.jsx");
 var Group = require("../views/_group.jsx");
 var Line = require("../views/_line.jsx");
 var SelectionRect = require("./selectionRect.jsx");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+
+var isBrowser = typeof window !== "undefined";
+var useGL = (typeof global.libripienoclient !== "undefined") ||
+    (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
+
 renderUtil.useGL = useGL;
 
 var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses.Molasses = useGL
@@ -614,7 +614,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = (event: KeyboardEvent) => {
-            if (this.props.store.metadataModalVisible) {
+            if (document.activeElement.tagName === "INPUT" ||
+                    this.props.store.metadataModalVisible) {
                 return;
             }
             var keyCode = event.keyCode || event.charCode || 0;
@@ -673,7 +674,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         // Handle letters or numbers
         document.onkeypress = _.throttle((event: KeyboardEvent) => {
-            if (this.props.store.metadataModalVisible) {
+            if (document.activeElement.tagName === "INPUT" ||
+                    this.props.store.metadataModalVisible) {
                 return;
             }
             var keyCode = event.keyCode || event.charCode || 0;

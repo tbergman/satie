@@ -1,16 +1,16 @@
 %{
-	/**
-	 * @file Parses Lilypond-style files.
-	 * 
-	 * @copyright (C) Joshua Netterfield. Proprietary and confidential.
-	 * Unauthorized copying of this file, via any medium is strictly prohibited.
-	 * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
-	 */
+    /**
+     * @file Parses Lilypond-style files.
+     * 
+     * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+     * Unauthorized copying of this file, via any medium is strictly prohibited.
+     * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+     */
     var _ = require("lodash");
     var util = require("ripienoUtil/renderUtil");
 
     var BarlineModel = require("./barline.ts");
-	var C = require("./contracts.ts")
+    var C = require("./contracts.ts")
     var ClefModel = require("./clef.ts");
     var EndMarkerModel = require("./endMarker.ts");
     var KeySignatureModel = require("./keySignature.ts");
@@ -18,7 +18,7 @@
     var NewPageModel = require("./newpage.ts");
     var TimeSignatureModel = require("./timeSignature.ts");
 
-	var readingCommonTS = true;
+    var readingCommonTS = true;
 %}
 
 %options flex
@@ -43,7 +43,7 @@
 
 "\header"             return 'SET_HEADER'
 
-"\paper"			  return 'SET_PAPER'
+"\paper"              return 'SET_PAPER'
 
 "\new"                return 'NEW'
 "Staff"               return 'NEW_STAFF'
@@ -349,10 +349,10 @@ headerElement
             $$[$1] = $3;
         }
   | 'STRING' 'EQ' 'NUMBER'
-		{
-			$$ = {};
-			$$[$1] = parseFloat($3);
-		}
+        {
+            $$ = {};
+            $$[$1] = parseFloat($3);
+        }
   ;
 
 musicExpr
@@ -405,18 +405,18 @@ partElement
             assert(parseInt($2, 0), "Numerator must be non-null");
             assert(parseInt($4, 0), "Denominator must be non-null");
             $$ = new TimeSignatureModel({
-				timeSignature: {
-					beats: $2,
-					beatType: $4,
-					commonRepresentation: readingCommonTS}
-				}
-			);
+                timeSignature: {
+                    beats: $2,
+                    beatType: $4,
+                    commonRepresentation: readingCommonTS}
+                }
+            );
         }
   | relativeMode                         { $$ = $1; }
   | completePitchOrChord                
         {
             var DurationModel = require("./duration.ts");
-			$1.source = C.Source.USER;
+            $1.source = C.Source.USER;
             $$ = new DurationModel($1);
         }
   | tupletMode                           { $$ = $1; }
@@ -431,9 +431,9 @@ partElement
   | 'SET_KEY' 'STRING' 'KEY_MODE'
         {
             $$ = new KeySignatureModel({
-				keySignature: {pitch: parsePitch($2), mode: $3},
-				source: C.Source.USER
-			});
+                keySignature: {pitch: parsePitch($2), mode: $3},
+                source: C.Source.USER
+            });
         }
   | 'BEAM_OPEN'
         {
@@ -451,15 +451,15 @@ partElement
             $$ = undefined;
         }
   | 'NUM_TS'
-		{
-			readingCommonTS = false;
-			$$ = undefined;
-		}
+        {
+            readingCommonTS = false;
+            $$ = undefined;
+        }
   | 'COMMON_TS'
-		{
-			readingCommonTS = true;
-			$$ = undefined;
-		}
+        {
+            readingCommonTS = true;
+            $$ = undefined;
+        }
   ;
 
 completePitchOrChord 
@@ -576,10 +576,10 @@ dots
   ;
 
 accents
-  : accentx                     { $$ = {accents: [$1]}; }
-  | 'articStaccatoSlur'         { $$ = {accents: ['articStaccato'], slur: true}; }
-  | accents accentx             { $$ = {accents: $1.accents.concat([$2])}; }
-  | accents 'articStaccatoSlur' { $$ = {accents: $1.accents.concat(['articStaccato']), slur: true}; }
+  : accentx                     { $$ = {markings: [$1]}; }
+  | 'articStaccatoSlur'         { $$ = {markings: ['articStaccato'], slur: true}; }
+  | accents accentx             { $$ = {markings: $1.accents.concat([$2])}; }
+  | accents 'articStaccatoSlur' { $$ = {markings: $1.accents.concat(['articStaccato']), slur: true}; }
   ;
 
 accentx

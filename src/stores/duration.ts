@@ -374,6 +374,14 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayDots = c;
     }
 
+    get displayMarkings(): Array<string> {
+        return this._displayMarkings || this._markings;
+    }
+
+    set displayMarkings(m: Array<string>) {
+        this._displayMarkings = m;
+    }
+
     get hasStem() {
         return DurationModel.countToHasStem[this.displayCount];
     }
@@ -408,6 +416,15 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get isWholebar() {
         return this._isWholeBar;
+    }
+
+    get markings() {
+        return this._markings;
+    }
+
+    set markings(m: Array<string>) {
+        this._markings = m;
+        this._displayMarkings = null;
     }
 
     get note(): C.IPitchDuration {
@@ -695,8 +712,10 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _count: number;
     private _displayCount: number;
     private _displayDots: number;
+    private _displayMarkings: Array<string>;
     private _dots: number;
     private _isWholeBar: boolean;
+    private _markings: Array<string>;
     private _tie: boolean;
     acc: any;
     accidentals: any;

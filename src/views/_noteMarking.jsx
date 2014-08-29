@@ -62,8 +62,20 @@ var NoteMarking = React.createClass({
         }
     },
     shouldBeAboveStaff: function() {
-        if (this.props.marking.indexOf("fermata") === 0) {
-            return true;
+        var above = ["fermata", "breathMark", "caesura"];
+        for (var i = 0; i < above.length; ++i) {
+            if (this.props.marking.indexOf(above[i]) === 0) {
+                return true;
+            }
+        }
+        return false;
+    },
+    shouldBeBelowStaff: function() {
+        var below = ["dynamic"];
+        for (var i = 0; i < below.length; ++i) {
+            if (this.props.marking.indexOf(below[i]) === 0) {
+                return true;
+            }
         }
         return false;
     },
@@ -80,6 +92,12 @@ var NoteMarking = React.createClass({
     getYOffset: function() {
         if (this.shouldBeAboveStaff()) {
             return (5.5 + this.props.idx - 3)/4;
+        } else if (this.shouldBeBelowStaff()) {
+            var m = (-1.5 + this.props.idx - 3)/4;
+            if (m + 1.5 >= this.props.line/4) {
+                m = (this.props.line)/4 - 1.5;
+            }
+            return m;
         }
 
         if (this.getDirection() === 1) {

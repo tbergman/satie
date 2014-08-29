@@ -49,7 +49,15 @@ function definitelyEqual(objA, objB) {
   for (var i = 0; i < diffs.length; ++i) {
       // This is efficient, but depends on the order of keys in both objects
       // to be the same.
-      if (JSON.stringify(objA[diffs[i]]) !== JSON.stringify(objB[diffs[i]])) {
+      var cmpA, cmpB;
+      if (diffs[i] === "children") {
+          cmpA = objA.children.props;
+          cmpB = objB.children.props;
+      } else {
+          cmpA = objA[diffs[i]];
+          cmpB = objB[diffs[i]];
+      }
+      if (JSON.stringify(cmpA) !== JSON.stringify(cmpB)) {
           return false;
       }
   }

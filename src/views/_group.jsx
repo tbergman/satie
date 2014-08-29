@@ -9,11 +9,11 @@ var renderUtil = require("ripienoUtil/renderUtil");
 
 var VG = Victoria.VG;
 
-function Group(a, b, c) {
+function Group(a, b, c, d, e, f) {
     if (renderUtil.useGL) {
-        return VG(a, b, c);
+        return VG(a, b, c, d, e, f);
     } else {
-        return React.DOM.g(a, b, c);
+        return React.DOM.g(a, b, c, d, e, f);
     }
 }
 
