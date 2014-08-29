@@ -45,7 +45,7 @@ var NoteMarking = React.createClass({
         var o2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxSW;
         var s2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxNE;
         return <Glyph
-            x={this.props.x + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2}
+            x={this.props.x + this.getXOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2}
             y={this.props.y - this.getYOffset()}
             fontSize={this.props.fontSize}
             staveHeight={this.props.fontSize}
@@ -89,6 +89,14 @@ var NoteMarking = React.createClass({
         return this.props.direction;
     },
     getFontOffset: getFontOffset,
+    getXOffset: function() {
+        if (this.props.marking.indexOf("caesura") === 0) {
+            return -3/8; // TODO -- move to DurationModel and fix
+        } else if (this.props.marking.indexOf("breathMarkComma") === 0) {
+            return 3/8; // TODO -- move to DurationModel and fix
+        }
+        return 0;
+    },
     getYOffset: function() {
         if (this.shouldBeAboveStaff()) {
             return (5.5 + this.props.idx - 3)/4;
