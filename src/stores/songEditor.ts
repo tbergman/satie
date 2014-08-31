@@ -280,7 +280,29 @@ export class SongEditorStore extends TSEE {
                     default:
                         assert(false, "Not reached");
                 }
-                Model.removeAnnotations(_staves);
+                Model.removeAnnotations(_staves); // TODO: Should not be needed.
+                this.markRendererDirty();
+                this.annotate();
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "PUT /local/indent":
+                this.emit(HISTORY_EVENT);
+                switch (action.resource) {
+                    case "increase":
+                        if (_paper.indent < 50) {
+                            _paper.indent += 1;
+                        }
+                        break;
+                    case "decrease":
+                        if (_paper.indent > -1) { // so it can go to -1
+                            _paper.indent -= 1;
+                        }
+                        break;
+                    default:
+                        assert(false, "Not reached");
+                }
+                Model.removeAnnotations(_staves); // TODO: Should not be needed.
                 this.markRendererDirty();
                 this.annotate();
                 this.emit(CHANGE_EVENT);
@@ -554,7 +576,8 @@ export class SongEditorStore extends TSEE {
                         staves: staves,
                         staveIdx: sidx,
                         leftMargin: _paper.leftMargin,
-                        rightMargin: _paper.rightMargin
+                        rightMargin: _paper.rightMargin,
+                        indent: _paper.indent
                     });
 
             /*
@@ -623,7 +646,11 @@ export class SongEditorStore extends TSEE {
             var bpm = 120;
             var timePerBeat = 60/bpm;
 
-            var ctx = new Context({ staveIdx: h, staves: staves });
+            var ctx = new Context({
+                indent: 0,
+                staveIdx: h,
+                staves: staves
+            });
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
@@ -870,6 +897,7 @@ export class SongEditorStore extends TSEE {
 
         if (pointerData && _snapshots[pointerData.musicLine]) {
             var ctx: Context = new Context({
+                indent: 15, // FIXME
                 snapshot: _snapshots[pointerData.musicLine],
                 staves: staves,
                 staveIdx: idx
@@ -1074,6 +1102,11 @@ export class SongEditorStore extends TSEE {
     set exportModalVisible(visible: boolean) {
         assert(false, "Use the dispatcher to send this type of request");
     }
+
+    set indent(i: number) {
+        assert(false, "Use the dispatcher to send this type of request.");
+    }
+
 
     throttledAutosave = _.throttle(() => {
         var active = SessionStore.Instance.activeSong();

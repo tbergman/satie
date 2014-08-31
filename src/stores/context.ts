@@ -226,6 +226,7 @@ class Context {
             top?: number;
             stave?: C.IStave;
             staves: Array<C.IStave>;
+            indent: number;
         }) {
 
         assert(opts instanceof Object, "opts is a required field");
@@ -249,15 +250,9 @@ class Context {
                 self[key] = val;
             });
         } else {
-            var noMargin = false;
-            if (typeof window === "undefined" ||
-                    global.location.href.indexOf("/scales/") !== -1) {
-                // XXX: HACK!!!
-                noMargin = true;
-            }
             var initialX = renderUtil.mm(opts.leftMargin, opts.fontSize);
             var firstX = initialX +
-                renderUtil.mm(opts.isFirstLine && !noMargin ? 15 : 0, opts.fontSize);
+                renderUtil.mm(opts.isFirstLine ? opts.indent : 0, opts.fontSize);
 
             this.accidentals = {};
             this.bar = 1;

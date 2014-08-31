@@ -25,9 +25,14 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             if (!parsed) {
                 return;
             }
-            context = new Context({staves: parsed, staveIdx: 0});
+            var opts = {
+                indent: 15,
+                staves: parsed,
+                staveIdx: 0
+            };
+            context = new Context(opts);
             context.annotate(null);
-            context = new Context({staves: parsed, staveIdx: 0});
+            context = new Context(opts);
         });
         _.each(tests, test => it(
             test[0],

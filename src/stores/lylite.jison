@@ -325,7 +325,19 @@ header
   ;
 
 paper
-  : 'SET_PAPER'  'LBRACE' headerElements 'RBRACE' { $$ = new C.Paper($3); }
+  : 'SET_PAPER'  'LBRACE' headerElements 'RBRACE'
+		{
+			if (isNaN($3["left-margin"])) {
+				$3["left-margin"] = util.defaultMargins.left;
+			}
+			if (isNaN($3["right-margin"])) {
+				$3["right-margin"] = util.defaultMargins.right;
+			}
+			if (isNaN($3["indent"])) {
+				$3["indent"] = util.defaultIndent;
+			}
+			$$ = new C.Paper($3);
+		}
   ;
 
 headerElements

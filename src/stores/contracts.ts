@@ -7,6 +7,7 @@
   */
 
 import _ = require("lodash");
+import assert = require("assert");
 
 import Model = require("./model");
 import Context = require("./context");
@@ -360,10 +361,21 @@ export interface IPageSize {
  * Margin settings and such. See also Paper.
  */
 export class Paper {
-    constructor(spec: { "left-margin": number; "right-margin": number; }) {
+    constructor(spec: {
+        "left-margin": number;
+        "right-margin": number;
+        indent: number;
+    }) {
         this["left-margin"] = spec["left-margin"];
         this["right-margin"] = spec["right-margin"];
+        this.indent = spec.indent;
+
+        // Comes from untyped jison.
+        assert(!isNaN(this.indent));
+        assert(!isNaN(this.leftMargin));
+        assert(!isNaN(this.rightMargin));
     }
+
 
     /**
      * Left margin in mm (Lilypond's name)
@@ -380,8 +392,6 @@ export class Paper {
         this["left-margin"] = m;
     }
 
-
-
     /**
      * Left margin in mm (Lilypond's name)
      */
@@ -396,6 +406,9 @@ export class Paper {
     set rightMargin(m: number) {
         this["right-margin"] = m;
     }
+
+
+    indent: number;
 }
 
 /**
@@ -705,8 +718,9 @@ export function addDefaults(staves: IStave[]) {
     if (!_.any(staves, function(s) { return s.paper; })) {
         staves.splice(0, 0, {
             paper: new Paper({
-                "left-margin": 15.25,
-                "right-margin": 15.25
+                "left-margin": renderUtil.defaultMargins.left,
+                "right-margin": renderUtil.defaultMargins.right,
+                indent: renderUtil.defaultIndent
             })
         });
     }
