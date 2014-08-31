@@ -94,6 +94,26 @@ export class SongEditorStore extends TSEE {
                 }
                 break;
 
+            case "PUT /local/autosaveModal":
+                this._autosaveModalVisible = true;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/autosaveModal":
+                this._autosaveModalVisible = false;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "PUT /local/copyModal":
+                this._copyModalVisible = true;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/copyModal":
+                this._copyModalVisible = false;
+                this.emit(CHANGE_EVENT);
+                break;
+
             case "PUT /local/metadataModal":
                 this._metadataModalVisible = true;
                 this.emit(CHANGE_EVENT);
@@ -101,6 +121,26 @@ export class SongEditorStore extends TSEE {
 
             case "DELETE /local/metadataModal":
                 this._metadataModalVisible = false;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "PUT /local/socialModal":
+                this._socialModalVisible = true;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/socialModal":
+                this._socialModalVisible = false;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "PUT /local/exportModal":
+                this._exportModalVisible = true;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/exportModal":
+                this._exportModalVisible = false;
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -572,9 +612,8 @@ export class SongEditorStore extends TSEE {
     markRendererDirty() {
         markRendererDirty();
     }
-    downloadLegacyAudio() {
+    static getDragonAudio(staves: Array<C.IStave>): Array<string> {
         var request: Array<string> = [];
-        var staves = this.staves();
         for (var h = 0; h < staves.length; ++h) {
             if (!staves[h].body) {
                 continue;
@@ -584,13 +623,13 @@ export class SongEditorStore extends TSEE {
             var bpm = 120;
             var timePerBeat = 60/bpm;
 
-            var ctx = new Context({ staveIdx: h, staves: this.staves() });
+            var ctx = new Context({ staveIdx: h, staves: staves });
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
                 if (obj.type === C.Type.TIME_SIGNATURE) {
                     ctx.timeSignature = <any> obj; // TSFIX
-                } else if (obj.isNote) {
+                } else if (obj.isNote && !obj.isRest) {
                     var note: C.IPitchDuration = <any> obj;
                     var beats = note.getBeats(ctx);
                     _.map(note.pitch ? [C.midiNote(note)] : C.midiNote(note), midiNote => {
@@ -603,10 +642,15 @@ export class SongEditorStore extends TSEE {
                 }
             }
         }
+        return request;
+    }
+
+    downloadLegacyAudio(opts?: { forExport?: boolean }, cb?: () => void) {
         Dispatcher.POST("/api/synth", {
-            data: request,
-            cb: "" + ++PlaybackStore.latestID
-        });
+            data: SongEditorStore.getDragonAudio(this.staves()),
+            cb: "" + ++PlaybackStore.latestID,
+            forExport: opts && opts.forExport
+        }, cb);
     }
 
     transpose(how: any) { // TSFIX
@@ -988,7 +1032,24 @@ export class SongEditorStore extends TSEE {
         assert(pending === true, "Only SongEditor can clear pending changes");
         this._allChangesSent = false;
         this.throttledAutosave();
-        this._changesPending = pending; }
+        this._changesPending = pending;
+    }
+
+    get autosaveModalVisible() {
+        return this._autosaveModalVisible;
+    }
+
+    set autosaveModalVisible(visible: boolean) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
+
+    get copyModalVisible() {
+        return this._copyModalVisible;
+    }
+
+    set copyModalVisible(visible: boolean) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
 
     get metadataModalVisible() {
         return this._metadataModalVisible;
@@ -998,17 +1059,38 @@ export class SongEditorStore extends TSEE {
         assert(false, "Use the dispatcher to send this type of request");
     }
 
+    get socialModalVisible() {
+        return this._socialModalVisible;
+    }
+
+    set socialModalVisible(visible: boolean) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
+
+    get exportModalVisible() {
+        return this._exportModalVisible;
+    }
+
+    set exportModalVisible(visible: boolean) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
+
     throttledAutosave = _.throttle(() => {
         var active = SessionStore.Instance.activeSong();
         if (active) {
             Dispatcher.PUT("/api/song/_" + active._id, { src: this.src() });
         }
-    }, 2800, { leading: false });
+    }, (1000 * ((global.localStorage && global.localStorage.autosaveDelay) || 3)),
+        { leading: false });
 
     _activeStaveIdx: number;
     private _changesPending: boolean;
     private _allChangesSent: boolean = true;
+    private _autosaveModalVisible: boolean = false;
+    private _copyModalVisible: boolean = false;
     private _metadataModalVisible: boolean = false;
+    private _socialModalVisible: boolean = false;
+    private _exportModalVisible: boolean = false;
 }
 
 /**

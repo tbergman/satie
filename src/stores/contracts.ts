@@ -480,6 +480,14 @@ export interface ISong {
      * The composer. Should match the composer in the header.
      */
     composer: string;
+
+    subtitle?: string;
+    arranger?: string;
+    lyricist?: string;
+    copyright?: string;
+    secret?: boolean;
+    path?: string;
+    clefs?: string;
 };
 
 /**

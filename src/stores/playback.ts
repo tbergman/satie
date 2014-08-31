@@ -113,9 +113,12 @@ export class PlaybackStore extends TSEE {
                 this.emit(CHANGE_EVENT);
                 break;
             case "POST /api/synth DONE":
-                if (action.response.cb === "" + latestID) {
+                var url = "/api/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
+                if (action.response.forExport) {
+                    window.location = <any> url;
+                } else if (action.response.cb === "" + latestID) {
                     var play = function () {
-                        audio5js.load("/api/synth/mp3?tmpRef=" + action.response.tmpRef);
+                        audio5js.load(url);
                     };
                     if (audio5js.ready) {
                         play();
