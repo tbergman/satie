@@ -128,6 +128,15 @@ export class PlaybackStore extends TSEE {
                 }
                 this.emit(CHANGE_EVENT);
                 break;
+
+            case "PUT /local/bpm":
+                this._bpm = parseInt(action.postData, 10);
+                if (_playing) {
+                    this._play(false);
+                    this._play(true);
+                }
+                this.emit(CHANGE_EVENT);
+                break;
         }
         return true;
     }
@@ -173,7 +182,7 @@ export class PlaybackStore extends TSEE {
             }
             var visualCursor = SongEditorStore.Instance.visualCursor();
             var delay = 0;
-            var bpm = 120;
+            var bpm = this.bpm;
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
@@ -286,7 +295,17 @@ export class PlaybackStore extends TSEE {
         return _pianoLoaded && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
 
+    get bpm() {
+        return this._bpm;
+    }
+
+    set bpm(n: number) {
+        assert(false, "Use the dispatcher for this type of request");
+    }
+
     _remainingActions: Array<any> = [];
+
+    private _bpm: number = 120;
 }
 
 var _pianoLoaded: boolean;
