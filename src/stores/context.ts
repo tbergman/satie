@@ -154,7 +154,6 @@ class Context {
                 stats.time += time;
                 if (causerType !== this.curr.type) {
                     performanceStats[causerType].wasted += time;
-                    performanceStats[this.curr.type];
                 }
             }
 
@@ -200,7 +199,9 @@ class Context {
             if ((canExitAtNewline && !pointerData && this.curr && this.curr.type === C.Type.NEWLINE && cursor.annotatedObj) ||
                 (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
-                SongEditorStore.PROFILER_ENABLED && performanceStats.print();
+                if (SongEditorStore.PROFILER_ENABLED) {
+                    performanceStats.print();
+                }
                 return {
                     cursor: cursor,
                     operations: operations,
@@ -216,7 +217,9 @@ class Context {
         if (this.bar === 1 && !this.beats && !cursor.endMarker) {
             cursor.endMarker = true;
             this.idx = -1;
-            SongEditorStore.PROFILER_ENABLED && performanceStats.print();
+            if (SongEditorStore.PROFILER_ENABLED) {
+                performanceStats.print();
+            }
             return {
                 cursor: cursor,
                 resetY: true,
@@ -231,7 +234,9 @@ class Context {
 
         this.idx = -1;
 
-        SongEditorStore.PROFILER_ENABLED && performanceStats.print();
+        if (SongEditorStore.PROFILER_ENABLED) {
+            performanceStats.print();
+        }
         return {
             cursor: cursor,
             operations: operations,
