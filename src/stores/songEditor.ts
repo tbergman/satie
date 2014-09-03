@@ -47,7 +47,7 @@ export class SongEditorStore extends TSEE {
         switch(action.description) {
             case "GET /api/song":
             case "PUT /local/song/show":
-                activeSong = SessionStore.Instance.activeSong();
+                activeSong = SessionStore.Instance.activeSong;
                 if (USING_LEGACY_AUDIO) {
                     _.defer(this.downloadLegacyAudio.bind(this));
                 }
@@ -60,10 +60,12 @@ export class SongEditorStore extends TSEE {
                     this.emit(ANNOTATE_EVENT);
                 }
 
-                _.each(this.staves(), (stave: C.IStave) => {
+                _.each(this.staves, (stave: C.IStave) => {
                     if (stave.body) {
                         var instrument: C.IInstrument = stave.body.instrument;
-                        PlaybackStore.Instance.ensureLoaded(instrument.soundfont, /*avoidEvent*/ true);
+                        PlaybackStore.Instance.ensureLoaded(instrument.soundfont, /*avoidEven
+                         * 
+                         t*/ true);
                     }
                 });
 
@@ -76,7 +78,7 @@ export class SongEditorStore extends TSEE {
                 break;
 
             case "PUT /api/song":
-                activeSong = SessionStore.Instance.activeSong();
+                activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     _savesInTransit++;
@@ -85,7 +87,7 @@ export class SongEditorStore extends TSEE {
                 break;
 
             case "PUT /api/song DONE":
-                activeSong = SessionStore.Instance.activeSong();
+                activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     _savesInTransit--;
@@ -164,7 +166,7 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /api/song ERROR":
                 alert("Could not save changes. Check your Internet connection.");
-                activeSong = SessionStore.Instance.activeSong();
+                activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     _savesInTransit--;
@@ -174,7 +176,7 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /local/song/forceUpdate":
                 this.clear();
-                activeSong = SessionStore.Instance.activeSong();
+                activeSong = SessionStore.Instance.activeSong;
                 this.reparse(activeSong.src);
                 this.emit(CHANGE_EVENT);
                 break;
@@ -599,7 +601,7 @@ export class SongEditorStore extends TSEE {
             var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
                     new Context({
                         top: y,
-                        fontSize: this.staveHeight(),
+                        fontSize: this.staveHeight,
                         isFirstLine: true,
                         pageSize: pageSize || _pageSize,
                         staves: staves,
@@ -703,7 +705,7 @@ export class SongEditorStore extends TSEE {
 
     downloadLegacyAudio(opts?: { forExport?: boolean }, cb?: () => void) {
         Dispatcher.POST("/api/synth", {
-            data: SongEditorStore.getDragonAudio(this.staves()),
+            data: SongEditorStore.getDragonAudio(this.staves),
             cb: "" + ++PlaybackStore.latestID,
             forExport: opts && opts.forExport
         }, cb);
@@ -788,7 +790,7 @@ export class SongEditorStore extends TSEE {
 
     eraseSelection() {
         this.emit(HISTORY_EVENT);
-        var staves = this.staves();
+        var staves = this.staves;
         for (var h = 0; h < staves.length; ++h) {
             if (!staves[h].body) {
                 continue;
@@ -945,17 +947,17 @@ export class SongEditorStore extends TSEE {
         }
     }
 
-    tool() {
+    get tool() {
         return _tool; }
-    staves() {
+    get staves() {
         return _staves; }
-    staveHeight() {
+    get staveHeight() {
         return _staveHeight; }
-    pageSize() {
+    get pageSize() {
         return _pageSize; }
-    paper() {
+    get paper() {
         return _paper; }
-    src() {
+    get src() {
         var staves = _staves;
 
         var lyliteArr: Array<string> = [];
@@ -1017,10 +1019,10 @@ export class SongEditorStore extends TSEE {
         var lyliteStr = lyliteArr.join(" ");
         return lyliteStr;
     }
-    selection() {
+    get selection() {
         return _selection;
     }
-    dirty() {
+    get dirty() {
         return _dirty;
     }
     ctx(idx: any) {
@@ -1036,10 +1038,10 @@ export class SongEditorStore extends TSEE {
         }
         return _ctxs[idx];
     }
-    ctxCount() {
+    get ctxCount() {
         return _ctxs.length;
     }
-    visualCursor() {
+    get visualCursor() {
         return _visualCursor;
     }
     visualCursorIs(visualCursor: C.IVisualCursor) {
@@ -1147,9 +1149,9 @@ export class SongEditorStore extends TSEE {
 
 
     throttledAutosave = _.throttle(() => {
-        var active = SessionStore.Instance.activeSong();
+        var active = SessionStore.Instance.activeSong;
         if (active) {
-            Dispatcher.PUT("/api/song/_" + active._id, { src: this.src() });
+            Dispatcher.PUT("/api/song/_" + active._id, { src: this.src });
         }
     }, (1000 * ((global.localStorage && global.localStorage.autosaveDelay) || 3)),
         { leading: false });

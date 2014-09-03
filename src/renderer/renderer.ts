@@ -409,7 +409,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     getInitialState() {
         return {
             mouse: {x: 0, y: 0},
-            visualCursor: this.props.store && this.props.store.visualCursor() || {
+            visualCursor: this.props.store && this.props.store.visualCursor || {
                 annotatedPage: 0
             } // TODO: render multiple pages
         };
@@ -602,7 +602,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     getCtxCount() {
         return this.props.contexts ?
             this.props.contexts.length :
-            (this.props.store && this.props.store.ctxCount());
+            (this.props.store && this.props.store.ctxCount);
     }
 
     setupBrowserListeners() {
@@ -732,7 +732,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
     update() {
         this.setState({
-            visualCursor: this.props.store && this.props.store.visualCursor()
+            visualCursor: this.props.store && this.props.store.visualCursor
         });
     }
 
@@ -783,7 +783,7 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     }
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
-        var songDirty = this.props.store && this.props.store.dirty();
+        var songDirty = this.props.store && this.props.store.dirty;
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.isLineDirty(nextProps.idx, nextProps.h);
 

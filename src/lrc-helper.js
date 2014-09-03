@@ -193,12 +193,12 @@ var RendererEnv = React.createClass({
     },
     storeState: function() {
         return {
-            pageSize: SongEditorStore.Instance.pageSize(),
-            selection: SongEditorStore.Instance.selection(),
-            staveHeight: SongEditorStore.Instance.staveHeight(),
-            staves: SongEditorStore.Instance.staves(),
-            playing: PlaybackStore.playing(),
-            midiReady: PlaybackStore.ready()
+            pageSize: SongEditorStore.Instance.pageSize,
+            selection: SongEditorStore.Instance.selection,
+            staveHeight: SongEditorStore.Instance.staveHeight,
+            staves: SongEditorStore.Instance.staves,
+            playing: PlaybackStore.playing,
+            midiReady: PlaybackStore.ready
         };
     },
     getInitialState: function() {

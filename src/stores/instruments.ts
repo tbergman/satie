@@ -187,8 +187,8 @@ export var List: Array<C.IInstrument> = [
         name: "Accordion",
         shortName: "Accordion",
         clef: C.Clef.PIANO,
-        soundfont: "accordian",
-        lilypond: "accordian",
+        soundfont: "accordion",
+        lilypond: "accordion",
         program: 21
     },
     {

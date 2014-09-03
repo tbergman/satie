@@ -36,7 +36,7 @@ class EndMarkerModel extends Model {
             ctx.eraseCurrent();
 
             var SongEditor = require("./songEditor"); // Recursive dependency.
-            var visualCursor = SongEditor.Instance.visualCursor();
+            var visualCursor = SongEditor.Instance.visualCursor;
             if (visualCursor.type === C.Type.END_MARKER && visualCursor.bar === ctx.bar) {
                 visualCursor.bar++;
                 visualCursor.beat = 1;

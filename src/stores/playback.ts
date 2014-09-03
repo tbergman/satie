@@ -152,7 +152,7 @@ export class PlaybackStore extends TSEE {
         });
         this._remainingActions = [];
 
-        var aobj = SongEditorStore.Instance.visualCursor().annotatedObj;
+        var aobj = SongEditorStore.Instance.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
             Dispatcher.POST("/local/visualCursor", {
                 step: 1,
@@ -165,12 +165,12 @@ export class PlaybackStore extends TSEE {
         var foundLegacyStart = false;
         var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < SongEditorStore.Instance.ctxCount(); ++h) {
-            var body: C.IBody = SongEditorStore.Instance.staves()[h].body;
+        for (var h = 0; h < SongEditorStore.Instance.ctxCount; ++h) {
+            var body: C.IBody = SongEditorStore.Instance.staves[h].body;
             if (!body) {
                 continue;
             }
-            var visualCursor = SongEditorStore.Instance.visualCursor();
+            var visualCursor = SongEditorStore.Instance.visualCursor;
             var delay = 0;
             var bpm = this.bpm;
             var timePerBeat = 60/bpm;
@@ -181,9 +181,9 @@ export class PlaybackStore extends TSEE {
             assert(channel !== undefined);
 
             var ctx = new Context({
-                stave: SongEditorStore.Instance.staves()[h],
+                stave: SongEditorStore.Instance.staves[h],
                 staveIdx: h,
-                staves: SongEditorStore.Instance.staves()
+                staves: SongEditorStore.Instance.staves
             });
 
             if (enabled) {
@@ -287,11 +287,11 @@ export class PlaybackStore extends TSEE {
         this.removeListener(LOAD_EVENT, callback);
     }
 
-    playing() {
+    get playing() {
         return _playing;
     }
 
-    ready() {
+    get ready() {
         return !this._pendingInstruments && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
 

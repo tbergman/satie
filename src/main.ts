@@ -31,13 +31,13 @@ if (typeof window !== "undefined" &&
 }
 
 Dispatcher.GET("/api/user/start_session", null, function() {
-    if (SessionStore.Instance.session().state !== undefined) {
+    if (SessionStore.Instance.session.state !== undefined) {
         // Enable the router once we have our session information.
         React.renderComponent(
             Router.Component({
-                    errors: SessionStore.Instance.errors(),
-                    session: SessionStore.Instance.session(),
-                    songs: SessionStore.Instance.songs()},
+                    errors: SessionStore.Instance.errors,
+                    session: SessionStore.Instance.session,
+                    songs: SessionStore.Instance.songs},
                 null),
             document.body
         );
@@ -45,7 +45,7 @@ Dispatcher.GET("/api/user/start_session", null, function() {
         // The api server is likely down.
         React.renderComponent(
             FiveOhFive({
-                session: SessionStore.Instance.session()}),
+                session: SessionStore.Instance.session}),
             document.body
         );
     }
