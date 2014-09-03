@@ -93,6 +93,7 @@ export class Dispatcher {
             ["catch"]((err) => { // For support with IE 6.
                 inAction = false;
                 console.warn("Exception occured in promise", err);
+                console.log(err.stack);
             });
         /* tslint:enable */
     }

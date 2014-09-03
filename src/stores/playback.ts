@@ -16,7 +16,7 @@ import Instruments = require("./instruments");
 import Model = require("./model");
 require("./session"); // Must be registered before PlaybackStore!
 
-var enabled = (typeof window !== "undefined");
+var enabled = (typeof document !== "undefined");
 
 if (!global.AudioContext && global.webkitAudioContext) {
     global.AudioContext = global.webkitAudioContext;
@@ -316,7 +316,7 @@ export class PlaybackStore extends TSEE {
     }
 
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
-        if (USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
+        if (!enabled || USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
             return; // Sorry IE, you only get a piano.
         }
 

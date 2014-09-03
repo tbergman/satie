@@ -37,6 +37,7 @@
         "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
         "test": "mochify --node $(find ./src | grep 'test/' | grep .ts$)",
+        "test-watch": "mochify --watch --node $(find ./src | grep 'test/' | grep .ts$)",
         "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node",
         "chore-debug": "browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | node"
     },
