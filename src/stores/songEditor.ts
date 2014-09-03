@@ -964,7 +964,7 @@ export class SongEditorStore extends TSEE {
         var unresolved: Array<(obj: Model) => boolean> = [];
         _.each(staves, (stave, sidx) => {
             if (stave.body) {
-                lyliteArr.push("\\new Staff {");
+                lyliteArr.push("\\new Staff {\n");
                 lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
 
                 var body = stave.body;
@@ -996,10 +996,10 @@ export class SongEditorStore extends TSEE {
             } else if (stave.paper) {
                 lyliteArr.push("\\paper {");
                 if (stave.paper.leftMargin) {
-                    lyliteArr.push("left-margin=" + stave.paper.leftMargin + "\n");
+                    lyliteArr.push("left-margin=" + stave.paper.leftMargin);
                 }
                 if (stave.paper.rightMargin) {
-                    lyliteArr.push("right-margin=" + stave.paper.rightMargin + "\n");
+                    lyliteArr.push("right-margin=" + stave.paper.rightMargin);
                 }
                 lyliteArr.push("}\n");
 

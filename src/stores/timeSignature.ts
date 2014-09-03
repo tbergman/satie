@@ -61,7 +61,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
             lylite.push("\\defaultTimeSignature");
         }
 
-        lylite.push("\\time " + this._timeSignature.beats + "/" + this._timeSignature.beatType);
+        lylite.push("\\time " + this._timeSignature.beats + "/" + this._timeSignature.beatType + "\n");
     }
 
     static createTS = (ctx: Context): C.IterationStatus => {

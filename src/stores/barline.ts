@@ -133,7 +133,7 @@ class BarlineModel extends Model {
     }
 
     toLylite(lylite: Array<string>) {
-        lylite.push("|");
+        lylite.push("|\n");
     }
 
     /**

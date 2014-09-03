@@ -67,7 +67,7 @@ class KeySignatureModel extends Model {
             acc = "is";
         }
         lylite.push("\\key " +
-            this.keySignature.pitch.pitch + acc + " " + this.keySignature.mode);
+            this.keySignature.pitch.pitch + acc + " " + this.keySignature.mode + "\n");
     }
     getSharpCount() {
         return KeySignatureModel.getSharpCount(this.keySignature);
