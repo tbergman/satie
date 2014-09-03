@@ -12,7 +12,7 @@
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-jsx": "~0.11.0",
         "react": "~0.11.1",
-        "react-bootstrap": "~0.11.1",
+        "react-draggable": "git://github.com/mzabriskie/react-draggable",
         "react-typescript": "git://github.com/jnetterf/react-typescript"
     },
     "devDependencies": {
@@ -36,7 +36,7 @@
         "lrc-watchify": "watchify --extension .ts -v -o build/lrc-bundle.js -d ./src/lrc-helper.js --noparse lodash",
         "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
-        "test": "mochify --watch --node $(find ./src | grep 'test/' | grep .ts$)",
+        "test": "mochify --node $(find ./src | grep 'test/' | grep .ts$)",
         "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node",
         "chore-debug": "browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | node"
     },

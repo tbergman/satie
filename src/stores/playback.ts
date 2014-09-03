@@ -12,6 +12,7 @@ import TSEE = require("./tsee");
 
 import Dispatcher = require("./dispatcher");
 import C = require("./contracts");
+import Instruments = require("./instruments");
 import Model = require("./model");
 require("./session"); // Must be registered before PlaybackStore!
 
@@ -42,13 +43,13 @@ if (enabled) {
 }
 
 export var CHANGE_EVENT = "change";
+export var LOAD_EVENT = "load";
 
 export class PlaybackStore extends TSEE {
     constructor() {
         super();
         Dispatcher.Instance.register(this.handleAction.bind(this));
 
-        _pianoLoaded = false;
         _playing = false;
 
         if (USING_LEGACY_AUDIO) {
@@ -57,8 +58,8 @@ export class PlaybackStore extends TSEE {
                 global.audio5js = audio5js = new Audio5js({
                     swf_path: "/node_modules/audio5/swf/audio5js.swf",
                     throw_errors: true,
-                    ready: function(player: any) {
-                        this.on("canplay", function() {
+                    ready: function (player: any) {
+                        this.on("canplay", function () {
                             _legacyAudioReady = true;
                             store.emit(CHANGE_EVENT);
                         });
@@ -71,20 +72,7 @@ export class PlaybackStore extends TSEE {
         }
 
         if (enabled) {
-            _.defer(() => {
-                MIDI.loadPlugin({
-                    soundfontUrl: "/res/soundfonts/",
-                    instrument: "acoustic_grand_piano",
-                    soundManagerUrl: "/res/soundmanager2.js",
-                    soundManagerSwfUrl: "/res/soundManager2_swf/",
-                    callback: () => {
-                        // console.log("LOADED MIDI", MIDI.api);
-                        _pianoLoaded = true;
-                        MIDI.setVolume(0, 127);
-                        this.emit(CHANGE_EVENT);
-                    }
-                });
-            });
+            _.defer(() => this._getPiano());
         }
     }
 
@@ -95,17 +83,19 @@ export class PlaybackStore extends TSEE {
                 this._play(false);
                 break;
             case "POST /local/midiOut":
-                if (_pianoLoaded) {
+                if (!this._pendingInstruments) {
                     hit(action.postData);
                 }
                 break;
             case "POST /local/visualCursor":
-                if (action.resource === "togglePlay") {
-                    this._play(!_playing);
+                if (!this._pendingInstruments) {
+                    if (action.resource === "togglePlay") {
+                        this._play(!_playing);
 
-                    this.emit(CHANGE_EVENT);
-                } else if (_playing && action.postData && !action.postData.step) {
-                    _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
+                        this.emit(CHANGE_EVENT);
+                    } else if (_playing && action.postData && !action.postData.step) {
+                        _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
+                    }
                 }
                 break;
             case "POST /api/synth":
@@ -176,7 +166,7 @@ export class PlaybackStore extends TSEE {
         var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
         for (var h = 0; h < SongEditorStore.Instance.ctxCount(); ++h) {
-            var body = SongEditorStore.Instance.staves()[h].body;
+            var body: C.IBody = SongEditorStore.Instance.staves()[h].body;
             if (!body) {
                 continue;
             }
@@ -186,7 +176,9 @@ export class PlaybackStore extends TSEE {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            // XXX: assuming 4/4 for now
+            var soundfont = body.instrument.soundfont;
+            var channel = this._soundfontToChannel[soundfont];
+            assert(channel !== undefined);
 
             var ctx = new Context({
                 stave: SongEditorStore.Instance.staves()[h],
@@ -217,9 +209,9 @@ export class PlaybackStore extends TSEE {
                         if (!USING_LEGACY_AUDIO && !obj.isRest) {
                             _.each(obj.note.pitch ? [C.midiNote(obj.note)] :
                                     C.midiNote(obj.note), midiNote => {
-                                var a = MIDI.noteOn(0, midiNote, 127, startTime + delay);
+                                var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
-                                MIDI.noteOff(0, midiNote, startTime + delay + beats*timePerBeat);
+                                MIDI.noteOff(channel, midiNote, startTime + delay + beats*timePerBeat);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
                                     this._remainingActions.push(() =>
                                         global.clearInterval(a));
@@ -280,6 +272,10 @@ export class PlaybackStore extends TSEE {
         this.on(CHANGE_EVENT, callback);
     }
 
+    addLoadingListener(callback: Function) {
+        this.on(LOAD_EVENT, callback);
+    }
+
     /**
      * @param {function} callback
      */
@@ -287,12 +283,16 @@ export class PlaybackStore extends TSEE {
         this.removeListener(CHANGE_EVENT, callback);
     }
 
+    removeLoadingListener(callback: Function) {
+        this.removeListener(LOAD_EVENT, callback);
+    }
+
     playing() {
         return _playing;
     }
 
     ready() {
-        return _pianoLoaded && (!USING_LEGACY_AUDIO || _legacyAudioReady);
+        return !this._pendingInstruments && (!USING_LEGACY_AUDIO || _legacyAudioReady);
     }
 
     get bpm() {
@@ -303,12 +303,64 @@ export class PlaybackStore extends TSEE {
         assert(false, "Use the dispatcher for this type of request");
     }
 
-    _remainingActions: Array<any> = [];
+    ensureLoaded(soundfont: string, avoidEvent?: boolean): boolean {
+        var isLoaded = this._loadedSoundfonts[soundfont];
+        if (!isLoaded) {
+            this._getInstrument(soundfont, avoidEvent);
+        }
+        return isLoaded;
+    }
+
+    private _getPiano() {
+        this._getInstrument("acoustic_grand_piano", true);
+    }
+
+    private _getInstrument(soundfont: string, avoidEvent: boolean) {
+        if (USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
+            return; // Sorry IE, you only get a piano.
+        }
+
+        if (this._loadedSoundfonts[soundfont] && typeof console !== "undefined") {
+            console.warn("Already loaded", soundfont);
+            return;
+        }
+
+        if (!avoidEvent) {
+            this.emit(LOAD_EVENT);
+        }
+
+        if (_playing) {
+            this._play(false);
+        }
+
+        ++this._pendingInstruments;
+        this._loadedSoundfonts[soundfont] = true;
+        MIDI.loadPlugin({
+            soundfontUrl: "/res/soundfonts/",
+            instrument: soundfont,
+            soundManagerUrl: "/res/soundmanager2.js",
+            soundManagerSwfUrl: "/res/soundManager2_swf/",
+            callback: () => {
+                this._soundfontToChannel[soundfont] = ++this._lastChannel;
+                MIDI.programChange(this._lastChannel, Instruments.soundfontToProgram[soundfont]);
+                if (!--this._pendingInstruments) {
+                    MIDI.setVolume(0, 127);
+                    this.emit(CHANGE_EVENT);
+                }
+            }
+        });
+        this.emit(CHANGE_EVENT);
+    }
+
+    private _remainingActions: Array<any> = [];
+    private _loadedSoundfonts: { [sfName: string]: boolean } = {};
+    private _soundfontToChannel: { [soundfontToChannel: string]: number } = {};
+    private _pendingInstruments: number = 0;
 
     private _bpm: number = 120;
+    private _lastChannel: number = -1;
 }
 
-var _pianoLoaded: boolean;
 var _playing: boolean;
 var _timeoutId: number;
 

@@ -59,6 +59,14 @@ export class SongEditorStore extends TSEE {
                     this.emit(CHANGE_EVENT);
                     this.emit(ANNOTATE_EVENT);
                 }
+
+                _.each(this.staves(), (stave: C.IStave) => {
+                    if (stave.body) {
+                        var instrument: C.IInstrument = stave.body.instrument;
+                        PlaybackStore.Instance.ensureLoaded(instrument.soundfont, /*avoidEvent*/ true);
+                    }
+                });
+
                 this.emit(CLEAR_HISTORY_EVENT);
                 break;
             case "DELETE /local/song/show":
@@ -144,6 +152,16 @@ export class SongEditorStore extends TSEE {
                 this.emit(CHANGE_EVENT);
                 break;
 
+            case "PUT /local/partModal":
+                this._partModalStave = action.postData;
+                this.emit(CHANGE_EVENT);
+                break;
+
+            case "DELETE /local/partModal":
+                this._partModalStave = null;
+                this.emit(CHANGE_EVENT);
+                break;
+
             case "PUT /api/song ERROR":
                 alert("Could not save changes. Check your Internet connection.");
                 activeSong = SessionStore.Instance.activeSong();
@@ -203,6 +221,7 @@ export class SongEditorStore extends TSEE {
                 _tool = action.postData;
                 this.emit(CHANGE_EVENT);
                 break;
+
             case "DELETE /local/tool":
                 if (_cleanupFn) {
                     _cleanupFn();
@@ -410,6 +429,16 @@ export class SongEditorStore extends TSEE {
                     break;
                 }
 
+                break;
+            case "PUT /local/instrument":
+                var instrument: C.IInstrument = action.postData.instrument;
+                var stave: C.IStave = action.postData.stave;
+
+                PlaybackStore.Instance.ensureLoaded(instrument.soundfont);
+
+                this.emit(HISTORY_EVENT);
+                stave.body.instrument = instrument;
+                this.emit(CHANGE_EVENT);
                 break;
             case "POST /local/visualCursor":
                 switch (action.resource) {
@@ -934,6 +963,7 @@ export class SongEditorStore extends TSEE {
         _.each(staves, (stave, sidx) => {
             if (stave.body) {
                 lyliteArr.push("\\new Staff {");
+                lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
 
                 var body = stave.body;
                 for (var i = 0; i < body.length; ++i) {
@@ -1103,6 +1133,14 @@ export class SongEditorStore extends TSEE {
         assert(false, "Use the dispatcher to send this type of request");
     }
 
+    get partModalStave() {
+        return this._partModalStave;
+    }
+
+    set partModalStave(modal: C.IStave) {
+        assert(false, "Use the dispatcher to send this type of request");
+    }
+
     set indent(i: number) {
         assert(false, "Use the dispatcher to send this type of request.");
     }
@@ -1124,6 +1162,7 @@ export class SongEditorStore extends TSEE {
     private _metadataModalVisible: boolean = false;
     private _socialModalVisible: boolean = false;
     private _exportModalVisible: boolean = false;
+    private _partModalStave: C.IStave = null;
 }
 
 /**

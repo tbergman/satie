@@ -13,22 +13,34 @@
     var C = require("./contracts.ts")
     var ClefModel = require("./clef.ts");
     var EndMarkerModel = require("./endMarker.ts");
+    var Instruments = require("./instruments.ts");
     var KeySignatureModel = require("./keySignature.ts");
     var NewlineModel = require("./newline.ts");
     var NewPageModel = require("./newpage.ts");
     var TimeSignatureModel = require("./timeSignature.ts");
 
-    var readingCommonTS = true;
+    var readingCommonTS;
+    var partInstrument;
+
+	function resetPartState() {
+		readingCommonTS = true;
+		partInstrument = Instruments.byLilypondName["acoustic grand"];
+	}
+	resetPartState();
 %}
 
 %options flex
+
+/***************************************************************************
+ * THE LEXER															   *
+ ***************************************************************************/
 
 %lex
 %%
 
 
 \s+                   /* NONE */
-[0-9]+\.[0-9]+       return 'NUMBER'
+[0-9]+\.[0-9]+        return 'NUMBER'
 [0-9]+                return 'NUMBER'
 
 "<"                   return 'LT'
@@ -46,6 +58,7 @@
 "\paper"              return 'SET_PAPER'
 
 "\new"                return 'NEW'
+"Staff.midiInstrument"	return 'STAFF_MIDI_INSTRUMENT_VARIABLE'
 "Staff"               return 'NEW_STAFF'
 "PianoStaff"          return 'NEW_PIANO_STAFF'
 
@@ -159,10 +172,16 @@
 '"'                   return 'DOUBLE_QUOTE'
 ","                   return 'COMMA'
 
+"\set"				  return 'SET_VARIABLE'
+
 <<EOF>>               return 'EOF'
 .                     return 'INVALID'
 
 /lex
+
+/***************************************************************************
+ * UTILS      															   *
+ ***************************************************************************/
 
 %{
     var assert = require("assert");
@@ -257,6 +276,10 @@
     }
 %}
 
+/***************************************************************************
+ * PARTS / STAVES														   *
+ ***************************************************************************/
+
 %left 'SINGLE_QUOTE' 'COMMA'
 %start root
 %%
@@ -266,17 +289,48 @@ root
   ;
 
 parts
-  : /*empty*/                          { $$ = []; }
-  | parts globalExpr                   { $$ = $1.concat($2); }
-  | parts header                       { $$ = $1.concat({header: $2}); }
-  | parts paper                        { $$ = $1.concat({paper: $2}); }
-  | parts musicExpr                    { $$ = $1.concat({body: $2}); }
-  | parts 'NEW' 'NEW_STAFF' musicExpr  { $$ = $1.concat({body: $4}); }
+  : /*empty*/
+		{
+			resetPartState();
+			$$ = [];
+		}
+  | parts globalExpr                   
+		{
+			resetPartState();
+			$$ = $1.concat($2);
+		}
+  | parts header                      
+		{
+			resetPartState();
+			$$ = $1.concat({header: $2});
+		}
+  | parts paper                       
+		{
+			resetPartState();
+			$$ = $1.concat({paper: $2});
+		}
+  | parts musicExpr                   
+		{
+			$2.instrument = partInstrument;
+			resetPartState();
+			$$ = $1.concat({body: $2});
+		}
+  | parts 'NEW' 'NEW_STAFF' musicExpr 
+		{
+			$4.instrument = partInstrument;
+			resetPartState();
+			$$ = $1.concat({body: $4});
+		}
   | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
         {
+			resetPartState();
             $$ = $1.concat($4);
         }
-  | parts newStaffExpr                 { $$ = $1.concat($2); }
+  | parts newStaffExpr                
+		{
+			resetPartState();
+			$$ = $1.concat($2);
+		}
   ;
 
 globalExpr
@@ -366,6 +420,10 @@ headerElement
             $$[$1] = parseFloat($3);
         }
   ;
+
+/***************************************************************************
+ * MUSIC BODY      														   *
+ ***************************************************************************/
 
 musicExpr
   : 'LBRACE' partElements 'RBRACE'
@@ -472,6 +530,33 @@ partElement
             readingCommonTS = true;
             $$ = undefined;
         }
+  | 'SET_VARIABLE' 'STAFF_MIDI_INSTRUMENT_VARIABLE' 'EQ' 'POUND' 'DEQUOTED_STRING'
+		{
+			partInstrument = Instruments.byLilypondName[$5];
+			if (!partInstrument) {
+				if (typeof console !== "undefined" && console.warn) {
+					console.warn("Instrument " + $5 + " could not be found.");
+					partInstrument = Instruments.byLilypondName["acoustic grand"];
+				}
+			}
+
+			$$ = undefined;
+		}
+  ;
+
+DEQUOTED_STRING
+  : 'STRING'
+		{
+			if ($1[0] === "\"") {
+				$1 = $1.substring(1);
+
+				if ($1[$1.length - 1] === "\"") {
+					$1 = $1.substring(0, $1.length - 1);
+				}
+			}
+
+			$$ = $1;
+		}
   ;
 
 completePitchOrChord 

@@ -73,6 +73,23 @@ export enum IBeamCount {
     NINE = 9
 }
 
+export interface IBody extends Array<Model> {
+    instrument?: IInstrument;
+}
+
+/**
+ * Standard clefs or sets of clefs. Not to be used in Models (landing layer only).
+ */
+export enum Clef {
+    TREBLE,
+    BASS,
+    ALTO,
+    TENOR,
+    PIANO,
+    CHORAL,
+    TREBLE_DRUMS,
+}
+
 /**
  * Any data structure that holds a duration, such as a chord or a rest.
  * A simple realization of IDuration can be constructed from C.makeDuration().
@@ -206,6 +223,46 @@ export interface IHeader {
      * it is being hovered.
      */
     composerHovered?: boolean;
+}
+
+/**
+ * An instrument that a piece can be in. See also instruments.ts.
+ */
+export interface IInstrument {
+    /**
+     * A human readable string representing the instrument.
+     */
+    name: string;
+
+    /**
+     * A name that fits within the buttons on the "Parts" tab
+     */
+    shortName: string;
+
+    /**
+     * A slug representing uniquely representing the soundfont used for the instrument.
+     * The soundfont is available at /res/soundfonts/{instrument.res}-<mp3|ogg>.js.
+     * 
+     * Some instruments have the SAME soundfont.
+     */
+    soundfont: string;
+
+    /**
+     * The standard clef or clef set for an instrument.
+     */
+    clef: Clef;
+
+    /**
+     * The 0-indexed MIDI program for the instrument.
+     */
+    program: number;
+
+    /**
+     * In Lilypond, instruments are set like
+     *      \set Staff.midiInstrument = #"glockenspiel"
+     * Names are obtained from http://lilypond.org/doc/v2.17/Documentation/notation/midi-instruments
+     */
+    lilypond: string;
 }
 
 export class InvalidDurationError {
@@ -527,7 +584,7 @@ export interface IStave {
     /**
      * If the stave is a part, the Models that compose the part.
      */
-    body?: Array<Model>;
+    body?: IBody;
 
     /**
      * If the stave is a part, whether the IStave is part of a piano stave.
