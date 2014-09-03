@@ -12,6 +12,8 @@ import Model = require("./model");
 import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
+global.spliceTime = 0;
+
 /**
  * Contexts are iterators in the annotation pipeline that hold information
  * such as the current beat, what accidentals have been set, and what
@@ -43,6 +45,15 @@ class Context {
         var enableFastModeAtBar: number = null;
         var canExitAtNewline = !!opts.toolFn;
         var canExitOnNextSuccess = false;
+
+        if (SongEditorStore.PROFILER_ENABLED) {
+            var performanceStats = new PerformanceStats;
+            for (var type in C.Type) {
+                if (!isNaN(type)) {
+                    performanceStats[type] = new AStats(type);
+                }
+            }
+        }
 
         for (this._begin(); !this._atEnd(); this.idx = this._nextIndex(exitCode)) {
 
@@ -106,6 +117,11 @@ class Context {
              * run a custom action (passed in as 'toolFn') to add a note, edit a note,
              * etc.
              */
+            if (SongEditorStore.PROFILER_ENABLED) {
+                var start = +(new Date());
+                var causerType = this.curr.type;
+            }
+
             if (doCustomAction) {
                 // HACK HACK HACK -- we don't want to call annotate, because we can't
                 // process the exit code, but the note tools needs to have a valid timeSignature
@@ -128,6 +144,17 @@ class Context {
                     if (!--stopping) {
                         assert(false, "Aborting.");
                     }
+                }
+            }
+
+            if (SongEditorStore.PROFILER_ENABLED) {
+                var time = +(new Date()) - start;
+                var stats = performanceStats[causerType];
+                stats.count++;
+                stats.time += time;
+                if (causerType !== this.curr.type) {
+                    performanceStats[causerType].wasted += time;
+                    performanceStats[this.curr.type];
                 }
             }
 
@@ -173,6 +200,7 @@ class Context {
             if ((canExitAtNewline && !pointerData && this.curr && this.curr.type === C.Type.NEWLINE && cursor.annotatedObj) ||
                 (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
+                SongEditorStore.PROFILER_ENABLED && performanceStats.print();
                 return {
                     cursor: cursor,
                     operations: operations,
@@ -188,6 +216,7 @@ class Context {
         if (this.bar === 1 && !this.beats && !cursor.endMarker) {
             cursor.endMarker = true;
             this.idx = -1;
+            SongEditorStore.PROFILER_ENABLED && performanceStats.print();
             return {
                 cursor: cursor,
                 resetY: true,
@@ -202,6 +231,7 @@ class Context {
 
         this.idx = -1;
 
+        SongEditorStore.PROFILER_ENABLED && performanceStats.print();
         return {
             cursor: cursor,
             operations: operations,
@@ -245,7 +275,7 @@ class Context {
         var self: { [index: string]: any } = <any> this;
 
         if (opts.snapshot) {
-            var s = JSON.parse(opts.snapshot);
+            var s = opts.snapshot;
             _.each(s, (val: any, key: string) => {
                 self[key] = val;
             });
@@ -307,13 +337,16 @@ class Context {
         // and huge.
         var stave = this.stave;
         var staves = this.staves;
+        var lines = this.lines;
         this.stave = null;
         this.staves = null;
         this.body = null;
+        this.lines = [lines[this.line - 1], lines[this.line]];
         var ret = JSON.stringify(this);
         this.stave = stave;
         this.staves = staves;
         this.body = stave.body;
+        this.lines = lines;
         return ret;
     }
 
@@ -426,7 +459,9 @@ class Context {
     insertPast(obj: Model, index?: number): any {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
+        var t = +(new Date());
         this.body.splice(index, 0, obj);
+        global.spliceTime += +(new Date()) - t;
         return this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
     }
@@ -713,6 +748,35 @@ function cpyline(ctx: Context, line: C.ILineSnapshot) {
                 assert(false, "Not reached");
         }
     });
+}
+
+class AStats {
+    constructor(type: C.Type) {
+        this.type = type;
+    }
+
+    print() {
+        console.log("stats for " + C.Type[this.type] + "\n\tcall: " + this.count + "\ttime: " + this.time +
+            "\tpotentially wasted: " + this.wasted +
+            "\n\tavgt: " + (this.count ? "" + Math.round(this.time / this.count * 1000) / 1000 : "not tested"));
+    }
+
+    count: number = 0;
+    time: number = 0;
+    wasted: number = 0;
+    type: C.Type;
+};
+
+class PerformanceStats {
+    [type: number]: AStats;
+
+    print() {
+        for (var n in this) {
+            if (!isNaN(n)) {
+                this[n].print();
+            }
+        }
+    }
 }
 
 export = Context;

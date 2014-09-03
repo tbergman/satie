@@ -21,6 +21,11 @@ import TimeSignatureModel = require("./timeSignature");
  */
 class BarlineModel extends Model {
     annotateImpl(ctx: Context): C.IterationStatus {
+        // A barline must be preceded by an endline marker.
+        if (!ctx.prev().endMarker) {
+            return ctx.insertPast(new EndMarkerModel({ endMarker: true }));
+        }
+
         var i: number;
         var okay: boolean;
 
@@ -58,7 +63,9 @@ class BarlineModel extends Model {
                 break;
             }
         }
-        if (!okay) { return ctx.eraseCurrent(); }
+        if (!okay) {
+            return ctx.eraseCurrent();
+        }
 
         if (this.barline === C.Barline.Double) {
             // The document cannot be entirely empty.
@@ -98,11 +105,6 @@ class BarlineModel extends Model {
                     n => n.containsAccidental(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
-        }
-
-        // A barline must be preceded by an endline marker.
-        if (!ctx.prev().endMarker) {
-            return ctx.insertPast(new EndMarkerModel({ endMarker: true }));
         }
 
         // Double barlines only exist at the end of a piece.

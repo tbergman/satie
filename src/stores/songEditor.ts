@@ -24,7 +24,7 @@ var CHANGE_EVENT = "change";
 var ANNOTATE_EVENT = "annotate";
 var HISTORY_EVENT = "history";
 var CLEAR_HISTORY_EVENT = "clearHistory";
-var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
+export var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
@@ -535,7 +535,10 @@ export class SongEditorStore extends TSEE {
         });
     }
 
-    reparse(src: string) {
+    reparse(src: string, profile?: boolean) {
+        if (profile) {
+            console.time("Parse source");
+        }
         _staves = lylite.parse(src);
         C.addDefaults(_staves);
 
@@ -549,7 +552,18 @@ export class SongEditorStore extends TSEE {
             }
         }
 
-        this.annotate();
+        var origPE = PROFILER_ENABLED;
+
+        if (profile) {
+            console.timeEnd("Parse source");
+            PROFILER_ENABLED = true;
+        }
+
+        this.annotate(null, null, null, null, true);
+
+        if (profile) {
+            PROFILER_ENABLED = origPE;
+        }
     }
 
     /**
@@ -559,7 +573,8 @@ export class SongEditorStore extends TSEE {
         pointerData?: C.IPointerData,
         toolFn?: (obj: Model, ctx: Context) => C.IterationStatus,
         staves?: Array<C.IStave>,
-        pageSize?: C.IPageSize) {
+        pageSize?: C.IPageSize,
+        profile?: boolean) {
 
         staves = staves || _staves;
 
@@ -636,8 +651,8 @@ export class SongEditorStore extends TSEE {
             y = info.resetY ? 0 : y;
 
             if (PROFILER_ENABLED) {
-                console.log("Ops:", info.operations, "\tscore:",
-                    (info.operations / stave.body.length));
+                console.log("ops:", info.operations, "\tbody:", stave.body.length, "\tscore:",
+                    (Math.round(info.operations / stave.body.length * 100) / 100));
             }
 
             if (!info.skip) {
@@ -930,7 +945,7 @@ export class SongEditorStore extends TSEE {
         if (pointerData && _snapshots[pointerData.musicLine]) {
             var ctx: Context = new Context({
                 indent: 15, // FIXME
-                snapshot: _snapshots[pointerData.musicLine],
+                snapshot: this._recreateSnapshot(pointerData.musicLine),
                 staves: staves,
                 staveIdx: idx
             });
@@ -1158,6 +1173,18 @@ export class SongEditorStore extends TSEE {
         { leading: false });
 
     _activeStaveIdx: number;
+    private _recreateSnapshot(line: number) {
+        var lines: Array<any> = [];
+        for (var i = 1; i <= line; ++i) {
+            var sn = JSON.parse(_snapshots[i]);
+            lines.push(sn.lines[0]);
+            if (i === line) {
+                lines.push(sn.lines[1]);
+                sn.lines = lines;
+                return sn;
+            }
+        }
+    }
     private _changesPending: boolean;
     private _allChangesSent: boolean = true;
     private _autosaveModalVisible: boolean = false;
