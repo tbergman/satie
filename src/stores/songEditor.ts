@@ -1245,9 +1245,9 @@ export interface IVisualCursor {
     bar: number;
     beat: number;
     endMarker: boolean;
-    annotatedObj: Model;
-    annotatedLine: number;
-    annotatedPage: number;
+    annotatedObj?: Model;
+    annotatedLine?: number;
+    annotatedPage?: number;
 };
 
 export var Instance = new SongEditorStore();
