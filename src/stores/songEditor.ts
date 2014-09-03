@@ -399,17 +399,13 @@ export class SongEditorStore extends TSEE {
                         var obj = _staves[h].body[i];
                         if (obj) {
                             var line = _visualCursor.annotatedLine;
-                            this.stepCursor({
-                                step: -1,
-                                skipThroughBars: false
-                            });
 
                             // Remove items based on a white-list.
                             if (obj.isNote) {
                                 // The stepCursor call above invalidates _visualCursor
                                 // DO NOT CHECK _visualCursor HERE!!!
                                 var EraseTool = require("./eraseTool"); // Recursive dependency.
-                                var etool = new EraseTool();
+                                var etool = new EraseTool(true);
                                 this.annotate(
                                     {
                                         obj: obj,
@@ -419,6 +415,11 @@ export class SongEditorStore extends TSEE {
                                     },
                                     etool.splice.bind(etool, false));
                             } else {
+                                this.annotate();
+                                this.stepCursor({
+                                    step: -1,
+                                    skipThroughBars: false
+                                });
                                 this.annotate();
                             }
                             this.emit(ANNOTATE_EVENT);
