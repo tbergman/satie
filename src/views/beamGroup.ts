@@ -21,7 +21,7 @@ import Note = require("./_note");
 export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {
         var spec = this.props.spec;
-        var children = spec.generate();
+        var children = spec.generate(this.props.fontSize);
 
         // props of first and last notes.
         // The slope is usually decided based on the first and last notes.
@@ -112,14 +112,14 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
                 variableX: spec.variableBeams ? Xs : null,
                 direction: direction,
                 key: "beam",
-                fontSize: spec.fontSize,
+                fontSize: this.props.fontSize,
                 line1: parseFloat("" + line1) +
                     direction * getSH(direction, 0, line1),
                 line2: parseFloat("" + line2) +
                     direction * getSH(direction, children.length - 1, line2),
                 notehead1: firstP.notehead,
                 notehead2: lastP.notehead,
-                scaleFactor: spec.fontSize*renderUtil.FONT_SIZE_FACTOR,
+                scaleFactor: this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
                 stemWidth: 0.035,
                 stroke: strokeEnabled && strokeColor,
                 tuplet: spec.tuplet,
@@ -135,8 +135,9 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
 export var Component = ReactTS.createReactComponent(BeamGroup);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: BeamGroupModel;
+    fontSize: number;
 }
 
 /**

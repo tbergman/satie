@@ -39,35 +39,12 @@ import Context = require("./context");
  * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
  */
 class Model {
-    source: C.Source;
-    private _fontSize: number;
-    _key: string;
-    _x: number;
-    _y: number;
-    ctxData: C.IVisualCursor;
-    endMarker: boolean;
-    idx: number;
-    intersects: Array<Model> = null;
-    inBeam: boolean;
-    placeholder: boolean;
-    selected: boolean;
-
-    get type(): C.Type {
-        return C.Type.UNKNOWN;
-    }
-
-    get note(): C.IPitchDuration {
-        assert(false, "Not a note.");
-        return null;
-    }
-
     annotate(ctx: Context, stopping?: number): C.IterationStatus {
         if (!this.inBeam) {
             this.setX(ctx.x);
             this.setY(ctx.y);
         }
         this.idx = ctx.idx;
-        this._fontSize = ctx.fontSize;
 
         var ret: C.IterationStatus = this.annotateImpl(ctx);
         assert(ret !== undefined);
@@ -76,7 +53,7 @@ class Model {
         }
 
         if (!this._key) {
-            this._key = this._generateKey(ctx);
+            this._key = Model._generateKey(ctx);
         }
         return ret;
     }
@@ -94,16 +71,12 @@ class Model {
         }
     }
 
-    _generateKey(ctx: Context): string {
-        return "" + ++lastKey;
+    static _generateKey(ctx: Context): number {
+        return ++Model.lastKey;
     }
 
-    key() : string {
+    get key() : number {
         return this._key;
-    }
-
-    get fontSize() {
-        return this._fontSize;
     }
 
     get timeSignature(): C.ITimeSignature {
@@ -125,7 +98,7 @@ class Model {
         return true;
     }
 
-    render() {
+    render(fontSize: number) {
         assert(false, "Not implemented");
     }
 
@@ -167,11 +140,12 @@ class Model {
         assert(false, "Not implemented");
     }
 
-    static setView = function (View: (opts: { key: string; spec: Model }) => any) {
-        this.prototype.render = function () {
+    static setView = function (View: (opts: { key: number; spec: Model; fontSize: number }) => any) {
+        this.prototype.render = function (fontSize: number) {
             return View({
-                key: this.key(),
-                spec: this
+                key: this.key,
+                spec: this,
+                fontSize: fontSize
             });
         };
     };
@@ -188,13 +162,61 @@ class Model {
                     staves[i].body.splice(j, 1);
                     --j;
                 } else if (item.inBeam) {
-                    delete item.inBeam;
+                    item.inBeam = false;
                 }
             }
         }
     };
+
+    // FLAGS
+    get inBeam(): boolean { return !!(this._flags & Flags.IN_BEAM); }
+    set inBeam(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.IN_BEAM;
+        } else { this._flags = this._flags & ~Flags.IN_BEAM; } }
+
+    get placeholder() { return !!(this._flags & Flags.PLACEHOLDER); }
+    set placeholder(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.PLACEHOLDER;
+        } else { this._flags = this._flags & ~Flags.PLACEHOLDER; } }
+
+    get selected() { return !!(this._flags & Flags.SELECTED); }
+    set selected(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.SELECTED;
+        } else { this._flags = this._flags & ~Flags.SELECTED; } }
+
+    get source(): C.Source { return !!(this._flags & Flags.ANNOTATOR) ? C.Source.ANNOTATOR : C.Source.USER; }
+    set source(source: C.Source) {
+        if (source === C.Source.ANNOTATOR) { this._flags = this._flags | Flags.ANNOTATOR;
+        } else { this._flags = this._flags & ~Flags.ANNOTATOR; } }
+
+    _key: number;
+    _x: number;
+    _y: number;
+    endMarker: boolean;
+    idx: number;
+    _flags: number = 0;
+    ctxData: {
+        bar: number; beat: number
+    };
+
+    get type(): C.Type {
+        return C.Type.UNKNOWN;
+    }
+
+    get note(): C.IPitchDuration {
+        assert(false, "Not a note.");
+        return null;
+    }
+
+    private static lastKey: number = 0;
 }
 
-var lastKey: number = 0;
+enum Flags {
+    IN_BEAM = 1,
+    PLACEHOLDER = 2,
+    SELECTED = 4,
+    ANNOTATOR = 8
+    // Subclasses are free to use flags above 128!!!
+}
 
 export = Model;

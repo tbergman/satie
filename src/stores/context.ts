@@ -514,94 +514,95 @@ class Context {
     }
 
     private _calculateIntersections() {
-        var genIterators =
-            () => _(this.staves)
-                .filter(s => s.body)
-                .map((s: C.IStave) => {
-                    return <IPart> {
-                        idx: 0,
-                        body: s.body,
-                        beat: 0,
-                        doIf: (act, cond) => { if (cond()) { return act(); }; }
-                    };
-                })
-                .value();
+        return;
+        // var genIterators =
+        //     () => _(this.staves)
+        //         .filter(s => s.body)
+        //         .map((s: C.IStave) => {
+        //             return <IPart> {
+        //                 idx: 0,
+        //                 body: s.body,
+        //                 beat: 0,
+        //                 doIf: (act, cond) => { if (cond()) { return act(); }; }
+        //             };
+        //         })
+        //         .value();
 
-        var iterators: Array<IPart>;
+        // var iterators: Array<IPart>;
 
-        for (iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-            _.each(iterators, s => s.doIf(
-                () => {
-                    s.body[s.idx].intersects = [];
-                    ++s.idx;
-                },
-                () => s.idx < s.body.length));
-        }
+        // for (iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+        //     _.each(iterators, s => s.doIf(
+        //         () => {
+        //             s.body[s.idx].intersects = [];
+        //             ++s.idx;
+        //         },
+        //         () => s.idx < s.body.length));
+        // }
 
-        var actives: Array<C.IActiveIntersection> = [];
-        var beat = 0;
-        var impliedCount = 4;
+        // var actives: Array<C.IActiveIntersection> = [];
+        // var beat = 0;
+        // var impliedCount = 4;
 
-        // The bars might not have been annotated yet, so it's possible we don't have
-        // a time signature. We need an implied time signature to calculate bars.
-        var tsBackup = this.timeSignature;
-        this.timeSignature = { beatType: 4, beats: 4 };
+        // // The bars might not have been annotated yet, so it's possible we don't have
+        // // a time signature. We need an implied time signature to calculate bars.
+        // var tsBackup = this.timeSignature;
+        // this.timeSignature = { beatType: 4, beats: 4 };
 
-        for(iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-            var allNewActives: Array<Model> = [];
-            _(iterators)
-                .map((s, sidx) => s.doIf(
-                    () => {
-                        if (beat === s.beat) {
-                            var newActives: Array<Model> = [];
-                            do {
-                                ++s.idx;
-                                if (!s.body[s.idx]) {
-                                    break;
-                                }
-                                if (s.body[s.idx].type === C.Type.TIME_SIGNATURE) {
-                                    this.timeSignature = s.body[s.idx].timeSignature;
-                                }
-                                newActives.push(s.body[s.idx]);
-                                allNewActives.push(s.body[s.idx]);
-                                if (s.body[s.idx].type === C.Type.BEAM_GROUP) {
-                                    ++s.idx;
-                                    continue;
-                                }
-                            } while (s.body[s.idx] && !s.body[s.idx].isNote);
+        // for(iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
+        //     var allNewActives: Array<Model> = [];
+        //     _(iterators)
+        //         .map((s, sidx) => s.doIf(
+        //             () => {
+        //                 if (beat === s.beat) {
+        //                     var newActives: Array<Model> = [];
+        //                     do {
+        //                         ++s.idx;
+        //                         if (!s.body[s.idx]) {
+        //                             break;
+        //                         }
+        //                         if (s.body[s.idx].type === C.Type.TIME_SIGNATURE) {
+        //                             this.timeSignature = s.body[s.idx].timeSignature;
+        //                         }
+        //                         newActives.push(s.body[s.idx]);
+        //                         allNewActives.push(s.body[s.idx]);
+        //                         if (s.body[s.idx].type === C.Type.BEAM_GROUP) {
+        //                             ++s.idx;
+        //                             continue;
+        //                         }
+        //                     } while (s.body[s.idx] && !s.body[s.idx].isNote);
 
-                            actives = actives.concat(_.map(newActives, a => {
-                                return {obj: a, expires: s.beat};
-                            }));
+        //                     actives = actives.concat(_.map(newActives, a => {
+        //                         return {obj: a, expires: s.beat};
+        //                     }));
 
-                            if (s.body[s.idx]) {
-                                assert(s.body[s.idx].isNote);
-                                var pitch: C.IPitchDuration = <any> s.body[s.idx];
-                                impliedCount = pitch.count || impliedCount;
-                                s.beat = s.beat + pitch.getBeats(this, impliedCount);
-                            } else {
-                                s.beat = undefined;
-                            }
-                        }
-                    },
-                    () => s.idx < s.body.length))
-                .filter(s => s)
-                .value();
+        //                     if (s.body[s.idx]) {
+        //                         assert(s.body[s.idx].isNote);
+        //                         var pitch: C.IPitchDuration = <any> s.body[s.idx];
+        //                         impliedCount = pitch.count || impliedCount;
+        //                         s.beat = s.beat + pitch.getBeats(this, impliedCount);
+        //                     } else {
+        //                         s.beat = undefined;
+        //                     }
+        //                 }
+        //             },
+        //             () => s.idx < s.body.length))
+        //         .filter(s => s)
+        //         .value();
 
-            var increment = _(iterators)
-                .map(s => s.beat)
-                .filter(s => s !== null && !isNaN(s))
-                .sort((a, b) => a - b)
-                .value();
+        //     var increment = _(iterators)
+        //         .map(s => s.beat)
+        //         .filter(s => s !== null && !isNaN(s))
+        //         .sort((a, b) => a - b)
+        //         .value();
 
-            beat = increment[0]; // lowest
+        //     beat = increment[0]; // lowest
 
-            _.each(actives, a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
+        //     _.each(actives, a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
 
-            actives = _.filter(actives, a => a.expires > beat);
-        }
+        //     actives = _.filter(actives, a => a.expires > beat);
+        // }
 
-        this.timeSignature = tsBackup; // The context can be reused.
+        // this.timeSignature = tsBackup; // The context can be reused.
     }
 
     /**

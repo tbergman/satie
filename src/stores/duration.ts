@@ -48,7 +48,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         ctx.count = this.count;
 
         var beats = this.getBeats(ctx);
-        this._isWholeBar = this.getBeats(ctx) === ctx.timeSignature.beats;
+        this.isWholeBar = this.getBeats(ctx) === ctx.timeSignature.beats;
 
         // Make sure the bar is not overfilled. Multibar rests are okay.
         if (this.getBeats(ctx) > ctx.timeSignature.beats && ctx.beats >= ctx.timeSignature.beats) {
@@ -58,7 +58,8 @@ class DurationModel extends Model implements C.IPitchDuration {
             if (ctx.beats + beats > ctx.timeSignature.beats) {
                 var overfill = ctx.beats + beats - ctx.timeSignature.beats;
                 if (beats === overfill) {
-                    return BarlineModel.createBarline(ctx, C.Barline.Standard);
+                    var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
+                    return ret;
                 } else {
                     var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
                     var addAfterBar = Metre.subtract(this, beats - overfill, ctx).map(t => new DurationModel(<any>t));
@@ -183,7 +184,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     constructor(spec: C.IPitchDuration) {
         super(spec);
-        this._tie = spec.tie;
+        this.tie = spec.tie;
     }
 
     containsAccidental(ctx: Context) {
@@ -414,10 +415,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return true;
     }
 
-    get isWholebar() {
-        return this._isWholeBar;
-    }
-
     get markings() {
         return this._markings;
     }
@@ -449,15 +446,6 @@ class DurationModel extends Model implements C.IPitchDuration {
                     (this.selected ? "#75A1D0" : "black"));
         }
         return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black" )];
-    }
-
-    get tie() {
-        return this._tie;
-    }
-
-    set tie(t: boolean) {
-        assert(!this.isRest || !t);
-        this._tie = t;
     }
 
     get type() {
@@ -707,6 +695,27 @@ class DurationModel extends Model implements C.IPitchDuration {
         return str;
     }
 
+    get temporary(): boolean { return !!(this._flags & Flags.TEMPORARY); }
+    set temporary(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.TEMPORARY;
+        } else { this._flags = this._flags & ~Flags.TEMPORARY; } }
+
+    get relative(): boolean { return !!(this._flags & Flags.RELATIVE); }
+    set relative(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.RELATIVE;
+        } else { this._flags = this._flags & ~Flags.RELATIVE; } }
+
+    get isWholebar(): boolean { return !!(this._flags & Flags.WHOLE_BAR); }
+    set isWholeBar(v: boolean) {
+        if (v) { this._flags = this._flags | Flags.WHOLE_BAR;
+        } else { this._flags = this._flags & ~Flags.WHOLE_BAR; } }
+
+    get tie(): boolean { return !!(this._flags & Flags.TIE); }
+    set tie(v: boolean) {
+        assert(!this.isRest || !v);
+        if (v) { this._flags = this._flags | Flags.TIE;
+        } else { this._flags = this._flags & ~Flags.TIE; } }
+
     private _annotatedExtraWidth: number;
     private _beats: number;
     private _count: number;
@@ -714,9 +723,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _displayDots: number;
     private _displayMarkings: Array<string>;
     private _dots: number;
-    private _isWholeBar: boolean;
     private _markings: Array<string>;
-    private _tie: boolean;
     acc: any;
     accidentals: any;
     accTemporary: number;
@@ -732,15 +739,18 @@ class DurationModel extends Model implements C.IPitchDuration {
     line: any;
     octave: number;
     pitch: any;
-    relative: boolean;
-    selected: boolean;
-    temporary: boolean;
     tieTo: DurationModel;
     tuplet: C.ITuplet;
 }
 
 var getBeats = Metre.getBeats;
 
+enum Flags {
+    TEMPORARY = 256,
+    RELATIVE = 512,
+    WHOLE_BAR = 1024,
+    TIE = 2056
+}
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

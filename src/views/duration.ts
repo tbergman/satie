@@ -27,9 +27,8 @@ export function Component(props: IProps) {
     var spec = props.spec;
     assert(spec instanceof DurationModel);
 
-    // TODO(jnetterf): Accents. i.e.,
     var markings = _.map(spec.displayMarkings || [], (m, idx) =>
-        NoteMarking({fontSize: spec.fontSize, marking: m, key: idx})
+        NoteMarking({fontSize: props.fontSize, marking: m, key: idx})
     );
 
     /**
@@ -41,9 +40,9 @@ export function Component(props: IProps) {
         return Rest({
                 dotted: spec.displayDots,
                 line: 3,
-                key: spec.key(),
+                key: spec.key,
                 isNote: true, // In this context, we mean not a wrapper.
-                fontSize: spec.fontSize,
+                fontSize: props.fontSize,
                 notehead: spec.restHead,
                 stroke: spec.color,
                 x: spec.x(),
@@ -58,10 +57,10 @@ export function Component(props: IProps) {
             direction: spec.direction,
             dotted: spec.displayDots,
             flag: spec.flag,
-            fontSize: spec.fontSize,
+            fontSize: props.fontSize,
             hasStem: spec.hasStem,
             isNote: true,
-            key: spec.key(),
+            key: spec.key,
             line: spec.line,
             notehead: spec.notehead,
             secondaryStroke: spec.color,
@@ -73,11 +72,11 @@ export function Component(props: IProps) {
 
     if (zeroOffsetMode) {
         return html.g({
-                key: spec.key(),
+                key: <any> spec.key, // numeric keys are okay
                 x: spec.x(), // for beam
                 y: spec.y(), // for beam
-                transform: "translate(" + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x() +
-                "," + spec.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y() + ")"},
+                transform: "translate(" + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x() +
+                "," + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y() + ")"},
             note);
     } else {
         return note;
@@ -85,6 +84,7 @@ export function Component(props: IProps) {
 }
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: DurationModel;
+    fontSize: number;
 }

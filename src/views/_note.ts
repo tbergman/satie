@@ -265,14 +265,14 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
 
         var fullWidth = this.props.tieTo - this.props.x;
         return Tie.Component({key: "tie_0",
+            fontSize: this.props.fontSize,
             spec: {
                 direction: -this.getDirection(),
                 x: () => this.props.x + fullWidth/8 + 0.15,
                 y: () => this.props.y,
                 line1: this.getStartingLine(),
                 line2: this.getStartingLine(),
-                width: fullWidth*0.75,
-                fontSize: this.props.fontSize}});
+                width: fullWidth*0.75}});
     }
 };
 Note.applyMixins(DeepPureMixin);
@@ -303,7 +303,7 @@ export interface IProps {
     flag?: string;
     fontSize?: number;
     hasStem?: boolean;
-    key?: string;
+    key?: number;
     line?: any;
     notehead?: string;
     secondaryStroke?: any;

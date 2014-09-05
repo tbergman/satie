@@ -161,7 +161,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                     selIdx = -1;
                                                 }
                                                 if (s[i].visible()) {
-                                                    components[h++] = s[i].render();
+                                                    components[h++] = s[i].render(fontSize);
                                                 }
                                             }
                                             components.length = h;
@@ -470,7 +470,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         if (event.button === 0) {
             if (this.props.selection) {
                 _.each(this.props.selection, function(s: Model)  {
-                    delete s.selected;
+                    s.selected = null;
                 });
             }
             var pos = this.getPositionForMouse(event);
@@ -507,9 +507,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (_selection.length) {
                 _.each(_selection, function (s: Model) {
                     s.selected = true;
-                    _.each(s.intersects, function (intersect: Model) {
-                        intersect.selected = true;
-                    });
+                    // _.each(s.intersects, function (intersect: Model) {
+                    //     intersect.selected = true;
+                    // });
                 });
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {

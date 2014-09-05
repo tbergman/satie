@@ -96,16 +96,16 @@ class BarlineModel extends Model {
             next.type === C.Type.NEWLINE || next.type === C.Type.NEWPAGE);
 
         // Barlines followed by accidentals have additional padding
-        if (ctx.next().isNote) {
-            // XXX: Also check that notes are on the same beat!
-            // e.g., | C/////
-            //       | C/C#// will add spacing, but it shouldn't!
-            this.annotatedAccidentalSpacing = 0.2*
-                (_.any(_.filter(ctx.next().intersects, (l: DurationModel) => l.isNote),
-                    n => n.containsAccidental(ctx)) ? 1 : 0);
-        } else {
-            this.annotatedAccidentalSpacing = 0;
-        }
+        // if (ctx.next().isNote) {
+        //     // XXX: Also check that notes are on the same beat!
+        //     // e.g., | C/////
+        //     //       | C/C#// will add spacing, but it shouldn't!
+        //     this.annotatedAccidentalSpacing = 0.2*
+        //         (_.any(_.filter(ctx.next().intersects, (l: DurationModel) => l.isNote),
+        //             n => n.containsAccidental(ctx)) ? 1 : 0);
+        // } else {
+        this.annotatedAccidentalSpacing = 0;
+        // }
 
         // Double barlines only exist at the end of a piece.
         if (this.barline === C.Barline.Double && ctx.next(null, 2)) {
@@ -147,7 +147,7 @@ class BarlineModel extends Model {
         if (ctx.curr.type === C.Type.BEAM_GROUP) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
-                delete ctx.body[j].inBeam;
+                ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
                     var newBarline = new BarlineModel({ barline: mode });
                     if (j === ctx.idx) {

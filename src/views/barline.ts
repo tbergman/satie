@@ -94,8 +94,9 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
 export var Component = ReactTS.createReactComponent(Barline);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: BarlineModel;
+    fontSize: number;
 }
 
 export interface IState {

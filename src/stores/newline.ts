@@ -41,8 +41,8 @@ class NewlineModel extends Model {
         ctx.prevClef = ctx.clef;
         ctx.prevKeySignature = ctx.keySignature;
         ctx.smallest = 10000;
-        delete ctx.clef;
-        delete ctx.keySignature;
+        ctx.clef = null;
+        ctx.keySignature = null;
 
         this.begin = ctx.initialX;
         this.width = ctx.maxX - ctx.x;

@@ -20,7 +20,7 @@ export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
                 y: spec.y(),
                 line: a.line,
                 stroke: spec.color,
-                fontSize: spec.fontSize,
+                fontSize: this.props.fontSize,
                 accidental: a.accidental}))
         );
     }
@@ -80,8 +80,9 @@ var flats: { [key: string]: Array<number> } = {
 };
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: KeySignatureModel;
+    fontSize: number;
 }
 
 export interface IState {

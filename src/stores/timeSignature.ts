@@ -29,13 +29,13 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
         var next = ctx.next();
         if (next.isNote) {
-            if (_.any(_.filter(next.intersects, (l: DurationModel) => l.isNote),
-                           n => n.containsAccidental(ctx)) ? 1 : 0) {
-                // TODO: should be 1 if there are more than 1 accidental.
-                this._annotatedSpacing = 1.5;
-            } else {
-                this._annotatedSpacing = 2.5;
-            }
+            // if (_.any(_.filter(next.intersects, (l: DurationModel) => l.isNote),
+            //                n => n.containsAccidental(ctx)) ? 1 : 0) {
+            //     // TODO: should be 1 if there are more than 1 accidental.
+            //     this._annotatedSpacing = 1.5;
+            // } else {
+            this._annotatedSpacing = 2.5;
+            // }
         } else {
             this._annotatedSpacing = 1.25;
         }

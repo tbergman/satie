@@ -16,7 +16,7 @@ export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
             x: spec.x() - (spec.isChange ? 0.2 : 0),
             y: spec.y() - (this.line - 3)/4,
             fill: spec.color,
-            fontSize: spec.fontSize,
+            fontSize: this.props.fontSize,
             glyphName: this.sign + (spec.isChange ? "Change" : "")});
     }
 
@@ -44,8 +44,9 @@ export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
 export var Component = ReactTS.createReactComponent(Clef);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: ClefModel;
+    fontSize: number;
 }
 
 export interface IState {

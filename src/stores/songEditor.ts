@@ -366,7 +366,7 @@ export class SongEditorStore extends TSEE {
                         });
                         break;
                     case "lineDirty":
-                        delete _linesToUpdate[action.postData];
+                        _linesToUpdate[action.postData] = null;
                         // don"t emit.
                         break;
                 }
@@ -777,7 +777,7 @@ export class SongEditorStore extends TSEE {
                         note.acc = accOffset + (accidentals[note.pitch] || 0);
 
                         if (!note.acc) {
-                            delete note.acc;
+                            note.acc = null;
                         }
                     } else if (how.mode === "chromatic") {
                         var letters = parseInt(how.interval[1], 10) - 1;
@@ -791,7 +791,7 @@ export class SongEditorStore extends TSEE {
                         note.octave = (note.octave||0) + how.octaves + Math.floor(newNote/7);
                         note.acc = semitonesNeeded - semitonesDone + note.acc;
                         if (!note.acc) {
-                            delete note.acc;
+                            note.acc = null;
                         }
                     }
                 });

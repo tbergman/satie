@@ -15,7 +15,7 @@ export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
         var spec = this.props.spec;
 
         return StaveLines({
-                key: spec.key(),
+                key: spec.key,
                 width: spec.width,
                 x: spec.begin,
                 y: spec.y() + spec.lineSpacing});
@@ -25,8 +25,9 @@ export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
 export var Component = ReactTS.createReactComponent(NewlineView);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: NewlineModel;
+    fontSize: number;
 }
 
 export interface IState {

@@ -51,7 +51,7 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             x6: 0.95619358 / 1.23897534 * x2mx1 + x1,
             y6: ((dir === -1 ? 0 : -y1my2) + absw + relw) + y1,
 
-            fontSizeFactor: this.props.spec.fontSize * renderUtil.FONT_SIZE_FACTOR,
+            fontSizeFactor: this.props.fontSize * renderUtil.FONT_SIZE_FACTOR,
             fill: "#000000",
             strokeWidth: 0.03,
             stroke: "#000000"
@@ -67,7 +67,6 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             ("" + spec.line2) +
             ("" + spec.width) +
             ("" + spec.direction) +
-            ("" + spec.fontSize) +
             ("" + spec.x()) +
             ("" + spec.y()));
     }
@@ -104,8 +103,9 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
 export var Component = ReactTS.createReactComponent(Slur);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: SlurGroupModel;
+    fontSize: number;
 }
 
 export interface IState {

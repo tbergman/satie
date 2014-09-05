@@ -18,7 +18,7 @@ export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
         return Group(null,
             spec.pianoStaff && Brace({
                 x: spec.x(),
-                fontSize: spec.fontSize,
+                fontSize: this.props.fontSize,
                 y: spec.braceY,
                 y2: spec.getBraceY2()}),
             StaveLines({
@@ -33,8 +33,9 @@ export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
 export var Component = ReactTS.createReactComponent(BeginView);
 
 export interface IProps {
-    key: string;
+    key: number;
     spec: BeginModel;
+    fontSize: number;
 }
 
 export interface IState {
