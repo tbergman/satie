@@ -104,6 +104,7 @@ export interface IDuration {
 
     /**
      * The tuplet to be displayed, if different from tuplet.
+     * 
      */
     actualTuplet?: ITuplet;
 
@@ -127,6 +128,10 @@ export interface IDuration {
      * @param inheritedCount the count to use if duration's count is null.
      */
     getBeats?: (ctx: Context, inheritedCount?: number) => number;
+
+    hasFlagOrBeam?: boolean;
+
+    temporary?: boolean;
 
     /**
      * The displayed tuplet, or null.
@@ -471,20 +476,16 @@ export class Paper {
 /**
  * Represents zero or more concurrent pitches, such as a note, rest, or chord.
  * 
- * TODO: merge pitch and chord.
- * 
  * See also IDuration and IPitchDuration.
  */
 export interface IPitch {
     acc: number;
     accTemporary?: number;
-    chord?: Array<IPitch>;
-    pitch: string;
-    octave: number;
-    temporary?: boolean;
-    line?: number;
     isRest?: boolean; // read only
-    hasFlagOrBeam?: boolean;
+    line?: number;
+    octave: number;
+    pitch: string;
+    temporary?: boolean;
 };
 
 /**
@@ -492,7 +493,9 @@ export interface IPitch {
  * 
  * DurationModels implement PitchDurations.
  */
-export interface IPitchDuration extends IPitch, IDuration {
+export interface IPitchDuration extends IDuration {
+    chord?: Array<IPitch>;
+    isRest?: boolean;
     tie?: boolean;
 };
 
@@ -751,12 +754,9 @@ export function makeDuration(spec: IDurationSpec): IDuration {
 export function midiNote(p: IPitch) {
     "use strict";
 
-    if (p.pitch) {
-        var DurationModel = require("./duration");
-        var base = DurationModel.chromaticScale[p.pitch] + 48;
-        return base + (p.octave || 0)*12 + (p.acc || 0);
-    }
-    return _.map(p.chord, m => midiNote(m));
+    var DurationModel = require("./duration");
+    var base = DurationModel.chromaticScale[p.pitch] + 48;
+    return base + (p.octave || 0)*12 + (p.acc || 0);
 }
 
 /**

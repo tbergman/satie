@@ -131,22 +131,14 @@ class BeamGroupModel extends Model {
             {beam: beam, source: C.Source.ANNOTATOR}));
     };
 
-    static decideDirection = function(firstLine: any, lastLine: any) {
+    static decideDirection = function(firstLines: Array<number>, lastLines: Array<number>) {
         var firstAvgLine: number;
         var lastAvgLine: number;
 
-        if (firstLine.length) {
-            firstAvgLine = _.reduce(firstLine, (m: number, s: number) => m + s, 0) /
-                firstLine.length;
-        } else {
-            firstAvgLine = firstLine;
-        }
-        if (lastLine.length) {
-            lastAvgLine = _.reduce(lastLine, (m: number, s: number) => m + s, 0) /
-                lastLine.length;
-        } else {
-            lastAvgLine = lastLine;
-        }
+        firstAvgLine = _.reduce(firstLines, (m: number, s: number) => m + s, 0) /
+            firstLines.length;
+        lastAvgLine = _.reduce(lastLines, (m: number, s: number) => m + s, 0) /
+            lastLines.length;
         var avgLine = (firstAvgLine + lastAvgLine)/2;
         if (avgLine >= 3) {
             return -1;

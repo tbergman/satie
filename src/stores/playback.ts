@@ -207,8 +207,7 @@ export class PlaybackStore extends TSEE {
                     if (foundIdx && obj.isNote) {
                         beats = obj.note.getBeats(ctx);
                         if (!USING_LEGACY_AUDIO && !obj.isRest) {
-                            _.each(obj.note.pitch ? [C.midiNote(obj.note)] :
-                                    C.midiNote(obj.note), midiNote => {
+                            _.each(obj.note.chord.map(C.midiNote), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
                                 MIDI.noteOff(channel, midiNote, startTime + delay + beats*timePerBeat);

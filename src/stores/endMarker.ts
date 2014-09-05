@@ -58,7 +58,7 @@ class EndMarkerModel extends Model {
 
             var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
                 .map((beat: C.IPitchDuration) => new DurationModel(_.extend(beat, {
-                    pitch: "r"})));
+                    chord: [{ pitch: "r" }]}))); // <-- lol
             Array.prototype.splice.apply(ctx.body,
                 [this.idx, 0].concat(toAdd));
 

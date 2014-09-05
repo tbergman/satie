@@ -270,8 +270,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 direction: -this.getDirection(),
                 x: () => this.props.x + fullWidth/8 + 0.15,
                 y: () => this.props.y,
-                line1: this.getStartingLine(),
-                line2: this.getStartingLine(),
+                lines1: [this.getStartingLine()],
+                lines2: [this.getStartingLine()],
                 width: fullWidth*0.75}});
     }
 };

@@ -706,7 +706,7 @@ export class SongEditorStore extends TSEE {
                 } else if (obj.isNote && !obj.isRest) {
                     var note: C.IPitchDuration = <any> obj;
                     var beats = note.getBeats(ctx);
-                    _.map(note.pitch ? [C.midiNote(note)] : C.midiNote(note), midiNote => {
+                    _.map(note.chord.map(C.midiNote), midiNote => {
                         request.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
                         request.push((delay + beats*timePerBeat - 0.019) +
@@ -765,7 +765,7 @@ export class SongEditorStore extends TSEE {
                 var newNote: number;
                 var note: C.IPitchDuration = <any> item;
 
-                _.each(note.pitch ? [note] : note.chord, (note: C.IPitch) => {
+                _.each(note.chord, (note: C.IPitch) => {
                     if (how.mode === "inKey") {
                         var accOffset = (note.acc || 0) - (accidentals[note.pitch] || 0);
                         newNote = noteToNum[note.pitch] + <number>how.letters;

@@ -52,7 +52,6 @@ export function Component(props: IProps) {
     }
 
     var note = Note.Component({
-            accidentals: spec.accidentals,
             accStrokes: spec.accStrokes,
             direction: spec.direction,
             dotted: spec.displayDots,
@@ -61,7 +60,7 @@ export function Component(props: IProps) {
             hasStem: spec.hasStem,
             isNote: true,
             key: spec.key,
-            line: spec.line,
+            line: spec.lines,
             notehead: spec.notehead,
             secondaryStroke: spec.color,
             strokes: spec.strokes,

@@ -63,8 +63,8 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     }
     getHash(spec: SlurGroupModel) {
         return hash(
-            ("" + spec.line1) +
-            ("" + spec.line2) +
+            ("" + spec.lines1) +
+            ("" + spec.lines2) +
             ("" + spec.width) +
             ("" + spec.direction) +
             ("" + spec.x()) +
@@ -90,12 +90,12 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     getY1(idx: number) {
         return this.props.spec.y() -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.line1, -this.getDirection()) - 3)/4;
+            (getExtremeLine(this.props.spec.lines1, -this.getDirection()) - 3)/4;
     }
     getY2(idx: number) {
         return this.props.spec.y() -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.line2, -this.getDirection()) - 3)/4;
+            (getExtremeLine(this.props.spec.lines2, -this.getDirection()) - 3)/4;
     }
     hash: number = NaN;
 }

@@ -22,8 +22,8 @@ class SlurGroupModel extends Model {
     _notes: Array<DurationModel>;
     isEmpty: boolean;
     direction: number;
-    line1: number;
-    line2: number;
+    lines1: Array<number>;
+    lines2: Array<number>;
     width: number;
     m_x: number;
     m_y: number;
@@ -60,12 +60,12 @@ class SlurGroupModel extends Model {
             var first = this._notes[0];
             var last = this._notes[this._notes.length - 1];
             this.direction = - BeamGroupModel.decideDirection(
-                DurationModel.getLine(first, ctx),
-                DurationModel.getLine(last, ctx));
+                DurationModel.getLines(first, ctx),
+                DurationModel.getLines(last, ctx));
             this.m_x = first.x();
             this.m_y = first.y();
-            this.line1 = DurationModel.getLine(first, ctx);
-            this.line2 = DurationModel.getLine(last, ctx);
+            this.lines1 = DurationModel.getLines(first, ctx);
+            this.lines2 = DurationModel.getLines(last, ctx);
             this.width = last.x() - first.x();
         }
         return C.IterationStatus.SUCCESS;

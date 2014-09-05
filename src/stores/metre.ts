@@ -97,8 +97,7 @@ export function rythmicSpellcheck(ctx: Context) {
             subtract(n1, n1.getBeats(ctx) - bExcess, ctx));
         replaceWith.forEach((m: any) => {
             // Ideally there would be a PitchDuration constructor that would do this for us.
-            m.pitch = n1.pitch;
-            m.chord = n1.chord ? JSON.parse(JSON.stringify(n1.chord)) : null;
+            m.chord = JSON.parse(JSON.stringify(n1.chord));
         });
 
         var DurationModel = require("./duration"); // Recursive.

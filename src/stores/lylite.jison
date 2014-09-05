@@ -579,7 +579,7 @@ completePitchOrChord
   ;
 
 pitchOrChord
-  : pitchMaybeWithOctave                     { $$ = $1; }
+  : pitchMaybeWithOctave                     { $$ = {chord: [$1]}; }
   | chord                                    { $$ = $1; }
   ;
 

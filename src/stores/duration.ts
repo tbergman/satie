@@ -64,14 +64,12 @@ class DurationModel extends Model implements C.IPitchDuration {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
                         var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx).map(t => new DurationModel(<any>t));
                         for (i = 0; i < replaceWith.length; ++i) {
-                            replaceWith[i].pitch = this.pitch;
                             replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
                             if (i + 1 !== replaceWith.length || addAfterBar.length && !this.isRest) {
                                 replaceWith[i].tie = true;
                             }
                         }
                         for (i = 0; i < addAfterBar.length; ++i) {
-                            addAfterBar[i].pitch = this.pitch;
                             addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
                             if (i + 1 !== addAfterBar.length && !this.isRest) {
                                 addAfterBar[i].tie = true;
@@ -155,7 +153,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (status !== C.IterationStatus.SUCCESS) { return status; }
 
         // Copy information the view needs from the context.
-        this.line = DurationModel.getLine(this, ctx);
+        this.lines = DurationModel.getLines(this, ctx);
 
         if (!ctx.isBeam) {
             ctx.beats = (ctx.beats || 0) + this._beats;
@@ -168,13 +166,8 @@ class DurationModel extends Model implements C.IPitchDuration {
             this._handleTie(ctx);
         }
         this.setX(ctx.x);
-        this.accidentals = this.getAccidentals(ctx);
-        if (this.pitch) {
-            ctx.accidentals[this.pitch.pitch] = this.pitch.acc;
-        } else {
-            for (i = 0; i < this.chord.length; ++i) {
-                ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
-            }
+        for (i = 0; i < this.chord.length; ++i) {
+            ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
         }
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
@@ -188,7 +181,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     containsAccidental(ctx: Context) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
-        var pitches: Array<C.IPitch> = this.chord || [<C.IPitch>this];
+        var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
@@ -272,8 +265,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     toLylite(lylite: Array<string>) {
         var str: string;
-        if (this.pitch) {
-            str = this._lyPitch(this);
+        if (this.chord.length === 1) {
+            str = this._lyPitch(this.chord[0]);
         } else if (this.chord) {
             str = "< " + _.map(this.chord, a => this._lyPitch(a)).join(" ") + " >";
         }
@@ -307,10 +300,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get accStrokes() {
-        if (this.chord) {
-            return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "#000000");
-        }
-        return [this.accTemporary ? "#A5A5A5" : "#000000"];
+        return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "#000000");
     }
 
     get annotatedExtraWidth() {
@@ -402,18 +392,16 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get isRest() {
-        if (this.chord && this.chord.length === 1 && this.chord[0].pitch === "r") {
-            // This isn't valid, so once we stop this case from occurring,
-            // remove this logic.
-            return true;
-        }
-        return this.pitch === "r";
+        return (this.chord && this.chord.length === 1 && this.chord[0].pitch === "r");
     }
 
     set isRest(r: boolean) {
         assert(!!r, "Instead, set the exact pitch or chord...");
-        this.chord = null;
-        this.pitch = "r";
+        this.chord = [{
+            pitch: "r",
+            acc: null,
+            octave: null
+        }];
         this.tie = false;
     }
 
@@ -577,16 +565,13 @@ class DurationModel extends Model implements C.IPitchDuration {
         1024: "rest1024th"
     };
 
-    static getAverageLine = (pitch: C.IPitchDuration, ctx: Context) => {
-        var line = DurationModel.getLine(pitch, ctx, { filterTemporary: true });
-        if (!isNaN(<any>line)) {
-            return line;
-        }
+    static getAverageLine = (note: C.IPitchDuration, ctx: Context) => {
+        var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
         var sum = 0;
-        for (var i = 0; i < line.length; ++i) {
-            sum += line[i];
+        for (var i = 0; i < lines.length; ++i) {
+            sum += lines[i] / lines.length;
         }
-        return sum / line.length;
+        return sum;
     };
 
     static getDots = (obj: C.IPitchDuration) =>
@@ -606,19 +591,23 @@ class DurationModel extends Model implements C.IPitchDuration {
             return pitch.line;
         }
         assert(ctx.clef, "A clef must be inserted before the first note");
-        if (pitch.chord) {
-            var ret: Array<number> = [];
-            for (var i = 0; i < pitch.chord.length; ++i) {
-                if (!options.filterTemporary || !pitch.chord[i].temporary) {
-                    ret.push(DurationModel.clefOffsets[ctx.clef] +
-                        (pitch.chord[i].octave || 0) * 3.5 +
-                        DurationModel.pitchOffsets[pitch.chord[i].pitch]);
-                }
-            }
-            return ret;
-        }
         return DurationModel.clefOffsets[ctx.clef] +
             (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.pitch];
+    };
+
+    static getLines = (note: C.IPitchDuration,
+            ctx: Context, options?: { filterTemporary: boolean }): Array<number> => {
+        options = options || {filterTemporary: false};
+        var ret: Array<number> = [];
+        for (var i = 0; i < note.chord.length; ++i) {
+            if (!options.filterTemporary || !note.chord[i].temporary) {
+                ret.push(note.chord[i].isRest ? 3 :
+                    DurationModel.clefOffsets[ctx.clef] +
+                    (note.chord[i].octave || 0) * 3.5 +
+                    DurationModel.pitchOffsets[note.chord[i].pitch]);
+            }
+        }
+        return ret;
     };
 
     static getPitch = (line: number, ctx: Context) => {
@@ -741,9 +730,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _displayMarkings: Array<string>;
     private _dots: number;
     private _markings: Array<string>;
-    acc: any;
-    accidentals: any;
-    accTemporary: number;
     actualTuplet: C.ITuplet;
     chord: Array<C.IPitch>;
     forceMiddleNoteDirection: number;
@@ -751,9 +737,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         beats: number;
         beatType: number;
     };
-    line: any;
-    octave: number;
-    pitch: any;
+    lines: Array<number>;
     tieTo: DurationModel;
     tuplet: C.ITuplet;
 
