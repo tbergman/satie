@@ -587,7 +587,7 @@ beatType
   : NUMBER
         {
             assert(parseFloat($1, 10), "beatType must be non-null");
-            $$ = {count: $1};
+            $$ = {count: 1*$1};
         }
   ;
 

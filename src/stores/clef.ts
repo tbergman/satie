@@ -60,7 +60,7 @@ class ClefModel extends Model {
         } else {
             ctx.x += 0.6 + this._annotatedSpacing/4;
         }
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
+        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.SUCCESS;
     }
     visible(): boolean {

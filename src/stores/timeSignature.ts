@@ -42,7 +42,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
         ctx.x += 0.7 + this._annotatedSpacing/4;
         ctx.timeSignature = this.actualTS || this._timeSignature;
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
+        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.SUCCESS;
     }
 

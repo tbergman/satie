@@ -52,7 +52,7 @@ class KeySignatureModel extends Model {
         if (c) {
             ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
+        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.SUCCESS;
     }
     toLylite(lylite: Array<string>) {

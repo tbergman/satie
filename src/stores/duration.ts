@@ -47,68 +47,69 @@ class DurationModel extends Model implements C.IPitchDuration {
         // Update the context to reflect the current note's duration.
         ctx.count = this.count;
 
-        var beats = this.getBeats(ctx);
-        this.isWholeBar = this.getBeats(ctx) === ctx.timeSignature.beats;
+        this.isWholeBar = this._beats === ctx.timeSignature.beats;
 
         // Make sure the bar is not overfilled. Multibar rests are okay.
-        if (this.getBeats(ctx) > ctx.timeSignature.beats && ctx.beats >= ctx.timeSignature.beats) {
-            return BarlineModel.createBarline(ctx, C.Barline.Standard);
-        } else if (!this.isMultibar) {
-            // The number of beats in a bar must not exceed that specified by the time signature.
-            if (ctx.beats + beats > ctx.timeSignature.beats) {
-                var overfill = ctx.beats + beats - ctx.timeSignature.beats;
-                if (beats === overfill) {
-                    var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
-                    return ret;
-                } else {
-                    var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
-                    var addAfterBar = Metre.subtract(this, beats - overfill, ctx).map(t => new DurationModel(<any>t));
-                    for (i = 0; i < replaceWith.length; ++i) {
-                        replaceWith[i].pitch = this.pitch;
-                        replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
-                        if (i + 1 !== replaceWith.length || addAfterBar.length && !this.isRest) {
-                            replaceWith[i].tie = true;
+        if (ctx.isBeam || !this.inBeam) {
+            if (this._beats > ctx.timeSignature.beats && ctx.beats >= ctx.timeSignature.beats) {
+                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+            } else if (!this.isMultibar) {
+                // The number of beats in a bar must not exceed that specified by the time signature.
+                if (ctx.beats + this._beats > ctx.timeSignature.beats) {
+                    var overfill = ctx.beats + this._beats - ctx.timeSignature.beats;
+                    if (this._beats === overfill) {
+                        var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
+                        return ret;
+                    } else {
+                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
+                        var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx).map(t => new DurationModel(<any>t));
+                        for (i = 0; i < replaceWith.length; ++i) {
+                            replaceWith[i].pitch = this.pitch;
+                            replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                            if (i + 1 !== replaceWith.length || addAfterBar.length && !this.isRest) {
+                                replaceWith[i].tie = true;
+                            }
                         }
-                    }
-                    for (i = 0; i < addAfterBar.length; ++i) {
-                        addAfterBar[i].pitch = this.pitch;
-                        addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
-                        if (i + 1 !== addAfterBar.length && !this.isRest) {
-                            addAfterBar[i].tie = true;
+                        for (i = 0; i < addAfterBar.length; ++i) {
+                            addAfterBar[i].pitch = this.pitch;
+                            addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                            if (i + 1 !== addAfterBar.length && !this.isRest) {
+                                addAfterBar[i].tie = true;
+                            }
                         }
+                        BarlineModel.createBarline(ctx, C.Barline.Standard);
+                        Array.prototype.splice.apply(ctx.body, [ctx.idx, 0].concat(<any[]>replaceWith));
+                        Array.prototype.splice.apply(ctx.body, [ctx.idx + 1 + replaceWith.length, 1].concat(<any[]>addAfterBar));
+                        return C.IterationStatus.RETRY_LINE;
                     }
-                    BarlineModel.createBarline(ctx, C.Barline.Standard);
-                    Array.prototype.splice.apply(ctx.body, [ctx.idx, 0].concat(<any[]>replaceWith));
-                    Array.prototype.splice.apply(ctx.body, [ctx.idx + 1 + replaceWith.length, 1].concat(<any[]>addAfterBar));
-                    return C.IterationStatus.RETRY_LINE;
+                }
+
+                // Check rhythmic spelling
+                if (!this.inBeam) {
+                    status = Metre.rythmicSpellcheck(ctx);
+                    if (status !== C.IterationStatus.SUCCESS) { return status; }
                 }
             }
 
-            // Check rhythmic spelling
-            if (!this.inBeam) {
-                status = Metre.rythmicSpellcheck(ctx);
-                if (status !== C.IterationStatus.SUCCESS) { return status; }
+            // All notes, chords, and rests throughout a line must have the same spacing.
+            if (ctx.smallest > this._beats) {
+                ctx.smallest = this._beats;
+                return C.IterationStatus.RETRY_LINE;
             }
-        }
 
-        // All notes, chords, and rests throughout a line must have the same spacing.
-        if (ctx.smallest > beats) {
-            ctx.smallest = beats;
-            return C.IterationStatus.RETRY_LINE;
-        }
+            // Each note's width has a linear component proportional to the log of its duration.
+            this.annotatedExtraWidth = (Math.log(this._beats) - Math.log(ctx.smallest)) /
+                DurationModel.log2 / 3;
 
-        // Each note's width has a linear component proportional to the log of its duration.
-        this.annotatedExtraWidth = (Math.log(this.getBeats(ctx)) - Math.log(ctx.smallest)) /
-            DurationModel.log2 / 3;
-
-        // The width of a line must not exceed that specified by the page layout.
-        if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
-            status = NewlineModel.createNewline(ctx);
+            // The width of a line must not exceed that specified by the page layout.
+            if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
+                status = NewlineModel.createNewline(ctx);
+            }
+            if (status !== C.IterationStatus.SUCCESS) { return status; }
         }
-        if (status !== C.IterationStatus.SUCCESS) { return status; }
 
         // Beams must follow the beam patterns
-        if (!this.perfectlyBeamed(ctx)) {
+        if ((ctx.isBeam || !this.inBeam) && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {
             var b = DurationModel.BEAMDATA;
             DurationModel.BEAMDATA = null;
 
@@ -157,7 +158,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.line = DurationModel.getLine(this, ctx);
 
         if (!ctx.isBeam) {
-            ctx.beats = (ctx.beats || 0) + this.getBeats(ctx);
+            ctx.beats = (ctx.beats || 0) + this._beats;
         }
 
         if (!ctx.isBeam && this.inBeam) {
@@ -176,9 +177,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
         }
         ctx.x += this.getWidth(ctx);
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black");
-        this.flag = !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
-        DurationModel.countToFlag[this.displayCount];
+        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.SUCCESS;
     }
 
@@ -197,9 +196,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
     }
     perfectlyBeamed(ctx: Context) {
-        if (!this.hasFlagOrBeam) {
-            return true;
-        }
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
@@ -213,7 +209,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nextLine: number = ctx.next() && ctx.next().isNote ?
                 DurationModel.getAverageLine(ctx.next().note, ctx) : null;
 
-        if ((nextLine !== null) && ctx.beats + this.getBeats(ctx) + ctx.next().note
+        if ((nextLine !== null) && ctx.beats + this._beats + ctx.next().note
                 .getBeats(ctx, this.count) > ctx.timeSignature.beats) {
             // Barlines aren't inserted yet.
             nextLine = null;
@@ -232,7 +228,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             check = prevLine;
         } else {
             var startsAt = ctx.beats;
-            var endsAt = ctx.beats + this.getBeats(ctx);
+            var endsAt = ctx.beats + this._beats;
 
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
                 check = nextLine;
@@ -312,9 +308,9 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get accStrokes() {
         if (this.chord) {
-            return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "black");
+            return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "#000000");
         }
-        return [this.accTemporary ? "#A5A5A5" : "black"];
+        return [this.accTemporary ? "#A5A5A5" : "#000000"];
     }
 
     get annotatedExtraWidth() {
@@ -326,10 +322,11 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get count() {
-        return 1*this._count;
+        return this._count;
     }
 
     set count(n: number) {
+        assert(!isNaN(n));
         this._count = n;
         this._beats = null; // Kill optimizer.
     }
@@ -381,6 +378,15 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     set displayMarkings(m: Array<string>) {
         this._displayMarkings = m;
+    }
+
+    get flag() {
+        return !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
+            DurationModel.countToFlag[this.displayCount];
+    }
+
+    set flag(a: string) {
+        assert(false, "Read-only property");
     }
 
     get hasStem() {
@@ -443,9 +449,9 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.chord) {
             return _.map(this.chord, c => c.temporary ?
                     "#A5A5A5" :
-                    (this.selected ? "#75A1D0" : "black"));
+                    (this.selected ? "#75A1D0" : "#000000"));
         }
-        return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "black" )];
+        return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000" )];
     }
 
     get type() {
@@ -576,7 +582,11 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (!isNaN(<any>line)) {
             return line;
         }
-        return _.reduce(line, (memo:number, l: number) => memo + l, 0)/line.length;
+        var sum = 0;
+        for (var i = 0; i < line.length; ++i) {
+            sum += line[i];
+        }
+        return sum / line.length;
     };
 
     static getDots = (obj: C.IPitchDuration) =>
@@ -586,6 +596,10 @@ class DurationModel extends Model implements C.IPitchDuration {
             ctx: Context, options?: { filterTemporary: boolean }): any => { // TSFIX
         options = options || {filterTemporary: false};
 
+        if (pitch.isRest) {
+            return 3;
+        }
+
         if (!ctx) {
             assert(pitch.line !== undefined,
                     "Must be first annotated in duration.jsx");
@@ -593,13 +607,15 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
         assert(ctx.clef, "A clef must be inserted before the first note");
         if (pitch.chord) {
-            return _(pitch.chord
-                .filter(p => !options.filterTemporary || !p.temporary))
-                .map(p => DurationModel.getLine(p, ctx))
-                .value();
-        }
-        if (pitch.isRest) {
-            return 3;
+            var ret: Array<number> = [];
+            for (var i = 0; i < pitch.chord.length; ++i) {
+                if (!options.filterTemporary || !pitch.chord[i].temporary) {
+                    ret.push(DurationModel.clefOffsets[ctx.clef] +
+                        (pitch.chord[i].octave || 0) * 3.5 +
+                        DurationModel.pitchOffsets[pitch.chord[i].pitch]);
+                }
+            }
+            return ret;
         }
         return DurationModel.clefOffsets[ctx.clef] +
             (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.pitch];
@@ -718,6 +734,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     private _annotatedExtraWidth: number;
     private _beats: number;
+    private _color: number = 0x000000;
     private _count: number;
     private _displayCount: number;
     private _displayDots: number;
@@ -729,8 +746,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     accTemporary: number;
     actualTuplet: C.ITuplet;
     chord: Array<C.IPitch>;
-    color: string;
-    flag: string;
     forceMiddleNoteDirection: number;
     impliedTS: {
         beats: number;
@@ -741,6 +756,18 @@ class DurationModel extends Model implements C.IPitchDuration {
     pitch: any;
     tieTo: DurationModel;
     tuplet: C.ITuplet;
+
+    get color(): string {
+        var hex = this._color.toString(16);
+        return "#" + "000000".substr(0, 6 - hex.length) + hex;
+    }
+
+    set color(a: string) {
+        if (a.length && a[0] === "#") {
+            a = a.slice(1);
+        }
+        this._color = parseInt(a, 16);
+    }
 }
 
 var getBeats = Metre.getBeats;
