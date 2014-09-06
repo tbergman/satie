@@ -7,6 +7,7 @@
 import React = require("react");
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
+import assert = require("assert");
 
 import Molasses = require("./molasses");
 var Victoria = require("./victoria/hellogl.jsx");
@@ -127,6 +128,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                 return memo;
                             }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
                             function (s: Array<Model>, lidx: number) {
+
                                 return LineContainerComponent({
                                         isCurrent: this.state.visualCursor.annotatedLine ===
                                             lidx + pageLines[page.idx],
@@ -147,8 +149,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                         selIdx = h++;
                                                         selProps = {
                                                             key: "selectionrect-" + Math.random(),
-                                                            x: s[i].x(),
-                                                            y: s[i].y() - 1 / 2,
+                                                            x: s[i].x,
+                                                            y: s[i].y - 1 / 2,
                                                             height: 1,
                                                             fill: "#75A1D0",
                                                             opacity: 0.33
@@ -156,7 +158,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                     }
                                                 }
                                                 if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
-                                                    selProps.width = Math.abs(s[i].x() - selProps.x);
+                                                    selProps.width = Math.abs(s[i].x - selProps.x);
                                                     components[selIdx] = Rect(selProps);
                                                     selIdx = -1;
                                                 }
@@ -194,11 +196,11 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
                             style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
                         Line({
-                            x1: this.state.visualCursor.annotatedObj.x() - 0.2,
-                            x2: this.state.visualCursor.annotatedObj.x() - 0.2,
-                            y1: this.state.visualCursor.annotatedObj.y() +
+                            x1: this.state.visualCursor.annotatedObj.x - 0.2,
+                            x2: this.state.visualCursor.annotatedObj.x - 0.2,
+                            y1: this.state.visualCursor.annotatedObj.y +
                                 (isPianoStaff ? 1.15 : 0) - vcHeight,
-                            y2: this.state.visualCursor.annotatedObj.y() +
+                            y2: this.state.visualCursor.annotatedObj.y +
                                 (isPianoStaff ? 1.15 : 0) + vcHeight,
                             stroke: "#008CFF",
                             strokeWidth: 0.05})
@@ -208,7 +210,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         var ret: Object; // React component
         if (!this.props.raw) {
-            ret = html.div({className: "workspace", style: {top: "" + this.props.top}},
+            ret = html.div({className: "workspace", onScroll: this.handleScroll, style: {top: "" + this.props.top}},
                 _.map(rawPages, function(rawPage: any, pidx: number)  {return html.div({className: "page",
                     key: "page" + pidx,
                     style: {
@@ -283,23 +285,23 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     j < body.length && body[i].type !== C.Type.NEWPAGE; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
-                if (Math.abs(item.y() - dynY) < 0.001) {
+                if (Math.abs(item.y - dynY) < 0.001) {
                     if ((item.type === C.Type.KEY_SIGNATURE ||
                                 item.type === C.Type.TIME_SIGNATURE ||
                                 item.type === C.Type.CLEF ||
                                 item.type === C.Type.DURATION) &&
-                            Math.abs(dynX - item.x()) < 0.27 +
+                            Math.abs(dynX - item.x) < 0.27 +
                                 (item.isNote ? (item.note.dots||0)*0.2 : 0)) {
-                        dynX = item.x();
+                        dynX = item.x;
                         foundIdx = j;
                         foundObj = item;
                         break;
-                    } else if (dynX < item.x() ||
+                    } else if (dynX < item.x ||
                             (j === body.length - 1 && h === this.getCtxCount() - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
-                        if (dynX < item.x()) {
+                        if (dynX < item.x) {
                             j -= 1;
                         }
                         _pointerData = {
@@ -396,9 +398,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             for (var i = ctx.pageStarts[mouse.page];
                     i < body.length && body[i].type !== C.Type.NEWPAGE; ++i) {
                 var item = body[i];
-                if (inRange(box.top - 1, item.y(),
+                if (inRange(box.top - 1, item.y,
                             box.bottom + 1) &&
-                        inRange(box.left, item.x(), box.right)) {
+                        inRange(box.left, item.x, box.right)) {
                     ret.push(item);
                 }
             }
@@ -593,6 +595,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         });
     }, 16 /* 60 Hz */);
 
+    handleScroll = _.throttle(() => {
+        this.forceUpdate();
+    }, 16 /* 60 Hz */);
+
     getCtx(idx: number) {
         return this.props.contexts ?
             this.props.contexts[idx] :
@@ -776,6 +782,11 @@ export interface IRendererState {
  */
 class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     render() {
+        if (this.shouldClear) {
+            assert(this.dirty);
+            this.shouldClear = false;
+            return Group(null, null);
+        }
         if (PROFILER_ENABLED) {
             console.log("Rendering line", this.props.idx);
         }
@@ -800,15 +811,42 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
                 });
             }
         }
-        if (songDirty || heightChanged || lineDirty) {
+        if (songDirty || heightChanged || lineDirty || this.dirty) {
             // Throttle updating, unless we're on the active line.
             if (this.props.isCurrent) {
+                this.dirty = false;
                 return true;
             } else {
-                _.defer(this.updateIfNeeded);
+                if (!this.onScreen) {
+                    if (!this.dirty) {
+                        // Render a blank thing.
+                        this.dirty = true;
+                        this.shouldClear = true;
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    this.dirty = false;
+                    _.delay(this.updateIfNeeded, 6);
+                }
             }
         }
         return false;
+    }
+
+    get onScreen(): boolean {
+        var domNode: SVGGElement = <any> this.getDOMNode();
+        var bBox = domNode.getBBox();
+        var svg = domNode.ownerSVGElement;
+        var point = svg.createSVGPoint();
+        var matrix = svg.getScreenCTM();
+        point.x = bBox.x;
+        point.y = bBox.y;
+        var topLeft = point.matrixTransform(matrix);
+        point.y += bBox.height;
+        var bottomLeft = point.matrixTransform(matrix);
+        return bottomLeft.y >= 0 && topLeft.y <= window.innerHeight;
     }
 
     updateIfNeeded = _.throttle(() => {
@@ -816,6 +854,9 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
             this.forceUpdate();
         }
     }, 20, { leading: false });
+
+    dirty: boolean = false;
+    shouldClear: boolean = false;
 };
 
 var LineContainerComponent = ReactTS.createReactComponent(LineContainer);

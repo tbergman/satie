@@ -18,7 +18,7 @@ export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
                 key: spec.key,
                 width: spec.width,
                 x: spec.begin,
-                y: spec.y() + spec.lineSpacing});
+                y: spec.y + spec.lineSpacing});
     }
 };
 

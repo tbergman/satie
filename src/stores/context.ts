@@ -650,7 +650,7 @@ class Context {
                 while (i >= 0 && this.body[i].type !== C.Type.BEAM_GROUP) {
                     --i;
                 }
-                this.x = this.body[i].x();
+                this.x = this.body[i].x;
                 --i;
                 break;
             case C.IterationStatus.RETRY_CURRENT:

@@ -13,8 +13,8 @@ export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
         var spec = this.props.spec;
         return Glyph({
-            x: spec.x() - (spec.isChange ? 0.2 : 0),
-            y: spec.y() - (this.line - 3)/4,
+            x: spec.x - (spec.isChange ? 0.2 : 0),
+            y: spec.y - (this.line - 3)/4,
             fill: spec.color,
             fontSize: this.props.fontSize,
             glyphName: this.sign + (spec.isChange ? "Change" : "")});

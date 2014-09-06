@@ -45,8 +45,8 @@ export function Component(props: IProps) {
                 fontSize: props.fontSize,
                 notehead: spec.restHead,
                 stroke: spec.color,
-                x: spec.x(),
-                y: spec.y()},
+                x: spec.x,
+                y: spec.y},
             markings
         );
     }
@@ -64,18 +64,18 @@ export function Component(props: IProps) {
             notehead: spec.notehead,
             secondaryStroke: spec.color,
             strokes: spec.strokes,
-            tieTo: spec.tieTo && spec.tieTo.x(),
-            x: zeroOffsetMode ? 0 : spec.x(),
-            y: zeroOffsetMode ? 0 : spec.y()},
+            tieTo: spec.tieTo && spec.tieTo.x,
+            x: zeroOffsetMode ? 0 : spec.x,
+            y: zeroOffsetMode ? 0 : spec.y},
         markings);
 
     if (zeroOffsetMode) {
         return html.g({
                 key: <any> spec.key, // numeric keys are okay
-                x: spec.x(), // for beam
-                y: spec.y(), // for beam
-                transform: "translate(" + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x() +
-                "," + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y() + ")"},
+                x: spec.x, // for beam
+                y: spec.y, // for beam
+                transform: "translate(" + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x +
+                "," + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y + ")"},
             note);
     } else {
         return note;

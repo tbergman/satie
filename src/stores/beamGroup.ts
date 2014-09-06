@@ -64,8 +64,8 @@ class BeamGroupModel extends Model {
         }
 
         if (!this.beam.every(b => {
-            b.setX(ctx.x);
-            b.setY(ctx.y);
+            b.x = ctx.x;
+            b.y = ctx.y;
             ctx.isBeam = true;
             var ret = b.annotate(ctx);
             ctx.isBeam = undefined;
@@ -75,6 +75,11 @@ class BeamGroupModel extends Model {
             return mret;
         }
         return C.IterationStatus.SUCCESS;
+    }
+
+    constructor(spec: any) {
+        super(spec);
+        console.log("New beamgroup");
     }
 
     /**

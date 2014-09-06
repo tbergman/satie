@@ -32,6 +32,8 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             absw *= 2;
         }
 
+        console.log(y2);
+
         return Bezier({
             x1: x2,
             y1: y2,
@@ -67,8 +69,8 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             ("" + spec.lines2) +
             ("" + spec.width) +
             ("" + spec.direction) +
-            ("" + spec.x()) +
-            ("" + spec.y()));
+            ("" + spec.x) +
+            ("" + spec.y));
     }
 
     getYOffset() {
@@ -82,18 +84,18 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     }
     getFontOffset = getFontOffset;
     getX1() {
-        return this.props.spec.x();
+        return this.props.spec.x;
     }
     getX2() {
-        return this.props.spec.x() + this.props.spec.width;
+        return this.props.spec.x + this.props.spec.width;
     }
     getY1(idx: number) {
-        return this.props.spec.y() -
+        return this.props.spec.y -
             this.getYOffset() -
             (getExtremeLine(this.props.spec.lines1, -this.getDirection()) - 3)/4;
     }
     getY2(idx: number) {
-        return this.props.spec.y() -
+        return this.props.spec.y -
             this.getYOffset() -
             (getExtremeLine(this.props.spec.lines2, -this.getDirection()) - 3)/4;
     }

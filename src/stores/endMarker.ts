@@ -7,7 +7,6 @@
 import Model = require("./model");
 
 import assert = require("assert");
-import _ = require("lodash");
 
 import C = require("./contracts");
 import Context = require("./context");
@@ -57,8 +56,10 @@ class EndMarkerModel extends Model {
             var DurationModel = require("./duration"); // Recursive dependency.
 
             var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
-                .map((beat: C.IPitchDuration) => new DurationModel(_.extend(beat, {
-                    chord: [{ pitch: "r" }]}))); // <-- lol
+                .map((beat: C.IPitchDuration) => {
+                    beat.chord = [{ pitch: "r", octave: 0, acc: null }];
+                    return new DurationModel(beat);
+                });
             Array.prototype.splice.apply(ctx.body,
                 [this.idx, 0].concat(toAdd));
 

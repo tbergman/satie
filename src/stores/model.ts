@@ -41,8 +41,8 @@ import Context = require("./context");
 class Model {
     annotate(ctx: Context, stopping?: number): C.IterationStatus {
         if (!this.inBeam) {
-            this.setX(ctx.x);
-            this.setY(ctx.y);
+            this.x = ctx.x;
+            this.y = ctx.y;
         }
         this.idx = ctx.idx;
 
@@ -52,9 +52,6 @@ class Model {
             return ret;
         }
 
-        if (!this._key) {
-            this._key = Model._generateKey(ctx);
-        }
         return ret;
     }
 
@@ -71,12 +68,8 @@ class Model {
         }
     }
 
-    static _generateKey(ctx: Context): number {
+    static _generateKey(): number {
         return ++Model.lastKey;
-    }
-
-    get key() : number {
-        return this._key;
     }
 
     get timeSignature(): C.ITimeSignature {
@@ -100,22 +93,6 @@ class Model {
 
     render(fontSize: number) {
         assert(false, "Not implemented");
-    }
-
-    x() : number {
-        return this._x;
-    }
-
-    y() : number {
-        return this._y;
-    }
-
-    setX(x: number) : void {
-        this._x = x;
-    }
-
-    setY(y: number) : void {
-        this._y = y;
     }
 
     get annotatedExtraWidth(): number {
@@ -189,9 +166,9 @@ class Model {
         if (source === C.Source.ANNOTATOR) { this._flags = this._flags | Flags.ANNOTATOR;
         } else { this._flags = this._flags & ~Flags.ANNOTATOR; } }
 
-    _key: number;
-    _x: number;
-    _y: number;
+    key: number = Model._generateKey();
+    x: number = NaN;
+    y: number = NaN;
     endMarker: boolean;
     idx: number;
     _flags: number = 0;

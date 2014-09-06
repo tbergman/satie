@@ -268,8 +268,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
             fontSize: this.props.fontSize,
             spec: {
                 direction: -this.getDirection(),
-                x: () => this.props.x + fullWidth/8 + 0.15,
-                y: () => this.props.y,
+                x: this.props.x + fullWidth/8 + 0.15,
+                y: this.props.y,
                 lines1: [this.getStartingLine()],
                 lines2: [this.getStartingLine()],
                 width: fullWidth*0.75}});

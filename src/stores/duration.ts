@@ -165,7 +165,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else if (!this.inBeam) {
             this._handleTie(ctx);
         }
-        this.setX(ctx.x);
+        this.x = ctx.x;
         for (i = 0; i < this.chord.length; ++i) {
             ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
         }

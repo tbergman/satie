@@ -21,16 +21,16 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
         this.hash = this.getHash(spec);
 
-        var thickX = spec.x() + defaults.barlineSeparation/4 +
+        var thickX = spec.x + defaults.barlineSeparation/4 +
             defaults.thickBarlineThickness/4;
 
         if (spec.barline === C.Barline.Double) {
             return Group(null,
                 [Line({key: 1,
-                    x1: spec.x(),
-                    x2: spec.x(),
-                    y1: spec.y() - spec.height - spec.yOffset,
-                    y2: spec.y() + spec.height - spec.yOffset,
+                    x1: spec.x,
+                    x2: spec.x,
+                    y1: spec.y - spec.height - spec.yOffset,
+                    y2: spec.y + spec.height - spec.yOffset,
                     stroke: spec.color,
                     victoriaYStrokeWidthFactor: 0,
                     fill: spec.color,
@@ -38,8 +38,8 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
                 Line({key: 2,
                     x1: thickX,
                     x2: thickX,
-                    y1: spec.y() - spec.height - spec.yOffset,
-                    y2: spec.y() + spec.height - spec.yOffset,
+                    y1: spec.y - spec.height - spec.yOffset,
+                    y2: spec.y + spec.height - spec.yOffset,
                     victoriaYStrokeWidthFactor: 0,
                     stroke: spec.color,
                     fill: spec.color,
@@ -48,10 +48,10 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
                 // cover over the empty part of the stave.
                 Rect({
                     key: 3,
-                    x: spec.x() + defaults.barlineSeparation/4 +
+                    x: spec.x + defaults.barlineSeparation/4 +
                         defaults.thickBarlineThickness/4 +
                         defaults.thinBarlineThickness/4,
-                    y: spec.y() - spec.height - 0.1 - spec.yOffset,
+                    y: spec.y - spec.height - 0.1 - spec.yOffset,
                     stroke: "#FFFFFF",
                     fill: "#FFFFFF",
                     height: spec.height*2 + 0.2,
@@ -59,10 +59,10 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
             );
         }
         return Line({
-            x1: spec.x(),
-            x2: spec.x(),
-            y1: spec.y() - spec.height - spec.yOffset,
-            y2: spec.y() + spec.height - spec.yOffset,
+            x1: spec.x,
+            x2: spec.x,
+            y1: spec.y - spec.height - spec.yOffset,
+            y2: spec.y + spec.height - spec.yOffset,
             stroke: spec.color,
             fill: spec.color,
             strokeWidth: defaults.thinBarlineThickness/4});
@@ -80,8 +80,8 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
      */
     getHash(spec: BarlineModel) {
         return hash(
-            spec.x() +
-            spec.y() +
+            spec.x +
+            spec.y +
             spec.color);
     }
 

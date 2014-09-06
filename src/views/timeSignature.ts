@@ -20,15 +20,15 @@ export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
 
             if (beats === 4 && beatType === 4) {
                 return Glyph({
-                    x: spec.x(),
-                    y: spec.y(),
+                    x: spec.x,
+                    y: spec.y,
                     fill: spec.color,
                     fontSize: this.props.fontSize,
                     glyphName: "timeSigCommon"});
             } else if (beats === 2 && beatType === 2) {
                 return Glyph({
-                    x: spec.x(),
-                    y: spec.y(),
+                    x: spec.x,
+                    y: spec.y,
                     fill: spec.color,
                     fontSize: this.props.fontSize,
                     glyphName: "timeSigCutCommon"});
@@ -40,16 +40,16 @@ export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
                     key: -5,
                     stroke: spec.color,
                     fontSize: this.props.fontSize,
-                    x: spec.x() + this.numOffset(),
-                    y: spec.y() - 1/4},
+                    x: spec.x + this.numOffset(),
+                    y: spec.y - 1/4},
                 ts.beats
             ),
             TimeSignatureNumber({
                     key: -6,
                     stroke: spec.color,
                     fontSize: this.props.fontSize,
-                    x: spec.x() + this.denOffset(),
-                    y: spec.y() + 1/4},
+                    x: spec.x + this.denOffset(),
+                    y: spec.y + 1/4},
                 ts.beatType
             )
         );

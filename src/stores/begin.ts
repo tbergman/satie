@@ -44,10 +44,10 @@ class BeginModel extends Model {
         } else {
             this.noMargin = false;
         }
-        this.braceY = this.y();
+        this.braceY = this.y;
         // We're cheating here! y() won't be annotated yet, but it will
         // be at render time!.
-        this.getBraceY2 = () => ctx.nextStave().body[0].y();
+        this.getBraceY2 = () => ctx.nextStave().body[0].y;
         this.pageSize = ctx.pageSize;
 
         return C.IterationStatus.SUCCESS;

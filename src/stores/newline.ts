@@ -127,7 +127,7 @@ class NewlineModel extends Model {
                     diff/l;
                 xOffset -= diff/l;
             }
-            var newX = ctx.body[i].x() + xOffset;
+            var newX = ctx.body[i].x + xOffset;
             if (ctx.body[i].type === C.Type.BARLINE &&
                     (!ctx.body[i + 1] || ctx.body[i + 1].type !== C.Type.NEWLINE)) {
                 if (ctx.lines[ctx.line - 1] &&
@@ -147,7 +147,7 @@ class NewlineModel extends Model {
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && ctx.body[j].type !== C.Type.BARLINE; --j) {
-                        ctx.body[j].setX(ctx.body[j].x() + remaining);
+                        ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
                         }
@@ -165,7 +165,7 @@ class NewlineModel extends Model {
                     remaining = offset;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
                             C.Type.BARLINE; ++j) {
-                        ctx.body[j].setX(ctx.body[j].x() + remaining);
+                        ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
                         }
@@ -174,7 +174,7 @@ class NewlineModel extends Model {
 
                 ctx.barlineX.push(newX);
             }
-            ctx.body[i].setX(newX);
+            ctx.body[i].x = newX;
         }
         return C.IterationStatus.SUCCESS;
     }
@@ -232,10 +232,10 @@ class NewlineModel extends Model {
             }
         }
         if (n) {
-            var lw = ctx.maxX - 3 - ctx.curr.x();
+            var lw = ctx.maxX - 3 - ctx.curr.x;
             var nw = lw/n;
             if (fullJustify) {
-                lw = ctx.maxX - ctx.curr.x();
+                lw = ctx.maxX - ctx.curr.x;
                 nw = lw/n;
             } else {
                 var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
@@ -247,7 +247,7 @@ class NewlineModel extends Model {
                 if (ctx.body[i].isNote) {
                     lw -= nw;
                 }
-                ctx.body[i].setX(ctx.body[i].x() + lw);
+                ctx.body[i].x = ctx.body[i].x + lw;
             }
         }
     };

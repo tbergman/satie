@@ -16,8 +16,8 @@ export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
         return Group(null,
             _.map(this.getAccidentals(), (a, idx) => Accidental({
                 key: idx, /* for React */
-                x: spec.x() + idx/4,
-                y: spec.y(),
+                x: spec.x + idx/4,
+                y: spec.y,
                 line: a.line,
                 stroke: spec.color,
                 fontSize: this.props.fontSize,

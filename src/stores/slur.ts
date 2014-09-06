@@ -62,11 +62,11 @@ class SlurGroupModel extends Model {
             this.direction = - BeamGroupModel.decideDirection(
                 DurationModel.getLines(first, ctx),
                 DurationModel.getLines(last, ctx));
-            this.m_x = first.x();
-            this.m_y = first.y();
+            this.m_x = first.x;
+            this.m_y = first.y;
             this.lines1 = DurationModel.getLines(first, ctx);
             this.lines2 = DurationModel.getLines(last, ctx);
-            this.width = last.x() - first.x();
+            this.width = last.x - first.x;
         }
         return C.IterationStatus.SUCCESS;
     }

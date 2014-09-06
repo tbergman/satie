@@ -17,14 +17,14 @@ export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
 
         return Group(null,
             spec.pianoStaff && Brace({
-                x: spec.x(),
+                x: spec.x,
                 fontSize: this.props.fontSize,
                 y: spec.braceY,
                 y2: spec.getBraceY2()}),
             StaveLines({
                 key: "StaveLines",
                 width: this.props.spec.width,
-                x: spec.x(),
+                x: spec.x,
                 y: spec.braceY})
         );
     }
