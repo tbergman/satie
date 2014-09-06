@@ -65,11 +65,13 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
             m = -0.5;
         }
 
+        var dynamicM = m / (Xs[Xs.length - 1] - Xs[0]);
+
         var b = line1 + stemHeight1;
 
         function getSH(direction: number, idx: number, line: number) {
             return (b * direction +
-                (direction === 1 ? 0 : 6.9) + m * idx * direction) - direction * line;
+                (direction === 1 ? 0 : 6.9) + dynamicM * (Xs[idx] - Xs[0]) * direction) - direction * line;
         }
 
         // When the slope causes near-collisions, eliminate the slope.

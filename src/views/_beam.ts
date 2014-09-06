@@ -25,32 +25,36 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
         if (this.props.beams === C.IBeamCount.VARIABLE) {
+            var xLow = this._getX1();
+            var xHi = this._getX2();
+
             return Group(null,
                 _.map(this.props.variableBeams, (beams: number, idx: number): any => {
                     if (idx === 0) {
                         return null;
                     }
                     return _.times(beams, beam => {
-                        var x2: number;
+                        var x1: number;
+                        var x2: number = this._withXOffset(this.props.variableX[idx]);
                         if (this.props.variableBeams[idx - 1] <= beam) {
                             if (this.props.variableX[idx + 1] &&
                                 this.props.variableBeams[idx + 1] === beams) {
                                 return null;
                             }
-                            x2 = (this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) / 4;
+                            x1 = this._withXOffset((this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) / 4);
                         } else {
-                            x2 = this.props.variableX[idx - 1];
+                            x1 = this._withXOffset(this.props.variableX[idx - 1]);
                         }
                         return React.DOM.polygon({
                             key: idx + "_" + beam,
-                            points: f * this._withXOffset(x2) + "," +
-                            f * this._getY1(0, beam) + " " +
-                            f * this._withXOffset(this.props.variableX[idx]) + "," +
-                            f * this._getY2(0, beam) + " " +
-                            f * this._withXOffset(this.props.variableX[idx]) + "," +
-                            f * this._getY2(1, beam) + " " +
-                            f * this._withXOffset(x2) + "," +
-                            f * this._getY2(1, beam),
+                            points: f * x1 + "," +
+                            f * this._getYVar(0, beam, (x1 - xLow)/(xHi - xLow)) + " " +
+                            f * x2 + "," +
+                            f * this._getYVar(0, beam, (x2 - xLow)/(xHi - xLow)) + " " +
+                            f * x2 + "," +
+                            f * this._getYVar(1, beam, (x2 - xLow)/(xHi - xLow)) + " " +
+                            f * x1 + "," +
+                            f * this._getYVar(1, beam, (x1 - xLow)/(xHi - xLow)),
                             stroke: this.props.stroke,
                             fill: this.props.stroke,
                             strokeWidth: 0
@@ -90,8 +94,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 
     /**
-     * Returns true if anything has changed. This is implemented because
-     * beams are particularly slow to mount.
+     * Returns true if anything has changed. Beams are particularly slow to mount.
      */
     shouldComponentUpdate(nextProps : IProps) {
         var ret =
@@ -157,6 +160,12 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
             (this.props.line2 - 3)/4 +
             this.getDirection()*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
+    }
+
+    private _getYVar(incl: number, idx: number, percent: number) {
+        var y1 = this._getY1(incl, idx);
+        var y2 = this._getY2(incl, idx);
+        return (1 - percent) * y1 + percent * y2;
     }
 
     /**
