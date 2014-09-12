@@ -228,3 +228,5 @@ export var POST = function(url: string, p?: any, cb?: () => void) {
 export var GET = function(url: string, p?: any, cb?: () => void) {
     dispatch(url, "GET", p, cb);
 };
+
+global.Dispatcher = module.exports;

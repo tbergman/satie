@@ -11,7 +11,6 @@ import React = require("react");
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
-var DeepPureMixin = require("./deepPureMixin");
 
 var Accidental = require("./_accidental.jsx");
 var Dot = require("./_dot.jsx");
@@ -275,7 +274,6 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 width: fullWidth*0.75}});
     }
 };
-Note.applyMixins(DeepPureMixin);
 
 var IDEAL_STEM_HEIGHT = 3.5;
 var MIN_STEM_HEIGHT = 2.5;

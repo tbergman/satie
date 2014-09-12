@@ -9,6 +9,7 @@ import Model = require("./model");
 import C = require("./contracts");
 import Context = require("./context");
 import NewPageModel = require("./newpage");
+import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
@@ -180,6 +181,7 @@ class NewlineModel extends Model {
     }
 
     static createNewline = (ctx: Context): C.IterationStatus => {
+        SongEditorStore.markRendererLineDirty(ctx.line + 1, ctx.staveIdx);
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {

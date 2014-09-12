@@ -23,6 +23,16 @@ class EndMarkerModel extends Model {
 
         // End markers must not touch other end markers.
         if (next && next.type === C.Type.END_MARKER || prev && prev.type === C.Type.END_MARKER) {
+            for (var i = ctx.idx; i >= 0; --i) {
+                if (ctx.body[i].type === C.Type.NEWLINE) {
+                    ctx.body.splice(i);
+                    console.log("@");
+                    ctx.start = 0;
+                    var SongEditor = require("./songEditor"); // Recursive dependency.
+                    SongEditor.Instance.markRendererDirty();
+                    return C.IterationStatus.RETRY_FROM_ENTRY;
+                }
+            }
             ctx.eraseCurrent();
             return C.IterationStatus.RETRY_LINE;
         }
@@ -58,7 +68,8 @@ class EndMarkerModel extends Model {
             var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
                 .map((beat: C.IPitchDuration) => {
                     beat.chord = [{ pitch: "r", octave: 0, acc: null }];
-                    return new DurationModel(beat);
+                    beat.tie = false;
+                    return new DurationModel(beat, C.Source.ANNOTATOR);
                 });
             Array.prototype.splice.apply(ctx.body,
                 [this.idx, 0].concat(toAdd));
@@ -74,6 +85,7 @@ class EndMarkerModel extends Model {
                 return C.IterationStatus.RETRY_LINE;
             } else {
                 var BarlineModel = require("./barline"); // Recursive dependency.
+                console.log("$");
                 return BarlineModel.createBarline(ctx, C.Barline.Double);
             }
         }

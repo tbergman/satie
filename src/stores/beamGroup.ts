@@ -47,7 +47,7 @@ class BeamGroupModel extends Model {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
-        var mret = C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
+        var mret = C.IterationStatus.RETRY_FROM_ENTRY;
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet;
@@ -79,7 +79,6 @@ class BeamGroupModel extends Model {
 
     constructor(spec: any) {
         super(spec);
-        console.log("New beamgroup");
     }
 
     /**

@@ -62,7 +62,7 @@ var NoteMarking = React.createClass({
         }
     },
     shouldBeAboveStaff: function() {
-        var above = ["fermata", "breathMark", "caesura"];
+        var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
             if (this.props.marking.indexOf(above[i]) === 0) {
                 return true;
@@ -98,10 +98,15 @@ var NoteMarking = React.createClass({
         return 0;
     },
     getYOffset: function() {
+		var m;
         if (this.shouldBeAboveStaff()) {
-            return (5.5 + this.props.idx - 3)/4;
+			m = (6.0 + this.props.idx - 3)/4;
+			if (m + 1.5 <= this.props.line/4) {
+				m = (this.props.line)/4 + 1.5;
+			}
+			return m;
         } else if (this.shouldBeBelowStaff()) {
-            var m = (-1.5 + this.props.idx - 3)/4;
+            m = (-1.5 + this.props.idx - 3)/4;
             if (m + 1.5 >= this.props.line/4) {
                 m = (this.props.line)/4 - 1.5;
             }
@@ -109,10 +114,12 @@ var NoteMarking = React.createClass({
         }
 
         if (this.getDirection() === 1) {
-            return (this.props.line - 1.5 - this.props.idx - 3)/4;
+            return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
+			//								^^^^^ Prevents markings from begin on lines
         }
 
-        return (this.props.line + 1.5 + this.props.idx - 3)/4;
+        return (this.props.line + 1.2 + (this.props.line % 1  && this.props.line + 1.2 < 5 ? 0.4 : 0) + this.props.idx - 3)/4;
+		//								^^^^^ Prevents markings from begin on lines
     }
 });
 

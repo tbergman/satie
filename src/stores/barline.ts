@@ -14,6 +14,7 @@ import DurationModel = require("./duration");
 import EndMarkerModel = require("./endMarker");
 import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
+import SongEditorStore = require("./songEditor");
 import TimeSignatureModel = require("./timeSignature");
 
 /**
@@ -44,14 +45,19 @@ class BarlineModel extends Model {
             if (i === -1) { // Beginning of document.
                 var DurationModel_r = require("./duration"); // Recursive.
                 var fullRest = Metre.wholeNote(ctx)
-                    .map(spec => new DurationModel_r(spec));
+                    .map(spec => new DurationModel_r(spec, C.Source.ANNOTATOR));
                 _.each(fullRest, (r) => {
                     r.isRest = true;
                     ctx.insertPast(r);
                 });
                 return C.IterationStatus.RETRY_CURRENT;
             } else {
-                return ctx.eraseCurrent();
+                ctx.body.splice(i, ctx.idx - i);
+                ctx.start = 0;
+                SongEditorStore.markRendererLineDirty(ctx.line - 1, ctx.staveIdx);
+                SongEditorStore.markRendererLineDirty(ctx.line, ctx.staveIdx);
+                ctx.idx = i;
+                return C.IterationStatus.LINE_REMOVED;
             }
         }
 
@@ -78,12 +84,10 @@ class BarlineModel extends Model {
             }
             if (!okay) {
                 var DurationModel = require("./duration"); // Recursive.
-                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w));
+                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, C.Source.ANNOTATOR));
                 for (i = 0; i < whole.length; ++i) {
-                    whole[i].pitch = "r";
-                    if (i + 1 !== whole.length) {
-                        whole[i].tie = true;
-                    }
+                    whole[i].chord = [{ pitch: "r"}];
+                    whole[i].tie = false;
                 }
                 Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(whole));
                 return C.IterationStatus.SUCCESS;

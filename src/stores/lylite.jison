@@ -486,8 +486,10 @@ partElement
   | completePitchOrChord                
         {
             var DurationModel = require("./duration.ts");
-            $1.source = C.Source.USER;
-            $$ = new DurationModel($1);
+			if ($1.tie && $1.chord.length === 1 && $1.chord[0].pitch === "r") {
+				$1.tie = false;
+			}
+            $$ = new DurationModel($1, C.Source.USER);
         }
   | tupletMode                           { $$ = $1; }
   | 'PAGE_BREAK'                         { $$ = {append: [
@@ -686,7 +688,11 @@ accentx
   | 'articStaccatissimo'        { $$ = 'articStaccatissimo' }
   | 'articAccent'               { $$ = 'articAccent' }
   | 'articStaccato'             { $$ = 'articStaccato' }
-  | 'ARTIC'                     { $$ = $1.substring(1); }
+  | 'ARTIC'                     
+		{
+            var DurationModel = require("./duration.ts");
+			$$ = DurationModel.symbolByLilypondName[$1];
+		}
   ;
 
 octaveChange

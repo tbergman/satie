@@ -858,18 +858,17 @@ export class SongEditorStore extends TSEE {
             return;
         }
         var obj = _visualCursor.annotatedObj;
+        var throughNewline = false;
         for (var h = 0; h < _staves.length; ++h) {
             if (!_staves[h].body) {
                 continue;
             }
-            // XXX: It's likely the author will need to adjust this logic for multiple
-            // staffs.
             for (var i = 0; i < _staves[h].body.length; ++i) {
                 if (_staves[h].body[i] === obj) {
                     if ((!_staves[h].body[i + 1] ||
-                        _staves[h].body[i + 1].type !== C.Type.BARLINE ||
-                        _staves[h].body[i + 1].barline === C.Barline.Double) &&
-                        spec.loopThroughEnd) {
+                            _staves[h].body[i + 1].type !== C.Type.BARLINE ||
+                            _staves[h].body[i + 1].barline === C.Barline.Double) &&
+                            spec.loopThroughEnd) {
                         this.visualCursorIs({
                             beat: 0,
                             bar: 1
@@ -887,6 +886,7 @@ export class SongEditorStore extends TSEE {
                         }
                         if (_staves[h].body[i].type === C.Type.NEWLINE) {
                             // TODO: we don't need to update all the lines
+                            throughNewline = true;
                             markRendererDirty();
                         }
                         if (_visualCursor.endMarker &&
@@ -903,11 +903,30 @@ export class SongEditorStore extends TSEE {
                         } else if (cd.bar !== _staves[h].body[i].ctxData.bar ||
                             cd.beat !== _staves[h].body[i].ctxData.beat) {
 
+                            if (_staves[h].body[i] && spec.step === -1 &&
+                                    _staves[h].body[i].ctxData.bar > 1 &&
+                                    _staves[h].body[i].ctxData.beat === 0 && spec.skipThroughBars) {
+                                var tbar = _staves[h].body[i].ctxData.bar;
+                                while (_staves[h].body[i].ctxData.bar === tbar) {
+                                    if (_staves[h].body[i].type === C.Type.NEWLINE) {
+                                        // TODO: we don't need to update all the lines
+                                        throughNewline = true;
+                                        markRendererDirty();
+                                    }
+                                    --i;
+                                }
+                                this.visualCursorIs({
+                                    bar: _staves[h].body[i].ctxData.bar,
+                                    beat: _staves[h].body[i].ctxData.beat,
+                                    endMarker: true });
+                                break;
+                            }
+
                             if (spec.skipThroughBars) {
                                 while (_staves[h].body[i + 1] &&
-                                    (_staves[h].body[i].endMarker ||
-                                    _staves[h].body[i].type === C.Type.BARLINE)) {
-                                    ++i;
+                                        (_staves[h].body[i].endMarker ||
+                                        _staves[h].body[i].type === C.Type.BARLINE)) {
+                                    i += spec.step;
                                 }
                             }
                             this.visualCursorIs(
@@ -929,6 +948,8 @@ export class SongEditorStore extends TSEE {
                 }
             }
         }
+
+        return throughNewline;
         // Does not emit
     }
 

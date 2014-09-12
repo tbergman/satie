@@ -123,8 +123,8 @@ class Context {
             }
 
             if (doCustomAction) {
-                // HACK HACK HACK -- we don't want to call annotate, because we can't
-                // process the exit code, but the note tools needs to have a valid timeSignature
+                // HACK HACK HACK -- we don't want to call annotate before the custom action,
+                // but some actions expect a valid time signature.
                 if (this.curr.type === C.Type.TIME_SIGNATURE) {
                     this.timeSignature = (<any>this.curr).timeSignature;
                 }
@@ -179,6 +179,9 @@ class Context {
                     cursor.annotatedObj = null;
                     cursor.annotatedPage = null;
                 }
+                SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
+                canExitAtNewline = false;
+            } else if (exitCode === C.IterationStatus.RETRY_PREVIOUS_LINE) {
                 SongEditorStore.markRendererLineDirty(this.line, this.staveIdx);
                 canExitAtNewline = false;
             } else if (exitCode === C.IterationStatus.RETRY_CURRENT_THEN_STOP) {
@@ -453,7 +456,7 @@ class Context {
     erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
         this.body.splice(idx, 1);
-        return C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
+        return C.IterationStatus.RETRY_FROM_ENTRY;
     }
     /**
      * Inserts an element somewhere BEFORE the current element.
@@ -468,7 +471,7 @@ class Context {
         this.body.splice(index, 0, obj);
         global.spliceTime += +(new Date()) - t;
         return this.idx === index ? C.IterationStatus.RETRY_CURRENT :
-            C.IterationStatus.RETRY_ENTIRE_DOCUMENT;
+            C.IterationStatus.RETRY_FROM_ENTRY;
     }
 
     /**
@@ -616,7 +619,7 @@ class Context {
         switch (exitCode) {
             case C.IterationStatus.SUCCESS:
                 return i + 1;
-            case C.IterationStatus.RETRY_ENTIRE_DOCUMENT:
+            case C.IterationStatus.RETRY_FROM_ENTRY:
                 return this.start;
             case C.IterationStatus.LINE_CREATED:
                 line = this.lines[this.line];
@@ -641,6 +644,25 @@ class Context {
                 while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
                     --i;
                 }
+                this.clef = null;
+                break;
+            case C.IterationStatus.RETRY_PREVIOUS_LINE:
+                line = this.lines[this.line - 1];
+                cpyline(this, line);
+                while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
+                    --i;
+                }
+                --i;
+                while (i >= 0 && this.body[i].type !== C.Type.NEWLINE) {
+                    --i;
+                }
+                assert(i >= -1, "Is there really a previous line?");
+                this.clef = null;
+                break;
+            case C.IterationStatus.LINE_REMOVED:
+                line = this.lines[this.line - 1];
+                cpyline(this, line);
+                --i;
                 this.clef = null;
                 break;
             case C.IterationStatus.RETRY_BEAM:

@@ -284,7 +284,7 @@ export enum IterationStatus {
      * At least one of the preconditions of the Model were not
      * met and the entire document must be re-annotated.
      */
-    RETRY_ENTIRE_DOCUMENT,
+    RETRY_FROM_ENTRY,
 
     /**
      * The precondition is now met, but a line was added somewhere between
@@ -292,6 +292,18 @@ export enum IterationStatus {
      * the previous two lines.
      */
     LINE_CREATED,
+
+    /**
+     * The precondition is now met, but a line was removed. The index has alread
+     * been set to the correct previous line.
+     */
+    LINE_REMOVED,
+
+    /**
+     * The precondition is now met, but the previous line was modified. For example,
+     * the visual cursor has been moved to the previous line.
+     */
+    RETRY_PREVIOUS_LINE,
 
     /**
      * At least one of the pre-conditions of the Model were not
@@ -782,3 +794,5 @@ export function addDefaults(staves: IStave[]) {
         });
     }
 }
+
+global.C = module.exports; // For debugging

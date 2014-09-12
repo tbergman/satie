@@ -61,11 +61,12 @@ class DurationModel extends Model implements C.IPitchDuration {
                         var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
                         return ret;
                     } else {
-                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t));
-                        var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx).map(t => new DurationModel(<any>t));
+                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t, C.Source.ANNOTATOR));
+                        var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx)
+                            .map(t => new DurationModel(<any>t, C.Source.ANNOTATOR));
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
-                            if (i + 1 !== replaceWith.length || addAfterBar.length && !this.isRest) {
+                            if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
                                 replaceWith[i].tie = true;
                             }
                         }
@@ -171,12 +172,14 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+
         return C.IterationStatus.SUCCESS;
     }
 
-    constructor(spec: C.IPitchDuration) {
+    constructor(spec: C.IPitchDuration, source: C.Source) {
         super(spec);
-        this.tie = spec.tie;
+        this.source = source;
+        this.tie = this.tie;
     }
 
     containsAccidental(ctx: Context) {
@@ -263,7 +266,29 @@ class DurationModel extends Model implements C.IPitchDuration {
         return 0.67 + (this.annotatedExtraWidth || 0);
     }
 
-    toLylite(lylite: Array<string>) {
+    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
+        var i: number;
+        for (i = 0; this.markings && i < this.markings.length; ++i) {
+            switch (this.markings[i]) {
+                case "keyboardPedalPed":
+                case "keyboardPedalUp":
+                case "keyboardPedalHalf2":
+                case "keyboardPedalHalf3":
+                case "keyboardPedalHalf2":
+                case "keyboardPedalUpSpecial":
+                    lylite.push("\set Staff.pedalSustainStyle = #'text");
+                    // 1
+                    break;
+                case "keyboardPedalHalf":
+                case "keyboardPedalUpNotch":
+                case "keyboardPedalUpSpecial":
+                case "keyboardLeftPedalPictogram":
+                case "keyboardMiddlePedalPictogram":
+                case "keyboardRightPedalPictogram":
+                case "keyboardPedalHeel1":
+                    lylite.push("\set Staff.pedalSustainStyle = #'mixed");
+            }
+        }
         var str: string;
         if (this.chord.length === 1) {
             str = this._lyPitch(this.chord[0]);
@@ -274,11 +299,448 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.dots) {
             _.times(this.dots, d => str += ".");
         }
+        for (i = 0; this.markings && i < this.markings.length; ++i) {
+            switch (this.markings[i]) {
+                case "fermata":
+                    if (this.isMultibar) {
+                        str += "\\fermataMarkup";
+                    } else {
+                        str += "\\fermata";
+                    }
+                    break;
+                case "breathMarkComma":
+                    unresolved.push((obj) => {
+                        lylite.push("\\rcomma");
+                        return true;
+                    });
+                    break;
+                case "caesura":
+                    unresolved.push((obj) => {
+                        lylite.push("\\override BreathingSign.text = \\markup { \\musicglyph #\"scripts.caesura.straight\"");
+                        lylite.push("\\breathe\n");
+                        return true;
+                    });
+                    break;
+
+                default:
+                    var sym = DurationModel.lilypondSymbols[this.markings[i]];
+                    if (sym) {
+                        str += sym;
+                    } else {
+                        assert(false, "Unknown or misplaced marking");
+                    }
+            }
+        }
         if (this.tie) {
             str += "~";
         }
         lylite.push(str);
     }
+    static lilypondSymbols: { [key: string]: string } = {
+        "articAccent": "->",
+        "articStaccato": "-.",
+        "articTenuto": "--",
+        "articMarcato": "-^",
+        "articMarcatoStaccato": "-^-.",
+        "articAccentStaccato": "->-.",
+        "articTenutoStaccato": "---.",
+        "articTenutoAccent": "--->",
+        "ornamentTrill": "\\trill",
+        "ornamentTurn": "\\turn",
+        "ornamentMordent": "\\mordent",
+        "ornamentHaydn": "\\_ripienoHaydn", // non-std
+        // dynamicCrescendoHairpin: \\< \\!
+        // dynamicDiminuendoHairpin: \\> \\!
+        "dynamicPPP": "\\ppp",
+        "dynamicPP": "\\pp",
+        "dynamicPiano": "\\p",
+        "dynamicMP": "\\mp",
+        "dynamicMF": "\\mf",
+        "dynamicForte": "\\f",
+        "dynamicFF": "\\ff",
+        "dynamicFFF": "\\ff",
+        "dynamicForzando": "\\fz",
+        "dynamicSforzando1": "\\sf",
+        "dynamicSforzandoPiano": "\\sfp",
+        "dynamicSforzandoPianissimo": "\\sfpp",
+        "glissandoUp": "\\glissando",
+        "glissandoDown": "\\glissando",
+        "articStress": "\\_ripienoStress", // non-std
+        "articUnstress": "\\_ripienoUnstress", // non-std
+        "articLaissezVibrer": "\\laissezVibrer",
+        "articStaccatissimo": "-|",
+        "articStaccatissimoWedge": "\\_ripienoStaccatissimoWedge", // non-str
+        "articStaccatissimoStroke": "\\_ripienoStaccatissimoStroke",
+
+        "dynamicNiente": "\\_ripienoNiente",
+        "dynamicPPPP": "\\pppp",
+        "dynamicFFFF": "\\ffff",
+        "dynamicPF": "\\pf",
+        "dynamicFortePiano": "\\fp",
+        // Repeats should not be handled here.
+        "dynamicSforzato": "\\sfz",
+        "dynamicSforzatoPiano": "\\sfzp",
+        "dynamicSforzatoFF": "\\sffz",
+        "dynamicRinforzando1": "\\rf",
+        "dynamicRinforzando2": "\\rfz",
+
+        "brassScoop": "\\_ripienoScoop",
+        "brassDoitShort": "\\_ripienoDoitShort",
+        "brassDoitMedium": "\\_ripienoDoitMedium",
+        "brassDoitLong": "\\_ripienoDoitLong",
+        "brassPlop": "\\_ripienoPlop",
+        "brassFallLipShort": "\\_ripienoFallLipShort",
+        "brassFallLipMedium": "\\_ripienoFallLipMedium",
+        "brassFallLipLong": "\\_ripienoFallLipLong",
+        "brassFallSmoothShort": "\\_ripienoFallSmoothShort",
+        "brassFallSmoothMedium": "\\_ripienoFallSmoothMedium",
+        "brassFallSmoothLong": "\\_ripienoFallSmoothLong",
+        "brassFallRoughShort": "\\_ripienoFallSmoothShort",
+        "brassFallRoughMedium": "\\_ripienoFallSmoothMedium",
+        "brassFallRoughLong": "\\_ripienoFallSmoothLong",
+
+        "brassFlip": "\\_ripienoFlip",
+        "brassSmear": "\\_ripienoSmear",
+
+        "brassBend": "\\_ripienoBend",
+        "brassJazzTurn": "\\_ripienoTurn",
+        "brassMuteClosed": "\\_ripienoMuteClosed",
+        "brassMuteHalfClosed": "\\_ripienoMuteHalfClosed",
+        "brassMuteOpen": "\\_ripienoMuteOpen",
+        "brassHarmonMuteClosed": "\\_ripienoHarmonMuteClosed",
+        "brassHarmonMuteStemHalfLeft": "\\_ripienoHarmonMuteStemHalfLeft",
+        "brassHarmonMuteStemHalfRight": "\\_ripienoHarmonMuteStemHalfRight",
+        "brassHarmonMuteStemOpen": "\\_ripienoHarmonMuteStemOpen",
+        "doubleTongue": "\\_ripienodoubleTongue",
+        "tripleTongue": "\\_ripienotripleTongue",
+        "windClosedHole": "\\_ripienoWindClosedHole",
+        "windThreeQuartersClosedHole": "\\_ripienoWindThreeQuartersClosedHole",
+        "windHalfClosedHole1": "\\_ripienoWindHalfClosedHole1",
+        "windHalfClosedHole2": "\\_ripienoWindHalfClosedHole2",
+        "windHalfClosedHole3": "\\_ripienoWindHalfClosedHole3",
+        "windOpenHole": "\\_ripienoWindOpenHole",
+        "windTrillKey": "\\_ripienoWindTrillKey",
+        "windFlatEmbouchure": "\\_ripienoWindFlatEmbouchure",
+        "windSharpEmbouchure": "\\_ripienoWindSharpEmbouchure",
+        "windRelaxedEmbouchure": "\\_ripienoWindRelaxedEmbouchure",
+        "windLessRelaxedEmbouchure": "\\_ripienoWindLessRelaxedEmbouchure",
+        "windTightEmbouchure": "\\_ripienoWindTightEmbouchure",
+        "windLessTightEmbouchure": "\\_ripienoWindLessTightEmbouchure",
+        "windVeryTightEmbouchure": "\\_ripienoWindVeryTightEmbouchure",
+        "windWeakAirPressure": "\\_ripienoWindWeakAirPressure",
+        "windStrongAirPressure": "\\_ripienoWindStrongAirPressure",
+        "windReedPositionNormal": "\\_ripienoWindReedPositionNormal",
+        "windReedPositionOut": "\\_ripienoWindReedPositionOut",
+        "windReedPositionIn": "\\_ripienoWindReedPositionIn",
+        "windMultiphonicsBlackStem": "\\_ripienoWindMultiphonicsBlackStem",
+        "windMultiphonicsWhiteStem": "\\_ripienoWindMultiphonicsWhiteStem",
+        "windMultiphonicsBlackWhiteStem": "\\_ripienoWindMultiphonicsBlackWhiteStem",
+        "stringsDownBow": "\\downbow",
+        "stringsUpBow": "\\upbow",
+        "stringsDownBowTurned": "\\_ripienoDownbowTurned",
+        "stringsUpBowTurned": "\\_ripienoUpbowTurned",
+        "stringsHarmonic": "\\flageolet",
+        "stringsHalfHarmonic": "\\_ripienoHalfHarmonic",
+        "stringsMuteOn": "\\_ripienoMuteOn",
+        "stringsMuteOff": "\\_ripienoMuteOff",
+        "stringsBowBehindBridge": "\\_ripienoBowBeingBridge",
+        "stringsBowOnBridge": "\\_ripienoBowOnBridge",
+        "stringsBowOnTailpiece": "\\_ripienoBowOnTailpiece",
+        "stringsChangeBowDirection": "\\_ripienoChangeBowDirection",
+        "stringsOverpressureDownBow": "\\_ripienoOverpressureDownBow",
+        "stringsOverpressureUpBow": "\\_ripienoOverpressureUpBow",
+        "stringsOverpressurePossibileDownBow": "\\_ripienoOverpressurePossibleDownBow",
+        "stringsOverpressurePossibileUpBow": "\\_ripienoOverpressurePossibleUpBow",
+        "stringsOverpressureNoDirection": "\\_ripienoOverpressureNoDirection",
+        "stringsJete": "\\_ripienoJete",
+        "stringsFouette": "\\_ripienoFouette",
+        "stringsVibratoPulse": "\\_ripienoVibratoPulse",
+        "stringsThumbPosition": "\\_ripienoThumbPosition",
+        "pluckedSnapPizzicatoAbove": "\\snappizzicato",
+        "pluckedBuzzPizzicato": "\\_ripienoBuzzPizzicato",
+        "pluckedLeftHandPizzicato": "\\_ripienoPluckedLeftHandPizzicato",
+        "pluckedWithFingernails": "\\_ripienoPluckedWithFingernails",
+        "pluckedFingernailFlick": "\\_ripienoPluckedFingernailFlick",
+        "pluckedDamp": "\\_ripienoPluckedDamp",
+        "pluckedDampAll": "\\_ripienoPluckedDampAll",
+        "pluckedPlectrum": "\\_ripienoPluckedPlectrum",
+        "pluckedDampOnStem": "\\_ripienoPluckedDampOnStem",
+        "vocalMouthClosed": "\\_ripienovocalMouthClosed",
+        "vocalMouthSlightlyOpen": "\\_ripienovocalMouthSlightlyOpen",
+        "vocalMouthOpen": "\\_ripienovocalMouthOpen",
+        "vocalMouthWideOpen": "\\_ripienovocalMouthWideOpen",
+        "vocalMouthPursed": "\\_ripienovocalMouthPursed",
+        "vocalSprechgesang": "\\_ripienovocalSprechgesang",
+        "vocalsSussurando": "\\_ripienovocalsSussurando",
+
+        "keyboardPedalPed": "\\sustainOn",
+        "keyboardPedalUp": "\\sustainOff",
+        "keyboardPedalHalf2": "\\_ripienoHalf2",
+        "keyboardPedalHalf3": "\\_ripienoHalf3",
+        "keyboardPedalHalf": "\\_ripienoHalf",
+        "keyboardPedalUpNotch": "\\sustainOff\\sustainOn",
+        "keyboardPedalUpSpecial": "\\_ripienoKeyboardPedalUpSpecial",
+        "keyboardPedalSost": "\\sostenuntoOn",
+        "keyboardLeftPedalPictogram": "\\_ripienoKeyboardLeftPedalPictogram",
+        "keyboardMiddlePedalPictogram": "\\_ripienoKeyboardMiddlePedalPictogram",
+        "keyboardRightPedalPictogram": "\\_ripienoKeyboardRightPedalPictogram",
+        "keyboardPedalHeel1": "\\_ripienoKeyboardPedalHeel1",
+        "keyboardPedalToe1": "\\_ripienoKeyboardPedalToe1",
+        "keyboardPedalHeelToe": "\\_ripienoKeyboardPedalHeelToe",
+        "keyboardPluckInside": "\\_ripienoKeyboardPluckInside",
+        "keyboardBebung2Dots": "\\_ripienoKeyboardBebung2Dots",
+        "keyboardBebung3Dots": "\\_ripienoKeyboardBebung3Dots",
+        "keyboardBebung4Dots": "\\_ripienoKeyboardBebung4Dots",
+        "keyboardPlayWithRH": "\\_ripienoKeyboardPlayWithRH",
+        "keyboardPlayWithRHEnd": "\\_ripienoKeyboardPlayWithRHEnd",
+        "keyboardPlayWithLH": "\\_ripienoKeyboardPlayWithLH",
+        "keyboardPlayWithLHEnd": "\\_ripienoKeyboardPlayWithLHEnd",
+        "harpPedalRaised": "\\_ripienoharpPedalRaised",
+        "harpPedalCentered": "\\_ripienoharpPedalCentered",
+        "harpPedalLowered": "\\_ripienoharpPedalLowered",
+        "harpPedalDivider": "\\_ripienoharpPedalDivider",
+        "harpSalzedoSlideWithSuppleness": "\\_ripienoHarpSalzedoSlideWithSuppleness",
+        "harpSalzedoOboicFlux": "\\_ripienoHarpSalzedoOboicFlux",
+        "harpSalzedoThunderEffect": "\\_ripienoHarpSalzedoThunderEffect",
+        "harpSalzedoWhistlingSounds": "\\_ripienoHarpSalzedoWhistlingSounds",
+        "harpSalzedoMetallicSounds": "\\_ripienoHarpSalzedoMetallicSounds",
+        "harpSalzedoTamTamSounds": "\\_ripienoHarpSalzedoTamTamSounds",
+        "harpSalzedoPlayUpperEnd": "\\_ripienoHarpSalzedoPlayUpperEnd",
+        "harpSalzedoTimpanicSounds": "\\_ripienoHarpSalzedoTimpanicSounds",
+        "harpSalzedoMuffleTotally": "\\_ripienoHarpSalzedoMuffleTotally",
+        "harpSalzedoFluidicSoundsLeft": "\\_ripienoHarpSalzedoFluidicSoundsLeft",
+        "harpSalzedoFluidicSoundsRight": "\\_ripienoHarpSalzedoFluidicSoundsRight",
+        "harpMetalRod": "\\_ripienoHarpMetalRod",
+        "harpTuningKey": "\\_ripienoHarpTuningKey",
+        "harpTuningKeyHandle": "\\_ripienoHarpTuningKeyHandle",
+        "harpTuningKeyShank": "\\_ripienoHarpTuningKeyShank",
+        "harpTuningKeyGlissando": "\\_ripienoHarpTuningKeyGlissando",
+        "harpStringNoiseStem": "\\_ripienoHarpStringNoiseStem",
+        "pictGlsp": "\\_ripienoPictGlsp",
+        "pictXyl": "\\_ripienoPictXyl",
+        "pictXylTenor": "\\_ripienoPictXylTenor",
+        "pictXylBass": "\\_ripienoPictXylBass",
+        "pictXylTrough": "\\_ripienoPictXylTrough",
+        "pictXylTenorTrough": "\\_ripienoPictXylTenorTrough",
+        "pictMar": "\\_ripienoPictMar",
+        "pictVib": "\\_ripienoPictVib",
+        "pictVibMotorOff": "\\_ripienoPictVibMotorOff",
+        "pictEmptyTrap": "\\_ripienoPictEmptyTrap",
+        "pictGlspSmithBrindle": "\\_ripienoPictGlspSmithBrindle",
+        "pictXylSmithBrindle": "\\_ripienoPictXylSmithBrindle",
+        "pictMarSmithBrindle": "\\_ripienoPictMarSmithBrindle",
+        "pictVibSmithBrindle": "\\_ripienoPictVibSmithBrindle",
+        "pictCrotales": "\\_ripienoPictCrotales",
+        "pictSteelDrums": "\\_ripienoPictSteelDrums",
+        "pictCelesta": "\\_ripienoPictCelesta",
+        "pictLithophone": "\\_ripienoPictLithophone",
+        "pictTubaphone": "\\_ripienoPictTubaphone",
+        "pictTubularBells": "\\_ripienoPictTubularBells",
+        "pictWindChimesGlass": "\\_ripienoPictWindChimesGlass",
+        "pictChimes": "\\_ripienoPictChimes",
+        "pictBambooChimes": "\\_ripienoPictBambooChimes",
+        "pictShellChimes": "\\_ripienoPictShellChimes",
+        "pictGlassTubeChimes": "\\_ripienoPictGlassTubeChimes",
+        "pictGlassPlateChimes": "\\_ripienoPictGlassPlateChimes",
+        "pictMetalTubeChimes": "\\_ripienoPictMetalTubeChimes",
+        "pictMetalPlateChimes": "\\_ripienoPictMetalPlateChimes",
+        "pictWoodBlock": "\\_ripienoPictWoodBlock",
+        "pictTempleBlocks": "\\_ripienoPictTempleBlocks",
+        "pictClaves": "\\_ripienoPictClaves",
+        "pictGuiro": "\\_ripienoPictGuiro",
+        "pictRatchet": "\\_ripienoPictRatchet",
+        "pictFootballRatchet": "\\_ripienoPictFootballRatchet",
+        "pictWhip": "\\_ripienoPictWhip",
+        "pictBoardClapper": "\\_ripienoPictBoardClapper",
+        "pictCastanets": "\\_ripienoPictCastanets",
+        "pictCastanetsWithHandle": "\\_ripienoPictCastanetsWithHandle",
+        "pictQuijada": "\\_ripienoPictQuijada",
+        "pictBambooScraper": "\\_ripienoPictBambooScraper",
+        "pictRecoReco": "\\_ripienoPictRecoReco",
+        "pictTriangle": "\\_ripienoPictTriangle",
+        "pictAnvil": "\\_ripienoPictAnvil",
+        "pictCrashCymbals": "\\_ripienoPictCrashCymbals",
+        "pictSuspendedCymbal": "\\_ripienoPictSuspendedCymbal",
+        "pictHiHat": "\\_ripienoPictHiHat",
+        "pictHiHatOnStand": "\\_ripienoPictHiHatOnStand",
+        "pictSizzleCymbal": "\\_ripienoPictSizzleCymbal",
+        "pictVietnameseHat": "\\_ripienoPictVietnameseHat",
+        "pictChineseCymbal": "\\_ripienoPictChineseCymbal",
+        "pictFingerCymbals": "\\_ripienoPictFingerCymbals",
+        "pictCymbalTongs": "\\_ripienoPictCymbalTongs",
+        "pictBellOfCymbal": "\\_ripienoPictBellOfCymbal",
+        "pictEdgeOfCymbal": "\\_ripienoPictEdgeOfCymbal",
+        "pictTamTam": "\\_ripienoPictTamTam",
+        "pictTamTamWithBeater": "\\_ripienoPictTamTamWithBeater",
+        "pictGong": "\\_ripienoPictGong",
+        "pictGongWithButton": "\\_ripienoPictGongWithButton",
+        "pictSlideBrushOnGong": "\\_ripienoPictSlideBrushOnGong",
+        "pictFlexatone": "\\_ripienoPictFlexatone",
+        "pictMaraca": "\\_ripienoPictMaraca",
+        "pictMaracas": "\\_ripienoPictMaracas",
+        "pictCabasa": "\\_ripienoPictCabasa",
+        "pictThundersheet": "\\_ripienoPictThundersheet",
+        "pictVibraslap": "\\_ripienoPictVibraslap",
+        "pictSistrum": "\\_ripienoPictSistrum",
+        "pictRainstick": "\\_ripienoPictRainstick",
+        "pictChainRattle": "\\_ripienoPictChainRattle",
+        "pictSlideWhistle": "\\_ripienoPictSlideWhistle",
+        "pictBirdWhistle": "\\_ripienoPictBirdWhistle",
+        "pictPoliceWhistle": "\\_ripienoPictPoliceWhistle",
+        "pictSiren": "\\_ripienoPictSiren",
+        "pictWindMachine": "\\_ripienoPictWindMachine",
+        "pictCarHorn": "\\_ripienoPictCarHorn",
+        "pictKlaxonHorn": "\\_ripienoPictKlaxonHorn",
+        "pictDuckCall": "\\_ripienoPictDuckCall",
+        "pictWindWhistle": "\\_ripienoPictWindWhistle",
+        "pictMegaphone": "\\_ripienoPictMegaphone",
+        "pictLotusFlute": "\\_ripienoPictLotusFlute",
+        "pictPistolShot": "\\_ripienoPictPistolShot",
+        "pictCannon": "\\_ripienoPictCannon",
+        "pictSandpaperBlocks": "\\_ripienoPictSandpaperBlocks",
+        "pictLionsRoar": "\\_ripienoPictLionsRoar",
+        "pictGlassHarp": "\\_ripienoPictGlassHarp",
+        "pictGlassHarmonica": "\\_ripienoPictGlassHarmonica",
+        "pictMusicalSaw": "\\_ripienoPictMusicalSaw",
+        "pictJawHarp": "\\_ripienoPictJawHarp",
+        "pictBeaterSoftXylophoneUp": "\\_ripienoPictBeaterSoftXylophoneUp",
+        "pictBeaterMediumXylophoneUp": "\\_ripienoPictBeaterMediumXylophoneUp",
+        "pictBeaterHardXylophoneUp": "\\_ripienoPictBeaterHardXylophoneUp",
+        "pictBeaterWoodXylophoneUp": "\\_ripienoPictBeaterWoodXylophoneUp",
+        "pictBeaterSoftGlockenspielUp": "\\_ripienoPictBeaterSoftGlockenspielUp",
+        "pictBeaterHardGlockenspielUp": "\\_ripienoPictBeaterHardGlockenspielUp",
+        "pictBeaterSoftTimpaniUp": "\\_ripienoPictBeaterSoftTimpaniUp",
+        "pictBeaterHardTimpaniUp": "\\_ripienoPictBeaterHardTimpaniUp",
+        "pictBeaterMediumTimpaniUp": "\\_ripienoPictBeaterMediumTimpaniUp",
+        "pictBeaterWoodTimpaniUp": "\\_ripienoPictBeaterWoodTimpaniUp",
+        "pictBeaterSoftBassDrumUp": "\\_ripienoPictBeaterSoftBassDrumUp",
+        "pictBeaterHardBassDrumUp": "\\_ripienoPictBeaterHardBassDrumUp",
+        "pictBeaterMediumBassDrumUp": "\\_ripienoPictBeaterMediumBassDrumUp",
+        "pictBeaterMetalBassDrumUp": "\\_ripienoPictBeaterMetalBassDrumUp",
+        "pictBeaterSuperballUp": "\\_ripienoPictBeaterSuperballUp",
+        "pictWoundHardUp": "\\_ripienoPictWoundHardUp",
+        "pictGumSoftUp": "\\_ripienoPictGumSoftUp",
+        "pictGumMediumUp": "\\_ripienoPictGumMediumUp",
+        "pictGumHardUp": "\\_ripienoPictGumHardUp",
+        "pictBeaterMetalUp": "\\_ripienoPictBeaterMetalUp",
+        "pictBeaterHammerWoodUp": "\\_ripienoPictBeaterHammerWoodUp",
+        "pictBeaterHammerPlasticUp": "\\_ripienoPictBeaterHammerPlasticUp",
+        "pictBeaterHammerMetalUp": "\\_ripienoPictBeaterHammerMetalUp",
+        "pictBeaterSnareSticksUp": "\\_ripienoPictBeaterSnareSticksUp",
+        "pictBeaterJazzSticksUp": "\\_ripienoPictBeaterJazzSticksUp",
+        "pictBeaterTriangleUp": "\\_ripienoPictBeaterTriangleUp",
+        "pictBeaterWireBrushesUp": "\\_ripienoPictBeaterWireBrushesUp",
+        "pictBeaterBrassMalletsUp": "\\_ripienoPictBeaterBrassMalletsUp",
+        "pictBeaterSoftXylophoneDown": "\\_ripienoPictBeaterSoftXylophoneDown",
+        "pictBeaterMediumXylophoneDown": "\\_ripienoPictBeaterMediumXylophoneDown",
+        "pictBeaterHardXylophoneDown": "\\_ripienoPictBeaterHardXylophoneDown",
+        "pictBeaterWoodXylophoneDown": "\\_ripienoPictBeaterWoodXylophoneDown",
+        "pictBeaterSoftGlockenspielDown": "\\_ripienoPictBeaterSoftGlockenspielDown",
+        "pictBeaterHardGlockenspielDown": "\\_ripienoPictBeaterHardGlockenspielDown",
+        "pictBeaterSoftTimpaniDown": "\\_ripienoPictBeaterSoftTimpaniDown",
+        "pictBeaterHardTimpaniDown": "\\_ripienoPictBeaterHardTimpaniDown",
+        "pictBeaterMediumTimpaniDown": "\\_ripienoPictBeaterMediumTimpaniDown",
+        "pictBeaterWoodTimpaniDown": "\\_ripienoPictBeaterWoodTimpaniDown",
+        "pictBeaterSoftBassDrumDown": "\\_ripienoPictBeaterSoftBassDrumDown",
+        "pictBeaterHardBassDrumDown": "\\_ripienoPictBeaterHardBassDrumDown",
+        "pictBeaterMediumBassDrumDown": "\\_ripienoPictBeaterMediumBassDrumDown",
+        "pictBeaterMetalBassDrumDown": "\\_ripienoPictBeaterMetalBassDrumDown",
+        "pictBeaterSuperballDown": "\\_ripienoPictBeaterSuperballDown",
+        "pictWoundHardDown": "\\_ripienoPictWoundHardDown",
+        "pictGumSoftDown": "\\_ripienoPictGumSoftDown",
+        "pictGumMediumDown": "\\_ripienoPictGumMediumDown",
+        "pictGumHardDown": "\\_ripienoPictGumHardDown",
+        "pictBeaterMetalDown": "\\_ripienoPictBeaterMetalDown",
+        "pictBeaterHammerWoodDown": "\\_ripienoPictBeaterHammerWoodDown",
+        "pictBeaterHammerPlasticDown": "\\_ripienoPictBeaterHammerPlasticDown",
+        "pictBeaterHammerMetalDown": "\\_ripienoPictBeaterHammerMetalDown",
+        "pictBeaterSnareSticksDown": "\\_ripienoPictBeaterSnareSticksDown",
+        "pictBeaterJazzSticksDown": "\\_ripienoPictBeaterJazzSticksDown",
+        "pictBeaterTriangleDown": "\\_ripienoPictBeaterTriangleDown",
+        "pictBeaterWireBrushesDown": "\\_ripienoPictBeaterWireBrushesDown",
+        "pictBeaterBrassMalletsDown": "\\_ripienoPictBeaterBrassMalletsDown",
+        "pictBeaterDoubleBassDrumUp": "\\_ripienoPictBeaterDoubleBassDrumUp",
+        "pictBeaterSoftYarnUp": "\\_ripienoPictBeaterSoftYarnUp",
+        "pictBeaterHardYarnUp": "\\_ripienoPictBeaterHardYarnUp",
+        "pictBeaterMediumYarnUp": "\\_ripienoPictBeaterMediumYarnUp",
+        "pictBeaterDoubleBassDrumDown": "\\_ripienoPictBeaterDoubleBassDrumDown",
+        "pictBeaterSoftYarnDown": "\\_ripienoPictBeaterSoftYarnDown",
+        "pictBeaterHardYarnDown": "\\_ripienoPictBeaterHardYarnDown",
+        "pictBeaterMediumYarnDown": "\\_ripienoPictBeaterMediumYarnDown",
+        "pictSuperball": "\\_ripienoPictSuperball",
+        "pictBeaterSoftXylophone": "\\_ripienoPictBeaterSoftXylophone",
+        "pictBeaterSpoonWoodenMallet": "\\_ripienoPictBeaterSpoonWoodenMallet",
+        "pictBeaterGuiroScraper": "\\_ripienoPictBeaterGuiroScraper",
+        "pictBeaterBow": "\\_ripienoPictBeaterBow",
+        "pictBeaterMallet": "\\_ripienoPictBeaterMallet",
+        "pictBeaterMetalHammer": "\\_ripienoPictBeaterMetalHammer",
+        "pictBeaterHammer": "\\_ripienoPictBeaterHammer",
+        "pictBeaterKnittingNeedle": "\\_ripienoPictBeaterKnittingNeedle",
+        "pictBeaterHand": "\\_ripienoPictBeaterHand",
+        "pictBeaterFinger": "\\_ripienoPictBeaterFinger",
+        "pictBeaterFist": "\\_ripienoPictBeaterFist",
+        "pictBeaterFingernails": "\\_ripienoPictBeaterFingernails",
+        "pictCoins": "\\_ripienoPictCoins",
+        "pictDrumStick": "\\_ripienoPictDrumStick",
+        "pictStickShot": "\\_ripienoPictStickShot",
+        "pictScrapeCenterToEdge": "\\_ripienoPictScrapeCenterToEdge",
+        "pictScrapeEdgeToCenter": "\\_ripienoPictScrapeEdgeToCenter",
+        "pictScrapeAroundRim": "\\_ripienoPictScrapeAroundRim",
+        "pictOnRim": "\\_ripienoPictOnRim",
+        "pictOpenRimShot": "\\_ripienoPictOpenRimShot",
+        "pictHalfOpen1": "\\_ripienoPictHalfOpen1",
+        "pictHalfOpen2": "\\_ripienoPictHalfOpen2",
+        "pictOpen": "\\_ripienoPictOpen",
+        "pictDamp1": "\\_ripienoPictDamp1",
+        "pictRimShotOnStem": "\\_ripienoPictRimShotOnStem",
+        "pictCenter1": "\\_ripienoPictCenter1",
+        "pictRim1": "\\_ripienoPictRim1",
+        "pictNormalPosition": "\\_ripienoPictNormalPosition",
+        "pictChokeCymbal": "\\_ripienoPictChokeCymbal",
+        "pictRightHandSquare": "\\_ripienoPictRightHandSquare",
+        "pictLeftHandCircle": "\\_ripienoPictLeftHandCircle",
+        "pictSwishStem": "\\_ripienoPictSwishStem",
+        "pictTurnRightStem": "\\_ripienoPictTurnRightStem",
+        "pictTurnLeftStem": "\\_ripienoPictTurnLeftStem",
+        "pictTurnRightLeftStem": "\\_ripienoPictTurnRightLeftStem",
+        "pictCrushStem": "\\_ripienoPictCrushStem",
+        "pictDeadNoteStem": "\\_ripienoPictDeadNoteStem",
+        "handbellsMartellato": "\\_ripienoHandbellsMartellato",
+        "handbellsMalletBellSuspended": "\\_ripienoHandbellsMalletBellSuspended",
+        "handbellsMalletBellOnTable": "\\_ripienoHandbellsMalletBellOnTable",
+        "handbellsMalletLft": "\\_ripienoHandbellsMalletLft",
+        "handbellsPluckLift": "\\_ripienoHandbellsPluckLift",
+        "handbellsSwingUp": "\\_ripienoHandbellsSwingUp",
+        "handbellsSwingDown": "\\_ripienoHandbellsSwingDown",
+        "handbellsSwing": "\\_ripienoHandbellsSwing",
+        "handbellsEcho1": "\\_ripienoHandbellsEcho1",
+        "handbellsGyro": "\\_ripienoHandbellsGyro",
+        "handbellsDamp3": "\\_ripienoHandbellsDamp3",
+        "handbellsBelltree": "\\_ripienoHandbellsBelltree",
+        "handbellsTableSingleBell": "\\_ripienoHandbellsTableSingleBell",
+        "handbellsTablePairBells": "\\_ripienoHandbellsTablePairBells",
+        "analyticsHauptstimme": "\\_ripienoAnalyticsHauptstimme",
+        "analyticsNebenstimme": "\\_ripienoAnalyticsNebenstimme",
+        "analyticsStartStimme": "\\_ripienoAnalyticsStartStimme",
+        "analyticsEndStimme": "\\_ripienoAnalyticsEndStimme",
+        "analyticsTheme": "\\_ripienoAnalyticsTheme",
+        "analyticsThemeRetrograde": "\\_ripienoAnalyticsThemeRetrograde",
+        "analyticsThemeRetrogradeInversion": "\\_ripienoAnalyticsThemeRetrogradeInversion",
+        "analyticsThemeInversion": "\\_ripienoAnalyticsThemeInversion",
+        "analyticsTheme1": "\\_ripienoAnalyticsTheme1",
+        "analyticsInversion1": "\\_ripienoAnalyticsInversion1",
+        "conductorStrongBeat": "\\_ripienoConductorStrongBeat",
+        "conductorLeftBeat": "\\_ripienoConductorLeftBeat",
+        "conductorRightBeat": "\\_ripienoConductorRightBeat",
+        "conductorWeakBeat": "\\_ripienoConductorWeakBeat",
+        "conductorBeat2Simple": "\\_ripienoConductorBeat2Simple",
+        "conductorBeat3Simple": "\\_ripienoConductorBeat3Simple",
+        "conductorBeat4Simple": "\\_ripienoConductorBeat4Simple",
+        "conductorBeat2Compound": "\\_ripienoConductorBeat2Compound",
+        "conductorBeat3Compound": "\\_ripienoConductorBeat3Compound",
+        "conductorBeat4Compound": "\\_ripienoConductorBeat4Compound"
+    };
+    static symbolByLilypondName: { [key: string]: string } = _.invert(DurationModel.lilypondSymbols);
 
     getBeats(ctx: Context, inheritedCount?: number, force?: boolean) {
         if (!force && this._beats) {
@@ -757,10 +1219,10 @@ class DurationModel extends Model implements C.IPitchDuration {
 var getBeats = Metre.getBeats;
 
 enum Flags {
-    TEMPORARY = 256,
-    RELATIVE = 512,
-    WHOLE_BAR = 1024,
-    TIE = 2056
+    TEMPORARY = 2 << 7,
+    RELATIVE = 2 << 8,
+    WHOLE_BAR = 2 << 9,
+    TIE = 2 << 10
 }
 
 /* tslint:disable */

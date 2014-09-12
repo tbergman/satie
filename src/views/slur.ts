@@ -32,8 +32,6 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             absw *= 2;
         }
 
-        console.log(y2);
-
         return Bezier({
             x1: x2,
             y1: y2,

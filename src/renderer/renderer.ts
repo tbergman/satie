@@ -209,18 +209,25 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             );});
 
         var ret: Object; // React component
+        var currY = 20;
         if (!this.props.raw) {
             ret = html.div({className: "workspace", onScroll: this.handleScroll, style: {top: "" + this.props.top}},
-                _.map(rawPages, function(rawPage: any, pidx: number)  {return html.div({className: "page",
-                    key: "page" + pidx,
-                    style: {
-                        position: "relative",
-                        width: this.props.width,
-                        height: this.props.height,
-                        marginTop: this.props.marginTop,
-                        marginBottom: this.props.marginBottom}},
-                    rawPage
-                );}.bind(this))
+                _.map(rawPages, function (rawPage: any, pidx: number) {
+                    var page = html.div({
+                        className: "page",
+                        key: "page" + pidx,
+                        style: {
+                            position: "absolute",
+                            width: this.props.width,
+                            height: this.props.height,
+                            left: "50%",
+                            marginLeft: -this.props.width/2,
+                            top: currY,
+                            marginBottom: this.props.marginBottom}},
+                        rawPage);
+                    currY += 40 + this.props.height;
+                    return page;
+                }.bind(this))
             );
         } else {
             ret = rawPages[0];

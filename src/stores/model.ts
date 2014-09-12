@@ -189,11 +189,11 @@ class Model {
 }
 
 enum Flags {
-    IN_BEAM = 1,
-    PLACEHOLDER = 2,
-    SELECTED = 4,
-    ANNOTATOR = 8
-    // Subclasses are free to use flags above 128!!!
+    IN_BEAM = 2 << 0,
+    PLACEHOLDER = 2 << 1,
+    SELECTED = 2 << 2,
+    ANNOTATOR = 2 << 3
+    // model-specific = 2 << 6
 }
 
 export = Model;

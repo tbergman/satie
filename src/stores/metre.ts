@@ -102,7 +102,7 @@ export function rythmicSpellcheck(ctx: Context) {
 
         var DurationModel = require("./duration"); // Recursive.
         Array.prototype.splice.apply(ctx.body, [ctx.idx, 1].concat(
-            replaceWith.map(m => new DurationModel(m))));
+            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR))));
         var after = ctx.idx + replaceWith.length;
         if (!n1.isRest) {
             for (var i = ctx.idx; i < after - 1; ++i) {
