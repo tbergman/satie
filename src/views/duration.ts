@@ -52,6 +52,7 @@ export function Component(props: IProps) {
     }
 
     var note = Note.Component({
+            accidentals: spec.displayedAccidentals,
             accStrokes: spec.accStrokes,
             direction: spec.direction,
             dotted: spec.displayDots,

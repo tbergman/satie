@@ -10,7 +10,6 @@ import _ = require("lodash");
 
 import C = require("./contracts");
 import Context = require("./context");
-import DurationModel = require("./duration");
 import EndMarkerModel = require("./endMarker");
 import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");

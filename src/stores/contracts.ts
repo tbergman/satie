@@ -98,11 +98,6 @@ export enum Clef {
  */
 export interface IDuration {
     /**
-     * The number of dots to be played, if different from dots.
-     */
-    actualDots?: number;
-
-    /**
      * The tuplet to be displayed, if different from tuplet.
      * 
      */
@@ -119,6 +114,11 @@ export interface IDuration {
      * The number of displayed dots, or null.
      */
     dots: number;
+
+    /**
+     * The number of dots to be displayed, if different from dots.
+     */
+    displayDots?: number;
 
     /**
      * Returns the number of beats in the duration, between 0 and the
@@ -750,7 +750,6 @@ export function makeDuration(spec: IDurationSpec): IDuration {
         dots: spec.dots || 0,
         tuplet: spec.tuplet || null,
         actualTuplet: null,
-        actualDots: null,
         getBeats(ctx: Context, inheritedCount?: number): number {
             var Metre = require("./metre");
             return Metre.getBeats(

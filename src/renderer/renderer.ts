@@ -666,7 +666,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         Dispatcher.POST("/local/visualCursor/_octave", { delta: 1 });
                     }
                     break;
-                case 40:
+                case 40: // down arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
                         Dispatcher.POST("/local/visualCursor/_octave", { delta: -1 });

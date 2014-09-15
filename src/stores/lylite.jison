@@ -271,7 +271,9 @@
         };
         if (pitch.length > 1) {
             ret.acc = parseAccidental(pitch.substring(1));
-        }
+        } else {
+			ret.acc = null;
+		}
         return ret;
     }
 %}

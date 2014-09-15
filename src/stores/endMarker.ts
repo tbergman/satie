@@ -26,7 +26,6 @@ class EndMarkerModel extends Model {
             for (var i = ctx.idx; i >= 0; --i) {
                 if (ctx.body[i].type === C.Type.NEWLINE) {
                     ctx.body.splice(i);
-                    console.log("@");
                     ctx.start = 0;
                     var SongEditor = require("./songEditor"); // Recursive dependency.
                     SongEditor.Instance.markRendererDirty();
@@ -44,8 +43,8 @@ class EndMarkerModel extends Model {
                 ctx.body[ctx.idx + 2].type !== C.Type.NEWPAGE))) {
             ctx.eraseCurrent();
 
-            var SongEditor = require("./songEditor"); // Recursive dependency.
-            var visualCursor = SongEditor.Instance.visualCursor;
+            var SongEditor_r = require("./songEditor"); // Recursive dependency.
+            var visualCursor = SongEditor_r.Instance.visualCursor;
             if (visualCursor.type === C.Type.END_MARKER && visualCursor.bar === ctx.bar) {
                 visualCursor.bar++;
                 visualCursor.beat = 1;
@@ -85,7 +84,6 @@ class EndMarkerModel extends Model {
                 return C.IterationStatus.RETRY_LINE;
             } else {
                 var BarlineModel = require("./barline"); // Recursive dependency.
-                console.log("$");
                 return BarlineModel.createBarline(ctx, C.Barline.Double);
             }
         }

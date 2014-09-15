@@ -167,9 +167,14 @@ class DurationModel extends Model implements C.IPitchDuration {
             this._handleTie(ctx);
         }
         this.x = ctx.x;
+
+        // Set which accidentals are displayed, and then update the accidentals currently
+        // active in the bar.
+        this.displayedAccidentals = this.getAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
         }
+
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
 
@@ -190,6 +195,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 return true;
             }
         }
+        return false;
     }
     perfectlyBeamed(ctx: Context) {
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
@@ -748,13 +754,9 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
         return getBeats(
             this.count || inheritedCount,
-            this.getDots(),
+            this.dots,
             this.getTuplet(),
             ctx.timeSignature);
-    }
-
-    getDots() {
-        return DurationModel.getDots(this);
     }
 
     getTuplet() {
@@ -793,6 +795,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     set dots(n: number) {
         this._dots = n;
+        this._displayDots = null; // Kill preview.
         this._beats = null; // Kill optimizer.
     }
 
@@ -806,6 +809,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return this._displayCount || this.count;
     }
     set displayCount(c: number) {
+        assert(c !== null);
         this._displayCount = c;
     }
 
@@ -817,7 +821,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.isWholebar && this.isRest) {
             return 0;
         }
-        return this._displayDots || this.dots;
+        return this._displayDots === undefined ? this.dots : this._displayDots;
     }
 
     set displayDots(c: number) {
@@ -1036,9 +1040,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return sum;
     };
 
-    static getDots = (obj: C.IPitchDuration) =>
-        isNaN(obj.actualDots) ? obj.dots : obj.actualDots;
-
     static getLine = (pitch: C.IPitch,
             ctx: Context, options?: { filterTemporary: boolean }): any => { // TSFIX
         options = options || {filterTemporary: false};
@@ -1076,7 +1077,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(ctx.clef, "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
-        var acc = ctx.accidentals[pitch];
+        var acc = ctx.accidentals[pitch] || null;
 
         return {
             pitch: DurationModel.offsetToPitch[((
@@ -1121,7 +1122,9 @@ class DurationModel extends Model implements C.IPitchDuration {
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
             var actual = pitch.acc;
-            var target = ctx.accidentals[pitch.pitch];
+            assert(actual !== undefined);
+            var target = ctx.accidentals[pitch.pitch] || null;
+
             if (actual === target) {
                 result[i] = NaN; // no accidental
                 continue;
@@ -1188,12 +1191,13 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _color: number = 0x000000;
     private _count: number;
     private _displayCount: number;
-    private _displayDots: number;
+    private _displayDots: number = undefined;
     private _displayMarkings: Array<string>;
     private _dots: number;
     private _markings: Array<string>;
     actualTuplet: C.ITuplet;
     chord: Array<C.IPitch>;
+    displayedAccidentals: Array<number>;
     forceMiddleNoteDirection: number;
     impliedTS: {
         beats: number;
@@ -1225,7 +1229,9 @@ enum Flags {
     TIE = 2 << 10
 }
 
-/* tslint:disable */
+/* tslint:dis
+ * 
+ able */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()
 // line to not be optimized out.

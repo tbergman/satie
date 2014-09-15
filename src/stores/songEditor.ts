@@ -445,8 +445,12 @@ export class SongEditorStore extends TSEE {
                 break;
             case "POST /local/visualCursor":
                 switch (action.resource) {
-                    case "ptr":
                     case "octave":
+                        if (!prevObj || !prevObj.isNote) {
+                            return true;
+                        }
+                        // passthrough
+                    case "ptr":
                         if (!_tool) {
                             return;
                         }

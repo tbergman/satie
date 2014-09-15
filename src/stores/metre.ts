@@ -191,7 +191,7 @@ export function rythmicSpellcheck(ctx: Context) {
                             _.times(toErase, function () {
                                 ctx.eraseFuture(ctx.idx + 1);
                             });
-                            n1.actualDots = n1.dots = dots;
+                            n1.dots = dots;
                             n1.actualTuplet = n1.tuplet = null;
                             n1.count = po2;
                             return C.IterationStatus.RETRY_LINE;
@@ -224,14 +224,14 @@ export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITim
 }
 
 /**
- * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
+ * Returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
 export function subtract(durr1: C.IPitchDuration, beats: number,
     ctx: Context, beatOffset?: number): Array<C.IDuration>;
 /**
- * Returns an array of Duration specs the is the result of subtracting "beats" from "durr1".
+ * Returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
