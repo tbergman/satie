@@ -33,6 +33,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             context = new Context(opts);
             context.annotate(null);
             context = new Context(opts);
+            Context.semiJustify([context]);
         });
         _.each(tests, test => it(
             test[0],

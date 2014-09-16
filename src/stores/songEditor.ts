@@ -590,12 +590,20 @@ export class SongEditorStore extends TSEE {
         var cursorBar = 0;
         var cursorBeat = 0;
         var cursor = _visualCursor;
+        var semiJustificationDirty = false;
 
         if (!pointerData) {
             cursor.annotatedObj = null;
             cursor.annotatedLine = null;
             _ctxs = [];
         }
+
+        /*
+         * Records ctxData for every item.
+         */
+        Context.recordMetreData(staves);
+
+        var contexts: Array<Context> = [];
 
         var y = 0;
         while (!staves.every((stave, sidx) => {
@@ -631,10 +639,12 @@ export class SongEditorStore extends TSEE {
                         indent: _paper.indent
                     });
 
+            contexts.push(context);
+
             /*
              * Annotate the stave.
              */
-            var info = context.annotate({
+            var result = context.annotate({
                 cursor: cursor,
                 cursorBar: cursorBar,
                 cursorBeat: cursorBeat,
@@ -644,29 +654,30 @@ export class SongEditorStore extends TSEE {
                 toolFn: toolFn
             });
 
-            /*
-             * The _dirty flag is consumed by the client. It forces a complete
-             * re-render, which can be expensive in SVG mode, so avoid this when
-             * possible. Instead, code should use SongEditorModel.markRendererLineDirty.
-             */
-            if (info.dirty) {
-                markRendererDirty();
-            }
-            y = info.resetY ? 0 : y;
+            y = result.resetY ? 0 : y;
 
             if (PROFILER_ENABLED) {
-                console.log("ops:", info.operations, "\tbody:", stave.body.length, "\tscore:",
-                    (Math.round(info.operations / stave.body.length * 100) / 100));
+                console.log("ops:", result.operations, "\tbody:", stave.body.length, "\tscore:",
+                    (Math.round(result.operations / stave.body.length * 100) / 100));
             }
 
-            if (!info.skip) {
+            if (!result.skip) {
                 _ctxs.length = sidx;
                 _ctxs[sidx] = context;
                 y += 2.25;
             }
 
-            return info.success;
-        })) { /* pass */ }
+            semiJustificationDirty = semiJustificationDirty || result.semiJustificationDirty;
+
+            return result.success;
+        })) {
+            // While unsuccessful...
+            contexts = [];
+        }
+
+        if (semiJustificationDirty) {
+            Context.semiJustify(contexts);
+        }
 
         if (PROFILER_ENABLED) {
             console.timeEnd("annotate");
@@ -1003,9 +1014,16 @@ export class SongEditorStore extends TSEE {
 
         var lyliteArr: Array<string> = [];
         var unresolved: Array<(obj: Model) => boolean> = [];
+        var inPianoStaff = false;
         _.each(staves, (stave, sidx) => {
             if (stave.body) {
-                lyliteArr.push("\\new Staff {\n");
+                if (inPianoStaff) {
+                    lyliteArr.push("{");
+                } else if (stave.pianoStaff) {
+                    lyliteArr.push("\\new PianoStaff << {\n");
+                } else {
+                    lyliteArr.push("\\new Staff {\n");
+                }
                 lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
 
                 var body = stave.body;
@@ -1024,6 +1042,12 @@ export class SongEditorStore extends TSEE {
                 }
 
                 lyliteArr.push("}\n");
+                if (stave.pianoStaff) {
+                    inPianoStaff = true;
+                } else if (inPianoStaff) {
+                    lyliteArr.push(">>");
+                    inPianoStaff = false;
+                }
             } else if (stave.staveHeight) {
                 lyliteArr.push("#(set-global-staff-size " +
                     stave.staveHeight*renderUtil.ptPerMM + ")\n");

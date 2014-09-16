@@ -1,6 +1,4 @@
 /**
- * @file Model for key signatures.
- * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
@@ -18,15 +16,13 @@ import ClefModel = require("./clef");
 var isPitch = (k: C.IPitch, name: string, acc?: number) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
 
+/**
+ * Represents a key signature as an array of accidentals, and a tonality (major/minor).
+ */
 class KeySignatureModel extends Model {
-    clef: string;
-    keySignature: C.IKeySignature;
-    _annotatedSpacing: number;
-    color: string;
-    temporary: boolean;
-    selected: boolean;
-    pitch: C.IPitch;
-
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);
@@ -38,13 +34,13 @@ class KeySignatureModel extends Model {
         ctx.keySignature = this.keySignature;
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         if (next.isNote) {
-            // if (_.any(_.filter(next.intersects, (l: Model) => l.isNote),
-            //                n => n.containsAccidental(ctx)) ? 1 : 0) {
-            //     // TODO: should be 1 if there are more than 1 accidental.
-            //     this._annotatedSpacing = 2.5;
-            // } else {
-            this._annotatedSpacing = 1.5;
-            // }
+            if (_.any(_.filter(next.intersects, (l: Model) => l.isNote && l.ctxData.beat === this.ctxData.beat),
+                           n => n.containsAccidental(ctx)) ? 1 : 0) {
+                // TODO: should be 1 if there are more than 1 accidental.
+                this._annotatedSpacing = 2.5;
+            } else {
+                this._annotatedSpacing = 1.5;
+            }
         } else {
             this._annotatedSpacing = 1;
         }
@@ -209,6 +205,15 @@ class KeySignatureModel extends Model {
     get type() {
         return C.Type.KEY_SIGNATURE;
     }
+
+    clef: string;
+    keySignature: C.IKeySignature;
+    _annotatedSpacing: number;
+    color: string;
+    temporary: boolean;
+    selected: boolean;
+    pitch: C.IPitch;
+
 }
 
 /* tslint:disable */

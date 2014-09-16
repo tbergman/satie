@@ -20,6 +20,12 @@ import TimeSignatureModel = require("./timeSignature");
  * The model for single and double barlines.
  */
 class BarlineModel extends Model {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+        // If we have an overfilled note in the previous bar, it will at some point turn
+        // into a tied note. So the barline should still be at beat 0.
+        this.ctxData.beat = 0;
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
@@ -98,17 +104,15 @@ class BarlineModel extends Model {
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (
             next.type === C.Type.NEWLINE || next.type === C.Type.NEWPAGE);
 
-        // Barlines followed by accidentals have additional padding
-        // if (ctx.next().isNote) {
-        //     // XXX: Also check that notes are on the same beat!
-        //     // e.g., | C/////
-        //     //       | C/C#// will add spacing, but it shouldn't!
-        //     this.annotatedAccidentalSpacing = 0.2*
-        //         (_.any(_.filter(ctx.next().intersects, (l: DurationModel) => l.isNote),
-        //             n => n.containsAccidental(ctx)) ? 1 : 0);
-        // } else {
-        this.annotatedAccidentalSpacing = 0;
-        // }
+        // Barlines followed by accidentals have additional padding. We check all
+        // staves for following accidentals.
+        if (ctx.next().isNote) {
+            this.annotatedAccidentalSpacing = 0.2*
+                (_.any(_.filter(ctx.next(c => c.type !== C.Type.BEAM_GROUP).intersects, (l: Model) => l.isNote && !l.ctxData.beat),
+                    n => n.containsAccidental(ctx)) ? 1 : 0);
+        } else {
+            this.annotatedAccidentalSpacing = 0;
+        }
 
         // Double barlines only exist at the end of a piece.
         if (this.barline === C.Barline.Double && ctx.next(null, 2)) {
@@ -121,7 +125,7 @@ class BarlineModel extends Model {
             this.onPianoStaff = true;
         };
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
-        ctx.beats = 0;
+        ctx.beat = 0;
         ++ctx.bar;
         ctx.renderKey_eInBar = {};
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);

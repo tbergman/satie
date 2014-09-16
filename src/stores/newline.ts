@@ -20,6 +20,9 @@ import _ = require("lodash");
  * piano stave for everything but the first line of each page. See also begin.ts.
  */
 class NewlineModel extends Model {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // Pages should not overflow.
         if (ctx.y + ctx.lineSpacing > ctx.maxY) {
@@ -64,7 +67,7 @@ class NewlineModel extends Model {
                 all: null,
                 bar: null,
                 barlineX: null,
-                beats: null,
+                beat: null,
                 keySignature: null,
                 line: ctx.line,
                 pageLines: null,
@@ -78,7 +81,7 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].all = [];
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
-        ctx.lines[ctx.line].beats = 0;
+        ctx.lines[ctx.line].beat = 0;
         ctx.lines[ctx.line].x = ctx.x;
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;

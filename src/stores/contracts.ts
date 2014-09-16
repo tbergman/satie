@@ -38,6 +38,15 @@ export interface IActiveIntersection {
     expires: number;
 }
 
+export interface IAnnotationResult {
+    cursor: IVisualCursor;
+    operations: number;
+    resetY: boolean;
+    semiJustificationDirty: boolean;
+    skip: boolean;
+    success: boolean;
+}
+
 /**
  * Options to pass to Context.annotate and related annotation functions.
  */
@@ -127,7 +136,7 @@ export interface IDuration {
      * @param ctx with a valid timeSignature, for computing beats.
      * @param inheritedCount the count to use if duration's count is null.
      */
-    getBeats?: (ctx: Context, inheritedCount?: number) => number;
+    getBeats?: (ctx: MetreContext, inheritedCount?: number) => number;
 
     hasFlagOrBeam?: boolean;
 
@@ -359,7 +368,7 @@ export interface ILineSnapshot {
     all: Array<Model>;
     bar: number;
     barlineX: Array<number>;
-    beats: number;
+    beat: number;
     keySignature: IKeySignature;
     line: number;
     pageLines: Array<number>;
@@ -377,6 +386,27 @@ export var MAJOR = "\\major";
  * The Lilypond name for a minor key.
  */
 export var MINOR = "\\minor";
+
+/**
+ * Used for the metre annotation pass.
+ */
+export class MetreContext {
+    endMarker: boolean = false;
+    timeSignature: ITimeSignature = { beats: 4, beatType: 4 };
+    bar: number = 1;
+    beat: number = 0;
+    constructor(other?: MetreContext) {
+        if (other) {
+            this.timeSignature = {
+                beats: other.timeSignature.beats,
+                beatType: other.timeSignature.beatType
+            };
+            this.bar = other.bar;
+            this.beat = other.beat;
+            this.endMarker = other.endMarker || false;
+        }
+    }
+}
 
 /**
  * Information about the current mouse position, such as from Renderer.
@@ -750,7 +780,7 @@ export function makeDuration(spec: IDurationSpec): IDuration {
         dots: spec.dots || 0,
         tuplet: spec.tuplet || null,
         actualTuplet: null,
-        getBeats(ctx: Context, inheritedCount?: number): number {
+        getBeats(ctx: MetreContext, inheritedCount?: number): number {
             var Metre = require("./metre");
             return Metre.getBeats(
                 this.count || inheritedCount,

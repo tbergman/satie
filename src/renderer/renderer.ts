@@ -209,9 +209,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             );});
 
         var ret: Object; // React component
-        var currY = 20;
+        var currY = this.props.marginTop;
         if (!this.props.raw) {
-            ret = html.div({className: "workspace", onScroll: this.handleScroll, style: {top: "" + this.props.top}},
+            ret = html.div({ className: "workspace", onScroll: this.handleScroll, style: { top: "" + this.props.top } },
                 _.map(rawPages, function (rawPage: any, pidx: number) {
                     var page = html.div({
                         className: "page",
@@ -516,9 +516,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (_selection.length) {
                 _.each(_selection, function (s: Model) {
                     s.selected = true;
-                    // _.each(s.intersects, function (intersect: Model) {
-                    //     intersect.selected = true;
-                    // });
+                    _.each(s.intersects, function (intersect: Model) {
+                        intersect.selected = true;
+                    });
                 });
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {
@@ -749,6 +749,12 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         });
     }
 
+    getDefaultProps() {
+        return {
+            marginTop: 20
+        };
+    }
+
     _cleanup: () => void = null;
 }
 
@@ -756,6 +762,7 @@ export var Component = ReactTS.createReactComponent(Renderer);
 
 export interface IRendererProps {
     contexts?: Array<Context>;
+    marginTop?: number;
     pageSize?: C.IPageSize;
     raw?: boolean;
     staveHeight?: number;

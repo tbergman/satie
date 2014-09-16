@@ -15,6 +15,9 @@ import C = require("./contracts");
 import Context = require("./context");
 
 class NewPageModel extends Model {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         ctx.y = 0;
 

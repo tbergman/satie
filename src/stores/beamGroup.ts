@@ -24,6 +24,9 @@ import TimeSignatureModel = require("./timeSignature");
  * independently, just as any other model would be.
  */
 class BeamGroupModel extends Model {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.clef) {
@@ -52,7 +55,7 @@ class BeamGroupModel extends Model {
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet;
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
-        SongEditorStore.beamCountIs(ctx.beats);
+        SongEditorStore.beamCountIs(ctx.beat);
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {

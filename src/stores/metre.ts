@@ -55,7 +55,7 @@ export function rythmicSpellcheck(ctx: Context) {
     var beat = 0;
     var pidx = 0;
     var currElt: C.IDuration = pattern[0];
-    while (currElt && beat + currElt.getBeats(ctx) <= ctx.beats) {
+    while (currElt && beat + currElt.getBeats(ctx) <= ctx.beat) {
         ++pidx;
         beat += currElt.getBeats(ctx);
         currElt = pattern[pidx];
@@ -72,7 +72,7 @@ export function rythmicSpellcheck(ctx: Context) {
 
     var n1 = curr.note;
     var n1b = n1.getBeats(ctx);
-    var b1 = ctx.beats;
+    var b1 = ctx.beat;
     var b2 = b1 + n1b;
 
     // Separate durations that cross a boundary and only partially fill that boundary.
@@ -247,7 +247,7 @@ export function subtract(durr1: any, beats: number,
     var durr1Beats: number = isNaN(<any>durr1) ? durr1.getBeats(ctx) : <number> durr1;
     var beatsToFill = durr1Beats - beats;
     var bp = beamingPatterns[tsName];
-    var currBeat = ctx.beats + (beatOffset || 0);
+    var currBeat = ctx.beat + (beatOffset || 0);
 
     for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;
@@ -316,7 +316,7 @@ export function rebeamable(idx: number, ctx: Context, alt?: string): Array<Durat
     var tsName = getTSString(ctx.timeSignature) + (alt ? "_" + alt : "");
     var replaceWith: Array<DurationModel> = [];
     var bp = beamingPatterns[tsName];
-    var currBeat = ctx.beats;
+    var currBeat = ctx.beat;
 
     var bpIdx = 0;
     var bpCount = 0;

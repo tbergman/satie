@@ -12,14 +12,9 @@ import C = require("./contracts");
 import Context = require("./context");
 
 class BeginModel extends Model {
-    pianoStaff: boolean;
-    stave: C.IStave;
-    noMargin : boolean;
-    braceY : number;
-    getBraceY2: () => number;
-    pageSize: C.IPageSize;
-    width: number;
-
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // BeginModel must only appear at the begining of a song.
         if (ctx.idx !== 0) {
@@ -67,6 +62,14 @@ class BeginModel extends Model {
     get type() {
         return C.Type.BEGIN;
     }
+
+    pianoStaff: boolean;
+    stave: C.IStave;
+    noMargin : boolean;
+    braceY : number;
+    getBraceY2: () => number;
+    pageSize: C.IPageSize;
+    width: number;
 }
 
 /* tslint:disable */

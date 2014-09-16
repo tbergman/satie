@@ -14,15 +14,9 @@ import C = require("./contracts");
 import Context = require("./context");
 
 class ClefModel extends Model {
-    _annotatedSpacing: number;
-    clef: string;
-    clefName: string;
-    color: string;
-    isChange: boolean;
-    isVisible: boolean;
-    selected: boolean;
-    temporary: boolean;
-
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // A clef must not be redundant.
         if (!this.clefIsNotRedundant(ctx)) {
@@ -35,7 +29,7 @@ class ClefModel extends Model {
         }
 
         // Barlines should be before clefs when either is possible.
-        if (ctx.timeSignature && ctx.beats >= ctx.timeSignature.beats) {
+        if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
             var BarlineModel = require("./barline"); // Recursive dependency.
             return BarlineModel.createBarline(ctx);
         }
@@ -170,6 +164,15 @@ class ClefModel extends Model {
     get type() {
         return C.Type.CLEF;
     }
+
+    _annotatedSpacing: number;
+    clef: string;
+    clefName: string;
+    color: string;
+    isChange: boolean;
+    isVisible: boolean;
+    selected: boolean;
+    temporary: boolean;
 }
 
 /* tslint:disable */

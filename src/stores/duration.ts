@@ -23,6 +23,14 @@ import TimeSignatureModel = require("./timeSignature");
  * (if pitch is [a-g]), or a rest (if pitch is "r").
  */
 class DurationModel extends Model implements C.IPitchDuration {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext(mctx);
+
+        this._beats = this.getBeats(mctx, null, true);
+        assert(this._beats !== null);
+        mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.timeSignature.beats);
+        mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
         var i: number;
@@ -42,7 +50,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             this.count = ctx.count;
         }
 
-        this._beats = this.getBeats(ctx, null, !ctx.fast);
+        assert(this._beats !== null);
 
         // Update the context to reflect the current note's duration.
         ctx.count = this.count;
@@ -51,12 +59,12 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // Make sure the bar is not overfilled. Multibar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
-            if (this._beats > ctx.timeSignature.beats && ctx.beats >= ctx.timeSignature.beats) {
+            if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
                 return BarlineModel.createBarline(ctx, C.Barline.Standard);
             } else if (!this.isMultibar) {
                 // The number of beats in a bar must not exceed that specified by the time signature.
-                if (ctx.beats + this._beats > ctx.timeSignature.beats) {
-                    var overfill = ctx.beats + this._beats - ctx.timeSignature.beats;
+                if (ctx.beat + this._beats > ctx.timeSignature.beats) {
+                    var overfill = ctx.beat + this._beats - ctx.timeSignature.beats;
                     if (this._beats === overfill) {
                         var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
                         return ret;
@@ -157,7 +165,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.lines = DurationModel.getLines(this, ctx);
 
         if (!ctx.isBeam) {
-            ctx.beats = (ctx.beats || 0) + this._beats;
+            ctx.beat = (ctx.beat || 0) + this._beats;
         }
 
         if (!ctx.isBeam && this.inBeam) {
@@ -211,7 +219,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nextLine: number = ctx.next() && ctx.next().isNote ?
                 DurationModel.getAverageLine(ctx.next().note, ctx) : null;
 
-        if ((nextLine !== null) && ctx.beats + this._beats + ctx.next().note
+        if ((nextLine !== null) && ctx.beat + this._beats + ctx.next().note
                 .getBeats(ctx, this.count) > ctx.timeSignature.beats) {
             // Barlines aren't inserted yet.
             nextLine = null;
@@ -229,8 +237,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else if (nextLine === null) {
             check = prevLine;
         } else {
-            var startsAt = ctx.beats;
-            var endsAt = ctx.beats + this._beats;
+            var startsAt = ctx.beat;
+            var endsAt = ctx.beat + this._beats;
 
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
                 check = nextLine;
@@ -748,7 +756,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
     static symbolByLilypondName: { [key: string]: string } = _.invert(DurationModel.lilypondSymbols);
 
-    getBeats(ctx: Context, inheritedCount?: number, force?: boolean) {
+    getBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
         if (!force && this._beats) {
             return this._beats;
         }
@@ -1143,7 +1151,13 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     private _handleTie(ctx: Context) {
         if (this.tie) {
-            this.tieTo = <DurationModel> ctx.next(obj => obj.isNote);
+            var nextNote = ctx.next(obj => obj.isNote);
+            if (nextNote.isRest) {
+                this.tie = false;
+                this.tieTo = null;
+            } else {
+                this.tieTo = <DurationModel> nextNote;
+            }
         } else {
             this.tieTo = null;
         }
@@ -1217,6 +1231,14 @@ class DurationModel extends Model implements C.IPitchDuration {
             a = a.slice(1);
         }
         this._color = parseInt(a, 16);
+    }
+
+    get beats(): number {
+        assert(false);
+        return NaN;
+    }
+    set beats(n: number) {
+        assert(false);
     }
 }
 

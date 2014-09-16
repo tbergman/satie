@@ -17,6 +17,14 @@ import Metre = require("./metre");
  * positioning and other logic. It is not rendered.
  */
 class EndMarkerModel extends Model {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        this.ctxData = new C.MetreContext({
+            timeSignature: mctx.timeSignature,
+            beat: mctx.timeSignature.beats,
+            bar: mctx.bar - 1,
+            endMarker: true
+        });
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         var next = ctx.next();
         var prev = ctx.prev();
@@ -55,16 +63,16 @@ class EndMarkerModel extends Model {
 
         // Bars must not be under-filled (should be filled with rests)
         if (prev.type !== C.Type.BARLINE &&
-                    ctx.beats && ctx.beats < ctx.timeSignature.beats) {
+                    ctx.beat && ctx.beat < ctx.timeSignature.beats) {
             // XXX: extend to work on things other than 4/4
-            var beatsRemaining = ctx.timeSignature.beats - ctx.beats;
+            var beatsRemaining = ctx.timeSignature.beats - ctx.beat;
 
             assert(beatsRemaining < ctx.timeSignature.beats,
                 "Don't run this on entirely blank bars!");
 
             var DurationModel = require("./duration"); // Recursive dependency.
 
-            var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beats, ctx)
+            var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beat, ctx)
                 .map((beat: C.IPitchDuration) => {
                     beat.chord = [{ pitch: "r", octave: 0, acc: null }];
                     beat.tie = false;

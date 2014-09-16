@@ -13,10 +13,13 @@ import _ = require("lodash");
 import C = require("./contracts");
 import Context = require("./context");
 import ClefModel = require("./clef");
-import DurationModel = require("./duration");
 import KeySignatureModel = require("./keySignature");
 
 class TimeSignatureModel extends Model implements C.ITimeSignature {
+    recordMetreDataImpl(mctx: C.MetreContext) {
+        mctx.timeSignature = this.timeSignature;
+        this.ctxData = new C.MetreContext(mctx);
+    }
     annotateImpl(ctx: Context): C.IterationStatus {
         // A clef must exist on each line.
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
@@ -29,13 +32,13 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
         var next = ctx.next();
         if (next.isNote) {
-            // if (_.any(_.filter(next.intersects, (l: DurationModel) => l.isNote),
-            //                n => n.containsAccidental(ctx)) ? 1 : 0) {
-            //     // TODO: should be 1 if there are more than 1 accidental.
-            //     this._annotatedSpacing = 1.5;
-            // } else {
-            this._annotatedSpacing = 2.5;
-            // }
+            if (_.any(_.filter(next.intersects, (l: Model) => l.isNote && l.ctxData.beat === this.ctxData.beat),
+                           n => n.containsAccidental(ctx)) ? 1 : 0) {
+                // TODO: should be 1 if there are more than 1 accidental.
+                this._annotatedSpacing = 1.5;
+            } else {
+                this._annotatedSpacing = 2.5;
+            }
         } else {
             this._annotatedSpacing = 1.25;
         }

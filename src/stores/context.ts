@@ -22,12 +22,11 @@ global.spliceTime = 0;
  * If you think of annotation as a 'reduce' on all the elements across staffs,
  * Context is the memo.
  */
-class Context {
-    annotate(opts: C.IAnnotationOpts): any /* TSFIX */ {
+class Context implements C.MetreContext {
+    annotate(opts: C.IAnnotationOpts): C.IAnnotationResult {
         assert(!_ANNOTATING);
         _ANNOTATING = true;
 
-        this._calculateIntersections();
         var NewlineModel = require("./newline");
 
         opts = opts || <any> {}; // TSFIX
@@ -91,24 +90,12 @@ class Context {
             var shouldUpdateVC =
                 (!pointerData && this.bar === cursor.bar &&
                     ((!cursor.beat && !cursor.annotatedObj) ||
-                    this.beats === cursor.beat) &&
+                    this.beat === cursor.beat) &&
                     ((this.curr.isNote && !cursor.endMarker) || (cursor.endMarker &&
                     this.curr.type === C.Type.END_MARKER))) &&
                 (cursorStave === sidx || this.bar > cursorBar || (cursorBar === this.bar &&
-                        this.beats > cursorBeat)) &&
+                        this.beat > cursorBeat)) &&
                 (!cursor.annotatedObj);
-
-            /*
-             * Context data is used throughout Ripieno to avoid the need to re-annotate
-             * (or duplicate a similar procedure) to calculate what beat/bar a note is
-             * in.
-             */
-            this.curr.ctxData = {
-                bar: this.bar,
-                beat: this.beats,
-                    // TODO: Move into the bridge layer
-                endMarker: this.curr.endMarker
-            };
 
             /*
              * THIS IS THE PART OF THE FUNCTION YOU CARE ABOUT!
@@ -128,8 +115,12 @@ class Context {
                 if (this.curr.type === C.Type.TIME_SIGNATURE) {
                     this.timeSignature = (<any>this.curr).timeSignature;
                 }
+
                 exitCode = toolFn(this.curr, this);
                 pointerData = null;
+
+                // Assume that the staves have been changed.
+                Context.recordMetreData(this.staves);
 
                 // All current operations can make changes that require slow mode for
                 // up to 2 bars.
@@ -167,7 +158,7 @@ class Context {
             if (shouldUpdateVC) {
                 cursorStave = sidx;
                 cursorBar = this.bar;
-                cursorBeat = this.beats;
+                cursorBeat = this.beat;
                 cursor.annotatedObj = this.curr;
                 cursor.annotatedLine = this.line;
                 cursor.annotatedPage = this.pageStarts.length - 1;
@@ -200,7 +191,7 @@ class Context {
             }
 
             if ((canExitAtNewline && !pointerData && this.curr && this.curr.type === C.Type.NEWLINE && cursor.annotatedObj) ||
-                (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
+                    (canExitOnNextSuccess && exitCode === C.IterationStatus.SUCCESS)) {
                 _ANNOTATING = false;
                 if (SongEditorStore.PROFILER_ENABLED) {
                     performanceStats.print();
@@ -209,15 +200,22 @@ class Context {
                     cursor: cursor,
                     operations: operations,
                     resetY: true,
+                    semiJustificationDirty: false,
                     skip: true,
                     success: true
                 };
+            }
+
+            if (exitCode !== C.IterationStatus.SUCCESS) {
+                // Assume that the staves have been changed.
+                // TODO: Optimize
+                Context.recordMetreData(this.staves);
             }
         }
 
         _ANNOTATING = false;
 
-        if (this.bar === 1 && !this.beats && !cursor.endMarker) {
+        if (this.bar === 1 && !this.beat && !cursor.endMarker) {
             cursor.endMarker = true;
             this.idx = -1;
             if (SongEditorStore.PROFILER_ENABLED) {
@@ -225,17 +223,13 @@ class Context {
             }
             return {
                 cursor: cursor,
+                operations: operations,
                 resetY: true,
+                semiJustificationDirty: true,
                 skip: true,
                 success: false
             };
         }
-
-        this.idx = this.body.length - 1;
-
-        NewlineModel.semiJustify(this);
-
-        this.idx = -1;
 
         if (SongEditorStore.PROFILER_ENABLED) {
             performanceStats.print();
@@ -243,6 +237,9 @@ class Context {
         return {
             cursor: cursor,
             operations: operations,
+            resetY: false,
+            semiJustificationDirty: true,
+            skip: false,
             success: true
         };
     }
@@ -282,6 +279,12 @@ class Context {
 
         var self: { [index: string]: any } = <any> this;
 
+        for (var i = 0; i < opts.staves.length; ++i) {
+            if (opts.staves[i].body) {
+                ++this.bodyCount;
+            }
+        }
+
         if (opts.snapshot) {
             var s = opts.snapshot;
             _.each(s, (val: any, key: string) => {
@@ -295,12 +298,12 @@ class Context {
             this.accidentals = {};
             this.bar = 1;
             this.barlineX = [];
-            this.beats = 0;
+            this.beat = 0;
             this.count = 4;
             this.fontSize = opts.fontSize;
             this.initialX = initialX;
             this.line = 0;
-            this.lineSpacing = 3.3;
+            this.lineSpacing = 3.3*this.bodyCount;
             this.maxX = renderUtil.mm(opts.pageSize.width - opts.rightMargin, opts.fontSize);
             this.maxY = renderUtil.mm(opts.pageSize.height - 15, opts.fontSize);
             this.pageLines = [0];
@@ -316,7 +319,7 @@ class Context {
                     all: [],
                     bar: 1,
                     barlineX: [],
-                    beats: 0,
+                    beat: 0,
                     keySignature: null,
                     line: 0,
                     pageLines: null,
@@ -516,96 +519,75 @@ class Context {
         this.idx = this.start;
     }
 
-    private _calculateIntersections() {
-        return;
-        // var genIterators =
-        //     () => _(this.staves)
-        //         .filter(s => s.body)
-        //         .map((s: C.IStave) => {
-        //             return <IPart> {
-        //                 idx: 0,
-        //                 body: s.body,
-        //                 beat: 0,
-        //                 doIf: (act, cond) => { if (cond()) { return act(); }; }
-        //             };
-        //         })
-        //         .value();
+    static recordMetreData(staves: Array<C.IStave>) {
+        var anyChange = false;
+        for (var i = 0; i < staves.length; ++i) {
+            var body = staves[i].body;
+            if (!body) { continue; }
+            var mctx = new C.MetreContext;
+            for (var j = 0; j < body.length; ++j) {
+                var prevhash = body[j].ctxData && (body[j].ctxData.bar * 10000 +
+                    body[j].ctxData.beat * 2 + (body[j].ctxData.endMarker ? 1 : 0));
+                body[j].recordMetreDataImpl(mctx);
+                var newhash = body[j].ctxData.bar * 10000 +
+                    body[j].ctxData.beat * 2 + (body[j].ctxData.endMarker ? 1 : 0);
+                anyChange = anyChange || prevhash !== newhash;
+            }
+        }
 
-        // var iterators: Array<IPart>;
+        if (!anyChange) {
+            return;
+        }
 
-        // for (iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-        //     _.each(iterators, s => s.doIf(
-        //         () => {
-        //             s.body[s.idx].intersects = [];
-        //             ++s.idx;
-        //         },
-        //         () => s.idx < s.body.length));
-        // }
+        console.log("Recalculating intersections");
 
-        // var actives: Array<C.IActiveIntersection> = [];
-        // var beat = 0;
-        // var impliedCount = 4;
+        var activeModels: Array<Model> = [];
+        var activeBodies: Array<C.IBody> = staves.filter(s => !!s.body).map(s => s.body);
+        var activeIdxs = activeBodies.map(b => -1);
+        var mctx = new C.MetreContext;
+        var LARGE_NUM = 1000000;
+        while (_.any(activeBodies, (b, idx) => (activeIdxs[idx] < b.length))) {
+            mctx.bar = LARGE_NUM;
+            mctx.beat = LARGE_NUM;
+            for (var i = 0; i < activeBodies.length; ++i) {
+                var item = activeBodies[i][activeIdxs[i] + 1];
+                if (!item) { continue; }
+                if (item.ctxData.bar < mctx.bar || item.ctxData.bar === mctx.bar && item.ctxData.beat <= mctx.beat) {
+                    mctx.bar = item.ctxData.bar;
+                    mctx.beat = item.ctxData.beat;
+                }
+            }
 
-        // // The bars might not have been annotated yet, so it's possible we don't have
-        // // a time signature. We need an implied time signature to calculate bars.
-        // var tsBackup = this.timeSignature;
-        // this.timeSignature = { beatType: 4, beats: 4 };
+            activeModels = activeModels.filter(stillActive);
+            var l = activeModels.length;
 
-        // for(iterators = genIterators(); _.any(iterators, s => s.idx < s.body.length);) {
-        //     var allNewActives: Array<Model> = [];
-        //     _(iterators)
-        //         .map((s, sidx) => s.doIf(
-        //             () => {
-        //                 if (beat === s.beat) {
-        //                     var newActives: Array<Model> = [];
-        //                     do {
-        //                         ++s.idx;
-        //                         if (!s.body[s.idx]) {
-        //                             break;
-        //                         }
-        //                         if (s.body[s.idx].type === C.Type.TIME_SIGNATURE) {
-        //                             this.timeSignature = s.body[s.idx].timeSignature;
-        //                         }
-        //                         newActives.push(s.body[s.idx]);
-        //                         allNewActives.push(s.body[s.idx]);
-        //                         if (s.body[s.idx].type === C.Type.BEAM_GROUP) {
-        //                             ++s.idx;
-        //                             continue;
-        //                         }
-        //                     } while (s.body[s.idx] && !s.body[s.idx].isNote);
+            for (var i = 0; i < activeBodies.length; ++i) {
+                var item = activeBodies[i][activeIdxs[i] + 1];
+                if (!item) {
+                    activeIdxs[i] = activeBodies[i].length;
+                    continue;
+                }
+                if (item.ctxData.bar === mctx.bar && item.ctxData.beat === mctx.beat || mctx.bar === LARGE_NUM) {
+                    ++activeIdxs[i];
+                    item.intersects = [];
+                    activeModels.push(activeBodies[i][activeIdxs[i]]);
+                }
+            }
 
-        //                     actives = actives.concat(_.map(newActives, a => {
-        //                         return {obj: a, expires: s.beat};
-        //                     }));
+            for (var i = l; i < activeModels.length; ++i) {
+                for (var j = 0; j < activeModels.length; ++j) {
+                    activeModels[j].intersects.push(activeModels[i]);
+                    activeModels[i].intersects.push(activeModels[j]);
+                }
+            }
+        }
 
-        //                     if (s.body[s.idx]) {
-        //                         assert(s.body[s.idx].isNote);
-        //                         var pitch: C.IPitchDuration = <any> s.body[s.idx];
-        //                         impliedCount = pitch.count || impliedCount;
-        //                         s.beat = s.beat + pitch.getBeats(this, impliedCount);
-        //                     } else {
-        //                         s.beat = undefined;
-        //                     }
-        //                 }
-        //             },
-        //             () => s.idx < s.body.length))
-        //         .filter(s => s)
-        //         .value();
-
-        //     var increment = _(iterators)
-        //         .map(s => s.beat)
-        //         .filter(s => s !== null && !isNaN(s))
-        //         .sort((a, b) => a - b)
-        //         .value();
-
-        //     beat = increment[0]; // lowest
-
-        //     _.each(actives, a => a.obj.intersects = a.obj.intersects.concat(allNewActives));
-
-        //     actives = _.filter(actives, a => a.expires > beat);
-        // }
-
-        // this.timeSignature = tsBackup; // The context can be reused.
+        function stillActive(obj: Model) {
+            var fbeat = obj.ctxData.beat + obj.getBeats(obj.ctxData);
+            var fbar = obj.ctxData.bar + Math.floor(fbeat / obj.ctxData.timeSignature.beats);
+            fbeat %= obj.ctxData.timeSignature.beats;
+            return mctx.bar < fbar || (fbar === mctx.bar && mctx.beat <= fbeat);
+        }
     }
 
     /**
@@ -667,7 +649,7 @@ class Context {
                 break;
             case C.IterationStatus.RETRY_BEAM:
                 var SongEditorStore = require("./songEditor"); // Recursive dependency.
-                this.beats = SongEditorStore.getBeamCount();
+                this.beat = SongEditorStore.getBeamCount();
                 --i;
                 while (i >= 0 && this.body[i].type !== C.Type.BEAM_GROUP) {
                     --i;
@@ -687,10 +669,25 @@ class Context {
         return i + 1;
     }
 
+    static semiJustify(contexts: Array<Context>) {
+        return false;
+        var NewlineModel = require("./newline"); // Recursive dependency.
+        for (var i = 0; i < contexts.length; ++i) {
+            var ctx = contexts[i];
+            ctx.idx = ctx.body.length - 1;
+            NewlineModel.semiJustify(ctx);
+            ctx.idx = -1;
+        }
+    }
+
+    get endMarker() {
+        return this.curr.endMarker;
+    }
+
     accidentals: C.IAccidentals;
     bar: number;
     barlineX: Array<number>;
-    beats: number;
+    beat: number;
     clef: string;
     count: number;
     fast: boolean;
@@ -717,9 +714,9 @@ class Context {
     staveIdx: number;
     staves: Array<C.IStave>;
     body: Array<Model>;
+    bodyCount: number = 0;
     idx: number;
     renderKey_eInBar: { [key: string]: string };
-
 }
 
 var _ANNOTATING = false; // To prevent annotate from being called recursively.
@@ -751,8 +748,8 @@ function cpyline(ctx: Context, line: C.ILineSnapshot) {
             case "barlineX":
                 ctx.barlineX = line.barlineX;
                 break;
-            case "beats":
-                ctx.beats = line.beats;
+            case "beat":
+                ctx.beat = line.beat;
                 break;
             case "keySignature":
                 ctx.keySignature = line.keySignature;

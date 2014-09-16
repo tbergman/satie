@@ -18,16 +18,7 @@ import Context = require("./context");
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
  * (which is done by components in ./primitives).
  *
- * In particular, classes which extend Model provide three key items:
- *   - prereqs: an array of prerequisites. Each prerequisite is an array with
- *      the following:
- *        1. a function which accepts a ctx and returns true if the
- *           precondition is satisfied and false otherwise.
- *        2. a function which accepts a ctx, stave, and idx and performs
- *           actions which make the precondition true. The exit code is one
- *           of those described in C.IterationStatus.
- *        3. A description of the precondition, in English, for debugging.
- *
+ * In particular, classes which extend Model provide three two functions:
  *   - annotateImpl: adds any missing information (default values) not provided
  *      by the parser, adds any missing elements (e.g., clefs, time signatures,
  *      line breaks) to stave.body
@@ -36,7 +27,7 @@ import Context = require("./context");
  *      annotateImpl.
  *
  * To see the kind of information held by Models, in your web browser's
- * console, run 'SongEditorStore.staves()[3].body'. Every item is a Model.
+ * console, look at 'SongEditorStore.staves()[...].body'. Every item is a Model.
  */
 class Model {
     annotate(ctx: Context, stopping?: number): C.IterationStatus {
@@ -51,6 +42,8 @@ class Model {
         if (ret !== C.IterationStatus.SUCCESS) {
             return ret;
         }
+
+        this._lineUpWithIntersectingItems();
 
         return ret;
     }
@@ -85,6 +78,10 @@ class Model {
     annotateImpl(ctx: Context): C.IterationStatus {
         assert(false, "Not implemented");
         return null; // Not reached
+    }
+
+    recordMetreDataImpl(mctx: C.MetreContext): void {
+        assert(false, "Not implemented");
     }
 
     visible() {
@@ -145,6 +142,10 @@ class Model {
         }
     };
 
+    getBeats(ctx: C.MetreContext) {
+        return 0;
+    }
+
     // FLAGS
     get inBeam(): boolean { return !!(this._flags & Flags.IN_BEAM); }
     set inBeam(v: boolean) {
@@ -172,9 +173,7 @@ class Model {
     endMarker: boolean;
     idx: number;
     _flags: number = 0;
-    ctxData: {
-        bar: number; beat: number
-    };
+    ctxData: C.MetreContext;
 
     get type(): C.Type {
         return C.Type.UNKNOWN;
@@ -185,7 +184,27 @@ class Model {
         return null;
     }
 
+    intersects: Array<Model>;
+
     private static lastKey: number = 0;
+    private _lineUpWithIntersectingItems() {
+        var x = 0;
+        for (var i = 0; i < this.intersects.length; ++i) {
+            var item = this.intersects[i];
+            if (!isNaN(item.x) && item.ctxData.beat === this.ctxData.beat &&
+                item.ctxData.bar === this.ctxData.bar && item.type === this.type) {
+                x = Math.max(x, item.x);
+            }
+        }
+
+        for (var i = 0; i < this.intersects.length; ++i) {
+            var item = this.intersects[i];
+            if (!isNaN(item.x) && item.ctxData.beat === this.ctxData.beat &&
+                item.ctxData.bar === this.ctxData.bar && item.type === this.type) {
+                this.intersects[i].x = x;
+            }
+        }
+    }
 }
 
 enum Flags {

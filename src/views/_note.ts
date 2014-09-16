@@ -19,6 +19,7 @@ var Group = require("./_group.jsx");
 var LedgerLine = require("./_ledgerLine.jsx");
 var NoteHead = require("./_noteHead.jsx");
 var NoteStem = require("./_noteStem.jsx");
+import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
 
 export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
@@ -219,6 +220,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         accidentals = accidentals.length ? accidentals : [accidentals];
 
         var l = this.getLines();
+        var glyphOffset = 0;
 
         return _.map(accidentals, (acc, idx) => {
             if (!isNaN(<any>acc)) {
@@ -226,6 +228,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 switch(acc) {
                     case 2:
                         glyphName = "accidentalDoubleSharp";
+                        glyphOffset = 0.45;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -238,12 +241,13 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                         break;
                     case -2:
                         glyphName = "accidentalDoubleFlat";
+                        glyphOffset = 0.45;
                         break;
                     default:
                         assert(0, "Not reached");
                 }
                 return Accidental({
-                    x: this.props.x - this.accidentalSpacing(),
+                    x: this.props.x - (glyphOffset || this.accidentalSpacing()),
                     y: this.props.y,
                     stroke: this.props.accStrokes[idx],
                     fontSize: this.props.fontSize,
