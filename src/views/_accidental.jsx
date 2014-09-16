@@ -20,7 +20,8 @@ var Accidental = React.createClass({
         x: React.PropTypes.number.isRequired,
         y: React.PropTypes.number.isRequired,
         line: React.PropTypes.number.isRequired,
-        stroke: React.PropTypes.string
+	    stroke: React.PropTypes.string,
+		idx: React.PropTypes.number
     },
     getDefaultProps: function() {
         return {
@@ -36,7 +37,8 @@ var Accidental = React.createClass({
             y={this.props.y - (this.props.line - 3)/4}
             fill={this.props.stroke}
             fontSize={this.props.fontSize}
-            glyphName={this.props.accidental} />;
+            glyphName={this.props.accidental}
+			selectioninfo={"accidental-" + this.props.idx} />;
     }
 });
 

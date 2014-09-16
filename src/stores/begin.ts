@@ -9,13 +9,13 @@
 import Model = require("./model");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 
 class BeginModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // BeginModel must only appear at the begining of a song.
         if (ctx.idx !== 0) {
             return ctx.eraseCurrent();
@@ -30,8 +30,8 @@ class BeginModel extends Model {
         ctx.x += 0.2;
 
         // Copy information from the context needed for the view
-        this.pianoStaff = ctx.stave.pianoStaff;
-        this.stave = ctx.stave;
+        this.pianoStaff = ctx.currStave.pianoStaff;
+        this.stave = ctx.currStave;
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
@@ -41,8 +41,8 @@ class BeginModel extends Model {
         }
         this.braceY = this.y;
         // We're cheating here! y() won't be annotated yet, but it will
-        // be at render time!.
-        this.getBraceY2 = () => ctx.nextStave().body[0].y;
+        // be at render time!. HACK
+        this.getBraceY2 = () => this.y + 2;
         this.pageSize = ctx.pageSize;
 
         return C.IterationStatus.SUCCESS;
@@ -54,7 +54,7 @@ class BeginModel extends Model {
         return true;
     }
 
-    static createBegin = (ctx: Context) => {
+    static createBegin = (ctx: Annotator.Context) => {
         return ctx.insertPast(new BeginModel(
             {source: C.Source.ANNOTATOR}));
     };

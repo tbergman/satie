@@ -11,7 +11,7 @@ import Model = require("./model");
 import _ = require("lodash");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import ClefModel = require("./clef");
 import KeySignatureModel = require("./keySignature");
 
@@ -20,7 +20,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         mctx.timeSignature = this.timeSignature;
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
         if (!ctx.clef) { status = ClefModel.createClef(ctx); }
@@ -30,10 +30,9 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         if (!ctx.keySignature) { status = KeySignatureModel.createKeySignature(ctx); }
         if (status !== C.IterationStatus.SUCCESS) { return status; }
 
-        var next = ctx.next();
-        if (next.isNote) {
-            if (_.any(_.filter(next.intersects, (l: Model) => l.isNote && l.ctxData.beat === this.ctxData.beat),
-                           n => n.containsAccidental(ctx)) ? 1 : 0) {
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION, true), l => l.isNote);
+        if (intersectingNotes.length) {
+            if (_.any(intersectingNotes, n => n.containsAccidental(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {
@@ -67,7 +66,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         lylite.push("\\time " + this._timeSignature.beats + "/" + this._timeSignature.beatType + "\n");
     }
 
-    static createTS = (ctx: Context): C.IterationStatus => {
+    static createTS = (ctx: Annotator.Context): C.IterationStatus => {
         return ctx.insertPast(new TimeSignatureModel({
             timeSignature: {
                 beats: 4,

@@ -19,7 +19,6 @@ var Group = require("./_group.jsx");
 var LedgerLine = require("./_ledgerLine.jsx");
 var NoteHead = require("./_noteHead.jsx");
 var NoteStem = require("./_noteStem.jsx");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
 
 export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
@@ -253,6 +252,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     fontSize: this.props.fontSize,
                     line: l[idx],
                     key: "acc_" + idx,
+                    idx: idx,
                     accidental: glyphName});
             } else {
                 return false;

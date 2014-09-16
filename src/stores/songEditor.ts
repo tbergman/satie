@@ -8,7 +8,7 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import Dispatcher = require("./dispatcher");
 import Model = require("./model");
 import Tool = require("./tool");
@@ -265,7 +265,7 @@ export class SongEditorStore extends TSEE {
                     assert(false, "Not found");
                 }
                 markRendererDirty();
-                _ctxs = null;
+                _ctx = null;
                 _.find(_staves, s => s.staveHeight).staveHeight = _staveHeight;
                 Model.removeAnnotations(_staves);
                 this.annotate();
@@ -276,7 +276,7 @@ export class SongEditorStore extends TSEE {
                 this.emit(HISTORY_EVENT);
                 _pageSize = action.postData;
                 markRendererDirty();
-                _ctxs = null;
+                _ctx = null;
                 _.find(_staves, s => s.pageSize).pageSize = _pageSize;
                 Model.removeAnnotations(_staves);
                 this.annotate();
@@ -443,7 +443,7 @@ export class SongEditorStore extends TSEE {
                 stave.body.instrument = instrument;
                 this.emit(CHANGE_EVENT);
                 break;
-            case "POST /local/visualCursor":
+            case "PUT /local/visualCursor":
                 switch (action.resource) {
                     case "octave":
                         if (!prevObj || !prevObj.isNote) {
@@ -575,7 +575,7 @@ export class SongEditorStore extends TSEE {
      */
     annotate(
         pointerData?: C.IPointerData,
-        toolFn?: (obj: Model, ctx: Context) => C.IterationStatus,
+        toolFn?: (obj: Model, ctx: Annotator.Context) => C.IterationStatus,
         staves?: Array<C.IStave>,
         pageSize?: C.IPageSize,
         profile?: boolean) {
@@ -586,97 +586,64 @@ export class SongEditorStore extends TSEE {
             console.time("annotate");
         }
 
-        var cursorStave = 0;
-        var cursorBar = 0;
-        var cursorBeat = 0;
         var cursor = _visualCursor;
-        var semiJustificationDirty = false;
 
         if (!pointerData) {
             cursor.annotatedObj = null;
             cursor.annotatedLine = null;
-            _ctxs = [];
         }
 
-        /*
-         * Records ctxData for every item.
-         */
-        Context.recordMetreData(staves);
+        var layout: Annotator.ILayoutOpts = {
+            top: y,
+            fontSize: this.staveHeight,
+            isFirstLine: true,
+            pageSize: pageSize || _pageSize,
+            leftMargin: _paper.leftMargin,
+            rightMargin: _paper.rightMargin,
+            indent: _paper.indent
+        };
 
-        var contexts: Array<Context> = [];
+        // Records ctxData for every item.
+        Annotator.recordMetreData(staves);
+
+        // Get a context.
+
+        // Contexts are iterators that hold information such as the current
+        // beat, what accidentals have been set, and what accidentals are
+        // present on other staffs.  Contexts are retrieved from snapshots
+        // when modifying a line other than the first.
+        var context = this.ctxFromSnapshot(pointerData, staves) || new Annotator.Context(staves, layout);
 
         var y = 0;
-        while (!staves.every((stave, sidx) => {
-            /*
-             * Process staffs that aren't actually staffs.
-             * (Headers, authors, etc.)
-             */
-            if (stave.header) {
-                y += renderUtil.getHeaderHeight(stave.header);
-                return true;
-            } else if (!stave.body) {
-                return true;
+        for (var i = 0; i < staves.length; ++i) {
+            if (staves[i].header) {
+                y += renderUtil.getHeaderHeight(staves[i].header);
             }
-
-            /*
-             * Get a context.
-             *
-             * Contexts are iterators that hold information such as the current
-             * beat, what accidentals have been set, and what accidentals are
-             * present on other staffs.  Contexts are retrieved from snapshots
-             * when modifying a line other than the first.
-             */
-            var context = this.ctxFromSnapshot(pointerData, staves, sidx) ||
-                    new Context({
-                        top: y,
-                        fontSize: this.staveHeight,
-                        isFirstLine: true,
-                        pageSize: pageSize || _pageSize,
-                        staves: staves,
-                        staveIdx: sidx,
-                        leftMargin: _paper.leftMargin,
-                        rightMargin: _paper.rightMargin,
-                        indent: _paper.indent
-                    });
-
-            contexts.push(context);
-
-            /*
-             * Annotate the stave.
-             */
-            var result = context.annotate({
-                cursor: cursor,
-                cursorBar: cursorBar,
-                cursorBeat: cursorBeat,
-                cursorStave: cursorStave,
-                pointerData: pointerData,
-                staveIdx: sidx,
-                toolFn: toolFn
-            });
-
-            y = result.resetY ? 0 : y;
-
-            if (PROFILER_ENABLED) {
-                console.log("ops:", result.operations, "\tbody:", stave.body.length, "\tscore:",
-                    (Math.round(result.operations / stave.body.length * 100) / 100));
-            }
-
-            if (!result.skip) {
-                _ctxs.length = sidx;
-                _ctxs[sidx] = context;
-                y += 2.25;
-            }
-
-            semiJustificationDirty = semiJustificationDirty || result.semiJustificationDirty;
-
-            return result.success;
-        })) {
-            // While unsuccessful...
-            contexts = [];
         }
 
-        if (semiJustificationDirty) {
-            Context.semiJustify(contexts);
+        // Annotate the stave.
+        var location = {
+            bar: context.lines ? context.lines[context.line].bar : 1,
+            beat: context.lines ? context.lines[context.line].beat : 0
+        };
+
+        var customAction: Annotator.ICustomAction = {
+            toolFn: toolFn,
+            pointerData: pointerData
+        };
+        var result = context.annotate(location, customAction, cursor);
+
+        y = result.resetY ? 0 : y;
+
+        if (PROFILER_ENABLED) {
+            console.log("I broke the profiler");
+            // console.log("ops:", result.operations, "\tbody:", stave.body.length, "\tscore:",
+            //     (Math.round(result.operations / stave.body.length * 100) / 100));
+        }
+
+        if (!result.skip) {
+            _ctx = context;
+            y += 2.25;
         }
 
         if (PROFILER_ENABLED) {
@@ -708,10 +675,8 @@ export class SongEditorStore extends TSEE {
             var bpm = 120;
             var timePerBeat = 60/bpm;
 
-            var ctx = new Context({
-                indent: 0,
-                staveIdx: h,
-                staves: staves
+            var ctx = new Annotator.Context(staves, {
+                indent: 0
             });
 
             for (var i = 0; i < body.length; ++i) {
@@ -908,7 +873,7 @@ export class SongEditorStore extends TSEE {
                             spec.step === 1) {
                             var last = _staves[h].body[_staves[h].body.length - 1];
                             assert(last.endMarker);
-                            if (last.ctxData.bar !== _visualCursor.bar + 1) {
+                            if (last.ctxData.bar !== _visualCursor.bar) {
                                 this.visualCursorIs({
                                     beat: 0,
                                     bar: _visualCursor.bar + 1
@@ -968,34 +933,28 @@ export class SongEditorStore extends TSEE {
         // Does not emit
     }
 
-    ctxFromSnapshot( pointerData: C.IPointerData,
-            staves: Array<C.IStave>,
-            idx: number) {
+    ctxFromSnapshot(pointerData: C.IPointerData, staves: Array<C.IStave>): Annotator.Context {
+        var i: number;
 
         if (!pointerData) {
             return null;
         }
 
-        var stave = staves[idx];
-
         if (pointerData && _snapshots[pointerData.musicLine]) {
-            var ctx: Context = new Context({
+            var ctx = new Annotator.Context(staves, {
                 indent: 15, // FIXME
-                snapshot: this._recreateSnapshot(pointerData.musicLine),
-                staves: staves,
-                staveIdx: idx
+                snapshot: this._recreateSnapshot(pointerData.musicLine)
             });
-            _linesToUpdate[ctx.staveIdx + "_" + ctx.line] = true;
-            ctx.start = pointerData.idx;
-            while (ctx.start > 0 && stave.body[ctx.start - 1].type !==
-                    C.Type.NEWLINE) {
-                --ctx.start;
+            for (i = 0; i < staves.length; ++i) {
+                _linesToUpdate[i + "_" + ctx.line] = true;
             }
             return ctx;
         } else {
             // We don't store snapshots for the 0th line, but we still need
             // to force it to be re-rendered.
-            _linesToUpdate[idx + "_0"] = true;
+            for (i = 0; i < staves.length; ++i) {
+                _linesToUpdate[i + "_0"] = true;
+            }
         }
     }
 
@@ -1090,21 +1049,8 @@ export class SongEditorStore extends TSEE {
     get dirty() {
         return _dirty;
     }
-    ctx(idx: any) {
-        if (idx === undefined) {
-            console.warn("Calling context without an index is deprecated.");
-            console.trace();
-        }
-        if (idx === undefined || idx.first) {
-            idx = 0;
-            while (!_ctxs[idx] && idx < _ctxs.length) {
-                ++idx;
-            }
-        }
-        return _ctxs[idx];
-    }
-    get ctxCount() {
-        return _ctxs.length;
+    get ctx(): Annotator.Context {
+        return _ctx;
     }
     get visualCursor() {
         return _visualCursor;
@@ -1225,10 +1171,10 @@ export class SongEditorStore extends TSEE {
     private _recreateSnapshot(line: number) {
         var lines: Array<any> = [];
         for (var i = 1; i <= line; ++i) {
-            var sn = JSON.parse(_snapshots[i]);
-            lines.push(sn.lines[0]);
+            var sn: Annotator.ICompleteSnapshot = JSON.parse(_snapshots[i]);
+            lines.push(sn.prevLine);
             if (i === line) {
-                lines.push(sn.lines[1]);
+                lines.push(sn.partialLine);
                 sn.lines = lines;
                 return sn;
             }
@@ -1249,8 +1195,8 @@ export class SongEditorStore extends TSEE {
  * needs to be updated, the context can be unfrozen from here instead of
  * recalculating the context from the beginning of the song.
  */
-export var snapshot = (ctx: Context) => {
-    _snapshots[ctx.line] = ctx.snapshot();
+export var snapshot = (ctx: Annotator.Context) => {
+    _snapshots[ctx.line] = JSON.stringify(ctx.captureSnapshot());
 };
 
 /**
@@ -1267,7 +1213,7 @@ export var getBeamCount = () => {
 };
 
 var _beamBeatCount = 0;
-var _ctxs: Array<Context> = null;
+var _ctx: Annotator.Context = null;
 var _cleanupFn: Function = null;
 var _dirty = false;
 var _linesToUpdate: { [key: string]: boolean } = {};
@@ -1297,10 +1243,12 @@ export var markRendererClean = () => {
     });
 };
 
-export var markRendererLineDirty = (line: number, staveIdx: number ) => {
+export var markRendererLineDirty = (line: number) => {
     // Mark a given line as dirty
     // NOT a Flux method.
-    _linesToUpdate[staveIdx + "_" + line] = true;
+    for (var i = 0; i < _staves.length; ++i) {
+        _linesToUpdate[i + "_" + line] = true;
+    }
 };
 
 export var markRendererDirty = () => {

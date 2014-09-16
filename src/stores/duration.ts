@@ -12,7 +12,7 @@ import assert = require("assert");
 
 import BarlineModel = require("./barline");
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import EndMarkerModel = require("./endMarker");
 import KeySignatureModel = require("./keySignature");
 import NewlineModel = require("./newline");
@@ -31,7 +31,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.timeSignature.beats);
         mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.SUCCESS;
         var i: number;
         var j: number;
@@ -46,20 +46,22 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // A note's duration, when unspecified, is set by the previous note.
         if (!this._count) {
-            assert(ctx.count, "Never null (the initial count is '4')");
-            this.count = ctx.count;
+            assert(ctx.defaultCount, "Never null (the initial count is '4')");
+            this.count = ctx.defaultCount;
         }
 
         assert(this._beats !== null);
 
         // Update the context to reflect the current note's duration.
-        ctx.count = this.count;
+        ctx.defaultCount = this.count;
 
         this.isWholeBar = this._beats === ctx.timeSignature.beats;
 
-        // Make sure the bar is not overfilled. Multibar rests are okay.
+        // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
             if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
+                // The current note/rest is multi-bar, which is allowed. However, multi-bar notes must
+                // start at beat 0.
                 return BarlineModel.createBarline(ctx, C.Barline.Standard);
             } else if (!this.isMultibar) {
                 // The number of beats in a bar must not exceed that specified by the time signature.
@@ -155,7 +157,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (status !== C.IterationStatus.SUCCESS) { return status; }
 
         // Middle note directions are set by surrounding notes.
-        if (!ctx.fast && DurationModel.getAverageLine(this, ctx) === 3) {
+        if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = NaN;
             status = this.decideMiddleLineStemDirection(ctx);
         }
@@ -195,17 +197,20 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.tie = this.tie;
     }
 
-    containsAccidental(ctx: Context) {
+    containsAccidental(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
+            if (!isNaN(pitches[i].accTemporary) && pitches[i].accTemporary !== null) {
+                continue;
+            }
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
             }
         }
         return false;
     }
-    perfectlyBeamed(ctx: Context) {
+    perfectlyBeamed(ctx: Annotator.Context) {
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
@@ -213,7 +218,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return !rebeamable;
     }
 
-    decideMiddleLineStemDirection(ctx: Context): C.IterationStatus {
+    decideMiddleLineStemDirection(ctx: Annotator.Context): C.IterationStatus {
         var prevLine: number = ctx.prev() && ctx.prev().isNote ?
                 DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
         var nextLine: number = ctx.next() && ctx.next().isNote ?
@@ -264,7 +269,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
 
-    getAccWidth(ctx: Context) {
+    getAccWidth(ctx: Annotator.Context) {
         var accWidth: number = 0;
         var accTmp: any = this.getAccidentals(ctx);
         if (accTmp) {
@@ -276,7 +281,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return Math.max(0, accWidth - 0.3);
     }
 
-    getWidth(ctx: Context) {
+    getWidth(ctx: Annotator.Context) {
         return 0.67 + (this.annotatedExtraWidth || 0);
     }
 
@@ -772,7 +777,8 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get accStrokes() {
-        return _.map(this.chord, c => c.accTemporary ? "#A5A5A5" : "#000000");
+        return _.map(this.chord, (c, idx) =>
+            !isNaN(c.accTemporary) && c.accTemporary !== null || this.accToDelete === idx ? "#A5A5A5" : "#000000");
     }
 
     get annotatedExtraWidth() {
@@ -1039,7 +1045,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         1024: "rest1024th"
     };
 
-    static getAverageLine = (note: C.IPitchDuration, ctx: Context) => {
+    static getAverageLine = (note: C.IPitchDuration, ctx: Annotator.Context) => {
         var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
         var sum = 0;
         for (var i = 0; i < lines.length; ++i) {
@@ -1049,7 +1055,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
 
     static getLine = (pitch: C.IPitch,
-            ctx: Context, options?: { filterTemporary: boolean }): any => { // TSFIX
+            ctx: Annotator.Context, options?: { filterTemporary: boolean }): any => { // TSFIX
         options = options || {filterTemporary: false};
 
         if (pitch.isRest) {
@@ -1067,7 +1073,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
 
     static getLines = (note: C.IPitchDuration,
-            ctx: Context, options?: { filterTemporary: boolean }): Array<number> => {
+            ctx: Annotator.Context, options?: { filterTemporary: boolean }): Array<number> => {
         options = options || {filterTemporary: false};
         var ret: Array<number> = [];
         for (var i = 0; i < note.chord.length; ++i) {
@@ -1081,7 +1087,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return ret;
     };
 
-    static getPitch = (line: number, ctx: Context) => {
+    static getPitch = (line: number, ctx: Annotator.Context) => {
         assert(ctx.clef, "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
@@ -1124,7 +1130,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         b: 3
     };
 
-    private getAccidentals(ctx: Context) {
+    private getAccidentals(ctx: Annotator.Context) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
         for (var i = 0; i < result.length; ++i) {
@@ -1149,7 +1155,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return result;
     }
 
-    private _handleTie(ctx: Context) {
+    private _handleTie(ctx: Annotator.Context) {
         if (this.tie) {
             var nextNote = ctx.next(obj => obj.isNote);
             if (nextNote.isRest) {
@@ -1209,6 +1215,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _displayMarkings: Array<string>;
     private _dots: number;
     private _markings: Array<string>;
+    accToDelete: number;
     actualTuplet: C.ITuplet;
     chord: Array<C.IPitch>;
     displayedAccidentals: Array<number>;

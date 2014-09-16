@@ -11,7 +11,7 @@ import Model = require("./model");
 import BeamGroupModel = require("./beamGroup");
 import C = require("./contracts");
 import ClefModel = require("./clef");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import KeySignatureModel = require("./keySignature");
 import DurationModel = require("./duration");
 import TimeSignatureModel = require("./timeSignature");
@@ -28,7 +28,7 @@ class SlurGroupModel extends Model {
     m_x: number;
     m_y: number;
 
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);

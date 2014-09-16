@@ -73,10 +73,10 @@ var Glyph = React.createClass({
                 {text}
                 <rect
                     data-selectioninfo={this.props.selectioninfo}
-                    width={"0.5em"}
+                    width={"0.4em"}
                     height={"0.5em"}
-                    x={this.props.x + "em"}
-                    y={this.props.y - 0.4 + "em"}
+                    x={this.props.x - 0.12 + "em"}
+                    y={this.props.y - 0.25 + "em"}
                     fill="transparent"
                     className="mn_handle" />
                 </g>;

@@ -13,7 +13,7 @@ import Molasses = require("./molasses");
 var Victoria = require("./victoria/hellogl.jsx");
 
 import Dispatcher = require("../stores/dispatcher");
-import Context = require("../stores/context");
+import Annotator = require("../stores/annotator");
 import C = require("../stores/contracts");
 import Header = require("../views/_header");
 import History = require("../stores/history");
@@ -55,11 +55,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var staves = this.props.staves;
 
         var pages: Array<IPage> = [];
-        var firstStaveIdx = 0;
-        while(staves[firstStaveIdx] && !staves[firstStaveIdx].body) {
-            ++firstStaveIdx;
-        }
-        var ctx = this.getCtx(firstStaveIdx);
+        var ctx = this.getCtx();
         var pageStarts = ctx.pageStarts;
         var pageLines = ctx.pageLines;
 
@@ -69,7 +65,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
         pages.push({
             from: pageStarts[pageCount - 1],
-            to: staves[firstStaveIdx].body.length,
+            to: staves[4].body.length, // XXX: Unbreak
             idx: pageCount - 1
         });
 
@@ -177,13 +173,12 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         return null;
                     }
                 }),
-                this.props.tool && _.map(staves, (stave: C.IStave,idx: number) => stave.body &&
-                    this.props.tool.render(
-                        this.getCtx(idx),
-                        this.state.mouse,
-                        _pointerData,
-                        fontSize,
-                        pidx)),
+                this.props.tool && this.props.tool.render(
+                    this.getCtx(),
+                    this.state.mouse,
+                    _pointerData,
+                    fontSize,
+                    pidx),
                 this.state.selectionRect && SelectionRect({
                     fontSize: fontSize,
                     x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x),
@@ -273,23 +268,16 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var dynLine = 3;
         var foundObj: Model = null;
         var foundIdx: number;
-        var musicLine: number;
         var ctxData: { beat: number; bar: number };
-        var staveIdx: number;
         var info = this.getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
-            var h = info.h;
-            var i = info.i;
-            var ctx = this.getCtx(h);
+            var ctx = this.getCtx();
 
-            staveIdx = h;
-
-            musicLine = i;
-            dynY = ctx.lines[i].y;
-            dynLine = Math.round((ctx.lines[i].y - mouse.y)/0.125)/2 + 3;
-            var body = this.props.staves[h].body;
+            dynY = ctx.lines[info.musicLine].y;
+            dynLine = Math.round((ctx.lines[info.musicLine].y - mouse.y)/0.125)/2 + 3;
+            var body = this.props.staves[info.staveIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
-                    j < body.length && body[i].type !== C.Type.NEWPAGE; ++j) {
+                    j < body.length && body[info.musicLine].type !== C.Type.NEWPAGE; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
                 if (Math.abs(item.y - dynY) < 0.001) {
@@ -304,7 +292,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         foundObj = item;
                         break;
                     } else if (dynX < item.x ||
-                            (j === body.length - 1 && h === this.getCtxCount() - 1)) {
+                            (j === body.length - 1 && info.staveIdx === this.props.staves.filter(s => !!s.body).length - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
@@ -315,14 +303,14 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             mouse: mouse,
                             line: dynLine,
                             idx: j,
-                            staveIdx: h,
-                            musicLine: musicLine,
+                            staveIdx: info.staveIdx,
+                            musicLine: info.musicLine,
                             ctxData: item.ctxData,
                             obj: new Model({
                                 placeholder: true,
                                 idx: j,
                                 item: item,
-                                musicLine: musicLine,
+                                musicLine: info.musicLine,
                                 Source: C.Source.ANNOTATOR,
                                 fontSize: 0,
                                 _key: null,
@@ -361,9 +349,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             idx: foundIdx,
             line: dynLine,
             mouse: mouse,
-            musicLine: musicLine,
+            musicLine: info && info.musicLine,
             obj: foundObj,
-            staveIdx: staveIdx
+            staveIdx: info && info.staveIdx
         };
 
         return _pointerData;
@@ -373,17 +361,19 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    getStaveInfoForY(my: number, page: number) {
-        for (var h = 0; h < this.getCtxCount(); ++h) {
-            var ctx = this.getCtx(h);
-            if (!ctx) {
+    getStaveInfoForY(my: number, page: number): { musicLine: number; staveIdx: number; } {
+        var ctx = this.getCtx();
+        for (var h = 0; h < this.props.staves.length; ++h) {
+            // XXX: BROKEN
+            var body = this.props.staves[h].body;
+            if (!body) {
                 continue;
             }
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
                 if (Math.abs(ctx.lines[i].y - my) < 1.01) {
                     return {
-                        h: h,
-                        i: i
+                        musicLine: i,
+                        staveIdx: h
                     };
                 }
             }
@@ -394,16 +384,15 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     _elementsInBBox(box: ClientRect, mouse: C.IMouse): Array<Model> {
         var ret: Array<Model> = [];
 
-        for (var h = 0; h < this.getCtxCount(); ++h) {
-            var ctx = this.getCtx(h);
-            if (!ctx) {
+        var ctx = this.getCtx();
+        for (var h = 0; h < this.props.staves.length; ++h) {
+            var body = this.props.staves[h].body;
+            if (!body) {
                 continue;
             }
-            var body = this.props.staves[h].body;
             var inRange = function(min: number, val: number, max: number)  {return min < val && val < max;};
 
-            for (var i = ctx.pageStarts[mouse.page];
-                    i < body.length && body[i].type !== C.Type.NEWPAGE; ++i) {
+            for (var i = ctx.pageStarts[mouse.page]; i < body.length && body[i].type !== C.Type.NEWPAGE; ++i) {
                 var item = body[i];
                 if (inRange(box.top - 1, item.y,
                             box.bottom + 1) &&
@@ -459,7 +448,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
         if (!this.props.tool && data.ctxData) {
-            Dispatcher.POST("/local/visualCursor", {
+            Dispatcher.PUT("/local/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
@@ -516,9 +505,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (_selection.length) {
                 _.each(_selection, function (s: Model) {
                     s.selected = true;
-                    _.each(s.intersects, function (intersect: Model) {
-                        intersect.selected = true;
-                    });
                 });
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {
@@ -606,16 +592,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         this.forceUpdate();
     }, 16 /* 60 Hz */);
 
-    getCtx(idx: number) {
-        return this.props.contexts ?
-            this.props.contexts[idx] :
-            (this.props.store && this.props.store.ctx(idx));
-    }
-
-    getCtxCount() {
-        return this.props.contexts ?
-            this.props.contexts.length :
-            (this.props.store && this.props.store.ctxCount);
+    getCtx(): Annotator.Context {
+        return this.props.context ?
+            this.props.context :
+            (this.props.store && this.props.store.ctx);
     }
 
     setupBrowserListeners() {
@@ -635,7 +615,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
                 case 32: // space
                     event.preventDefault(); // don't navigate backwards
-                    Dispatcher.POST("/local/visualCursor/_togglePlay", null);
+                    Dispatcher.PUT("/local/visualCursor/_togglePlay", null);
                     break;
                 case 27: // escape
                     Dispatcher.PUT("/local/tool", null);
@@ -654,26 +634,26 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     break;
                 case 37: // left arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    Dispatcher.POST("/local/visualCursor", {step: -1});
+                    Dispatcher.PUT("/local/visualCursor", {step: -1});
                     break;
                 case 39: // right arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    Dispatcher.POST("/local/visualCursor", {step: 1});
+                    Dispatcher.PUT("/local/visualCursor", {step: 1});
                     break;
                 case 38: // up arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        Dispatcher.POST("/local/visualCursor/_octave", { delta: 1 });
+                        Dispatcher.PUT("/local/visualCursor/_octave", { delta: 1 });
                     }
                     break;
                 case 40: // down arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        Dispatcher.POST("/local/visualCursor/_octave", { delta: -1 });
+                        Dispatcher.PUT("/local/visualCursor/_octave", { delta: -1 });
                     }
                     break;
                 case 90: // 'z'
-                    event.preventDefault(); // we control all undo behaviour
+                    event.preventDefault(); // we control all undo behavior
                     if (event.ctrlKey || event.metaKey) {
                         if (event.shiftKey) {
                             History.Instance.redo();
@@ -761,7 +741,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 export var Component = ReactTS.createReactComponent(Renderer);
 
 export interface IRendererProps {
-    contexts?: Array<Context>;
+    context?: Annotator.Context;
     marginTop?: number;
     pageSize?: C.IPageSize;
     raw?: boolean;
@@ -789,7 +769,7 @@ export interface IRendererState {
  *     and when it does not need to be updated.
  * 
  * Sometimes, the goal of a piece of code gets lost in optimizations.
- * This code is equivilant to the following unoptimized component:
+ * This code is equivalent to the following unoptimized component:
  *     function LineContainerComponent(props: ILineProps, children?: any) {
  *         return props.generate();
  *     }

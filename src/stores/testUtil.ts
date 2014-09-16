@@ -9,7 +9,7 @@
 import _ = require("lodash");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import lylite = require("./lylite");
 
 export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>) {
@@ -17,7 +17,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
 
     describe(desc, function() {
         var parsed: Array<C.IStave>;
-        var context: Context;
+        var context: Annotator.Context;
         it("should be parsable", () => {
             parsed = lylite.parse(ly);
         });
@@ -30,10 +30,8 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 staves: parsed,
                 staveIdx: 0
             };
-            context = new Context(opts);
+            context = new Annotator.Context(parsed, opts);
             context.annotate(null);
-            context = new Context(opts);
-            Context.semiJustify([context]);
         });
         _.each(tests, test => it(
             test[0],

@@ -11,7 +11,7 @@
 import assert = require("assert");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 
 /**
  * Subclasses of Models handle the gap between the abstract representation of
@@ -30,7 +30,7 @@ import Context = require("./context");
  * console, look at 'SongEditorStore.staves()[...].body'. Every item is a Model.
  */
 class Model {
-    annotate(ctx: Context, stopping?: number): C.IterationStatus {
+    annotate(ctx: Annotator.Context): C.IterationStatus {
         if (!this.inBeam) {
             this.x = ctx.x;
             this.y = ctx.y;
@@ -42,8 +42,6 @@ class Model {
         if (ret !== C.IterationStatus.SUCCESS) {
             return ret;
         }
-
-        this._lineUpWithIntersectingItems();
 
         return ret;
     }
@@ -75,7 +73,7 @@ class Model {
         return null;
     }
 
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         assert(false, "Not implemented");
         return null; // Not reached
     }
@@ -184,27 +182,7 @@ class Model {
         return null;
     }
 
-    intersects: Array<Model>;
-
     private static lastKey: number = 0;
-    private _lineUpWithIntersectingItems() {
-        var x = 0;
-        for (var i = 0; i < this.intersects.length; ++i) {
-            var item = this.intersects[i];
-            if (!isNaN(item.x) && item.ctxData.beat === this.ctxData.beat &&
-                item.ctxData.bar === this.ctxData.bar && item.type === this.type) {
-                x = Math.max(x, item.x);
-            }
-        }
-
-        for (var i = 0; i < this.intersects.length; ++i) {
-            var item = this.intersects[i];
-            if (!isNaN(item.x) && item.ctxData.beat === this.ctxData.beat &&
-                item.ctxData.bar === this.ctxData.bar && item.type === this.type) {
-                this.intersects[i].x = x;
-            }
-        }
-    }
 }
 
 enum Flags {

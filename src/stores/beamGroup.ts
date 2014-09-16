@@ -10,7 +10,7 @@ import _ = require("lodash");
 import Model = require("./model");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import ClefModel = require("./clef");
 import DurationModel = require("./duration");
 import KeySignatureModel = require("./keySignature");
@@ -27,7 +27,7 @@ class BeamGroupModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);
@@ -129,11 +129,11 @@ class BeamGroupModel extends Model {
 
     }
 
-    getBeats(ctx: Context) {
+    getBeats(ctx: Annotator.Context) {
         return this.beam[0].getBeats(ctx);
     }
 
-    static createBeam = (ctx: Context, beam: Array<DurationModel>) => {
+    static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
         return ctx.insertPast(new BeamGroupModel(
             {beam: beam, source: C.Source.ANNOTATOR}));
     };

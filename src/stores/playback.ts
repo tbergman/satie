@@ -87,7 +87,7 @@ export class PlaybackStore extends TSEE {
                     hit(action.postData);
                 }
                 break;
-            case "POST /local/visualCursor":
+            case "PUT /local/visualCursor":
                 if (!this._pendingInstruments) {
                     if (action.resource === "togglePlay") {
                         this._play(!_playing);
@@ -144,7 +144,7 @@ export class PlaybackStore extends TSEE {
 
     continuePlay() {
         var SongEditorStore = require("./songEditor");
-        var Context = require("./context"); // Recursive.
+        var Annotator = require("./annotator"); // Recursive.
         var beats: number;
         var delays: Array<number> = [];
         _.each(this._remainingActions || [], m => {
@@ -154,7 +154,7 @@ export class PlaybackStore extends TSEE {
 
         var aobj = SongEditorStore.Instance.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
-            Dispatcher.POST("/local/visualCursor", {
+            Dispatcher.PUT("/local/visualCursor", {
                 step: 1,
                 skipThroughBars: true,
                 loopThroughEnd: true
@@ -165,7 +165,7 @@ export class PlaybackStore extends TSEE {
         var foundLegacyStart = false;
         var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < SongEditorStore.Instance.ctxCount; ++h) {
+        for (var h = 0; h < SongEditorStore.Instance.staves.length; ++h) {
             var body: C.IBody = SongEditorStore.Instance.staves[h].body;
             if (!body) {
                 continue;
@@ -180,11 +180,7 @@ export class PlaybackStore extends TSEE {
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Context({
-                stave: SongEditorStore.Instance.staves[h],
-                staveIdx: h,
-                staves: SongEditorStore.Instance.staves
-            });
+            var ctx = new Annotator.Context(SongEditorStore.Instance.staves, {});
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
@@ -252,7 +248,7 @@ export class PlaybackStore extends TSEE {
                         this.emit(CHANGE_EVENT);
                     });
                 }
-                Dispatcher.POST("/local/visualCursor", {
+                Dispatcher.PUT("/local/visualCursor", {
                     step: 1,
                     skipThroughBars: true
                 });

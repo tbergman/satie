@@ -9,7 +9,7 @@ import Model = require("./model");
 import assert = require("assert");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import Metre = require("./metre");
 
 /**
@@ -25,7 +25,7 @@ class EndMarkerModel extends Model {
             endMarker: true
         });
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var next = ctx.next();
         var prev = ctx.prev();
 
@@ -34,7 +34,7 @@ class EndMarkerModel extends Model {
             for (var i = ctx.idx; i >= 0; --i) {
                 if (ctx.body[i].type === C.Type.NEWLINE) {
                     ctx.body.splice(i);
-                    ctx.start = 0;
+                    ctx.markEntireSongDirty();
                     var SongEditor = require("./songEditor"); // Recursive dependency.
                     SongEditor.Instance.markRendererDirty();
                     return C.IterationStatus.RETRY_FROM_ENTRY;

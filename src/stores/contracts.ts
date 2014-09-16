@@ -10,7 +10,7 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import Model = require("./model");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 /**
@@ -42,13 +42,14 @@ export interface IAnnotationResult {
     cursor: IVisualCursor;
     operations: number;
     resetY: boolean;
-    semiJustificationDirty: boolean;
     skip: boolean;
     success: boolean;
 }
 
 /**
  * Options to pass to Context.annotate and related annotation functions.
+ * 
+ * @deprecated
  */
 export interface IAnnotationOpts {
     cursor?: IVisualCursor;
@@ -56,8 +57,7 @@ export interface IAnnotationOpts {
     cursorBeat?: number;
     cursorStave?: number;
     pointerData?: IPointerData;
-    staveIdx: number;
-    toolFn?: (obj: Model, ctx: Context) => IterationStatus;
+    toolFn?: (obj: Model, ctx: Annotator.Context) => IterationStatus;
 };
 
 export enum Barline {
@@ -342,12 +342,10 @@ export enum IterationStatus {
     RETRY_CURRENT_NO_OPTIMIZATIONS,
 
     /**
-     * Retry the element at the current position, and stop iterating
-     * after the next SUCCESS. This may seem like a fairly strange case.
-     * It's used to make super-fast previews where positioning does not
-     * change.
+     * No further annotation is necessary. The document is correct
+     * and renderable.
      */
-    RETRY_CURRENT_THEN_STOP
+    EXIT_EARLY
 };
 
 /**
@@ -359,22 +357,56 @@ export interface IKeySignature {
     pitch: IPitch;
 }
 
-/**
- * A subset of a Context that is used as a snapshot so that modifying a line
- * does not involve a trace from the start of the document.
- */
-export interface ILineSnapshot {
-    accidentals: IAccidentals;
-    all: Array<Model>;
+export interface ILocation {
+    /**
+     * MSD of cursor position, counting from 1.
+     */
     bar: number;
-    barlineX: Array<number>;
+
+    /**
+     * LSD of cursor position. Represents the beat directly before the
+     * cursor, so if it's at the beginning of bar, it is beat 0.
+     */
     beat: number;
-    keySignature: IKeySignature;
-    line: number;
-    pageLines: Array<number>;
-    pageStarts: Array<number>;
-    x: number;
-    y: number;
+
+    /**
+     * True if the cursor is at the end of a bar. This information is added as
+     * part of the annotation process, and is not guaranteed to exist until after
+     * the annotation process.
+     */
+    endMarker?: boolean;
+}
+
+export class Location implements ILocation {
+    eq(b: ILocation) {
+        return this.bar === b.bar && this.beat === b.beat;
+    }
+
+    lt(b: ILocation) {
+        return this.bar < b.bar || this.bar === b.bar && this.beat < b.beat;
+    }
+
+    le(b: ILocation) {
+        return this.bar < b.bar || this.bar === b.bar && this.beat <= b.beat;
+    }
+
+    ge(b: ILocation) {
+        return this.bar > b.bar || this.bar === b.bar && this.beat >= b.beat;
+    }
+
+    gt(b: ILocation) {
+        return this.bar > b.bar || this.bar === b.bar && this.beat > b.beat;
+    }
+
+    constructor(opts: ILocation) {
+        this.bar = opts.bar;
+        this.beat = opts.beat;
+        this.endMarker = opts.endMarker;
+    }
+
+    bar: number;
+    beat: number;
+    endMarker: boolean;
 }
 
 /**
@@ -386,6 +418,8 @@ export var MAJOR = "\\major";
  * The Lilypond name for a minor key.
  */
 export var MINOR = "\\minor";
+
+export var MAX_NUM = 1000000000;
 
 /**
  * Used for the metre annotation pass.
@@ -539,7 +573,13 @@ export interface IPitchDuration extends IDuration {
     chord?: Array<IPitch>;
     isRest?: boolean;
     tie?: boolean;
+    accToDelete?: number;
 };
+
+export enum PreviewMode {
+    EXCLUDE_PREVIEWS = 0,
+    INCLUDE_PREVIEWS = 1
+}
 
 export interface IPointerData {
     staveIdx: number;
@@ -660,21 +700,25 @@ export interface IStave {
 };
 
 /**
- * The subclass of a Model.
+ * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
-    UNKNOWN,
-    BARLINE,
-    BEAM_GROUP,
+    END_MARKER,
+    NEWPAGE,
+    NEWLINE,
+
     BEGIN,
     CLEF,
-    DURATION,
-    END_MARKER,
     KEY_SIGNATURE,
-    NEWLINE,
-    NEWPAGE,
+    TIME_SIGNATURE,
+
+    BARLINE,
+
     SLUR,
-    TIME_SIGNATURE
+    BEAM_GROUP,
+    DURATION,
+
+    UNKNOWN
 };
 
 /**
@@ -730,18 +774,7 @@ export interface ITuplet {
 /**
  * The solid blue line on the page is the VisualCursor.
  */
-export interface IVisualCursor {
-    /**
-     * MSD of cursor position, counting from 1.
-     */
-    bar: number;
-
-    /**
-     * LSD of cursor position. Represents the beat directly before the
-     * cursor, so if it's at the beginning of bar, it is beat 0.
-     */
-    beat: number;
-
+export interface IVisualCursor extends ILocation {
     /**
      * Object directly after the cursor. This information is added as part
      * of the annotation process, and is not guaranteed to exist until after
@@ -758,13 +791,6 @@ export interface IVisualCursor {
      * The page, counting from 1, where annotatedObj is.
      */
     annotatedPage?: number;
-
-    /**
-     * True if the cursor is at the end of a bar. This information is added as
-     * part of the annotation process, and is not guaranteed to exist until after
-     * the annotation process.
-     */
-    endMarker?: boolean;
 };
 
 /**

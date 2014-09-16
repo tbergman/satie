@@ -13,7 +13,7 @@ import assert = require("assert");
 import _ = require("lodash");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import DurationModel = require("./duration"); // For symbols only. Do not call.
 
 /**
@@ -38,7 +38,7 @@ import DurationModel = require("./duration"); // For symbols only. Do not call.
  *
  * @prop context: Give timeSignature, and current index.
  */
-export function rythmicSpellcheck(ctx: Context) {
+export function rythmicSpellcheck(ctx: Annotator.Context) {
     "use strict";
 
     if (!ctx.curr.isNote || ctx.curr.source === C.Source.USER) {
@@ -229,17 +229,17 @@ export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITim
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
 export function subtract(durr1: C.IPitchDuration, beats: number,
-    ctx: Context, beatOffset?: number): Array<C.IDuration>;
+    ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
 /**
  * Returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
 export function subtract(durr1: number, beats: number,
-    ctx: Context, beatOffset?: number): Array<C.IDuration>;
+    ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
 
 export function subtract(durr1: any, beats: number,
-        ctx: Context, beatOffset?: number): Array<C.IDuration> {
+        ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration> {
     "use strict";
 
     var tsName = getTSString(ctx.timeSignature);
@@ -309,7 +309,7 @@ export function subtract(durr1: any, beats: number,
  * @param idx the index where the beam would start
  * @param alt a string representing an alternative beaming. See beamingPatterns.
  */
-export function rebeamable(idx: number, ctx: Context, alt?: string): Array<DurationModel> {
+export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): Array<DurationModel> {
     "use strict";
 
     var body = ctx.body;
@@ -411,7 +411,7 @@ export function getBeats(count: number, dots: number,
  * a whole note is composed of several notes, so the length of the array is not
  * always 1.
  */
-export function wholeNote(ctx: Context): Array<C.IDuration> {
+export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
     "use strict";
     var tsName = getTSString(ctx.timeSignature);
     return wholeNotePatterns[tsName];

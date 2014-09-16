@@ -12,13 +12,13 @@ import Model = require("./model");
 import _ = require("lodash");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 
 class NewPageModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         ctx.y = 0;
 
         ctx.pageLines = _.clone(ctx.pageLines);
@@ -37,7 +37,7 @@ class NewPageModel extends Model {
         }
     }
 
-    static createNewPage = (ctx: Context) => {
+    static createNewPage = (ctx: Annotator.Context) => {
         ctx.insertPast(new NewPageModel({newpage: true, source: C.Source.ANNOTATOR}));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
             if (ctx.body[i].type === C.Type.NEWPAGE && ctx.body[i].source) {

@@ -9,7 +9,7 @@ import Model = require("./model");
 import _ = require("lodash");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import EndMarkerModel = require("./endMarker");
 import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
@@ -26,7 +26,7 @@ class BarlineModel extends Model {
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.beat = 0;
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
             return ctx.insertPast(new EndMarkerModel({ endMarker: true }));
@@ -58,9 +58,9 @@ class BarlineModel extends Model {
                 return C.IterationStatus.RETRY_CURRENT;
             } else {
                 ctx.body.splice(i, ctx.idx - i);
-                ctx.start = 0;
-                SongEditorStore.markRendererLineDirty(ctx.line - 1, ctx.staveIdx);
-                SongEditorStore.markRendererLineDirty(ctx.line, ctx.staveIdx);
+                ctx.markEntireSongDirty();
+                SongEditorStore.markRendererLineDirty(ctx.line - 1);
+                SongEditorStore.markRendererLineDirty(ctx.line);
                 ctx.idx = i;
                 return C.IterationStatus.LINE_REMOVED;
             }
@@ -106,10 +106,9 @@ class BarlineModel extends Model {
 
         // Barlines followed by accidentals have additional padding. We check all
         // staves for following accidentals.
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION), l => l.isNote);
         if (ctx.next().isNote) {
-            this.annotatedAccidentalSpacing = 0.2*
-                (_.any(_.filter(ctx.next(c => c.type !== C.Type.BEAM_GROUP).intersects, (l: Model) => l.isNote && !l.ctxData.beat),
-                    n => n.containsAccidental(ctx)) ? 1 : 0);
+            this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.containsAccidental(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
         }
@@ -121,13 +120,12 @@ class BarlineModel extends Model {
         }
 
         // Set information from context that the view needs
-        if (ctx.stave.pianoStaff) {
+        if (ctx.currStave.pianoStaff) {
             this.onPianoStaff = true;
         };
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.renderKey_eInBar = {};
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
 
         this.height = this.onPianoStaff ? 1.15 : 2/4;
@@ -148,7 +146,7 @@ class BarlineModel extends Model {
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
-    static createBarline = (ctx: Context, mode: C.Barline): C.IterationStatus => {
+    static createBarline = (ctx: Annotator.Context, mode: C.Barline): C.IterationStatus => {
         mode = mode || C.Barline.Standard;
 
         if (ctx.curr.type === C.Type.BEAM_GROUP) {

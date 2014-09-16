@@ -11,13 +11,13 @@ import Model = require("./model");
 
 import BeginModel = require("./begin");
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 
 class ClefModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must not be redundant.
         if (!this.clefIsNotRedundant(ctx)) {
             return ctx.eraseCurrent();
@@ -66,7 +66,7 @@ class ClefModel extends Model {
         }
         lylite.push("\\clef " + this.clef + "\n");
     }
-    clefIsNotRedundant(ctx: Context): boolean {
+    clefIsNotRedundant(ctx: Annotator.Context): boolean {
         // XXX HACK {
         if (false === this.isVisible) {
             return true;
@@ -77,7 +77,7 @@ class ClefModel extends Model {
             this.clef === "detect";
     }
 
-    static createClef = function (ctx: Context): C.IterationStatus {
+    static createClef = function (ctx: Annotator.Context): C.IterationStatus {
         return ctx.insertPast(new ClefModel({
             clef: (ctx.prevClef ? "detect" : "treble"),
             source: C.Source.ANNOTATOR

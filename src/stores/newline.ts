@@ -7,12 +7,13 @@
 import Model = require("./model");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import NewPageModel = require("./newpage");
 import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
+import assert = require("assert");
 
 /**
  * A manual or automatic hint that a new line should be created. This file
@@ -23,7 +24,7 @@ class NewlineModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Pages should not overflow.
         if (ctx.y + ctx.lineSpacing > ctx.maxY) {
             return NewPageModel.createNewPage(ctx);
@@ -64,7 +65,6 @@ class NewlineModel extends Model {
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
                 accidentals: null,
-                all: null,
                 bar: null,
                 barlineX: null,
                 beat: null,
@@ -72,13 +72,14 @@ class NewlineModel extends Model {
                 line: ctx.line,
                 pageLines: null,
                 pageStarts: null,
+                prevClef: null,
+                prevKeySignature: null,
                 x: null,
                 y: null
             };
         }
 
         ctx.lines[ctx.line].accidentals = {};
-        ctx.lines[ctx.line].all = [];
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
         ctx.lines[ctx.line].beat = 0;
@@ -86,7 +87,10 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
+        ctx.lines[ctx.line].prevClef = ctx.prevClef;
         ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
+
+        assert(ctx.lines[ctx.line].prevClef);
         this.DEBUG_line = ctx.line;
 
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
@@ -107,7 +111,7 @@ class NewlineModel extends Model {
      * Spaces things out to fill the entire page width, while maintaining
      * proportional widths.
      */
-    private _justify(ctx: Context): C.IterationStatus {
+    private _justify(ctx: Annotator.Context): C.IterationStatus {
         var diff = ctx.maxX - ctx.x;
         var i: number;
         var l = 0;
@@ -183,8 +187,8 @@ class NewlineModel extends Model {
         return C.IterationStatus.SUCCESS;
     }
 
-    static createNewline = (ctx: Context): C.IterationStatus => {
-        SongEditorStore.markRendererLineDirty(ctx.line + 1, ctx.staveIdx);
+    static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
+        SongEditorStore.markRendererLineDirty(ctx.line + 1);
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {
@@ -220,7 +224,7 @@ class NewlineModel extends Model {
      * Given an incomplete line ending at current index, spreads out the line
      * comfortably.
      */
-    static semiJustify = (ctx: Context) => {
+    static semiJustify = (ctx: Annotator.Context) => {
         var fullJustify = false;
         var i: number;
 

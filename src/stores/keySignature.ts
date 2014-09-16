@@ -10,7 +10,7 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import C = require("./contracts");
-import Context = require("./context");
+import Annotator = require("./annotator");
 import ClefModel = require("./clef");
 
 var isPitch = (k: C.IPitch, name: string, acc?: number) =>
@@ -23,19 +23,18 @@ class KeySignatureModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
-    annotateImpl(ctx: Context): C.IterationStatus {
+    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
         this.clef = ctx.clef;
-        var next = ctx.next();
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION, true), l => l.isNote);
         ctx.keySignature = this.keySignature;
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
-        if (next.isNote) {
-            if (_.any(_.filter(next.intersects, (l: Model) => l.isNote && l.ctxData.beat === this.ctxData.beat),
-                           n => n.containsAccidental(ctx)) ? 1 : 0) {
+        if (intersectingNotes.length) {
+            if (_.any(intersectingNotes, n => n.containsAccidental(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 2.5;
             } else {
@@ -71,7 +70,7 @@ class KeySignatureModel extends Model {
     getFlatCount() {
         return KeySignatureModel.getFlatCount(this.keySignature);
     }
-    static createKeySignature = (ctx: Context): C.IterationStatus => {
+    static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
         return ctx.insertPast(new KeySignatureModel({
             keySignature: ctx.prevKeySignature ||
                 {pitch: {pitch: "c"}, acc: 0, mode: C.MAJOR},
