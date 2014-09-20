@@ -56,6 +56,7 @@ export class SongEditorStore extends TSEE {
                     this.clear();
                     _prevActiveSong = activeSong;
                     this.reparse(activeSong.src);
+                    this.activatePeerRelay(activeSong._id);
                     this.emit(CHANGE_EVENT);
                     this.emit(ANNOTATE_EVENT);
                 }
@@ -526,6 +527,11 @@ export class SongEditorStore extends TSEE {
 
     clear() {
         this._activeStaveIdx = null;
+        if (this._peerRelay) {
+            console.log("close");
+            this._peerRelay.close();
+            this._peerRelay = null;
+        }
         _staves = null;
         _staveHeight = null;
         _prevActiveSong = null;
@@ -1168,6 +1174,20 @@ export class SongEditorStore extends TSEE {
         { leading: false });
 
     _activeStaveIdx: number;
+    activatePeerRelay(id: string) {
+        if (!global.WebSocket) {
+            return;
+        }
+        if (this._peerRelay) {
+            assert(false, "Why?");
+        }
+        this._peerRelay = new WebSocket("ws://" + "localhost:8001" + //+ window.location.host +
+            "/song/_" + id + "/peerRelay");
+        this._peerRelay.onmessage = function(t) { console.log("PEER RELAY", t.data); };
+        this._peerRelay.onerror = function (e) { console.log("PEER ERR", e); }
+        this._peerRelay.onopen = function (o) { console.log("RELAY OPEN", o); }
+        this._peerRelay.onclose = function (o) { console.log("RELAY CLOSE", o); }
+    }
     private _recreateSnapshot(line: number) {
         var lines: Array<any> = [];
         for (var i = 1; i <= line; ++i) {
@@ -1180,6 +1200,7 @@ export class SongEditorStore extends TSEE {
             }
         }
     }
+    private _peerRelay: WebSocket = null;
     private _changesPending: boolean;
     private _allChangesSent: boolean = true;
     private _autosaveModalVisible: boolean = false;
