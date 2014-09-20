@@ -178,6 +178,12 @@ class BarlineModel extends Model {
         this._barline = barline;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            
+        });
+    }
+
     private _barline: C.Barline;
     annotatedAccidentalSpacing: number;
     color: string;
@@ -188,6 +194,8 @@ class BarlineModel extends Model {
     temporary: boolean;
     yOffset: number;
 }
+
+Model.constructorsByType[C.Type[C.Type.BARLINE]] = (spec: any) => new BarlineModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

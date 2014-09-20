@@ -13,6 +13,8 @@ import BeginModel = require("./begin");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 
+import _ = require("lodash");
+
 class ClefModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
@@ -165,6 +167,14 @@ class ClefModel extends Model {
         return C.Type.CLEF;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            clef: this.clef,
+            clefName: this.clefName,
+            visible: this.visible
+        });
+    }
+
     _annotatedSpacing: number;
     clef: string;
     clefName: string;
@@ -174,6 +184,8 @@ class ClefModel extends Model {
     selected: boolean;
     temporary: boolean;
 }
+
+Model.constructorsByType[C.Type[C.Type.CLEF]] = (spec: any) => new ClefModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

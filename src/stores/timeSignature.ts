@@ -102,6 +102,16 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         return spec;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            timeSignature: {
+                beats: this.beats,
+                beatType: this.beatType,
+                commonRepresentation: this._timeSignature.commonRepresentation
+            }
+        });
+    }
+
     _annotatedSpacing: number;
     color: string;
     actualTS: C.ITimeSignature;
@@ -109,6 +119,8 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
     selected: boolean;
     private _timeSignature: C.ITimeSignature = null;
 }
+
+Model.constructorsByType[C.Type[C.Type.TIME_SIGNATURE]] = (spec: any) => new TimeSignatureModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

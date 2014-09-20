@@ -261,6 +261,11 @@ class NewlineModel extends Model {
         }
     };
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+        });
+    }
+
     DEBUG_line: number;
     annotatedExtraWidth: number;
     begin: number;
@@ -268,6 +273,8 @@ class NewlineModel extends Model {
     pageSize: C.IPageSize;
     width: number;
 }
+
+Model.constructorsByType[C.Type[C.Type.NEWLINE]] = (spec: any) => new NewlineModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

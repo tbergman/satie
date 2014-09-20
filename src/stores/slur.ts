@@ -17,17 +17,6 @@ import DurationModel = require("./duration");
 import TimeSignatureModel = require("./timeSignature");
 
 class SlurGroupModel extends Model {
-    slur: number;
-    _beam = BeamGroupModel;
-    _notes: Array<DurationModel>;
-    isEmpty: boolean;
-    direction: number;
-    lines1: Array<number>;
-    lines2: Array<number>;
-    width: number;
-    m_x: number;
-    m_y: number;
-
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.clef) {
@@ -95,7 +84,26 @@ class SlurGroupModel extends Model {
     get type() {
         return C.Type.SLUR;
     }
+
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            slur: this.slur
+        });
+    }
+
+    slur: number;
+    _beam = BeamGroupModel;
+    _notes: Array<DurationModel>;
+    isEmpty: boolean;
+    direction: number;
+    lines1: Array<number>;
+    lines2: Array<number>;
+    width: number;
+    m_x: number;
+    m_y: number;
 }
+
+Model.constructorsByType[C.Type[C.Type.SLUR]] = (spec: any) => new SlurGroupModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

@@ -13,6 +13,8 @@ import assert = require("assert");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 
+import _ = require("lodash");
+
 /**
  * Subclasses of Models handle the gap between the abstract representation of
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
@@ -165,6 +167,25 @@ class Model {
         if (source === C.Source.ANNOTATOR) { this._flags = this._flags | Flags.ANNOTATOR;
         } else { this._flags = this._flags & ~Flags.ANNOTATOR; } }
 
+    toJSON(): {} {
+        return {
+            key: this.key,
+            type: C.Type[this.type],
+            _flags: this._flags
+        };
+    }
+
+    static fromJSON(json: string): Model {
+        var spec = JSON.parse(json);
+        var model = Model.constructorsByType[spec.type](spec);
+        var modelObj: { [key: string]: any } = <any> model;
+        assert(model);
+        _.each(spec, (value: any, key: string) => {
+            modelObj[key] = value;
+        });
+        return model;
+    }
+
     key: number = Model._generateKey();
     x: number = NaN;
     y: number = NaN;
@@ -183,6 +204,7 @@ class Model {
     }
 
     private static lastKey: number = 0;
+    static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
 }
 
 enum Flags {
@@ -194,3 +216,4 @@ enum Flags {
 }
 
 export = Model;
+global.Model = Model; // For debugging

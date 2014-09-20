@@ -158,6 +158,16 @@ class BeamGroupModel extends Model {
         return C.Type.BEAM_GROUP;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            beamCount: this.beam.length,
+            beams: this.beams,
+            variableBeams: this.variableBeams,
+            tuplet: this.tuplet,
+            tupletsTemporary: this.tupletsTemporary
+        });
+    }
+
     /**
      * Notes in the beam
      */
@@ -176,6 +186,8 @@ class BeamGroupModel extends Model {
     tuplet: any;
     tupletsTemporary: boolean;
 }
+
+Model.constructorsByType[C.Type[C.Type.BEAM_GROUP]] = (spec: any) => new BeamGroupModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

@@ -11,6 +11,8 @@ import Model = require("./model");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 
+import _ = require("lodash");
+
 class BeginModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
@@ -63,6 +65,11 @@ class BeginModel extends Model {
         return C.Type.BEGIN;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+        });
+    }
+
     pianoStaff: boolean;
     stave: C.IStave;
     noMargin : boolean;
@@ -71,6 +78,8 @@ class BeginModel extends Model {
     pageSize: C.IPageSize;
     width: number;
 }
+
+Model.constructorsByType[C.Type[C.Type.BEGIN]] = (spec: any) => new BeginModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

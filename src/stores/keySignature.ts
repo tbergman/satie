@@ -205,6 +205,13 @@ class KeySignatureModel extends Model {
         return C.Type.KEY_SIGNATURE;
     }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            keySignature: this.keySignature,
+            pitch: this.pitch
+        });
+    }
+
     clef: string;
     keySignature: C.IKeySignature;
     _annotatedSpacing: number;
@@ -221,5 +228,7 @@ class KeySignatureModel extends Model {
 // line to not be optimized out.
 Model.length;
 /* tslint:enable */
+
+Model.constructorsByType[C.Type[C.Type.KEY_SIGNATURE]] = (spec: any) => new KeySignatureModel(spec);
 
 export = KeySignatureModel;

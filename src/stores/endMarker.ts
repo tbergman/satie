@@ -12,6 +12,8 @@ import C = require("./contracts");
 import Annotator = require("./annotator");
 import Metre = require("./metre");
 
+import _ = require("lodash");
+
 /**
  * A marker for the end of lines and bars. Its purpose is to help with
  * positioning and other logic. It is not rendered.
@@ -107,7 +109,14 @@ class EndMarkerModel extends Model {
     get type() {
         return C.Type.END_MARKER;
     }
+
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+        });
+    }
 }
+
+Model.constructorsByType[C.Type[C.Type.END_MARKER]] = (spec: any) => new EndMarkerModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

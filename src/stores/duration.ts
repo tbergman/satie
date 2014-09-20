@@ -1206,6 +1206,16 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (v) { this._flags = this._flags | Flags.TIE;
         } else { this._flags = this._flags & ~Flags.TIE; } }
 
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+            _beats: this._beats,
+            _count: this._count,
+            _dots: this._dots,
+            _markings: this._markings,
+            chord: this.chord
+        });
+    }
+
     private _annotatedExtraWidth: number;
     private _beats: number;
     private _color: number = 0x000000;
@@ -1258,9 +1268,10 @@ enum Flags {
     TIE = 2 << 10
 }
 
-/* tslint:dis
- * 
- able */
+// The source will be replaced
+Model.constructorsByType[C.Type[C.Type.DURATION]] = (spec: any) => new DurationModel(spec, C.Source.USER);
+
+/* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()
 // line to not be optimized out.

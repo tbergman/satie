@@ -51,7 +51,14 @@ class NewPageModel extends Model {
     get type() {
         return C.Type.NEWPAGE;
     }
+
+    toJSON(): {} {
+        return _.extend(super.toJSON(), {
+        });
+    }
 }
+
+Model.constructorsByType[C.Type[C.Type.NEWPAGE]] = (spec: any) => new NewPageModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
