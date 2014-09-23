@@ -33,7 +33,7 @@ export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
                     fontSize: this.props.fontSize,
                     glyphName: "timeSigCutCommon"});
             }
-            console.warn("Cannot be represented with a common time signature!");
+            // Cannot be represented in common representation. Pass through.
         }
         return Group(null,
             TimeSignatureNumber({

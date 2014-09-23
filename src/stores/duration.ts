@@ -1208,7 +1208,6 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     toJSON(): {} {
         return _.extend(super.toJSON(), {
-            _beats: this._beats,
             _count: this._count,
             _dots: this._dots,
             _markings: this._markings,

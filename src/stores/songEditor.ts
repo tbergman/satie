@@ -8,8 +8,10 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import C = require("./contracts");
+import Collab = require("./collab");
 import Annotator = require("./annotator");
 import Dispatcher = require("./dispatcher");
+import Instruments = require("./instruments");
 import Model = require("./model");
 import Tool = require("./tool");
 import TSEE = require("./tsee");
@@ -37,6 +39,7 @@ export class SongEditorStore extends TSEE {
         this.clear();
 
         Dispatcher.Instance.register(this.handleAction.bind(this));
+        _.delay(this._ping.bind(this), 128);
     }
 
     handleAction(action: C.IFluxAction) {
@@ -64,9 +67,7 @@ export class SongEditorStore extends TSEE {
                 _.each(this.staves, (stave: C.IStave) => {
                     if (stave.body) {
                         var instrument: C.IInstrument = stave.body.instrument;
-                        PlaybackStore.Instance.ensureLoaded(instrument.soundfont, /*avoidEven
-                         * 
-                         t*/ true);
+                        PlaybackStore.Instance.ensureLoaded(instrument.soundfont, /*avoidEvent*/ true);
                     }
                 });
 
@@ -76,6 +77,13 @@ export class SongEditorStore extends TSEE {
                 this.clear();
                 this.emit(CHANGE_EVENT);
                 this.emit(CLEAR_HISTORY_EVENT);
+                break;
+
+            case "PUT /local/song/patch":
+                var lines = Collab.patch(action.postData, this.staves[4].body); // XXX: MULTISTAVE
+                _.each(lines, line => markRendererLineDirty(line));
+                this.annotate(null, null, null, null, null, true);
+                this.emit(ANNOTATE_EVENT);
                 break;
 
             case "PUT /api/song":
@@ -205,13 +213,13 @@ export class SongEditorStore extends TSEE {
                                     _cleanupFn = null;
                                     this.annotate(
                                         action.postData.mouseData,
-                                        tool.hidePreview.bind(tool));
+                                        tool.hidePreview.bind(tool), null, null, null, true);
                                     this.emit(ANNOTATE_EVENT);
                                 };
                             }
                             this.annotate(
                                 action.postData.mouseData,
-                                action.postData.fn);
+                                action.postData.fn, null, null, null, action.resource === "preview");
 
                             this.emit(ANNOTATE_EVENT);
                             break;
@@ -269,7 +277,7 @@ export class SongEditorStore extends TSEE {
                 _ctx = null;
                 _.find(_staves, s => s.staveHeight).staveHeight = _staveHeight;
                 Model.removeAnnotations(_staves);
-                this.annotate();
+                this.annotate(null, null, null, null, null, true); // XXX: collaboration
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -280,7 +288,7 @@ export class SongEditorStore extends TSEE {
                 _ctx = null;
                 _.find(_staves, s => s.pageSize).pageSize = _pageSize;
                 Model.removeAnnotations(_staves);
-                this.annotate();
+                this.annotate(null, null, null, null, null, false); // XXX: collaboration
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -304,7 +312,7 @@ export class SongEditorStore extends TSEE {
                 }
                 Model.removeAnnotations(_staves); // TODO: Should not be needed.
                 this.markRendererDirty();
-                this.annotate();
+                this.annotate(null, null, null, null, null, false); // XXX: collaboration
                 this.emit(CHANGE_EVENT);
                 break;
 
@@ -326,13 +334,14 @@ export class SongEditorStore extends TSEE {
                 }
                 Model.removeAnnotations(_staves); // TODO: Should not be needed.
                 this.markRendererDirty();
-                this.annotate();
+                this.annotate(null, null, null, null, null, false); // XXX: collaboration
                 this.emit(CHANGE_EVENT);
                 break;
 
             case "PUT /local/song":
                 switch (action.resource) {
                     case "replaceSrc":
+                        // XXX: create patches
                         if (_cleanupFn) {
                             _cleanupFn();
                         }
@@ -414,14 +423,15 @@ export class SongEditorStore extends TSEE {
                                         idx: i,
                                         staveIdx: this._activeStaveIdx
                                     },
-                                    etool.splice.bind(etool, false));
+                                    etool.splice.bind(etool, false),
+                                    null, null, null, false);
                             } else {
-                                this.annotate();
+                                this.annotate(null, null, null, null, null, false);
                                 this.stepCursor({
                                     step: -1,
                                     skipThroughBars: false
                                 });
-                                this.annotate();
+                                this.annotate(null, null, null, null, null, false);
                             }
                             this.emit(ANNOTATE_EVENT);
                         }
@@ -429,7 +439,7 @@ export class SongEditorStore extends TSEE {
                 } else {
                     _visualCursor = null;
                     this.emit(CHANGE_EVENT);
-                    this.annotate();
+                    this.annotate(null, null, null, null, null, true);
                     break;
                 }
 
@@ -484,7 +494,7 @@ export class SongEditorStore extends TSEE {
                                         idx: prevIdx,
                                         staveIdx: this._activeStaveIdx
                                     },
-                                    tmpTool.visualCursorAction(action.postData));
+                                    tmpTool.visualCursorAction(action.postData), null, null, null, false);
                             } else {
                                 this.annotate(
                                     {
@@ -493,7 +503,7 @@ export class SongEditorStore extends TSEE {
                                         idx: prevIdx,
                                         staveIdx: this._activeStaveIdx
                                     },
-                                    _tool.visualCursorAction(action.postData));
+                                    _tool.visualCursorAction(action.postData), null, null, null, false);
                             }
                             this.emit(ANNOTATE_EVENT);
                             break;
@@ -505,6 +515,7 @@ export class SongEditorStore extends TSEE {
 
                     case undefined:
                     case null:
+                        // Simply move cursor
                         if (action.postData.bar) {
                             this.visualCursorIs(action.postData);
                         } else if (action.postData.step) {
@@ -514,7 +525,7 @@ export class SongEditorStore extends TSEE {
                                 skipThroughBars: action.postData.skipThroughBars
                             });
                         }
-                        this.annotate();
+                        this.annotate(null, null, null, null, null, true);
                         this.emit(ANNOTATE_EVENT);
                         break;
                     default:
@@ -549,7 +560,24 @@ export class SongEditorStore extends TSEE {
         if (profile) {
             console.time("Parse source");
         }
-        _staves = lylite.parse(src);
+
+        if (src.length && src[0] === "[") {
+            _staves = JSON.parse(src);
+            for (var i = 0; i < _staves.length; ++i) {
+                var body = _staves[i].body;
+                if (body) {
+                    body.instrument = Instruments.List[0];
+                    for (var j = 0; j < body.length; ++j) {
+                        body[j] = Model.fromJSON(body[j]);
+                    }
+                }
+                if (_staves[i].paper) {
+                    _staves[i].paper = new C.Paper(_staves[i].paper);
+                }
+            }
+        } else {
+            _staves = lylite.parse(src);
+        }
         C.addDefaults(_staves);
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
@@ -569,10 +597,25 @@ export class SongEditorStore extends TSEE {
             PROFILER_ENABLED = true;
         }
 
-        this.annotate(null, null, null, null, true);
+        this.annotate(null, null, null, null, null, true);
+        this.markLKG();
 
         if (profile) {
             PROFILER_ENABLED = origPE;
+        }
+    }
+
+    markLKG() {
+        for (var i = 0; i < this.staves.length; ++i) {
+            var body = this.staves[i].body;
+            if (!body) {
+                continue;
+            }
+            for (var j = 0; j < body.length; ++j) {
+                if (body[j].type === C.Type.BARLINE) {
+                    (<any>body[j]).markLKG(j, this.staves[i].body);
+                }
+            }
         }
     }
 
@@ -580,11 +623,12 @@ export class SongEditorStore extends TSEE {
      * Calls Context.anotate on each stave with a body
      */
     annotate(
-        pointerData?: C.IPointerData,
-        toolFn?: (obj: Model, ctx: Annotator.Context) => C.IterationStatus,
-        staves?: Array<C.IStave>,
-        pageSize?: C.IPageSize,
-        profile?: boolean) {
+            pointerData: C.IPointerData,
+            toolFn: (obj: Model, ctx: Annotator.Context) => C.IterationStatus,
+            staves: Array<C.IStave>,
+            pageSize: C.IPageSize,
+            profile: boolean,
+            disableRecording: boolean) {
 
         staves = staves || _staves;
 
@@ -637,7 +681,11 @@ export class SongEditorStore extends TSEE {
             toolFn: toolFn,
             pointerData: pointerData
         };
-        var result = context.annotate(location, customAction, cursor);
+        var result = context.annotate(location, customAction, cursor, disableRecording);
+
+        if (result.patch && result.patch.length) {
+            this.broadcastPatch(result.patch, context);
+        }
 
         y = result.resetY ? 0 : y;
 
@@ -786,7 +834,7 @@ export class SongEditorStore extends TSEE {
         }
         markRendererDirty();
         _selection = null;
-        this.annotate();
+        this.annotate(null, null, null, null, null, false);
         return true;
     }
 
@@ -834,7 +882,7 @@ export class SongEditorStore extends TSEE {
         // This isn't very efficient, obviously.
         Model.removeAnnotations(_staves);
         _selection = null;
-        this.annotate();
+        this.annotate(null, null, null, null, null, false);
         this.markRendererDirty();
         this.emit(CHANGE_EVENT);
     }
@@ -975,6 +1023,9 @@ export class SongEditorStore extends TSEE {
     get paper() {
         return _paper; }
     get src() {
+        return JSON.stringify(_staves);
+    }
+    get lylite() {
         var staves = _staves;
 
         var lyliteArr: Array<string> = [];
@@ -1164,8 +1215,11 @@ export class SongEditorStore extends TSEE {
         assert(false, "Use the dispatcher to send this type of request.");
     }
 
-
     throttledAutosave = _.throttle(() => {
+        if (SessionStore.Instance.apiRole !== C.ApiRole.PRIMARY) {
+            return;
+        }
+
         var active = SessionStore.Instance.activeSong;
         if (active) {
             Dispatcher.PUT("/api/song/_" + active._id, { src: this.src });
@@ -1181,13 +1235,58 @@ export class SongEditorStore extends TSEE {
         if (this._peerRelay) {
             assert(false, "Why?");
         }
-        this._peerRelay = new WebSocket("ws://" + "localhost:8001" + //+ window.location.host +
-            "/song/_" + id + "/peerRelay");
-        this._peerRelay.onmessage = function(t) { console.log("PEER RELAY", t.data); };
-        this._peerRelay.onerror = function (e) { console.log("PEER ERR", e); }
-        this._peerRelay.onopen = function (o) { console.log("RELAY OPEN", o); }
-        this._peerRelay.onclose = function (o) { console.log("RELAY CLOSE", o); }
+        this._peerRelay = new WebSocket("ws://" + window.location.host +
+            "/api/song/_" + id + "/peerRelay");
+        this._peerRelay.onmessage = this._handleRelayMessage.bind(this);
+        this._peerRelay.onerror = function (e) { console.log("RELAY ERR", e); };
+        this._peerRelay.onopen = function (o) { console.log("RELAY OPEN", o); };
+        this._peerRelay.onclose = function (o) { console.log("RELAY CLOSE", o); };
     }
+
+    _ping() {
+        if (this._peerRelay && this._peerRelay.readyState === WebSocket.OPEN) {
+            this._peerRelay.send("");
+        }
+        _.delay(this._ping.bind(this), 128);
+    }
+
+    broadcastPatch(diff: Array<string>, finalContext: Annotator.Context) {
+        diff = diff.filter(d => !!d);
+        if (!diff.length) { return; }
+
+        if (this._relayHistory.length > 6000) {
+            this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
+        }
+
+        var permission = SessionStore.Instance.apiRole === C.ApiRole.PRIMARY ? "[BROADCAST]" : "[REQUEST]";
+
+
+        var msg = permission + "PATCH\n";
+        msg += diff.join("\n") + "\n";
+        if (SessionStore.Instance.apiRole === C.ApiRole.OFFLINE) {
+            this._relayHistory += "Offline: " + msg;
+        } else {
+            this._relayHistory += "Sending: " + msg + "\n";
+            this._peerRelay.send(msg);
+        }
+    }
+
+    private _handleRelayMessage(msg: any) {
+        if (this._relayHistory.length > 6000) {
+            this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
+        }
+        this._relayHistory += "Received: " + msg.data + "\n";
+        if (msg.data.indexOf("PATCH") === 0) {
+            Dispatcher.PUT("/local/song/patch", msg.data);
+            return;
+        }
+        var parsed = JSON.parse(msg.data);
+
+        if (parsed.newStatus) {
+            Dispatcher.PUT("/local/apiRole", parsed.newStatus);
+        }
+    }
+
     private _recreateSnapshot(line: number) {
         var lines: Array<any> = [];
         for (var i = 1; i <= line; ++i) {
@@ -1200,6 +1299,7 @@ export class SongEditorStore extends TSEE {
             }
         }
     }
+    _relayHistory: string = "";
     private _peerRelay: WebSocket = null;
     private _changesPending: boolean;
     private _allChangesSent: boolean = true;

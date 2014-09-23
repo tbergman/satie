@@ -305,7 +305,7 @@ export interface IProps {
     flag?: string;
     fontSize?: number;
     hasStem?: boolean;
-    key?: number;
+    key?: string;
     line?: any;
     notehead?: string;
     secondaryStroke?: any;

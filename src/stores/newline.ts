@@ -66,6 +66,7 @@ class NewlineModel extends Model {
             ctx.lines[ctx.line] = {
                 accidentals: null,
                 bar: null,
+                barKeys: null,
                 barlineX: null,
                 beat: null,
                 keySignature: null,
@@ -82,6 +83,7 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].accidentals = {};
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
+        ctx.lines[ctx.line].barKeys = JSON.parse(JSON.stringify(ctx.barKeys));
         ctx.lines[ctx.line].beat = 0;
         ctx.lines[ctx.line].x = ctx.x;
         ctx.lines[ctx.line].y = ctx.y;

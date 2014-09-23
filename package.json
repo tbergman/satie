@@ -6,6 +6,7 @@
     "dependencies": {
         "audio5": "0.1.9",
         "body-parser": "~1.6.2",
+        "diff": "~1.0.8",
         "es6-promise": ">= 1.0.0",
         "express": "~4.8.2",
         "lodash": "~2.4.1",

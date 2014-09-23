@@ -98,6 +98,8 @@ class EndMarkerModel extends Model {
             }
         }
 
+        this.endMarker = true;
+
         return C.IterationStatus.SUCCESS;
     }
     visible() {

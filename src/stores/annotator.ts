@@ -7,6 +7,7 @@
 import _ = require("lodash");
 import assert = require("assert");
 
+import BarlineModel = require("./barline");
 import C = require("./contracts");
 import Model = require("./model");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
@@ -46,7 +47,8 @@ export class Context implements C.MetreContext {
      * 'mutation'. The mutation must be after 'from'. All modifications to staves must go through
      * Annotator.annotate.
      */
-    annotate(from?: C.ILocation, mutation?: ICustomAction, cursor?: C.IVisualCursor): C.IAnnotationResult {
+    annotate(from: C.ILocation, mutation: ICustomAction,
+            cursor: C.IVisualCursor, disableRecording: boolean): C.IAnnotationResult {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
         Context._ANNOTATING = true;
         var error: Error = null;
@@ -54,7 +56,7 @@ export class Context implements C.MetreContext {
         assert(from.bar !== 0);
 
         try {
-            result = this._annotateImpl(from, mutation, cursor);
+            result = this._annotateImpl(from, mutation, cursor, disableRecording);
         } catch (err) {
             // Catch the error so we can set _ANNOTATING to false and thus allow future annotations.
             error = err;
@@ -80,6 +82,7 @@ export class Context implements C.MetreContext {
         return {
             accidentals: this.accidentals,
             bar: this.loc.bar,
+            barKeys: this.barKeys,
             barlineX: this.barlineX,
             beat: this.loc.beat,
             keySignature: this.keySignature,
@@ -236,6 +239,7 @@ export class Context implements C.MetreContext {
      */
     eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
+
         this.body.splice(idx, 1);
         return C.IterationStatus.SUCCESS;
     }
@@ -245,6 +249,7 @@ export class Context implements C.MetreContext {
      */
     erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
+
         this.body.splice(idx, 1);
         return C.IterationStatus.RETRY_FROM_ENTRY;
     }
@@ -258,6 +263,7 @@ export class Context implements C.MetreContext {
     insertFuture(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
+
         this.body.splice(index, 0, obj);
         return C.IterationStatus.SUCCESS;
     }
@@ -271,11 +277,24 @@ export class Context implements C.MetreContext {
     insertPast(obj: Model, index?: number): any {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
-        var t = +(new Date());
-        this.body.splice(index, 0, obj);
-        global.spliceTime += +(new Date()) - t;
-        return this.idx === index ? C.IterationStatus.RETRY_CURRENT :
+
+        var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
+
+        this.body.splice(index, 0, obj);
+        return exitCode;
+    }
+
+    splice(start: number, count: number, replaceWith?: Array<Model>) {
+        Array.prototype.splice.apply(this.body, [start, count].concat(<any>replaceWith));
+    }
+
+    _barAfter(index: number): Model {
+        for (var i = index; i < this.body.length; ++i) {
+            if (this.body[i].type === C.Type.BARLINE) {
+                return this.body[i];
+            }
+        }
     }
 
     /**
@@ -434,6 +453,12 @@ export class Context implements C.MetreContext {
      */
     y: number;
 
+    /**
+     * The ordered keys of bars. Should be the same for all staves.
+     * @scope line
+     */
+    barKeys: Array<string>;
+
 
 
     /**
@@ -490,9 +515,21 @@ export class Context implements C.MetreContext {
 
 
     private static _ANNOTATING: boolean = false;
-    private _annotateImpl(from?: C.ILocation, mutation?: ICustomAction, cursor?: C.IVisualCursor): C.IAnnotationResult {
+    disableRecordings: boolean = true;
+    _recordings: { [key: string]: BarlineModel } = null;
+    record(model: BarlineModel) {
+        this._recordings[model.key] = model;
+    }
+
+    private _annotateImpl(from?: C.ILocation, mutation?: ICustomAction,
+                cursor?: C.IVisualCursor, disableRecordings?: boolean):
+            C.IAnnotationResult {
         from = from || { bar: 1, beat: 0 };
 
+        this.disableRecordings = disableRecordings;
+        if (!this.disableRecordings) {
+            this._recordings = {};
+        }
         var status: C.IterationStatus;
         var ops = 0;
         var initialLength = _.max(this._staves, s => s.body ? s.body.length : 0).body.length || 1;
@@ -514,12 +551,21 @@ export class Context implements C.MetreContext {
             this._semiJustify(this._staves);
         }
 
+        var patch = _.map(this._recordings, (model: BarlineModel) => {
+            var p = model.createPatch(model.idx, this.body /* XXX: BROKEN FOR MULTISTAVE */);
+            if (p) {
+                p += "\n";
+            }
+            return p;
+        }).filter(p => !!p);
+
         return {
             cursor: null,
             operations: 5,
             resetY: false,
             skip: status === C.IterationStatus.EXIT_EARLY, // If skip is true, context is not updated.
-            success: true
+            success: true,
+            patch: patch
         };
     }
 
@@ -584,6 +630,7 @@ export interface ILayoutOpts {
 export interface ILineSnapshot {
     accidentals: C.IAccidentals;
     bar: number;
+    barKeys: Array<string>;
     barlineX: Array<number>;
     beat: number;
     keySignature: C.IKeySignature;
@@ -642,7 +689,6 @@ export function recordMetreData(staves: Array<C.IStave>) {
     }
 }
 
-
 ///////////   END OF EXPORTS   ///////////
 
 
@@ -660,7 +706,7 @@ class PrivIterator {
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = JSON.parse(JSON.stringify(from));
-        this._canExitAtNewline = !!mutation;
+        this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         for (var i = 0; i < staves.length; ++i) {
             if (staves[i].body) {
                 var isMutable = mutation && mutation.pointerData && mutation.pointerData.staveIdx === i;
@@ -1030,7 +1076,10 @@ class PrivIteratorComponent {
             ctx.timeSignature = (<any>this.curr).timeSignature;
         }
 
+        //
         var exitCode = this._mutation.toolFn(this.curr, ctx);
+        //
+
         this._mutation = null;  // If we have to backtrack, don't repeat this action
 
         return exitCode;
@@ -1064,6 +1113,7 @@ function _cpyline(ctx: Context, line: ILineSnapshot) {
             case "accidentals": ctx.accidentals = line.accidentals; break;
             case "bar": ctx.bar = line.bar; break;
             case "barlineX": ctx.barlineX = line.barlineX; break;
+            case "barKeys": ctx.barKeys = line.barKeys; break;
             case "beat": ctx.beat = line.beat; break;
             case "keySignature": ctx.keySignature = line.keySignature; break;
             case "line": ctx.line = line.line; break;

@@ -77,8 +77,15 @@ export class Dispatcher {
                 (action.postData ? [action.postData] : []), [action]);
         }
 
+        if (_events.length > 6000) {
+            _events = _events.substr(_events.length - 6000);
+        }
+        _events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
+            JSON.stringify(action.query ? " " + action.query : "") + " " +
+            JSON.stringify(action.postData) + "\n";
+
         if (inAction) {
-            assert(false, "Queueing an action during an action is a violation of Flux");
+            assert(false, "Queuing an action during an action is a violation of Flux");
         }
 
         _.each(_callbacks, function(callback) {
@@ -92,7 +99,7 @@ export class Dispatcher {
             .then(_clearPromises)
             ["catch"]((err) => { // For support with IE 6.
                 inAction = false;
-                console.warn("Exception occured in promise", err);
+                console.warn("Exception occurred in promise", err);
                 console.log(err.stack);
             });
         /* tslint:enable */
@@ -228,5 +235,10 @@ export var POST = function(url: string, p?: any, cb?: () => void) {
 export var GET = function(url: string, p?: any, cb?: () => void) {
     dispatch(url, "GET", p, cb);
 };
+
+/**
+ * For debugging
+ */
+export var _events: string = "";
 
 global.Dispatcher = module.exports;

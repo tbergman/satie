@@ -1,10 +1,10 @@
 ﻿/**
-  * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
-  *
-  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
-  * Unauthorized copying of this file, via any medium is strictly prohibited.
-  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
-  */
+ * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ */
 
 import _ = require("lodash");
 import assert = require("assert");
@@ -12,6 +12,28 @@ import assert = require("assert");
 import Model = require("./model");
 import Annotator = require("./annotator");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+
+/**
+ * Represents the client's policy for communicating changes with each other and saving them
+ * to the server.
+ */
+export enum ApiRole {
+    /**
+     * All changes are cached until the client can reconnect to the relay.
+     */
+    OFFLINE = 0,
+
+    /**
+     * In charged of accepting or rejecting changes from peers, PUTs official version to
+     * the server.
+     */
+    PRIMARY = 1,
+
+    /**
+     * Sends all requests to PRIMARY peer via the relay. Does not save.
+     */
+    SECONDARY = 2
+}
 
 /**
  * Used to hold current accidentals in a bar.
@@ -44,6 +66,7 @@ export interface IAnnotationResult {
     resetY: boolean;
     skip: boolean;
     success: boolean;
+    patch: Array<string>;
 }
 
 /**
@@ -282,51 +305,21 @@ export interface IInstrument {
 export class InvalidDurationError {
 }
 
+/**
+ * Sorted in order from least change to most change.
+ */
 export enum IterationStatus {
+    /**
+     * No further annotation is necessary. The document is correct
+     * and renderable.
+     */
+    EXIT_EARLY,
+
     /**
      * All of the pre-conditions of the Model were met, and
      * the annotator should continue to the next item.
      */
     SUCCESS,
-
-    /**
-     * At least one of the preconditions of the Model were not
-     * met and the entire document must be re-annotated.
-     */
-    RETRY_FROM_ENTRY,
-
-    /**
-     * The precondition is now met, but a line was added somewhere between
-     * where the previous line was an idx. The annotator should re-annotate
-     * the previous two lines.
-     */
-    LINE_CREATED,
-
-    /**
-     * The precondition is now met, but a line was removed. The index has alread
-     * been set to the correct previous line.
-     */
-    LINE_REMOVED,
-
-    /**
-     * The precondition is now met, but the previous line was modified. For example,
-     * the visual cursor has been moved to the previous line.
-     */
-    RETRY_PREVIOUS_LINE,
-
-    /**
-     * At least one of the pre-conditions of the Model were not
-     * met and the entire line must be re-annotated.
-     */
-    RETRY_LINE,
-
-    /**
-     * At least one of the pre-conditions of the Model were not
-     * met and the entire beam must be re-annotated.
-     * 
-     * The Model must be in a beam for this return type to be used.
-     */
-    RETRY_BEAM,
 
     /**
      * At least one of the pre-conditions of the Model were not
@@ -342,10 +335,43 @@ export enum IterationStatus {
     RETRY_CURRENT_NO_OPTIMIZATIONS,
 
     /**
-     * No further annotation is necessary. The document is correct
-     * and renderable.
+     * At least one of the pre-conditions of the Model were not
+     * met and the entire beam must be re-annotated.
+     * 
+     * The Model must be in a beam for this return type to be used.
      */
-    EXIT_EARLY
+    RETRY_BEAM,
+
+    /**
+     * The precondition is now met, but a line was removed. The index has already
+     * been set to the correct previous line.
+     */
+    LINE_REMOVED,
+
+    /**
+     * At least one of the pre-conditions of the Model were not
+     * met and the entire line must be re-annotated.
+     */
+    RETRY_LINE,
+
+    /**
+     * The precondition is now met, but a line was added somewhere between
+     * where the previous line was an idx. The annotator should re-annotate
+     * the previous two lines.
+     */
+    LINE_CREATED,
+
+    /**
+     * The precondition is now met, but the previous line was modified. For example,
+     * the visual cursor has been moved to the previous line.
+     */
+    RETRY_PREVIOUS_LINE,
+
+    /**
+     * At least one of the preconditions of the Model were not
+     * met and the entire document must be re-annotated.
+     */
+    RETRY_FROM_ENTRY
 };
 
 /**

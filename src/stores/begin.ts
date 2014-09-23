@@ -18,7 +18,7 @@ class BeginModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        // BeginModel must only appear at the begining of a song.
+        // BeginModel must only appear at the beginning of a song.
         if (ctx.idx !== 0) {
             return ctx.eraseCurrent();
         }
@@ -26,10 +26,12 @@ class BeginModel extends Model {
         this.width = ctx.maxX - ctx.x;
 
         /*
-         * Padding between begining of stave and the clef.
+         * Padding between beginning of stave and the clef.
          * This value should also be changed in BeginModel.
          */
         ctx.x += 0.2;
+
+        ctx.barKeys = [];
 
         // Copy information from the context needed for the view
         this.pianoStaff = ctx.currStave.pianoStaff;

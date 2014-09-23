@@ -56,6 +56,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
         var pages: Array<IPage> = [];
         var ctx = this.getCtx();
+        assert(ctx, "You must annotate before rendering");
         var pageStarts = ctx.pageStarts;
         var pageLines = ctx.pageLines;
 

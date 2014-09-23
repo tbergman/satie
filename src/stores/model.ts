@@ -6,6 +6,7 @@
 
 /// <reference path="../../references/node.d.ts" />
 /// <reference path="../../references/lodash.d.ts" />
+/// <reference path="../../references/diff.d.ts" />
 /// <reference path="../../references/es6-promise.d.ts" />
 
 import assert = require("assert");
@@ -61,8 +62,11 @@ class Model {
         }
     }
 
-    static _generateKey(): number {
-        return ++Model.lastKey;
+    static _sessionId: string = _sessionId(); // TODO: Make sure this isn't a duplicate.
+    static _lastKey = 0;
+
+    static _generateKey(): string {
+        return Model._sessionId + "-" + ++Model._lastKey;
     }
 
     get timeSignature(): C.ITimeSignature {
@@ -114,6 +118,7 @@ class Model {
         assert(false, "Not implemented");
     }
 
+    // FIXME: key is now a string
     static setView = function (View: (opts: { key: number; spec: Model; fontSize: number }) => any) {
         this.prototype.render = function (fontSize: number) {
             return View({
@@ -175,9 +180,34 @@ class Model {
         };
     }
 
-    static fromJSON(json: string): Model {
-        var spec = JSON.parse(json);
-        var model = Model.constructorsByType[spec.type](spec);
+    /**
+     * Return a Model that is equivalent to one that has been JSON.stringified.
+     *
+     * @param json Model, stringified model, or parsed stringified model
+     * @param exisistingObjects Optional dictionary from keys to existing Models.
+     *   If a model with the same key exists, it will be updated. Otherwise, a new
+     *   model will be created.
+     */
+    static fromJSON(json: Object, existingObjects?: { [key: string]: Model }): Model;
+
+    /**
+     * Return a Model that is equivalent to one that has been JSON.stringified.
+     *
+     * @param json Model, stringified model, or parsed stringified model
+     * @param exisistingObjects Optional dictionary from keys to existing Models.
+     *   If a model with the same key exists, it will be updated. Otherwise, a new
+     *   model will be created.
+     */
+    static fromJSON(json: string, existingObjects?: { [key: string]: Model }): Model;
+
+    static fromJSON(json: any, existingObjects?: { [key: string]: Model } ): Model {
+        var spec: any;
+        if (typeof json === "string" || json instanceof String) {
+            spec = JSON.parse(json);
+        } else {
+            spec = json;
+        }
+        var model = (existingObjects && existingObjects[spec.key]) || Model.constructorsByType[spec.type](spec);
         var modelObj: { [key: string]: any } = <any> model;
         assert(model);
         _.each(spec, (value: any, key: string) => {
@@ -186,7 +216,7 @@ class Model {
         return model;
     }
 
-    key: number = Model._generateKey();
+    key: string = Model._generateKey();
     x: number = NaN;
     y: number = NaN;
     endMarker: boolean;
@@ -203,7 +233,15 @@ class Model {
         return null;
     }
 
-    private static lastKey: number = 0;
+    get revision(): string {
+        assert(false, "Not implemented for this type");
+        return "";
+    }
+
+    set revision(n: string) {
+        assert(false, "Not implemented for this type");
+    }
+
     static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
 }
 
@@ -213,6 +251,11 @@ enum Flags {
     SELECTED = 2 << 2,
     ANNOTATOR = 2 << 3
     // model-specific = 2 << 6
+}
+
+function _sessionId(): string {
+    "use strict";
+    return (Math.random().toString(16) + "000000000").substr(2, 8);
 }
 
 export = Model;

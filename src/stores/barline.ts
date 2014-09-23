@@ -7,6 +7,8 @@
 import Model = require("./model");
 
 import _ = require("lodash");
+import assert = require("assert");
+import diff = require("diff");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
@@ -119,6 +121,8 @@ class BarlineModel extends Model {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
+        ctx.barKeys.push(this.key);
+
         // Set information from context that the view needs
         if (ctx.currStave.pianoStaff) {
             this.onPianoStaff = true;
@@ -131,6 +135,10 @@ class BarlineModel extends Model {
         this.height = this.onPianoStaff ? 1.15 : 2/4;
         this.yOffset = this.onPianoStaff ? (2/4 - 1.15): 0;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
+
+        if (!ctx.disableRecordings) {
+            ctx.record(this);
+        }
         return C.IterationStatus.SUCCESS;
     }
 
@@ -165,8 +173,25 @@ class BarlineModel extends Model {
             }
             return C.IterationStatus.RETRY_LINE;
         }
-        return ctx.insertPast(new BarlineModel({ barline: mode }));
+
+        BarlineModel._seperate(ctx, mode);
+        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     };
+
+    private static _seperate = (ctx: Annotator.Context, mode: C.Barline) => {
+        var jdx = ctx.nextIdx(null, 2);
+        var inTwo = ctx.body[jdx];
+        if (inTwo && inTwo.type === C.Type.BARLINE) {
+            // We want to keep this barline where it is!
+            ctx.body[jdx] = new BarlineModel({ barline: inTwo.barline });
+            inTwo.barline = mode;
+            ctx.insertPast(inTwo);
+            return;
+        }
+
+        ctx.insertPast(new BarlineModel({ barline: mode }));
+    };
+
 
     get type() {
         return C.Type.BARLINE;
@@ -180,9 +205,51 @@ class BarlineModel extends Model {
 
     toJSON(): {} {
         return _.extend(super.toJSON(), {
-            
+            _revision: this.revision
         });
     }
+
+    get revision() {
+        return this._revision;
+    }
+
+    /**
+     * To be used ONLY in collab.ts
+     */
+    set revision(n: string) {
+        this._revision = n;
+    }
+
+    markLKG(currIdx: number, body: C.IBody) {
+        // See songEditor.ts
+        this.__history__ = this.__lkg__ = this._state(currIdx, body);
+    }
+
+    private static _lastRev = 0;
+    incrRevision() {
+        return this._revision = Model._sessionId + "-" + ++BarlineModel._lastRev;
+    }
+
+    createPatch(currIdx: number, body: C.IBody) {
+        var lastHistory = this.__history__;
+
+        this.__history__ = this._state(currIdx, body);
+        if (lastHistory === this.__history__) {
+            return;
+        }
+        return diff.createPatch(this.key, lastHistory, this.__history__, this.revision, this.incrRevision());
+    }
+
+    private _state(currIdx: number, body: C.IBody) {
+        var history: string[] = [];
+        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.BARLINE; --i) {
+            history.push(JSON.stringify(body[i]).replace("\n", "")); // the spec does not specify whether there are \ns
+        }
+        return history.reverse().join("\n") + "\n";
+    }
+
+    private __history__: string = "";
+    private __lkg__: string = "";
 
     private _barline: C.Barline;
     annotatedAccidentalSpacing: number;
@@ -192,6 +259,7 @@ class BarlineModel extends Model {
     onPianoStaff: boolean;
     selected: boolean;
     temporary: boolean;
+    _revision: string = BarlineModel._sessionId + "-0";
     yOffset: number;
 }
 

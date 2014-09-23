@@ -29,6 +29,15 @@ class BeamGroupModel extends Model {
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
+        if (this.beamCount) {
+            this.beam = [];
+            for (var i = ctx.idx; i < ctx.body.length && this.beam.length < this.beamCount; ++i) {
+                if (ctx.body[i].isNote) {
+                    this.beam.push(<DurationModel> ctx.body[i]);
+                }
+            }
+            this.beamCount = undefined;
+        }
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);
         }
@@ -160,7 +169,7 @@ class BeamGroupModel extends Model {
 
     toJSON(): {} {
         return _.extend(super.toJSON(), {
-            beamCount: this.beam.length,
+            beamCount: this.beamCount || this.beam.length,
             beams: this.beams,
             variableBeams: this.variableBeams,
             tuplet: this.tuplet,
@@ -185,6 +194,11 @@ class BeamGroupModel extends Model {
 
     tuplet: any;
     tupletsTemporary: boolean;
+
+    /**
+     * Temporary variable used when reading in from JSON.
+     */
+    beamCount: number;
 }
 
 Model.constructorsByType[C.Type[C.Type.BEAM_GROUP]] = (spec: any) => new BeamGroupModel(spec);

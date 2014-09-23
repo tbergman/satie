@@ -31,7 +31,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 staveIdx: 0
             };
             context = new Annotator.Context(parsed, opts);
-            context.annotate(null);
+            context.annotate(null, null, null, true);
         });
         _.each(tests, test => it(
             test[0],
