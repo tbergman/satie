@@ -930,13 +930,14 @@ class PrivIteratorComponent {
         this._cursor = cursor;
         this.reset(from);
 
-        this._enabled = this._location.eq(from);
+        if (!this._location.eq(from)) {
+            var PlaceholderModel = require("./placeholder");
+            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }));
+        }
         this._mutation = mutation;
     }
 
     annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
-        if (!this._enabled) { return C.IterationStatus.SUCCESS; }
-
         ctx.body = this._body;
         ctx.currStave = this._stave;
         ctx.currStaveIdx = this._sidx;
@@ -998,9 +999,9 @@ class PrivIteratorComponent {
     }
 
     trySeek(loc: C.Location, priority: number) {
-        this._enabled = loc.eq(this.nextLocation) && this.nextPriority === priority;
-        if (this._enabled) {
-            ++this._idx;
+        if (!loc.eq(this.nextLocation) || this.nextPriority !== priority) {
+            var PlaceholderModel = require("./placeholder");
+            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }));
         }
     }
 
@@ -1086,7 +1087,6 @@ class PrivIteratorComponent {
     }
 
     private _body: C.IBody;
-    private _enabled: boolean;
     private _idx: number;
     private _location: C.Location;
     private _mutation: ICustomAction;

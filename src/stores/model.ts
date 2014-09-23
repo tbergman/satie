@@ -237,6 +237,14 @@ class Model {
         assert(false, "Not implemented for this type");
     }
 
+    get prioirty(): C.Type {
+        return this.type;
+    }
+
+    set priority(p: C.Type) {
+        assert(false, "Setting priority is not implemented for this type.");
+    }
+
     static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
 }
 

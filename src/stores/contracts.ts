@@ -749,6 +749,8 @@ export enum Type {
     BEAM_GROUP,
     DURATION,
 
+    PLACEHOLDER,
+
     UNKNOWN
 };
 
