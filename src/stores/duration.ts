@@ -1211,7 +1211,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             _count: this._count,
             _dots: this._dots,
             _markings: this._markings,
-            chord: this.chord
+            chord: _.map(this.chord, pitch => sanitizePitch(pitch))
         });
     }
 
@@ -1265,6 +1265,15 @@ enum Flags {
     RELATIVE = 2 << 8,
     WHOLE_BAR = 2 << 9,
     TIE = 2 << 10
+}
+
+function sanitizePitch(pitch: C.IPitch): C.IPitch {
+    "use strict";
+    return {
+        acc: pitch.acc || null,
+        octave: pitch.octave || null,
+        pitch: pitch.pitch
+    };
 }
 
 // The source will be replaced

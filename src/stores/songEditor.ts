@@ -690,7 +690,6 @@ export class SongEditorStore extends TSEE {
         var result = context.annotate(location, customAction, cursor, disableRecording);
 
         if (result.patch && result.patch.length) {
-            debugger;
             this.broadcastPatch(result.patch, oldBarKeys, Collab.getBarKeys(context.body));
         }
 
@@ -891,7 +890,7 @@ export class SongEditorStore extends TSEE {
             // This isn't very efficient, obviously.
             _selection = null;
             Model.removeAnnotations(_staves);
-        }
+        };
 
         this.annotate(null, null, null, null, null, false, doAction);
         this.markRendererDirty();
@@ -1270,7 +1269,6 @@ export class SongEditorStore extends TSEE {
         }
 
         var permission = SessionStore.Instance.apiRole === C.ApiRole.PRIMARY ? "[BROADCAST]" : "[REQUEST]";
-
 
         var msg = permission + "PATCH\n";
         msg += Collab.barKeysDiff(origBars, newBars) + "\n";
