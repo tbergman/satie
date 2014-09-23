@@ -7,7 +7,6 @@
 import Model = require("./model");
 
 import _ = require("lodash");
-import assert = require("assert");
 import diff = require("diff");
 
 import C = require("./contracts");

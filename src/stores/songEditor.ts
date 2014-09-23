@@ -628,7 +628,8 @@ export class SongEditorStore extends TSEE {
             staves: Array<C.IStave>,
             pageSize: C.IPageSize,
             profile: boolean,
-            disableRecording: boolean) {
+            disableRecording: boolean,
+            godAction?: Function) {
 
         staves = staves || _staves;
 
@@ -636,6 +637,7 @@ export class SongEditorStore extends TSEE {
             console.time("annotate");
         }
 
+        var oldBarKeys = Collab.getBarKeys(staves[4].body); // XXX: MULTISTAVE
         var cursor = _visualCursor;
 
         if (!pointerData) {
@@ -652,6 +654,10 @@ export class SongEditorStore extends TSEE {
             rightMargin: _paper.rightMargin,
             indent: _paper.indent
         };
+
+        if (godAction) {
+            godAction();
+        }
 
         // Records ctxData for every item.
         Annotator.recordMetreData(staves);
@@ -684,7 +690,8 @@ export class SongEditorStore extends TSEE {
         var result = context.annotate(location, customAction, cursor, disableRecording);
 
         if (result.patch && result.patch.length) {
-            this.broadcastPatch(result.patch, context);
+            debugger;
+            this.broadcastPatch(result.patch, oldBarKeys, Collab.getBarKeys(context.body));
         }
 
         y = result.resetY ? 0 : y;
@@ -840,49 +847,53 @@ export class SongEditorStore extends TSEE {
 
     eraseSelection() {
         this.emit(HISTORY_EVENT);
-        var staves = this.staves;
-        for (var h = 0; h < staves.length; ++h) {
-            if (!staves[h].body) {
-                continue;
-            }
-            var body = staves[h].body;
-            var removeEntireBarStartingAt: number = 0;
-            for (var i = 0; i < body.length; ++i) {
-                var type = body[i].type;
-                if (type === C.Type.CLEF || type === C.Type.BEGIN ||
-                        type === C.Type.KEY_SIGNATURE ||
-                        type === C.Type.TIME_SIGNATURE) {
-                    // We'll have to eventually have a way of getting rid of/hiding
-                    // these...
-                    removeEntireBarStartingAt = i + 1;
-                    body[i].selected = false;
+
+        var doAction = () => {
+            var staves = this.staves;
+            for (var h = 0; h < staves.length; ++h) {
+                if (!staves[h].body) {
                     continue;
                 }
-
-                if (type === C.Type.DURATION && body[i].selected) {
-                    body[i].note.isRest = true;
-                }
-
-                if (type === C.Type.BARLINE) {
-                    if (removeEntireBarStartingAt !== null) {
-                        var delCount = i - removeEntireBarStartingAt;
-                        body.splice(removeEntireBarStartingAt, delCount);
-                        i -= delCount;
+                var body = staves[h].body;
+                var removeEntireBarStartingAt: number = 0;
+                for (var i = 0; i < body.length; ++i) {
+                    var type = body[i].type;
+                    if (type === C.Type.CLEF || type === C.Type.BEGIN ||
+                        type === C.Type.KEY_SIGNATURE ||
+                        type === C.Type.TIME_SIGNATURE) {
+                        // We'll have to eventually have a way of getting rid of/hiding
+                        // these...
+                        removeEntireBarStartingAt = i + 1;
+                        body[i].selected = false;
+                        continue;
                     }
-                    removeEntireBarStartingAt = i;
-                } else if (type === C.Type.END_MARKER) {
-                    // Pass.
-                } else if (!body[i].selected) {
-                    removeEntireBarStartingAt = null;
+
+                    if (type === C.Type.DURATION && body[i].selected) {
+                        body[i].note.isRest = true;
+                    }
+
+                    if (type === C.Type.BARLINE) {
+                        if (removeEntireBarStartingAt !== null) {
+                            var delCount = i - removeEntireBarStartingAt;
+                            body.splice(removeEntireBarStartingAt, delCount);
+                            i -= delCount;
+                        }
+                        removeEntireBarStartingAt = i;
+                    } else if (type === C.Type.END_MARKER) {
+                        // Pass.
+                    } else if (!body[i].selected) {
+                        removeEntireBarStartingAt = null;
+                    }
+                    body[i].selected = false;
                 }
-                body[i].selected = false;
             }
+
+            // This isn't very efficient, obviously.
+            _selection = null;
+            Model.removeAnnotations(_staves);
         }
 
-        // This isn't very efficient, obviously.
-        Model.removeAnnotations(_staves);
-        _selection = null;
-        this.annotate(null, null, null, null, null, false);
+        this.annotate(null, null, null, null, null, false, doAction);
         this.markRendererDirty();
         this.emit(CHANGE_EVENT);
     }
@@ -1250,7 +1261,7 @@ export class SongEditorStore extends TSEE {
         _.delay(this._ping.bind(this), 128);
     }
 
-    broadcastPatch(diff: Array<string>, finalContext: Annotator.Context) {
+    broadcastPatch(diff: Array<string>, origBars: Array<string>, newBars: Array<string>) {
         diff = diff.filter(d => !!d);
         if (!diff.length) { return; }
 
@@ -1262,7 +1273,8 @@ export class SongEditorStore extends TSEE {
 
 
         var msg = permission + "PATCH\n";
-        msg += diff.join("\n") + "\n";
+        msg += Collab.barKeysDiff(origBars, newBars) + "\n";
+        msg += diff.join("") + "\n";
         if (SessionStore.Instance.apiRole === C.ApiRole.OFFLINE) {
             this._relayHistory += "Offline: " + msg;
         } else {

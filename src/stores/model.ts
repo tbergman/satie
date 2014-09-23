@@ -4,11 +4,6 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../../references/node.d.ts" />
-/// <reference path="../../references/lodash.d.ts" />
-/// <reference path="../../references/diff.d.ts" />
-/// <reference path="../../references/es6-promise.d.ts" />
-
 import assert = require("assert");
 
 import C = require("./contracts");

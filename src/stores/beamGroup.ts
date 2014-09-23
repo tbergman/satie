@@ -62,7 +62,7 @@ class BeamGroupModel extends Model {
         var mret = C.IterationStatus.RETRY_FROM_ENTRY;
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
-        this.tuplet = next && next.tuplet;
+        this.tuplet = next && next.tuplet || null;
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
         SongEditorStore.beamCountIs(ctx.beat);
 
@@ -172,7 +172,7 @@ class BeamGroupModel extends Model {
             beamCount: this.beamCount || this.beam.length,
             beams: this.beams,
             variableBeams: this.variableBeams,
-            tuplet: this.tuplet,
+            tuplet: this.tuplet || null,
             tupletsTemporary: this.tupletsTemporary
         });
     }
@@ -192,7 +192,7 @@ class BeamGroupModel extends Model {
      */
     variableBeams: Array<number>;
 
-    tuplet: any;
+    tuplet: any = null;
     tupletsTemporary: boolean;
 
     /**
