@@ -237,7 +237,7 @@ class Model {
         assert(false, "Not implemented for this type");
     }
 
-    get prioirty(): C.Type {
+    get priority(): C.Type {
         return this.type;
     }
 

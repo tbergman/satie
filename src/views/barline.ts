@@ -80,9 +80,10 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
      */
     getHash(spec: BarlineModel) {
         return hash(
-            spec.x +
-            spec.y +
-            spec.color);
+            (""+spec.barline) +
+            (""+spec.x) +
+            (""+spec.y) +
+            (""+spec.color));
     }
 
     /**

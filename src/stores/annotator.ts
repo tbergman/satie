@@ -76,7 +76,7 @@ export class Context implements C.MetreContext {
      * To restore an Annotator back to a state saved to by JSON.stringify(ctx.captureLine()), see _cpyline.
      */
     captureLine(): ILineSnapshot {
-        if (this.bar !== 1) {
+        if (this.line !== 0) {
             assert(this.prevClef);
         }
         return {
@@ -228,35 +228,51 @@ export class Context implements C.MetreContext {
 
     /**
      * Removes the current item.
+     * @mutator
      */
     eraseCurrent(): C.IterationStatus {
-        this.body.splice(this.idx, 1);
+        _.each(this._staves, stave => {
+            if (stave.body) {
+                stave.body.splice(this.idx, 1);
+            }
+        });
         return C.IterationStatus.RETRY_CURRENT;
     }
 
     /**
      * Removes an item that is after the current item. This is efficient.
+     * @mutator
      */
     eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
 
-        this.body.splice(idx, 1);
+        _.each(this._staves, stave => {
+            if (stave.body) {
+                stave.body.splice(idx, 1);
+            }
+        });
         return C.IterationStatus.SUCCESS;
     }
 
     /**
      * Removes an item that is before the current item. This is inefficient.
+     * @mutator
      */
     erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
 
-        this.body.splice(idx, 1);
+        _.each(this._staves, stave => {
+            if (stave.body) {
+                stave.body.splice(idx, 1);
+            }
+        });
         return C.IterationStatus.RETRY_FROM_ENTRY;
     }
 
     /**
      * Inserts an element somewhere after the current element. This is efficient.
-     * 
+     * @mutator
+     *
      * @param index: The absolute position to insert an element at.
      *     By default, one after current position.
      */
@@ -270,6 +286,7 @@ export class Context implements C.MetreContext {
 
     /**
      * Inserts an element somewhere before the current element. This is inefficient.
+     * @mutator
      * 
      * @param index The absolute position to insert an element at.
      *     By default, just before current position.
@@ -285,6 +302,10 @@ export class Context implements C.MetreContext {
         return exitCode;
     }
 
+    /**
+     * Simplified form of Array.splice for body.
+     * @mutator
+     */
     splice(start: number, count: number, replaceWith?: Array<Model>) {
         Array.prototype.splice.apply(this.body, [start, count].concat(<any>replaceWith));
     }
@@ -626,6 +647,8 @@ export interface ILayoutOpts {
 /**
  * A subset of a Context that is used as a snapshot so that modifying a line
  * does not involve a trace from the start of the document.
+ *
+ * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
 export interface ILineSnapshot {
     accidentals: C.IAccidentals;
@@ -721,42 +744,74 @@ class PrivIterator {
     }
 
     annotate(verbose: boolean): C.IterationStatus {
-        var allComponentsAreDone = true;
+        // Statuses with higher numbers go back further. Return the highest one.
+        var maxStatus: C.IterationStatus = C.IterationStatus.EXIT_EARLY;
+
+        var origSnapshot: ILineSnapshot = JSON.parse(JSON.stringify(this._parent.captureLine()));
+        var componentSnapshots: Array<ILineSnapshot> = [];
 
         for (var i = 0; i < this._components.length; ++i) {
+            this._parent.y = origSnapshot.y + STAVE_SPACING * i; 
+
             ///
-            var result = this._components[i].annotate(this._parent, this._canExitAtNewline);
+            var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
             ///
 
             if (verbose) {
-                console.log(this._components[i].curr, C.IterationStatus[result]);
+                console.log(this._components[i].curr, C.IterationStatus[componentStatus]);
             }
 
-            if (result === C.IterationStatus.EXIT_EARLY) {
-                // EXIT_EARLY implies success.
-                // Note that here we do not set allComponentsAreDone to false.
-                result = C.IterationStatus.SUCCESS;
-            } else {
-                allComponentsAreDone = false;
-            }
-
-            if (result === C.IterationStatus.LINE_CREATED) {
+            if (componentStatus === C.IterationStatus.LINE_CREATED) {
                 this._clearCursor();
                 this._markLineDirty();
-            } else if (result === C.IterationStatus.RETRY_PREVIOUS_LINE) {
+            } else if (componentStatus === C.IterationStatus.RETRY_PREVIOUS_LINE) {
                 this._markLineDirty();
             }
 
-            if (result === C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS) {
+            if (componentStatus === C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS) {
                 this._canExitAtNewline = false;
             }
 
-            if (result !== C.IterationStatus.SUCCESS) {
-                return result;
-            }
+            maxStatus = Math.max(maxStatus, componentStatus);
+            var isPlaceholder = this._components[i].curr.type === C.Type.PLACEHOLDER;
+            componentSnapshots.push(isPlaceholder ? null : this._parent.captureLine());
+            _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
 
-        return allComponentsAreDone ? C.IterationStatus.EXIT_EARLY : C.IterationStatus.SUCCESS;
+        // Kill unneeded placeholders
+        if (_.every(this._components, c => c.curr.type === C.Type.PLACEHOLDER)) {
+            _.every(this._components, c => c.removePlaceholder());
+            return C.IterationStatus.RETRY_CURRENT;
+        }
+
+        this._rectify(this._parent, origSnapshot, _.filter(componentSnapshots, c => !!c));
+        return maxStatus;
+    }
+    
+    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>) {
+        ctx.accidentals = {};
+        _.each(componentSnapshots, copyAccidentals);
+
+        ctx.bar = componentSnapshots[0].bar;
+        ctx.barKeys = componentSnapshots[0].barKeys; // TODO: make sure they're all the same.
+        ctx.barlineX = componentSnapshots[0].barlineX;
+        ctx.beat = _.min(componentSnapshots, "beat").beat;
+        ctx.keySignature = componentSnapshots[0].keySignature;
+        ctx.line = componentSnapshots[0].line;
+        ctx.pageLines = componentSnapshots[0].pageLines;
+        ctx.pageStarts = componentSnapshots[0].pageStarts;
+        ctx.prevClef = componentSnapshots[0].prevClef;
+        ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
+        ctx.x = _.max(componentSnapshots, "x").x;
+        ctx.y = componentSnapshots[0].y;
+
+        function copyAccidentals(snapshot: ILineSnapshot) {
+            for (var key in snapshot.accidentals) {
+                if (snapshot.accidentals.hasOwnProperty(key)) {
+                    ctx.accidentals[key] = snapshot.accidentals[key];
+                }
+            }
+        }
     }
 
     next(status: C.IterationStatus) {
@@ -799,6 +854,7 @@ class PrivIterator {
                 break;
             case C.IterationStatus.RETRY_CURRENT:
             case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
+                this._ensureNotAtEnd();
                 break;
             default:
                 assert(false, "Invalid status");
@@ -853,7 +909,7 @@ class PrivIterator {
 
     private _rollbackLine(i: number) {
         this._parent.line = i;
-        _cpyline(this._parent, this._parent.lines[this._parent.line]);
+        _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.START_OF_LINE);
     }
 
     private _increment() {
@@ -863,7 +919,7 @@ class PrivIterator {
         for (var i = 0; i < this._components.length; ++i) {
             var pri = this._components[i].nextPriority;
             var loc = this._components[i].nextLocation;
-            if (nextLoc.ge(loc) && nextPriority > pri) {
+            if (pri !== C.MAX_NUM && nextLoc.ge(loc) && nextPriority > pri) {
                 nextLoc = new C.Location(loc);
                 nextPriority = pri;
             }
@@ -877,6 +933,20 @@ class PrivIterator {
         // Q: Why don't we do this?
         // A: Durations and barlines themselves will set the location, annotating things as
         //    required.
+    }
+
+    private _ensureNotAtEnd() {
+        var pri = C.Type.UNKNOWN;
+        _.every(this._components, c => {
+            if (c.curr) {
+                pri = Math.min(pri, c.curr.type);
+            }
+        });
+        _.every(this._components, c => {
+            if (!c.curr) {
+                c.ensurePriorityIs(pri);
+            }
+        });
     }
 
     private _clearCursor() {
@@ -942,6 +1012,7 @@ class PrivIteratorComponent {
         ctx.currStave = this._stave;
         ctx.currStaveIdx = this._sidx;
         ctx.idx = this._idx;
+        ctx.clef = ctx.clef ? this._clef : "";
 
         var doCustomAction = this._shouldDoCustomAction(ctx);
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
@@ -958,6 +1029,8 @@ class PrivIteratorComponent {
             this._cursor.annotatedLine = ctx.line;
 		    this._cursor.annotatedPage = ctx.pageStarts.length - 1;
 		}
+
+        this._clef = ctx.clef;
 
         if (canExitAtNewline && isNewline && isClean) {
             return C.IterationStatus.EXIT_EARLY;
@@ -999,11 +1072,32 @@ class PrivIteratorComponent {
     }
 
     trySeek(loc: C.Location, priority: number) {
-        if (!loc.eq(this.nextLocation) || this.nextPriority !== priority) {
+        this._removeExtraneousPlaceholders(priority);
+        this.ensurePriorityIs(priority);
+        ++this._idx;
+        assert(this.nextPriority === C.MAX_NUM || this.curr);
+    }
+
+    ensurePriorityIs(priority: number) {
+        if (this.nextPriority !== priority) {
             var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }));
+            this._body.splice(this._idx + 1, 0, new PlaceholderModel({ _priority: C.Type[priority] }));
         }
     }
+
+    private _removeExtraneousPlaceholders(priority: number) {
+        var next = this._body[this._idx + 1];
+        if (next && next.type === C.Type.PLACEHOLDER) {
+            console.log(C.Type[this.nextActualType], C.Type[priority]);
+            if (this.nextActualType === priority) {
+                while (next.type === C.Type.PLACEHOLDER) {
+                    this.removePlaceholder(this._idx + 1);
+                    next = this._body[this._idx + 1];
+                }
+            }
+        }
+    }
+
 
     /**
      * Returns the position of the last item with type 'type'.
@@ -1030,7 +1124,15 @@ class PrivIteratorComponent {
 
     get nextPriority(): number {
         var next = this._next;
-        return next ? next.type : C.MAX_NUM;
+        return next && next.type !== C.Type.PLACEHOLDER ? next.priority : C.MAX_NUM;
+    }
+
+    get nextActualType(): number {
+        var i = this._idx + 1; 
+        while (i <= this._body.length && this._body[i].type === C.Type.PLACEHOLDER) {
+            ++i;
+        }
+        return this._body[i] ? this._body[i].type : null;
     }
 
     get atEnd(): boolean {
@@ -1039,7 +1141,12 @@ class PrivIteratorComponent {
 
     get curr(): Model {
         return this._body[this._idx];
+    }
 
+    removePlaceholder(i?: number) {
+        var x = isNaN(i) ? this._idx : i;
+        assert(this._body[x].type === C.Type.PLACEHOLDER);
+        this._body.splice(x, 1);
     }
 
     static isAtEndFn = function (component: PrivIteratorComponent) {
@@ -1087,11 +1194,12 @@ class PrivIteratorComponent {
     }
 
     private _body: C.IBody;
+    private _clef: string;
+    private _cursor: C.IVisualCursor;
     private _idx: number;
     private _location: C.Location;
     private _mutation: ICustomAction;
     private _sidx: number;
-    private _cursor: C.IVisualCursor;
     private _stave: C.IStave;
 }
 
@@ -1099,11 +1207,13 @@ class PrivIteratorComponent {
 
 
 
-function _cpyline(ctx: Context, line: ILineSnapshot) {
+function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     "use strict";
 
-    ctx.clef = null;
-    ctx.defaultCount = 4;
+    if (mode === NewlineMode.START_OF_LINE) {
+        ctx.clef = null;
+        ctx.defaultCount = 4;
+    }
 
     _.each(line, (v, attrib) => {
         if ((<any>line)[attrib] === null) {
@@ -1126,9 +1236,14 @@ function _cpyline(ctx: Context, line: ILineSnapshot) {
             default: assert(false, "Not reached");
         }
     });
-    if (ctx.bar !== 1) {
+    if (ctx.line !== 0) {
         assert(ctx.prevClef);
     }
+}
+
+enum NewlineMode {
+    START_OF_LINE,
+    MIDDLE_OF_LINE
 }
 
 function _cpylayout(ctx: Context, layout: ILayoutOpts) {
@@ -1157,7 +1272,7 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             case "lines":
                 ctx.lines = layout.lines;
                 ctx.line = layout.lines.length - 1;
-                _cpyline(ctx, ctx.lines[ctx.line]);
+                _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.START_OF_LINE);
                 break;
             case "lineSpacing": ctx.lineSpacing = layout.lineSpacing; break;
             case "maxX": ctx.maxX = layout.maxX; break;
@@ -1195,3 +1310,5 @@ var MIN_LOCATION = new C.Location({
     bar: -1,
     beat: -1
 });
+
+var STAVE_SPACING = 2.24;

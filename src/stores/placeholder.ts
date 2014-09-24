@@ -7,7 +7,9 @@
 import Model = require("./model");
 
 import Annotator = require("./annotator");
+import Barline = require("./barline");
 import C = require("./contracts");
+import EndMarker = require("./endMarker");
 
 import _ = require("lodash");
 
@@ -21,6 +23,18 @@ class PlaceholderModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        this.ctxData = new C.MetreContext(ctx);
+        switch(this._priority) {
+            case C.Type.END_MARKER:
+                debugger;
+                ctx.body.splice(ctx.idx, 1, new EndMarker({}));
+                return C.IterationStatus.RETRY_CURRENT;
+                break;
+            case C.Type.BARLINE:
+                ctx.body.splice(ctx.idx, 1, new Barline({ barline: C.Barline.Standard }));
+                return C.IterationStatus.RETRY_CURRENT;
+                break;
+        }
         return C.IterationStatus.SUCCESS;
     }
 
@@ -51,6 +65,10 @@ class PlaceholderModel extends Model {
 
     set priority(p: C.Type) {
         this._priority = p;
+    }
+    
+    get type(): C.Type {
+        return C.Type.PLACEHOLDER;
     }
 }
 

@@ -227,6 +227,7 @@ class NewlineModel extends Model {
      * comfortably.
      */
     static semiJustify = (ctx: Annotator.Context) => {
+        return;
         var fullJustify = false;
         var i: number;
 
