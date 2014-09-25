@@ -673,7 +673,7 @@ export interface ILayoutOpts {
 /**
  * A subset of a Context that is used as a snapshot so that modifying a line
  * does not involve a trace from the start of the document.
- *
+ * 
  * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
 export interface ILineSnapshot {
@@ -767,7 +767,9 @@ class PrivIterator {
                     /* stave index */ i,
                     /* visible stave index*/ visibleSidx,
                     /* custom action */ isMutable ? mutation : null,
-                    /* visual cursor */ cursor));
+                    /* 
+                     * 
+                     visual cursor */ cursor));
             }
         }
     }
@@ -785,7 +787,7 @@ class PrivIterator {
                 // All staves are now at the end.
                 return C.IterationStatus.RETRY_CURRENT; // Don't go to next!
             }
-            this._parent.y = origSnapshot.y + STAVE_SPACING * i;
+            this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
 
             ///
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
@@ -1350,5 +1352,3 @@ var MIN_LOCATION = new C.Location({
     bar: -1,
     beat: -1
 });
-
-var STAVE_SPACING = 2.24;

@@ -194,10 +194,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         Line({
                             x1: this.state.visualCursor.annotatedObj.x - 0.2,
                             x2: this.state.visualCursor.annotatedObj.x - 0.2,
-                            y1: this.state.visualCursor.annotatedObj.y - 2.3 * this.state.visualCursor.annotatedStave +
-                                (isPianoStaff ? 1.15 : 0) - vcHeight,
-                            y2: this.state.visualCursor.annotatedObj.y - 2.3 * this.state.visualCursor.annotatedStave +
-                                (isPianoStaff ? 1.15 : 0) + vcHeight,
+                            y1: this.state.visualCursor.annotatedObj.y - renderUtil.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? 1.15 : 0) - vcHeight,
+                            y2: this.state.visualCursor.annotatedObj.y - renderUtil.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? 1.15 : 0) + vcHeight,
                             stroke: "#008CFF",
                             strokeWidth: 0.05})
                     )
@@ -270,12 +270,12 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var foundObj: Model = null;
         var foundIdx: number;
         var ctxData: { beat: number; bar: number };
-        var info = this.getStaveInfoForY(mouse.y, mouse.page);
+        var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var ctx = this.getCtx();
 
-            dynY = ctx.lines[info.musicLine].y;
-            dynLine = Math.round((ctx.lines[info.musicLine].y - mouse.y)/0.125)/2 + 3;
+            dynY = ctx.lines[info.musicLine].y + renderUtil.staveSeperation * info.visualIdx;
+            dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
             var body = this.props.staves[info.staveIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
                     j < body.length && body[info.musicLine].type !== C.Type.NEWPAGE; ++j) {
@@ -362,19 +362,22 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    getStaveInfoForY(my: number, page: number): { musicLine: number; staveIdx: number; } {
+    private _getStaveInfoForY(my: number, page: number): { musicLine: number; staveIdx: number; visualIdx: number } {
         var ctx = this.getCtx();
+        var visualIdx = -1;
         for (var h = 0; h < this.props.staves.length; ++h) {
-            // XXX: BROKEN
             var body = this.props.staves[h].body;
             if (!body) {
                 continue;
             }
+            ++visualIdx;
+
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y - my) < 1.01) {
+                if (Math.abs(ctx.lines[i].y + visualIdx*renderUtil.staveSeperation - my) < 1.01) {
                     return {
                         musicLine: i,
-                        staveIdx: h
+                        staveIdx: h,
+                        visualIdx: visualIdx
                     };
                 }
             }
