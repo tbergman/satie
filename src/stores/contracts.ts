@@ -589,6 +589,9 @@ export interface IPitch {
     acc: number;
     accTemporary?: number;
     isRest?: boolean; // read only
+    /**
+     * Note: In the case of a chord, the average line.
+     */
     line?: number;
     octave: number;
     pitch: string;

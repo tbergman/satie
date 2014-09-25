@@ -10,22 +10,29 @@ import Annotator = require("./annotator");
 import BarlineModel = require("./barline");
 import BeginModel = require("./begin");
 import C = require("./contracts");
+import DurationModel = require("./duration");
 import EndMarkerModel = require("./endMarker");
+import Metre = require("./metre");
 import TimeSignatureModel = require("./timeSignature");
 
 import _ = require("lodash");
 import assert = require("assert");
 
 /**
- * Models in different staves with the same position and type have the same index.
- * PlaceholderModel facilitates this by filling a slot in the body array when one stave
- * does not have an analogue. Sorry if I didn't explain that well.
+ * Models with the same index in each staff have the same starting location and
+ * priority (which is, except for placeholders, equal to type). Whenever a model
+ * of a certain type and location exists in one stave but not another, a PlaceholderModel
+ * is added to the stave without such a type. The priority of a PlaceholderModel
+ * is equal to the type in the other stave.
  */
 class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        if (ctx.beat < ctx.__globalBeat__) {
+            return this._eatBeats(ctx);
+        }
         switch(this.priority) {
             case C.Type.BARLINE:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
@@ -34,15 +41,16 @@ class PlaceholderModel extends Model {
                 ctx.body.splice(ctx.idx, 1, new BeginModel({}));
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.DURATION:
-                if (ctx.next() && ctx.next().priority === C.Type.DURATION) {
-                    for (var i = ctx.idx; i < ctx.body.length && ctx.body[i].priority === C.Type.DURATION; ++i) {
-                        // XXX: Check location
-                        if (ctx.body[i].type === C.Type.DURATION) {
-                            ctx.body[ctx.idx] = ctx.body[i];
-                            ctx.body[i] = this;
-                            return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
-                        }
-                    }
+                if (ctx.beat === ctx.__globalBeat__) {
+                    // for (var i = ctx.idx; i < ctx.body.length && ctx.body[i].priority === C.Type.DURATION; ++i) {
+                    //     // XXX: Check location
+                    //     if (ctx.body[i].type === C.Type.DURATION) {
+                    //         ctx.body[ctx.idx] = ctx.body[i];
+                    //         ctx.body[i] = this;
+                    //         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+                    //     }
+                    // }
+                    // Should be resolved later by EndMarkerModel...
                 }
                 break;
             case C.Type.TIME_SIGNATURE:
@@ -54,7 +62,7 @@ class PlaceholderModel extends Model {
                 ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
                 return C.IterationStatus.RETRY_CURRENT;
         }
-        this.ctxData = new C.MetreContext(ctx);
+        this.recordMetreDataImpl(ctx); // Optimization. Sometimes recordMetreDataImpl isn't run.
         return C.IterationStatus.SUCCESS;
     }
 
@@ -89,6 +97,24 @@ class PlaceholderModel extends Model {
 
     get type(): C.Type {
         return C.Type.PLACEHOLDER;
+    }
+
+    get placeholder() {
+        return true;
+    }
+
+    set placeholder(b: boolean) {
+        assert(false, "A PlaceholderModel cannot help but be a placeholder, however much it tries...");
+    }
+
+    private _eatBeats(ctx: Annotator.Context): C.IterationStatus {
+        var rest: {} = { chord: [{ pitch: "r", octave: null, acc: null }] };
+        var missingBeats = Metre.subtract(ctx.__globalBeat__, ctx.beat, ctx, ctx.beat)
+            .map(spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest), C.Source.ANNOTATOR));
+        for (var i = missingBeats.length - 1; i >= 0; --i) {
+            ctx.insertPast(missingBeats[i]);
+        }
+        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     }
 }
 

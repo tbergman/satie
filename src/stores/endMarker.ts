@@ -35,7 +35,7 @@ class EndMarkerModel extends Model {
         if (next && next.type === C.Type.END_MARKER || prev && prev.type === C.Type.END_MARKER) {
             for (var i = ctx.idx; i >= 0; --i) {
                 if (ctx.body[i].type === C.Type.NEWLINE) {
-                    ctx.body.splice(i);
+                    ctx.splice(i, 1);
                     ctx.markEntireSongDirty();
                     var SongEditor = require("./songEditor"); // Recursive dependency.
                     SongEditor.Instance.markRendererDirty();
@@ -80,8 +80,8 @@ class EndMarkerModel extends Model {
                     beat.tie = false;
                     return new DurationModel(beat, C.Source.ANNOTATOR);
                 });
-            Array.prototype.splice.apply(ctx.body,
-                [this.idx, 0].concat(toAdd));
+
+            ctx.splice(this.idx, 0, toAdd);
 
             return C.IterationStatus.RETRY_LINE; // we really need a RETRY_BAR...
         }

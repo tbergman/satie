@@ -231,11 +231,13 @@ export class Context implements C.MetreContext {
      * @mutator
      */
     eraseCurrent(): C.IterationStatus {
-        _.each(this._staves, stave => {
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
             if (stave.body) {
                 stave.body.splice(this.idx, 1);
             }
-        });
+        }
+        assert(this.body[0].priority !== C.Type.DURATION);
         return C.IterationStatus.RETRY_CURRENT;
     }
 
@@ -246,11 +248,13 @@ export class Context implements C.MetreContext {
     eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
 
-        _.each(this._staves, stave => {
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
             if (stave.body) {
                 stave.body.splice(idx, 1);
             }
-        });
+        }
+        assert(this.body[0].priority !== C.Type.DURATION);
         return C.IterationStatus.SUCCESS;
     }
 
@@ -261,11 +265,13 @@ export class Context implements C.MetreContext {
     erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
 
-        _.each(this._staves, stave => {
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
             if (stave.body) {
                 stave.body.splice(idx, 1);
             }
-        });
+        }
+        assert(this.body[0].priority !== C.Type.DURATION);
         return C.IterationStatus.RETRY_FROM_ENTRY;
     }
 
@@ -280,7 +286,8 @@ export class Context implements C.MetreContext {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
 
-        _.each(this._staves, stave => {
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
             if (stave.body) {
                 if (this.body === stave.body) {
                     this.body.splice(index, 0, obj);
@@ -289,7 +296,8 @@ export class Context implements C.MetreContext {
                     stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
                 }
             }
-        });
+        }
+        assert(this.body[0].priority !== C.Type.DURATION);
         return C.IterationStatus.SUCCESS;
     }
 
@@ -307,7 +315,8 @@ export class Context implements C.MetreContext {
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
 
-        _.each(this._staves, stave => {
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
             if (stave.body) {
                 if (this.body === stave.body) {
                     this.body.splice(index, 0, obj);
@@ -316,8 +325,34 @@ export class Context implements C.MetreContext {
                     stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
                 }
             }
-        });
+        }
+        assert(this.body[0].priority !== C.Type.DURATION);
         return exitCode;
+    }
+
+    /**
+     * Simplified form of Array.splice for body.
+     * The sledgehammer of the mutator tools. Use sparingly.
+     * @mutator
+     */
+    splice(start: number, count: number, replaceWith?: Array<Model>) {
+        assert(!isNaN(start));
+        assert(!isNaN(count));
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
+            if (stave.body) {
+                if (this.body === stave.body) {
+                    Array.prototype.splice.apply(stave.body, [start, count].concat(<any>replaceWith));
+                } else {
+                    var PlaceholderModel = require("./placeholder");
+                    var placeholders: Array<Model> = [];
+                    for (var j = 0; j < replaceWith.length; ++j) {
+                        placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }));
+                    }
+                    Array.prototype.splice.apply(stave.body, [start, count].concat(<any>placeholders));
+                }
+            }
+        }
     }
 
     findVertical(where?: (obj: Model) => boolean) {
@@ -326,14 +361,6 @@ export class Context implements C.MetreContext {
             .map(s => s.body[this.idx])
             .filter(s => !!where(s))
             .value();
-    }
-
-    /**
-     * Simplified form of Array.splice for body.
-     * @mutator
-     */
-    splice(start: number, count: number, replaceWith?: Array<Model>) {
-        Array.prototype.splice.apply(this.body, [start, count].concat(<any>replaceWith));
     }
 
     _barAfter(index: number): Model {
@@ -395,6 +422,11 @@ export class Context implements C.MetreContext {
     set beat(b: number) {
         this.loc.beat = b;
     }
+
+    /**
+     * The lowest beat of all components.
+     */
+    __globalBeat__: number;
 
     /**
      * @deprecated DO NOT USE
@@ -767,9 +799,7 @@ class PrivIterator {
                     /* stave index */ i,
                     /* visible stave index*/ visibleSidx,
                     /* custom action */ isMutable ? mutation : null,
-                    /* 
-                     * 
-                     visual cursor */ cursor));
+                    /* visual cursor */ cursor));
             }
         }
     }
@@ -780,6 +810,12 @@ class PrivIterator {
 
         var origSnapshot: ILineSnapshot = JSON.parse(JSON.stringify(this._parent.captureLine()));
         var componentSnapshots: Array<ILineSnapshot> = [];
+        var filtered = false;
+
+        var n = this._components[0]._idx;
+        for (var i = 0; i < this._components.length; ++i) {
+            assert(n === this._components[i]._idx, "Invalid offset");
+        }
 
         for (var i = 0; i < this._components.length; ++i) {
             this._ensureAllOrNoneAtEnd();
@@ -794,7 +830,7 @@ class PrivIterator {
             ///
 
             if (verbose) {
-                console.log(this._components[i].curr, C.IterationStatus[componentStatus]);
+                console.log(i, this._components[i]._idx, this._components[i].curr, C.IterationStatus[componentStatus]);
             }
 
             switch(componentStatus) {
@@ -812,7 +848,11 @@ class PrivIterator {
 
             maxStatus = Math.max(maxStatus, componentStatus);
             var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.PLACEHOLDER;
-            componentSnapshots.push(isPlaceholder ? null : this._parent.captureLine());
+            if (!isPlaceholder) {
+                componentSnapshots.push(this._parent.captureLine());
+            } else {
+                filtered = true;
+            }
             _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
 
@@ -820,7 +860,9 @@ class PrivIterator {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
-        this._rectify(this._parent, origSnapshot, _.filter(componentSnapshots, c => !!c));
+        if (maxStatus <= C.IterationStatus.SUCCESS) {
+            this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
+        }
         return maxStatus;
     }
 
@@ -840,9 +882,9 @@ class PrivIterator {
         return true;
     }
 
-    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>) {
+    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
         ctx.bar = componentSnapshots[0].bar;
-        ctx.barKeys = componentSnapshots[0].barKeys; // TODO: make sure they're all the same.
+        ctx.barKeys = componentSnapshots[0].barKeys || []; // TODO: make sure they're all the same.
         ctx.barlineX = componentSnapshots[0].barlineX;
         ctx.keySignature = componentSnapshots[0].keySignature;
         ctx.line = componentSnapshots[0].line;
@@ -853,10 +895,18 @@ class PrivIterator {
         for (var i = 1; i < componentSnapshots.length; ++i) {
             ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
         }
-        ctx.y = componentSnapshots[0].y;
+        if (!filtered) {
+            ctx.y = componentSnapshots[0].y;
+        }
 
         ctx.accidentals = componentSnapshots[0].accidentals; // XXX: stave-specific
         ctx.beat = _.min(componentSnapshots, "beat").beat; // XXX: add additional stave-specific version
+        for (var i = 0; i < this._components.length; ++i) {
+            if (this._components[i].nextLocation.bar === ctx.bar &&
+                    this._components[i].nextLocation.beat < ctx.beat) {
+                ctx.beat = this._components[i].nextLocation.beat;
+            }
+        }
         ctx.prevClef = componentSnapshots[0].prevClef; // XXX: stave-specific
     }
 
@@ -1063,6 +1113,10 @@ class PrivIteratorComponent {
     }
 
     annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
+        if (this._beat !== null) {
+            ctx.__globalBeat__ = ctx.beat;
+            ctx.beat = this._beat;
+        }
         ctx.body = this._body;
         ctx.currStave = this._stave;
         ctx.currStaveIdx = this._sidx;
@@ -1071,10 +1125,14 @@ class PrivIteratorComponent {
 
         var doCustomAction = this._shouldDoCustomAction(ctx);
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
+        if (this._aheadOfSchedule(ctx)) {
+            return this._addPlaceholder(ctx);
+        }
 
-        /// {
+        ///
         var status = doCustomAction ? this._doCustomAction(ctx) : this._body[this._idx].annotate(ctx);
-        /// }
+        this._nextBeat = ctx.beat;
+        ///
 
         var isClean = status === C.IterationStatus.SUCCESS && !this._mutation && this._cursor.annotatedObj;
         var isNewline = this.curr && this.curr.type === C.Type.NEWLINE;
@@ -1104,6 +1162,7 @@ class PrivIteratorComponent {
         } while ((from.bar !== 1 || from.beat !== 0) &&
             (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
             this.curr.type <= C.Type.BEGIN || this.curr.type === C.Type.BARLINE)));
+        this._updateSubctx();
     }
 
     rewind(type?: C.Type) {
@@ -1114,6 +1173,7 @@ class PrivIteratorComponent {
                 --this._idx;
             }
         }
+        this._updateSubctx();
     }
 
     /**
@@ -1124,6 +1184,17 @@ class PrivIteratorComponent {
         while (this._idx >= 0 && (loc.lt(this._body[this._idx].ctxData) ||
                 loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].type > priority)) {
             --this._idx;
+        }
+        this._updateSubctx();
+    }
+
+    _updateSubctx() {
+        if (this.curr && this.curr.ctxData) {
+            this._beat = this.curr.ctxData.beat;
+            this._nextBeat = null;
+        } else {
+            this._beat = null;
+            this._nextBeat = null;
         }
     }
 
@@ -1141,25 +1212,12 @@ class PrivIteratorComponent {
         }
     }
 
-    private _removeExtraneousPlaceholders(priority: number) {
-        var next = this._body[this._idx + 1];
-        if (next && next.type === C.Type.PLACEHOLDER) {
-            if (this.nextActualType === priority) {
-                while (next.type === C.Type.PLACEHOLDER) {
-                    this.removePlaceholder(this._idx + 1);
-                    next = this._body[this._idx + 1];
-                }
-            }
-        }
-    }
-
-
     /**
      * Returns the position of the last item with type 'type'.
      */
-    lastOf(type: C.Type): C.Location {
+    lastOf(priority: C.Type): C.Location {
         var i = this._idx;
-        while (i > 0 && this._body[i].type !== type) {
+        while (i > 0 && this._body[i].priority !== priority) {
             --i;
         }
         return new C.Location(this._body[i].ctxData);
@@ -1204,7 +1262,31 @@ class PrivIteratorComponent {
         this._body.splice(x, 1);
     }
 
+    private _removeExtraneousPlaceholders(priority: number) {
+        var next = this._body[this._idx + 1];
+        if (next && next.type === C.Type.PLACEHOLDER) {
+            if (this.nextActualType === priority) {
+                while (next.type === C.Type.PLACEHOLDER) {
+                    this.removePlaceholder(this._idx + 1);
+                    next = this._body[this._idx + 1];
+                }
+            }
+        }
+    }
+
+    private _aheadOfSchedule(ctx: Context): boolean {
+        return ctx.curr.type !== C.Type.PLACEHOLDER && ctx.beat > ctx.__globalBeat__;
+    }
+
+    private _addPlaceholder(ctx: Context) {
+        var PlaceholderModel = require("./placeholder");
+        this._body.splice(ctx.idx, 0, new PlaceholderModel({ _priority: C.Type[ctx.curr.priority] }));
+        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+    }
+
+
     private get _next() {
+        this._beat = this._nextBeat;
         return this._body[this._idx + 1];
     }
 
@@ -1245,10 +1327,12 @@ class PrivIteratorComponent {
         return exitCode;
     }
 
+    private _beat: number = null;
+    private _nextBeat: number = null;
     private _body: C.IBody;
     private _clef: string;
     private _cursor: C.IVisualCursor;
-    private _idx: number;
+    _idx: number;
     private _location: C.Location;
     private _mutation: ICustomAction;
     private _sidx: number;

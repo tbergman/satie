@@ -71,7 +71,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                         var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
                         return ret;
                     } else {
-                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t => new DurationModel(<any>t, C.Source.ANNOTATOR));
+                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
+                            new DurationModel(<any>t, C.Source.ANNOTATOR));
                         var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx)
                             .map(t => new DurationModel(<any>t, C.Source.ANNOTATOR));
                         for (i = 0; i < replaceWith.length; ++i) {
@@ -87,8 +88,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                             }
                         }
                         BarlineModel.createBarline(ctx, C.Barline.Standard);
-                        Array.prototype.splice.apply(ctx.body, [ctx.idx, 0].concat(<any[]>replaceWith));
-                        Array.prototype.splice.apply(ctx.body, [ctx.idx + 1 + replaceWith.length, 1].concat(<any[]>addAfterBar));
+                        ctx.splice(ctx.idx, 0, replaceWith);
+                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar);
                         return C.IterationStatus.RETRY_LINE;
                     }
                 }
