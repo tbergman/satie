@@ -185,8 +185,6 @@ class ClefModel extends Model {
     temporary: boolean;
 }
 
-Model.constructorsByType[C.Type[C.Type.CLEF]] = (spec: any) => new ClefModel(spec);
-
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()

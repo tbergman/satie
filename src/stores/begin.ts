@@ -81,8 +81,6 @@ class BeginModel extends Model {
     width: number;
 }
 
-Model.constructorsByType[C.Type[C.Type.BEGIN]] = (spec: any) => new BeginModel(spec);
-
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()

@@ -30,17 +30,18 @@ import _ = require("lodash");
 class Model {
     annotate(ctx: Annotator.Context): C.IterationStatus {
         if (!this.inBeam) {
+            // Beamed notes are placed by the BeamGroupModel
             this.x = ctx.x;
             this.y = ctx.y;
+
+		if (isNaN(this.x)) {
+			debugger;
+		}
         }
         this.idx = ctx.idx;
 
         var ret: C.IterationStatus = this.annotateImpl(ctx);
         assert(ret !== undefined);
-        if (ret !== C.IterationStatus.SUCCESS) {
-            return ret;
-        }
-
         return ret;
     }
 

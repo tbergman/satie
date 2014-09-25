@@ -193,7 +193,9 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     constructor(spec: C.IPitchDuration, source: C.Source) {
         super(spec);
-        this.source = source;
+        if (!isNaN(source)) {
+            this.source = source;
+        }
         this.tie = this.tie;
     }
 
@@ -1275,9 +1277,6 @@ function sanitizePitch(pitch: C.IPitch): C.IPitch {
         pitch: pitch.pitch
     };
 }
-
-// The source will be replaced
-Model.constructorsByType[C.Type[C.Type.DURATION]] = (spec: any) => new DurationModel(spec, C.Source.USER);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

@@ -262,8 +262,6 @@ class BarlineModel extends Model {
     yOffset: number;
 }
 
-Model.constructorsByType[C.Type[C.Type.BARLINE]] = (spec: any) => new BarlineModel(spec);
-
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()

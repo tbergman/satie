@@ -103,8 +103,6 @@ class SlurGroupModel extends Model {
     m_y: number;
 }
 
-Model.constructorsByType[C.Type[C.Type.SLUR]] = (spec: any) => new SlurGroupModel(spec);
-
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()

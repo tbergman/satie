@@ -280,7 +280,16 @@ export class Context implements C.MetreContext {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
 
-        this.body.splice(index, 0, obj);
+        _.each(this._staves, stave => {
+            if (stave.body) {
+                if (this.body === stave.body) {
+                    this.body.splice(index, 0, obj);
+                } else {
+                    var PlaceholderModel = require("./placeholder");
+                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
+                }
+            }
+        });
         return C.IterationStatus.SUCCESS;
     }
 
@@ -298,8 +307,25 @@ export class Context implements C.MetreContext {
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
 
-        this.body.splice(index, 0, obj);
+        _.each(this._staves, stave => {
+            if (stave.body) {
+                if (this.body === stave.body) {
+                    this.body.splice(index, 0, obj);
+                } else {
+                    var PlaceholderModel = require("./placeholder");
+                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
+                }
+            }
+        });
         return exitCode;
+    }
+
+    findVertical(where?: (obj: Model) => boolean) {
+        return _.chain(this._staves)
+            .filter(s => !!s.body)
+            .map(s => s.body[this.idx])
+            .filter(s => !!where(s))
+            .value();
     }
 
     /**
@@ -730,13 +756,16 @@ class PrivIterator {
         this._from = from;
         this._parent.loc = JSON.parse(JSON.stringify(from));
         this._canExitAtNewline = !!mutation && !!mutation.toolFn;
+        var visibleSidx = -1;
         for (var i = 0; i < staves.length; ++i) {
             if (staves[i].body) {
+                ++visibleSidx;
                 var isMutable = mutation && mutation.pointerData && mutation.pointerData.staveIdx === i;
                 this._components.push(new PrivIteratorComponent(
                     /* starting location*/ from,
                     /* stave */ staves[i],
                     /* stave index */ i,
+                    /* visible stave index*/ visibleSidx,
                     /* custom action */ isMutable ? mutation : null,
                     /* visual cursor */ cursor));
             }
@@ -751,7 +780,12 @@ class PrivIterator {
         var componentSnapshots: Array<ILineSnapshot> = [];
 
         for (var i = 0; i < this._components.length; ++i) {
-            this._parent.y = origSnapshot.y + STAVE_SPACING * i; 
+            this._ensureAllOrNoneAtEnd();
+            if (this.atEnd) {
+                // All staves are now at the end.
+                return C.IterationStatus.RETRY_CURRENT; // Don't go to next!
+            }
+            this._parent.y = origSnapshot.y + STAVE_SPACING * i;
 
             ///
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
@@ -773,7 +807,7 @@ class PrivIterator {
             }
 
             maxStatus = Math.max(maxStatus, componentStatus);
-            var isPlaceholder = this._components[i].curr.type === C.Type.PLACEHOLDER;
+            var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.PLACEHOLDER;
             componentSnapshots.push(isPlaceholder ? null : this._parent.captureLine());
             _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
@@ -787,7 +821,7 @@ class PrivIterator {
         this._rectify(this._parent, origSnapshot, _.filter(componentSnapshots, c => !!c));
         return maxStatus;
     }
-    
+
     private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>) {
         ctx.accidentals = {};
         _.each(componentSnapshots, copyAccidentals);
@@ -802,7 +836,7 @@ class PrivIterator {
         ctx.pageStarts = componentSnapshots[0].pageStarts;
         ctx.prevClef = componentSnapshots[0].prevClef;
         ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
-        ctx.x = _.max(componentSnapshots, "x").x;
+        ctx.x = _.min(componentSnapshots, "x").x;
         ctx.y = componentSnapshots[0].y;
 
         function copyAccidentals(snapshot: ILineSnapshot) {
@@ -854,7 +888,7 @@ class PrivIterator {
                 break;
             case C.IterationStatus.RETRY_CURRENT:
             case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
-                this._ensureNotAtEnd();
+                this._ensureAllOrNoneAtEnd();
                 break;
             default:
                 assert(false, "Invalid status");
@@ -935,18 +969,20 @@ class PrivIterator {
         //    required.
     }
 
-    private _ensureNotAtEnd() {
+    private _ensureAllOrNoneAtEnd() {
         var pri = C.Type.UNKNOWN;
         _.every(this._components, c => {
             if (c.curr) {
                 pri = Math.min(pri, c.curr.type);
             }
         });
-        _.every(this._components, c => {
-            if (!c.curr) {
-                c.ensurePriorityIs(pri);
-            }
-        });
+        if (pri !== C.Type.UNKNOWN) {
+            _.each(this._components, (c: PrivIteratorComponent) => {
+                if (!c.curr) {
+                    c.ensurePriorityIs(pri);
+                }
+            });
+        }
     }
 
     private _clearCursor() {
@@ -954,6 +990,7 @@ class PrivIterator {
             this._cursor.annotatedLine = null;
             this._cursor.annotatedObj = null;
             this._cursor.annotatedPage = null;
+            this._cursor.annotatedStave = null;
         }
     }
 
@@ -992,11 +1029,12 @@ class PrivIterator {
  * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
  */
 class PrivIteratorComponent {
-    constructor(from: C.ILocation, stave: C.IStave, idx: number, mutation: ICustomAction,
+    constructor(from: C.ILocation, stave: C.IStave, idx: number, visibleIdx: number, mutation: ICustomAction,
             cursor: C.IVisualCursor) {
         this._stave = stave;
         this._body = stave.body;
         this._sidx = idx;
+        this._visibleSidx = visibleIdx;
         this._cursor = cursor;
         this.reset(from);
 
@@ -1026,6 +1064,7 @@ class PrivIteratorComponent {
 
         if (status === C.IterationStatus.SUCCESS && shouldUpdateVC) {
 		    this._cursor.annotatedObj = this.curr;
+            this._cursor.annotatedStave = this._visibleSidx;
             this._cursor.annotatedLine = ctx.line;
 		    this._cursor.annotatedPage = ctx.pageStarts.length - 1;
 		}
@@ -1088,7 +1127,6 @@ class PrivIteratorComponent {
     private _removeExtraneousPlaceholders(priority: number) {
         var next = this._body[this._idx + 1];
         if (next && next.type === C.Type.PLACEHOLDER) {
-            console.log(C.Type[this.nextActualType], C.Type[priority]);
             if (this.nextActualType === priority) {
                 while (next.type === C.Type.PLACEHOLDER) {
                     this.removePlaceholder(this._idx + 1);
@@ -1128,7 +1166,7 @@ class PrivIteratorComponent {
     }
 
     get nextActualType(): number {
-        var i = this._idx + 1; 
+        var i = this._idx + 1;
         while (i <= this._body.length && this._body[i].type === C.Type.PLACEHOLDER) {
             ++i;
         }
@@ -1166,6 +1204,7 @@ class PrivIteratorComponent {
 
     private _shouldUpdateVC(ctx: Context): boolean {
         if (!this._cursor) { return false; }
+        if (!ctx.curr) { return false; }
 
         var target = this._cursor;
         var barMatches = ctx.bar === target.bar;
@@ -1200,6 +1239,7 @@ class PrivIteratorComponent {
     private _location: C.Location;
     private _mutation: ICustomAction;
     private _sidx: number;
+    private _visibleSidx: number;
     private _stave: C.IStave;
 }
 

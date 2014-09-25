@@ -229,6 +229,4 @@ class KeySignatureModel extends Model {
 Model.length;
 /* tslint:enable */
 
-Model.constructorsByType[C.Type[C.Type.KEY_SIGNATURE]] = (spec: any) => new KeySignatureModel(spec);
-
 export = KeySignatureModel;

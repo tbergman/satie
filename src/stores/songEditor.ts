@@ -643,6 +643,7 @@ export class SongEditorStore extends TSEE {
         if (!pointerData) {
             cursor.annotatedObj = null;
             cursor.annotatedLine = null;
+            cursor.annotatedStave = null;
         }
 
         var layout: Annotator.ILayoutOpts = {
@@ -1132,6 +1133,7 @@ export class SongEditorStore extends TSEE {
         _visualCursor.annotatedObj = null;
         _visualCursor.annotatedLine = null;
         _visualCursor.annotatedPage = null;
+        _visualCursor.annotatedStave = null;
         // Does not emit.
     }
     isLineDirty(idx: number, h: number) {
@@ -1356,7 +1358,7 @@ var _snapshots: { [key: string]: any } = {};
 var _staveHeight: number = null;
 var _staves: Array<C.IStave>;
 
-var _visualCursor: IVisualCursor = {
+var _visualCursor: C.IVisualCursor = {
     bar: 1,
     beat: 0,
     endMarker: <boolean> null,
@@ -1396,15 +1398,6 @@ var _savesInTransit: number = 0;
 // line to not be optimized out.
 TSEE.length;
 /* tslint:enable */
-
-export interface IVisualCursor {
-    bar: number;
-    beat: number;
-    endMarker: boolean;
-    annotatedObj?: Model;
-    annotatedLine?: number;
-    annotatedPage?: number;
-};
 
 export var Instance = new SongEditorStore();
 

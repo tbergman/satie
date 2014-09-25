@@ -227,7 +227,6 @@ class NewlineModel extends Model {
      * comfortably.
      */
     static semiJustify = (ctx: Annotator.Context) => {
-        return;
         var fullJustify = false;
         var i: number;
 
@@ -239,7 +238,7 @@ class NewlineModel extends Model {
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
                     C.Type.NEWLINE); --i) {
-            if (ctx.body[i].isNote) {
+            if (ctx.body[i].priority === C.Type.DURATION) {
                 ++n;
             }
         }
@@ -256,7 +255,7 @@ class NewlineModel extends Model {
             }
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !==
                     C.Type.NEWLINE; --i) {
-                if (ctx.body[i].isNote) {
+                if (ctx.body[i].priority === C.Type.DURATION) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
@@ -276,8 +275,6 @@ class NewlineModel extends Model {
     pageSize: C.IPageSize;
     width: number;
 }
-
-Model.constructorsByType[C.Type[C.Type.NEWLINE]] = (spec: any) => new NewlineModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

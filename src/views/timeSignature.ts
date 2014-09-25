@@ -1,5 +1,5 @@
 /**
- * Renders a simple, compount, or common time signature.
+ * Renders a simple, compound, or common time signature.
  */
 
 import ReactTS = require("react-typescript");

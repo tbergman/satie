@@ -194,9 +194,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                         Line({
                             x1: this.state.visualCursor.annotatedObj.x - 0.2,
                             x2: this.state.visualCursor.annotatedObj.x - 0.2,
-                            y1: this.state.visualCursor.annotatedObj.y +
+                            y1: this.state.visualCursor.annotatedObj.y - 2.3 * this.state.visualCursor.annotatedStave +
                                 (isPianoStaff ? 1.15 : 0) - vcHeight,
-                            y2: this.state.visualCursor.annotatedObj.y +
+                            y2: this.state.visualCursor.annotatedObj.y - 2.3 * this.state.visualCursor.annotatedStave +
                                 (isPianoStaff ? 1.15 : 0) + vcHeight,
                             stroke: "#008CFF",
                             strokeWidth: 0.05})
@@ -758,7 +758,7 @@ export interface IRendererProps {
 
 export interface IRendererState {
     selectionRect?: IRect;
-    visualCursor?: SongEditorStore.IVisualCursor;
+    visualCursor?: C.IVisualCursor;
     mouse?: C.IMouse;
 }
 

@@ -804,6 +804,10 @@ export interface ITuplet {
     den: number;
 }
 
+export interface IViewComponent {
+    (opts: { key: number; spec: Model; fontSize: number }): any;
+}
+
 /**
  * The solid blue line on the page is the VisualCursor.
  */
@@ -824,6 +828,12 @@ export interface IVisualCursor extends ILocation {
      * The page, counting from 1, where annotatedObj is.
      */
     annotatedPage?: number;
+
+    /**
+     * The stave, counting from 0, not counting staves without a body, where
+     * annotatedObj is.
+     */
+    annotatedStave?: number;
 };
 
 /**

@@ -7,11 +7,14 @@
 import Model = require("./model");
 
 import Annotator = require("./annotator");
-import Barline = require("./barline");
+import BarlineModel = require("./barline");
+import BeginModel = require("./begin");
 import C = require("./contracts");
-import EndMarker = require("./endMarker");
+import EndMarkerModel = require("./endMarker");
+import TimeSignatureModel = require("./timeSignature");
 
 import _ = require("lodash");
+import assert = require("assert");
 
 /**
  * Models in different staves with the same position and type have the same index.
@@ -23,18 +26,35 @@ class PlaceholderModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        this.ctxData = new C.MetreContext(ctx);
-        switch(this._priority) {
-            case C.Type.END_MARKER:
-                debugger;
-                ctx.body.splice(ctx.idx, 1, new EndMarker({}));
-                return C.IterationStatus.RETRY_CURRENT;
-                break;
+        switch(this.priority) {
             case C.Type.BARLINE:
-                ctx.body.splice(ctx.idx, 1, new Barline({ barline: C.Barline.Standard }));
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
                 return C.IterationStatus.RETRY_CURRENT;
+            case C.Type.BEGIN:
+                ctx.body.splice(ctx.idx, 1, new BeginModel({}));
+                return C.IterationStatus.RETRY_CURRENT;
+            case C.Type.DURATION:
+                if (ctx.next() && ctx.next().priority === C.Type.DURATION) {
+                    for (var i = ctx.idx; i < ctx.body.length && ctx.body[i].priority === C.Type.DURATION; ++i) {
+                        // XXX: Check location
+                        if (ctx.body[i].type === C.Type.DURATION) {
+                            ctx.body[ctx.idx] = ctx.body[i];
+                            ctx.body[i] = this;
+                            return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+                        }
+                    }
+                }
                 break;
+            case C.Type.TIME_SIGNATURE:
+                var tses = ctx.findVertical(obj => obj.type === C.Type.TIME_SIGNATURE);
+                assert(tses.length, "Staves cannot all be placeholders!");
+                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel({ timeSignature: tses[0].timeSignature }));
+                return C.IterationStatus.RETRY_CURRENT;
+            case C.Type.END_MARKER:
+                ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
+                return C.IterationStatus.RETRY_CURRENT;
         }
+        this.ctxData = new C.MetreContext(ctx);
         return C.IterationStatus.SUCCESS;
     }
 
@@ -66,13 +86,11 @@ class PlaceholderModel extends Model {
     set priority(p: C.Type) {
         this._priority = p;
     }
-    
+
     get type(): C.Type {
         return C.Type.PLACEHOLDER;
     }
 }
-
-Model.constructorsByType[C.Type[C.Type.PLACEHOLDER]] = (spec: any) => new PlaceholderModel(spec);
 
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.

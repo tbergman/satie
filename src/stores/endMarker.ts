@@ -118,8 +118,6 @@ class EndMarkerModel extends Model {
     }
 }
 
-Model.constructorsByType[C.Type[C.Type.END_MARKER]] = (spec: any) => new EndMarkerModel(spec);
-
 /* tslint:disable */
 // TS is overly aggressive about optimizing out require() statements.
 // We require Model since we extend it. This line forces the require()
