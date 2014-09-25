@@ -797,15 +797,17 @@ class PrivIterator {
                 console.log(this._components[i].curr, C.IterationStatus[componentStatus]);
             }
 
-            if (componentStatus === C.IterationStatus.LINE_CREATED) {
-                this._clearCursor();
-                this._markLineDirty();
-            } else if (componentStatus === C.IterationStatus.RETRY_PREVIOUS_LINE) {
-                this._markLineDirty();
-            }
-
-            if (componentStatus === C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS) {
-                this._canExitAtNewline = false;
+            switch(componentStatus) {
+                case C.IterationStatus.LINE_CREATED:
+                    this._clearCursor();
+                    this._markLineDirty();
+                    break;
+                case C.IterationStatus.RETRY_PREVIOUS_LINE:
+                    this._markLineDirty();
+                    break;
+                case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
+                    this._canExitAtNewline = false;
+                    break;
             }
 
             maxStatus = Math.max(maxStatus, componentStatus);
@@ -814,9 +816,7 @@ class PrivIterator {
             _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
 
-        // Kill unneeded placeholders
-        if (_.every(this._components, c => c.curr.type === C.Type.PLACEHOLDER)) {
-            _.every(this._components, c => c.removePlaceholder());
+        if (this._killExtraneousPlaceholders()) {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
@@ -824,30 +824,40 @@ class PrivIterator {
         return maxStatus;
     }
 
-    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>) {
-        ctx.accidentals = {};
-        _.each(componentSnapshots, copyAccidentals);
+    private _killExtraneousPlaceholders(): boolean {
+        var everyElementIsAPlaceholder = true;
+        for (var i = 0; i < this._components.length; ++i) {
+            if (this._components[i].curr.type !== C.Type.PLACEHOLDER) {
+                everyElementIsAPlaceholder = false;
+                break;
+            }
+        }
+        if (!everyElementIsAPlaceholder) { return false; }
 
+        for (var i = 0; i < this._components.length; ++i) {
+            this._components[i].removePlaceholder();
+        }
+        return true;
+    }
+
+    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>) {
         ctx.bar = componentSnapshots[0].bar;
         ctx.barKeys = componentSnapshots[0].barKeys; // TODO: make sure they're all the same.
         ctx.barlineX = componentSnapshots[0].barlineX;
-        ctx.beat = _.min(componentSnapshots, "beat").beat;
         ctx.keySignature = componentSnapshots[0].keySignature;
         ctx.line = componentSnapshots[0].line;
         ctx.pageLines = componentSnapshots[0].pageLines;
         ctx.pageStarts = componentSnapshots[0].pageStarts;
-        ctx.prevClef = componentSnapshots[0].prevClef;
         ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
-        ctx.x = _.min(componentSnapshots, "x").x;
+        ctx.x = componentSnapshots[0].x;
+        for (var i = 1; i < componentSnapshots.length; ++i) {
+            ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
+        }
         ctx.y = componentSnapshots[0].y;
 
-        function copyAccidentals(snapshot: ILineSnapshot) {
-            for (var key in snapshot.accidentals) {
-                if (snapshot.accidentals.hasOwnProperty(key)) {
-                    ctx.accidentals[key] = snapshot.accidentals[key];
-                }
-            }
-        }
+        ctx.accidentals = componentSnapshots[0].accidentals; // XXX: stave-specific
+        ctx.beat = _.min(componentSnapshots, "beat").beat; // XXX: add additional stave-specific version
+        ctx.prevClef = componentSnapshots[0].prevClef; // XXX: stave-specific
     }
 
     next(status: C.IterationStatus) {
@@ -902,7 +912,12 @@ class PrivIterator {
     }
 
     get atEnd(): boolean {
-        return _.every(this._components, PrivIteratorComponent.isAtEndFn);
+        for (var i = 0; i < this._components.length; ++i) {
+            if (this._components[i].atEnd) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // This is kind of ugly. Another (probably better) option would be to have a
@@ -1189,10 +1204,6 @@ class PrivIteratorComponent {
         this._body.splice(x, 1);
     }
 
-    static isAtEndFn = function (component: PrivIteratorComponent) {
-        return component.atEnd;
-    };
-
     private get _next() {
         return this._body[this._idx + 1];
     }
@@ -1257,27 +1268,20 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
         ctx.defaultCount = 4;
     }
 
-    _.each(line, (v, attrib) => {
-        if ((<any>line)[attrib] === null) {
-            return;
-        }
-        switch (attrib) {
-            case "accidentals": ctx.accidentals = line.accidentals; break;
-            case "bar": ctx.bar = line.bar; break;
-            case "barlineX": ctx.barlineX = line.barlineX; break;
-            case "barKeys": ctx.barKeys = line.barKeys; break;
-            case "beat": ctx.beat = line.beat; break;
-            case "keySignature": ctx.keySignature = line.keySignature; break;
-            case "line": ctx.line = line.line; break;
-            case "pageLines": ctx.pageLines = line.pageLines; break;
-            case "pageStarts": ctx.pageStarts = line.pageStarts; break;
-            case "prevClef": ctx.prevClef = line.prevClef; break;
-            case "prevKeySignature": ctx.prevKeySignature = line.prevKeySignature;
-            case "x": ctx.x = line.x; break;
-            case "y": ctx.y = line.y; break;
-            default: assert(false, "Not reached");
-        }
-    });
+    if (line.accidentals !== null) { ctx.accidentals = line.accidentals; }
+    if (line.bar !== null) { ctx.bar = line.bar; }
+    if (line.barlineX !== null) { ctx.barlineX = line.barlineX; }
+    if (line.barKeys !== null) { ctx.barKeys = line.barKeys; }
+    if (line.beat !== null) { ctx.beat = line.beat; }
+    if (line.keySignature !== null) { ctx.keySignature = line.keySignature; }
+    if (line.line !== null) { ctx.line = line.line; }
+    if (line.pageLines !== null) { ctx.pageLines = line.pageLines; }
+    if (line.pageStarts !== null) { ctx.pageStarts = line.pageStarts; }
+    if (line.prevClef !== null) { ctx.prevClef = line.prevClef; }
+    if (line.prevKeySignature !== null) { ctx.prevKeySignature = line.prevKeySignature; }
+    if (line.x !== null) { ctx.x = line.x; }
+    if (line.y !== null) { ctx.y = line.y; }
+
     if (ctx.line !== 0) {
         assert(ctx.prevClef);
     }
