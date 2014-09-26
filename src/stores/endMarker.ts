@@ -47,10 +47,10 @@ class EndMarkerModel extends Model {
         }
 
         // End markers must only exist at the end of a line, document, or bar
-        if (next && next.type !== C.Type.BARLINE &&
+        if (next && next.priority !== C.Type.BARLINE &&
                 (!ctx.body[ctx.idx + 2] ||
-                (ctx.body[ctx.idx + 2].type !== C.Type.NEWLINE &&
-                ctx.body[ctx.idx + 2].type !== C.Type.NEWPAGE))) {
+                (ctx.body[ctx.idx + 2].priority !== C.Type.NEWLINE &&
+                ctx.body[ctx.idx + 2].priority !== C.Type.NEWPAGE))) {
             ctx.eraseCurrent();
 
             var SongEditor_r = require("./songEditor"); // Recursive dependency.
@@ -81,6 +81,7 @@ class EndMarkerModel extends Model {
                     return new DurationModel(beat, C.Source.ANNOTATOR);
                 });
 
+            console.log("UF");
             ctx.splice(this.idx, 0, toAdd);
 
             return C.IterationStatus.RETRY_LINE; // we really need a RETRY_BAR...

@@ -77,7 +77,7 @@ export class Context implements C.MetreContext {
      */
     captureLine(): ILineSnapshot {
         if (this.line !== 0) {
-            assert(this.prevClef);
+            assert(this.prevClefByStave);
         }
         return {
             accidentals: this.accidentals,
@@ -85,11 +85,12 @@ export class Context implements C.MetreContext {
             barKeys: this.barKeys,
             barlineX: this.barlineX,
             beat: this.loc.beat,
+            clef: this.clef,
             keySignature: this.keySignature,
             line: this.line,
             pageLines: this.pageLines,
             pageStarts: this.pageStarts,
-            prevClef: this.prevClef,
+            prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevKeySignature: this.prevKeySignature,
             x: this.x,
             y: this.y
@@ -146,15 +147,14 @@ export class Context implements C.MetreContext {
      * @param direct if true, only return objects directly after the current object.
      */
     intersects(type: C.Type, direct?: boolean) {
-        var loc = new C.Location(this.curr.ctxData);
         var intersects: Array<Model> = [];
         for (var i = 0; i < this._staves.length; ++i) {
             var body = this._staves[i].body;
             if (!body) { continue; }
             for (var j = this.idx + 1; j < body.length; ++j) {
-                if (!loc.eq(body[j].ctxData)) { break; }
                 if (body[j].type === type) { intersects.push(body[j]); }
 
+                if (body[j].priority === C.Type.DURATION) { break; }
                 if (direct) { break; }
             }
         }
@@ -308,7 +308,7 @@ export class Context implements C.MetreContext {
      * @param index The absolute position to insert an element at.
      *     By default, just before current position.
      */
-    insertPast(obj: Model, index?: number): any {
+    insertPast(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
 
@@ -333,7 +333,7 @@ export class Context implements C.MetreContext {
     /**
      * @mutator vertical
      */
-    insertPastVertical(objs: Array<Model>, index?: number): any {
+    insertPastVertical(objs: Array<Model>, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
 
@@ -348,6 +348,8 @@ export class Context implements C.MetreContext {
                 stave.body.splice(index, 0, objs[visibleIdx]);
             }
         }
+
+        return exitCode;
     }
 
     /**
@@ -362,14 +364,22 @@ export class Context implements C.MetreContext {
             var stave = this._staves[i];
             if (stave.body) {
                 if (this.body === stave.body) {
-                    Array.prototype.splice.apply(stave.body, [start, count].concat(<any>replaceWith));
-                } else {
-                    var PlaceholderModel = require("./placeholder");
-                    var placeholders: Array<Model> = [];
-                    for (var j = 0; j < replaceWith.length; ++j) {
-                        placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }));
+                    if (replaceWith) {
+                        Array.prototype.splice.apply(stave.body, [start, count].concat(<any>replaceWith));
+                    } else {
+                        stave.body.splice(start, count);
                     }
-                    Array.prototype.splice.apply(stave.body, [start, count].concat(<any>placeholders));
+                } else {
+                    if (replaceWith) {
+                        var PlaceholderModel = require("./placeholder");
+                        var placeholders: Array<Model> = [];
+                        for (var j = 0; j < replaceWith.length; ++j) {
+                            placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }));
+                        }
+                        Array.prototype.splice.apply(stave.body, [start, count].concat(<any>placeholders));
+                    } else {
+                        stave.body.splice(start, count);
+                    }
                 }
             }
         }
@@ -382,8 +392,16 @@ export class Context implements C.MetreContext {
         return _.chain(this._staves)
             .filter(s => !!s.body)
             .map(s => s.body[idx])
-            .filter(s => !!where(s))
+            .filter(s => !where || !!where(s))
             .value();
+    }
+
+    get nextActualType(): number {
+        var i = this.idx + 1;
+        while (i < this.body.length && this.body[i].type === C.Type.PLACEHOLDER) {
+            ++i;
+        }
+        return this.body[i] ? this.body[i].type : null;
     }
 
     _barAfter(index: number): Model {
@@ -532,10 +550,10 @@ export class Context implements C.MetreContext {
     pageStarts: Array<number> = [0];
 
     /**
-     * The clef to add the current line, if one is not specified.
+     * The clef to add the current line in the current stave, if one is not specified.
      * @scope line
      */
-    prevClef: string;
+    prevClefByStave: { [key: number]: string } = {};
 
     /**
      * The smallest raw count (duration) in a line.
@@ -713,7 +731,7 @@ export class Context implements C.MetreContext {
      * The staves to be annotated.
      * @scope private
      */
-    private _staves: Array<C.IStave>;
+    _staves: Array<C.IStave>;
 
     /**
      * @scope private
@@ -749,11 +767,12 @@ export interface ILineSnapshot {
     barKeys: Array<string>;
     barlineX: Array<number>;
     beat: number;
+    clef: string;
     keySignature: C.IKeySignature;
     line: number;
     pageLines: Array<number>;
     pageStarts: Array<number>;
-    prevClef: string;
+    prevClefByStave: { [key: number]: string };
     prevKeySignature: C.IKeySignature;
     x: number;
     y: number;
@@ -897,6 +916,13 @@ class PrivIterator {
         return maxStatus;
     }
 
+    /**
+     * Merges information from all componentSnapshots into context.
+     *
+     * @param origSnapshot the snapshot from the previous index
+     * @param componentSnapshots the snapshots to merge into ctx
+     * @param filtered true if at least one placeholder has been removed from componentSnapshots
+     */
     private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
         ctx.bar = componentSnapshots[0].bar;
         ctx.barKeys = componentSnapshots[0].barKeys || []; // TODO: make sure they're all the same.
@@ -911,6 +937,10 @@ class PrivIterator {
             ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
         }
         var otherContexts = ctx.findVertical(c => true);
+
+        // HACK HACK HACK: In case models on different staves disagree about how much space is needed,
+        // believe the real (not placeholder) model that reports the smallest number. This can still
+        // cause some strange (overly large) spacing for Durations that do not line up.
         var minX = Infinity;
         for (var i = 0; i < otherContexts.length; ++i) {
             minX = Math.min(otherContexts[i].x, minX);
@@ -924,14 +954,27 @@ class PrivIterator {
         }
 
         ctx.accidentals = componentSnapshots[0].accidentals; // XXX: stave-specific
-        ctx.beat = _.min(componentSnapshots, "beat").beat; // XXX: add additional stave-specific version
+        ctx.beat = _.min(componentSnapshots, "beat").beat; // Note: also tracked per-staff. See also __globalBeat__
         for (var i = 0; i < this._components.length; ++i) {
             if (this._components[i].nextLocation.bar === ctx.bar &&
                     this._components[i].nextLocation.beat < ctx.beat) {
                 ctx.beat = this._components[i].nextLocation.beat;
             }
         }
-        ctx.prevClef = componentSnapshots[0].prevClef; // XXX: stave-specific
+        if (!filtered) {
+            // Clef is never changed on types that can have placeholders.
+            // (If this changes, you're on your own)
+            ctx.prevClefByStave = ctx.prevClefByStave;
+            var visibleStaveIdx = -1;
+            for (var i = 0; i < ctx._staves.length; ++i) {
+                if (!ctx._staves[i].body) { continue; }
+                ++visibleStaveIdx;
+                if (componentSnapshots[visibleStaveIdx].prevClefByStave[i]) {
+                    ctx.prevClefByStave[i] = componentSnapshots[visibleStaveIdx].prevClefByStave[i];
+                }
+            }
+            console.log("@", ctx.prevClefByStave);
+        }
     }
 
     next(status: C.IterationStatus) {
@@ -1035,6 +1078,9 @@ class PrivIterator {
     private _rollbackLine(i: number) {
         this._parent.line = i;
         _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.START_OF_LINE);
+        for (var j = 0; j < this._components.length; ++j) {
+            this._components[j].resetLine();
+        }
     }
 
     private _increment() {
@@ -1150,8 +1196,10 @@ class PrivIteratorComponent {
         var doCustomAction = this._shouldDoCustomAction(ctx);
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
         if (this._aheadOfSchedule(ctx)) {
-            return this._addPlaceholder(ctx);
+            return this._addPadding(ctx);
         }
+
+        this._makeNextConsistent(ctx);
 
         ///
         var status = doCustomAction ? this._doCustomAction(ctx) : this._body[this._idx].annotate(ctx);
@@ -1185,15 +1233,15 @@ class PrivIteratorComponent {
             this._location = new C.Location(this._body[++this._idx].ctxData);
         } while ((from.bar !== 1 || from.beat !== 0) &&
             (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
-            this.curr.type <= C.Type.BEGIN || this.curr.type === C.Type.BARLINE)));
+            this.curr.priority <= C.Type.BEGIN || this.curr.priority === C.Type.BARLINE)));
         this._updateSubctx();
     }
 
-    rewind(type?: C.Type) {
-        if (!type) {
+    rewind(priority?: C.Type) {
+        if (!priority) {
             --this._idx;
         } else {
-            while (this._idx >= 0 && this._body[this._idx].type !== type) {
+            while (this._idx >= 0 && this._body[this._idx].priority !== priority) {
                 --this._idx;
             }
         }
@@ -1206,7 +1254,7 @@ class PrivIteratorComponent {
      */
     rewindSeek(loc: C.Location, priority: number) {
         while (this._idx >= 0 && (loc.lt(this._body[this._idx].ctxData) ||
-                loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].type > priority)) {
+                loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].priority > priority)) {
             --this._idx;
         }
         this._updateSubctx();
@@ -1223,7 +1271,6 @@ class PrivIteratorComponent {
     }
 
     trySeek(loc: C.Location, priority: number) {
-        this._removeExtraneousPlaceholders(priority);
         this.ensurePriorityIs(priority);
         ++this._idx;
         assert(this.nextPriority === C.MAX_NUM || this.curr);
@@ -1236,8 +1283,12 @@ class PrivIteratorComponent {
         }
     }
 
+    resetLine() {
+        this._clef = "";
+    }
+
     /**
-     * Returns the position of the last item with type 'type'.
+     * Returns the position of the last item with priority 'priority'.
      */
     lastOf(priority: C.Type): C.Location {
         var i = this._idx;
@@ -1264,14 +1315,6 @@ class PrivIteratorComponent {
         return next && next.type !== C.Type.PLACEHOLDER ? next.priority : C.MAX_NUM;
     }
 
-    get nextActualType(): number {
-        var i = this._idx + 1;
-        while (i <= this._body.length && this._body[i].type === C.Type.PLACEHOLDER) {
-            ++i;
-        }
-        return this._body[i] ? this._body[i].type : null;
-    }
-
     get atEnd(): boolean {
         return !this._body[this._idx];
     }
@@ -1280,34 +1323,56 @@ class PrivIteratorComponent {
         return this._body[this._idx];
     }
 
-    removePlaceholder(i?: number) {
-        var x = isNaN(i) ? this._idx : i;
-        assert(this._body[x].type === C.Type.PLACEHOLDER);
-        this._body.splice(x, 1);
-    }
-
-    private _removeExtraneousPlaceholders(priority: number) {
-        var next = this._body[this._idx + 1];
-        if (next && next.type === C.Type.PLACEHOLDER) {
-            if (this.nextActualType === priority) {
-                while (next.type === C.Type.PLACEHOLDER) {
-                    this.removePlaceholder(this._idx + 1);
-                    next = this._body[this._idx + 1];
-                }
-            }
-        }
-    }
-
     private _aheadOfSchedule(ctx: Context): boolean {
-        return ctx.curr.type !== C.Type.PLACEHOLDER && ctx.beat > ctx.__globalBeat__;
+        if (ctx.curr.type !== C.Type.DURATION) {
+            return false;
+        }
+        var space = !!(ctx.findVertical(c => c.type !== C.Type.PLACEHOLDER && c !== ctx.curr).length);
+        return space && ctx.curr.type !== C.Type.PLACEHOLDER && ctx.beat > ctx.__globalBeat__;
     }
 
-    private _addPlaceholder(ctx: Context) {
+    private _addPadding(ctx: Context) {
         var PlaceholderModel = require("./placeholder");
         this._body.splice(ctx.idx, 0, new PlaceholderModel({ _priority: C.Type[ctx.curr.priority] }));
+        ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     }
 
+    private _makeNextConsistent(ctx: Context) {
+        while (true) {
+            var realNexts = ctx.findVertical(c => c && c.type !== C.Type.PLACEHOLDER, ctx.idx + 1);
+            if (!realNexts.length) {
+                ctx.splice(ctx.idx + 1, 1);
+                var anyNexts = ctx.findVertical(c => !!c, ctx.idx + 1);
+                if (anyNexts.length) {
+                    continue;
+                } else {
+                    break;
+                }
+            }
+            var lowestPriority = C.Type.UNKNOWN;
+            var ctxData: C.MetreContext = null;
+            for (var i = 0; i < realNexts.length; ++i) {
+                if (realNexts[i].priority < lowestPriority) {
+                    lowestPriority = realNexts[i].priority;
+                    ctxData = realNexts[i].ctxData ? JSON.parse(JSON.stringify(realNexts[i].ctxData)) : "soon";
+                }
+            }
+            var allNexts = ctx.findVertical(null, ctx.idx + 1);
+            var sidx = -1;
+            for (var i = 0; i < allNexts.length; ++i) {
+                do { ++sidx; } while (!ctx._staves[sidx].body);
+                if (!allNexts[i] || allNexts[i].priority !== lowestPriority) {
+                    var isPlaceholder = allNexts[i] && allNexts[i].type === C.Type.PLACEHOLDER  ;
+                    var PlaceholderModel = require("./placeholder");
+                    ctx._staves[sidx].body.splice(ctx.idx + 1, isPlaceholder ? 1 : 0,
+                        new PlaceholderModel({ _priority: C.Type[lowestPriority] }));
+                    ctx._staves[sidx].body[ctx.idx + 1].ctxData = ctxData; // XXX: Clone here?
+                }
+            }
+            break;
+        }
+    }
 
     private get _next() {
         this._beat = this._nextBeat;
@@ -1374,6 +1439,8 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     if (mode === NewlineMode.START_OF_LINE) {
         ctx.clef = null;
         ctx.defaultCount = 4;
+    } else if (line.clef) {
+        ctx.clef = line.clef;
     }
 
     if (line.accidentals !== null) { ctx.accidentals = line.accidentals; }
@@ -1385,13 +1452,14 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     if (line.line !== null) { ctx.line = line.line; }
     if (line.pageLines !== null) { ctx.pageLines = line.pageLines; }
     if (line.pageStarts !== null) { ctx.pageStarts = line.pageStarts; }
-    if (line.prevClef !== null) { ctx.prevClef = line.prevClef; }
+    // XXX: Not having this line may mess with clef changes! Get it to work!
+    // if (line.prevClefByStave !== null) { ctx.prevClefByStave = line.prevClefByStave; }
     if (line.prevKeySignature !== null) { ctx.prevKeySignature = line.prevKeySignature; }
     if (line.x !== null) { ctx.x = line.x; }
     if (line.y !== null) { ctx.y = line.y; }
 
     if (ctx.line !== 0) {
-        assert(ctx.prevClef);
+        assert(ctx.prevClefByStave);
     }
 }
 

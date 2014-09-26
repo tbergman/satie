@@ -32,18 +32,42 @@ class NewlineModel extends Model {
 
         // Notes should be full justified within a line.
         // This requirement should be last so that it only happens once
-        // per line.
+        // per line. We take the min of each justification to fix rounding
+        // errors.
         if (ctx.maxX - ctx.x > 0.001) {
             this._justify(ctx);
+            for (var i = 0; i < ctx._staves.length; ++i) {
+                var body = ctx._staves[i].body;
+                if (!body) { continue; }
+                if (body !== ctx.body) {
+                    var len = Math.min(ctx.body.length, body.length);
+                    for (var j = 0; j < len; ++j) {
+                        ctx.body[j].x = body[j].x = Math.min(body[j].x, ctx.body[j].x);
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        var visibleStaveCount = 0;
+        for (var i = 0; i < ctx._staves.length; ++i) {
+            if (ctx._staves[i].body) {
+                ++visibleStaveCount;
+            }
         }
 
         // Copy information from the context that the view needs.
-        this.lineSpacing = ctx.lineSpacing;
+        this.lineSpacing = ctx.lineSpacing + renderUtil.staveSeperation*(visibleStaveCount - 1);
+        this.pianoStaff = ctx.currStave.pianoStaff;
+        this.braceY = this.y;
+        this.braceY2 = this.y + renderUtil.staveSeperation;
         this.pageSize = ctx.pageSize;
 
         ctx.x = ctx.initialX;
         ctx.y += ctx.lineSpacing;
-        ctx.prevClef = ctx.clef;
+        ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
+        console.log("|", ctx.prevClefByStave);
         ctx.prevKeySignature = ctx.keySignature;
         ctx.smallest = 10000;
         ctx.clef = null;
@@ -69,11 +93,12 @@ class NewlineModel extends Model {
                 barKeys: null,
                 barlineX: null,
                 beat: null,
+                clef: null,
                 keySignature: null,
                 line: ctx.line,
                 pageLines: null,
                 pageStarts: null,
-                prevClef: null,
+                prevClefByStave: {},
                 prevKeySignature: null,
                 x: null,
                 y: null
@@ -89,10 +114,10 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
-        ctx.lines[ctx.line].prevClef = ctx.prevClef;
+        ctx.lines[ctx.line].prevClefByStave = JSON.parse(JSON.stringify(ctx.prevClefByStave));
         ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
 
-        assert(ctx.lines[ctx.line].prevClef);
+        assert(ctx.lines[ctx.line].prevClefByStave);
         this.DEBUG_line = ctx.line;
 
         var SongEditorStore = require("./songEditor"); // Recursive dependency.
@@ -121,14 +146,14 @@ class NewlineModel extends Model {
             if (ctx.body[i].isNote) {
                 ++l;
             }
-            if (ctx.body[i].type === C.Type.NEWLINE) {
+            if (ctx.body[i].priority === C.Type.NEWLINE) {
                 break;
             }
         }
         diff -= 0.0001; // adjust for bad floating point arithmetic
         var xOffset = diff;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].type === C.Type.NEWLINE) {
+            if (ctx.body[i].priority === C.Type.NEWLINE) {
                 break;
             }
             if (ctx.body[i].isNote) {
@@ -138,8 +163,8 @@ class NewlineModel extends Model {
                 xOffset -= diff/l;
             }
             var newX = ctx.body[i].x + xOffset;
-            if (ctx.body[i].type === C.Type.BARLINE &&
-                    (!ctx.body[i + 1] || ctx.body[i + 1].type !== C.Type.NEWLINE)) {
+            if (ctx.body[i].priority === C.Type.BARLINE &&
+                    (!ctx.body[i + 1] || ctx.body[i + 1].priority !== C.Type.NEWLINE)) {
                 if (ctx.lines[ctx.line - 1] &&
                         _.any((<any>ctx.lines[ctx.line - 1]).barlineX, // TSFIX
                             (x:number) => Math.abs(x - newX) < 0.15)) {
@@ -150,13 +175,13 @@ class NewlineModel extends Model {
 
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
-                    for (j = i - 1; j >= 0 && ctx.body[j].type !== C.Type.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.BARLINE; --j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
-                    for (j = i - 1; j >= 0 && ctx.body[j].type !== C.Type.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.BARLINE; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
@@ -166,14 +191,14 @@ class NewlineModel extends Model {
 
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
-                    for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
+                    for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.BARLINE; ++j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
-                    for (j = i + 1; j < ctx.body.length && ctx.body[j].type !==
+                    for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.BARLINE; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
@@ -271,8 +296,11 @@ class NewlineModel extends Model {
     DEBUG_line: number;
     annotatedExtraWidth: number;
     begin: number;
+    braceY: number;
+    braceY2: number;
     lineSpacing: number;
     pageSize: C.IPageSize;
+    pianoStaff: boolean;
     width: number;
 }
 

@@ -38,7 +38,7 @@ class ClefModel extends Model {
 
         // Copy information from the context that the view needs.
         this.isChange = !!ctx.clef;
-        this.clefName = ctx.clef = (this.clef === "detect") ? ctx.prevClef : this.clef;
+        this.clefName = ctx.clef = (this.clef === "detect") ? ctx.prevClefByStave[ctx.currStaveIdx] : this.clef;
         var next = ctx.next();
         if (next.isNote) {
             var note: C.IPitch = <any> next;
@@ -81,7 +81,7 @@ class ClefModel extends Model {
 
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
         return ctx.insertPast(new ClefModel({
-            clef: (ctx.prevClef ? "detect" : "treble"),
+            clef: (ctx.prevClefByStave[ctx.currStaveIdx] ? "detect" : "treble"),
             source: C.Source.ANNOTATOR
         }));
     };

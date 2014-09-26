@@ -10,6 +10,7 @@ import Model = require("./model");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
+import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
 
@@ -44,9 +45,7 @@ class BeginModel extends Model {
             this.noMargin = false;
         }
         this.braceY = this.y;
-        // We're cheating here! y() won't be annotated yet, but it will
-        // be at render time!. HACK
-        this.getBraceY2 = () => this.y + 2;
+        this.braceY2 = this.y + renderUtil.staveSeperation;
         this.pageSize = ctx.pageSize;
 
         return C.IterationStatus.SUCCESS;
@@ -76,7 +75,7 @@ class BeginModel extends Model {
     stave: C.IStave;
     noMargin : boolean;
     braceY : number;
-    getBraceY2: () => number;
+    braceY2: number;
     pageSize: C.IPageSize;
     width: number;
 }

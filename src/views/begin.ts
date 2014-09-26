@@ -1,5 +1,5 @@
 /**
- * Appears at the very begining of a stave.
+ * Appears at the very beginning of a stave.
  *
  * @jsx React.DOM
  */
@@ -20,7 +20,7 @@ export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
                 x: spec.x,
                 fontSize: this.props.fontSize,
                 y: spec.braceY,
-                y2: spec.getBraceY2()}),
+                y2: spec.braceY2}),
             StaveLines({
                 key: "StaveLines",
                 width: this.props.spec.width,
