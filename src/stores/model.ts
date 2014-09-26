@@ -33,10 +33,6 @@ class Model {
             // Beamed notes are placed by the BeamGroupModel
             this.x = ctx.x;
             this.y = ctx.y;
-
-		if (isNaN(this.x)) {
-			debugger;
-		}
         }
         this.idx = ctx.idx;
 
@@ -207,7 +203,9 @@ class Model {
         var modelObj: { [key: string]: any } = <any> model;
         assert(model);
         _.each(spec, (value: any, key: string) => {
-            modelObj[key] = value;
+            if (key !== "_priority") { // HACK: _priority should be a number.
+                modelObj[key] = value;
+            }
         });
         return model;
     }

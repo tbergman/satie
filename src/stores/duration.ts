@@ -177,6 +177,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else if (!this.inBeam) {
             this._handleTie(ctx);
         }
+
         this.x = ctx.x;
 
         // Set which accidentals are displayed, and then update the accidentals currently

@@ -18,6 +18,10 @@ import TimeSignatureModel = require("./timeSignature");
 
 class SlurGroupModel extends Model {
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        if (ctx.prev().type === C.Type.PLACEHOLDER) {
+            this.x = ctx.x = ctx.prev().x;
+        }
+
         // A clef must exist on each line.
         if (!ctx.clef) {
             return ClefModel.createClef(ctx);

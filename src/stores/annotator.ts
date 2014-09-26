@@ -169,13 +169,13 @@ export class Context implements C.MetreContext {
      * @param skip: Start looking at Models <skip> after current. 1 if unspecified.
      * @param allowBeams: True if beams should not be skipped. False by default.
      */
-    nextIdx(cond?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
+    nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowBeams?: boolean) {
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
                 (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
-                (cond && !cond(this.body[this.idx + i])))) {
+                (cond && !cond(this.body[this.idx + i], this.idx + i)))) {
             ++i;
         }
         return this.idx + i;
@@ -331,6 +331,26 @@ export class Context implements C.MetreContext {
     }
 
     /**
+     * @mutator vertical
+     */
+    insertPastVertical(objs: Array<Model>, index?: number): any {
+        index = (index === null || index === undefined) ? this.idx : index;
+        assert(index <= this.idx, "Otherwise, use 'insertFuture'");
+
+        var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
+            C.IterationStatus.RETRY_FROM_ENTRY;
+
+        var visibleIdx = -1;
+        for (var i = 0; i < this._staves.length; ++i) {
+            var stave = this._staves[i];
+            if (stave.body) {
+                ++visibleIdx;
+                stave.body.splice(index, 0, objs[visibleIdx]);
+            }
+        }
+    }
+
+    /**
      * Simplified form of Array.splice for body.
      * The sledgehammer of the mutator tools. Use sparingly.
      * @mutator
@@ -355,10 +375,13 @@ export class Context implements C.MetreContext {
         }
     }
 
-    findVertical(where?: (obj: Model) => boolean) {
+    findVertical(where?: (obj: Model) => boolean, idx?: number) {
+        if (isNaN(idx)) {
+            idx = this.idx;
+        }
         return _.chain(this._staves)
             .filter(s => !!s.body)
-            .map(s => s.body[this.idx])
+            .map(s => s.body[idx])
             .filter(s => !!where(s))
             .value();
     }
@@ -650,12 +673,24 @@ export class Context implements C.MetreContext {
 
     private _semiJustify(staves: Array<C.IStave>) {
         var NewlineModel = require("./newline"); // Recursive dependency.
+        var bodies: Array<C.IBody> = [];
         for (var i = 0; i < staves.length; ++i) {
             if (staves[i].body) {
+                bodies.push(staves[i].body);
                 this.idx = this.body.length - 1;
                 this.body = staves[i].body;
                 NewlineModel.semiJustify(this);
                 this.idx = -1;
+            }
+        }
+        var offset = 0;
+        for (var i = 0; i < bodies[0].length; ++i) {
+            var minX = Infinity;
+            for (var j = 0; j < bodies.length; ++j) {
+                minX = Math.min(minX, bodies[j][i].x);
+            }
+            for (var j = 0; j < bodies.length; ++j) {
+                bodies[j][i].x = minX - offset;
             }
         }
     }
@@ -856,30 +891,10 @@ class PrivIterator {
             _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
 
-        if (this._killExtraneousPlaceholders()) {
-            return C.IterationStatus.RETRY_CURRENT;
-        }
-
         if (maxStatus <= C.IterationStatus.SUCCESS) {
             this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
         }
         return maxStatus;
-    }
-
-    private _killExtraneousPlaceholders(): boolean {
-        var everyElementIsAPlaceholder = true;
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].curr.type !== C.Type.PLACEHOLDER) {
-                everyElementIsAPlaceholder = false;
-                break;
-            }
-        }
-        if (!everyElementIsAPlaceholder) { return false; }
-
-        for (var i = 0; i < this._components.length; ++i) {
-            this._components[i].removePlaceholder();
-        }
-        return true;
     }
 
     private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
@@ -895,6 +910,15 @@ class PrivIterator {
         for (var i = 1; i < componentSnapshots.length; ++i) {
             ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
         }
+        var otherContexts = ctx.findVertical(c => true);
+        var minX = Infinity;
+        for (var i = 0; i < otherContexts.length; ++i) {
+            minX = Math.min(otherContexts[i].x, minX);
+        }
+        for (var i = 0; i < otherContexts.length; ++i) {
+            otherContexts[i].x = minX;
+        }
+
         if (!filtered) {
             ctx.y = componentSnapshots[0].y;
         }

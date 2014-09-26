@@ -750,6 +750,7 @@ export enum Type {
 
     SLUR,
     BEAM_GROUP,
+
     DURATION,
 
     PLACEHOLDER,

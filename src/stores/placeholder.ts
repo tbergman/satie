@@ -30,6 +30,21 @@ class PlaceholderModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        // Make sure we're actually being useful.
+        var realItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER);
+        if (!realItems.length) {
+            return ctx.eraseCurrent();
+        }
+
+        if (ctx.idx + 1 !== ctx.body.length) {
+            while (!ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
+                ctx.eraseFuture(ctx.idx + 1);
+            }
+        }
+        
+        // Do we need this?
+        this._priority = realItems[0].type;
+
         if (ctx.beat < ctx.__globalBeat__) {
             return this._eatBeats(ctx);
         }
@@ -41,16 +56,15 @@ class PlaceholderModel extends Model {
                 ctx.body.splice(ctx.idx, 1, new BeginModel({}));
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.DURATION:
-                if (ctx.beat === ctx.__globalBeat__) {
-                    // for (var i = ctx.idx; i < ctx.body.length && ctx.body[i].priority === C.Type.DURATION; ++i) {
-                    //     // XXX: Check location
-                    //     if (ctx.body[i].type === C.Type.DURATION) {
-                    //         ctx.body[ctx.idx] = ctx.body[i];
-                    //         ctx.body[i] = this;
-                    //         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
-                    //     }
-                    // }
-                    // Should be resolved later by EndMarkerModel...
+                assert(!ctx.findVertical(c => c.priority !== C.Type.DURATION).length);
+                console.log(ctx.idx, C.Type[ctx.next(null, 1, true).type], C.Type[ctx.next(null, 1, true).priority]);
+                if (ctx.next(null, 1, true).type /* not priority! */ === C.Type.BEAM_GROUP) {
+                    var bodies: Array<Model> = ctx.findVertical(() => true, this.idx + 1);
+                    debugger;
+                    ctx.eraseFuture(this.idx + 1);
+                    ctx.insertPastVertical(bodies);
+                    debugger;
+                    return C.IterationStatus.RETRY_CURRENT;
                 }
                 break;
             case C.Type.TIME_SIGNATURE:
@@ -68,8 +82,10 @@ class PlaceholderModel extends Model {
 
     constructor(spec: {_priority: string}) {
         super(spec);
+        assert(isNaN(<any>spec._priority), "Expected string");
 
         this._priority = (<any>C.Type)[spec._priority];
+        assert(!isNaN(this._priority));
     }
 
     visible() {
@@ -92,6 +108,7 @@ class PlaceholderModel extends Model {
     }
 
     set priority(p: C.Type) {
+        assert(!isNaN(p), "Expected enum");
         this._priority = p;
     }
 

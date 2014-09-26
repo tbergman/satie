@@ -28,6 +28,9 @@ class BeamGroupModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        if (ctx.prev().type === C.Type.PLACEHOLDER) {
+            this.x = ctx.x = ctx.prev().x;
+        }
         // A clef must exist on each line.
         if (this.beamCount) {
             this.beam = [];
