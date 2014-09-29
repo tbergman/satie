@@ -77,12 +77,14 @@ export class Dispatcher {
                 (action.postData ? [action.postData] : []), [action]);
         }
 
-        if (_events.length > 6000) {
-            _events = _events.substr(_events.length - 6000);
+        if (global.localStorage && localStorage["superCowPowers"]) {
+            if (_events.length > 6000) {
+                _events = _events.substr(_events.length - 6000);
+            }
+            _events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
+                JSON.stringify(action.query ? " " + action.query : "") + " " +
+                JSON.stringify(action.postData) + "\n";
         }
-        _events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
-            JSON.stringify(action.query ? " " + action.query : "") + " " +
-            JSON.stringify(action.postData) + "\n";
 
         if (inAction) {
             assert(false, "Queuing an action during an action is a violation of Flux");

@@ -59,5 +59,9 @@ function render() { "use strict";
         component = FiveOhFive({ session: SessionStore.Instance.session });
     }
 
-    React.renderComponent(component, document.body);
+    try {
+        React.renderComponent(component, document.body);
+    } catch(err) {
+        React.renderComponent(FiveOhFive({ session: SessionStore.Instance.session }), document.body);
+    }
 };

@@ -1256,9 +1256,7 @@ export class SongEditorStore extends TSEE {
         this._peerRelay = new WebSocket("ws://" + window.location.host +
             "/api/song/_" + id + "/peerRelay");
         this._peerRelay.onmessage = this._handleRelayMessage.bind(this);
-        this._peerRelay.onerror = function (e) { console.log("RELAY ERR", e); };
-        this._peerRelay.onopen = function (o) { console.log("RELAY OPEN", o); };
-        this._peerRelay.onclose = function (o) { console.log("RELAY CLOSE", o); };
+        // TODO : this._peerRelay.{onerror | onopen | onclose }
     }
 
     _ping() {
@@ -1290,10 +1288,12 @@ export class SongEditorStore extends TSEE {
     }
 
     private _handleRelayMessage(msg: any) {
-        if (this._relayHistory.length > 6000) {
-            this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
+        if (global.localStorage && localStorage["superCowPowers"]) {
+            if (this._relayHistory.length > 6000) {
+                this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
+            }
+            this._relayHistory += "Received: " + msg.data + "\n";
         }
-        this._relayHistory += "Received: " + msg.data + "\n";
         if (msg.data.indexOf("PATCH") === 0) {
             Dispatcher.PUT("/local/song/patch", msg.data);
             return;
