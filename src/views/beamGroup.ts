@@ -28,6 +28,8 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
         var firstP: any;
         var lastP: any;
 
+        var heightDeterminingCount: number = 0;
+
         var Xs: Array<number> = [];
         var Ys: Array<number> = [];
 
@@ -35,15 +37,19 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
             // All notes in a beam have a unique key
             note.props.key = "child-" + idx;
 
+            // YUCK: add refs or something.
             firstP = firstP || (note.props.isNote ? note.props : note.props.children.props);
-                // YUCK: add refs or something.
 
+            // YUCK: add refs or something.
             lastP = note.props.isNote ? note.props : note.props.children.props;
-                // YUCK: add refs or something.
+
+            heightDeterminingCount = Math.max(heightDeterminingCount, lastP.heightDeterminingCount);
 
             Xs.push(note.props.x);
             Ys.push(note.props.y);
         });
+
+        var heightFromCount = Math.max(0, (Math.log(heightDeterminingCount) / Math.log(2)) - 2) / 2;
 
         var direction = BeamGroupModel.decideDirection(firstP.line, lastP.line);
 
@@ -67,7 +73,7 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
 
         var dynamicM = m / (Xs[Xs.length - 1] - Xs[0]);
 
-        var b = line1 + stemHeight1;
+        var b = line1 + stemHeight1 + heightFromCount;
 
         function getSH(direction: number, idx: number, line: number) {
             return (b * direction +

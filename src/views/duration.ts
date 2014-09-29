@@ -56,6 +56,7 @@ export function Component(props: IProps) {
             accStrokes: spec.accStrokes,
             direction: spec.direction,
             dotted: spec.displayDots,
+            heightDeterminingCount: spec.count,
             flag: spec.flag,
             fontSize: props.fontSize,
             hasStem: spec.hasStem,

@@ -155,9 +155,11 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
             return this.props.stemHeight;
         }
 
-        var extraHeight = this.getHighestLine() - this.getLowestLine();
-        var idealStemHeight = IDEAL_STEM_HEIGHT + extraHeight;
-        var minStemHeight = MIN_STEM_HEIGHT + extraHeight;
+        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2;
+
+        var heightFromOtherNotes = this.getHighestLine() - this.getLowestLine();
+        var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
+        var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
 
         var start = this.getHeightDeterminingLine();
         var idealExtreme = start + this.getDirection()*idealStemHeight;
@@ -305,6 +307,7 @@ export interface IProps {
     flag?: string;
     fontSize?: number;
     hasStem?: boolean;
+    heightDeterminingCount?: number;
     key?: string;
     line?: any;
     notehead?: string;

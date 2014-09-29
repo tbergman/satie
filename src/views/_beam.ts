@@ -117,7 +117,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
      * Offset because the note-head has a non-zero width.
      */
     getLineXOffset() {
-        return this.getDirection() * -this.props.stemWidth/2;
+        return this.getDirection() * -this.props.stemWidth / 2;
     }
 
     /**

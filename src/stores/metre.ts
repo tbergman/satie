@@ -417,11 +417,8 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
     return wholeNotePatterns[tsName];
 }
 
-var _1024  = C.makeDuration({count: 1024});
-var _1024D = C.makeDuration({count: 1024, dots: 1});
-var _512   = C.makeDuration({count: 512});
-var _512D  = C.makeDuration({count: 512, dots: 1});
-var _256   = C.makeDuration({count: 256});
+var _512   = C.makeDuration({ count: 512 });
+var _256   = C.makeDuration({ count: 256 });
 var _256D  = C.makeDuration({count: 256, dots: 1});
 var _128   = C.makeDuration({count: 128});
 var _128D  = C.makeDuration({count: 128, dots: 1});
@@ -444,7 +441,7 @@ var _1DD   = C.makeDuration({count: 1, dots: 2});
 var _05    = C.makeDuration({ count: 1 / 2 });
 
 var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
-    _64D, _64, _128D, _128, _256D, _256, _512D, _512, _1024D, _1024];
+    _64D, _64, _128D, _128, _256D, _256, _512];
 
 // Adapted from Behind Bars (E. Gould) page 155
 var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
