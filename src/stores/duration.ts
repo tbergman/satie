@@ -57,6 +57,13 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         this.isWholeBar = this._beats === ctx.timeSignature.beats;
 
+        this.getWholebarRestX = null;
+        if (this.isWholebar && this.isRest) {
+            var prev = ctx.prev();
+            var next = ctx.next();
+            this.getWholebarRestX = () => (prev.x && next.x) ? (prev.x + next.x) / 2 : this.x;
+        }
+
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
             if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
@@ -1188,6 +1195,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         return str;
     }
+
+    getWholebarRestX: () => number;
 
     get temporary(): boolean { return !!(this._flags & Flags.TEMPORARY); }
     set temporary(v: boolean) {

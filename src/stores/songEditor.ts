@@ -561,23 +561,7 @@ export class SongEditorStore extends TSEE {
             console.time("Parse source");
         }
 
-        if (src.length && src[0] === "[") {
-            _staves = JSON.parse(src);
-            for (var i = 0; i < _staves.length; ++i) {
-                var body = _staves[i].body;
-                if (body) {
-                    body.instrument = Instruments.List[0];
-                    for (var j = 0; j < body.length; ++j) {
-                        body[j] = Model.fromJSON(body[j]);
-                    }
-                }
-                if (_staves[i].paper) {
-                    _staves[i].paper = new C.Paper(_staves[i].paper);
-                }
-            }
-        } else {
-            _staves = lylite.parse(src);
-        }
+        _staves = SongEditorStore.parse(src);
         C.addDefaults(_staves);
 
         _staveHeight = _.find(_staves, s => s.staveHeight).staveHeight;
@@ -710,6 +694,28 @@ export class SongEditorStore extends TSEE {
         if (PROFILER_ENABLED) {
             console.timeEnd("annotate");
         }
+    }
+
+    static parse(src: string): Array<C.IStave> {
+        var staves: Array<C.IStave> = null;
+        if (src.length && src[0] === "[") {
+            staves = JSON.parse(src);
+            for (var i = 0; i < staves.length; ++i) {
+                var body = staves[i].body;
+                if (body) {
+                    body.instrument = Instruments.List[0];
+                    for (var j = 0; j < body.length; ++j) {
+                        body[j] = Model.fromJSON(body[j]);
+                    }
+                }
+                if (staves[i].paper) {
+                    staves[i].paper = new C.Paper(staves[i].paper);
+                }
+            }
+        } else {
+            staves = lylite.parse(src);
+        }
+        return staves;
     }
 
     markClean() {
@@ -1379,6 +1385,9 @@ export var markRendererClean = () => {
 export var markRendererLineDirty = (line: number) => {
     // Mark a given line as dirty
     // NOT a Flux method.
+    if (!_staves) {
+        return;
+    }
     for (var i = 0; i < _staves.length; ++i) {
         _linesToUpdate[i + "_" + line] = true;
     }

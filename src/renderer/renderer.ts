@@ -21,6 +21,7 @@ import Model = require("../stores/model");
 import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import svgCssBlob = require("./svgCssBlob");
 var Rect = require("../views/_rect.jsx");
 var Group = require("../views/_group.jsx");
 var Line = require("../views/_line.jsx");
@@ -98,6 +99,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
                     viewbox: viewbox
                 },
+                this.props.raw && (<any>React.DOM)["defs"]({
+                    dangerouslySetInnerHTML: { __html: svgCssBlob.svgCSSBlob }
+                }),
                 /* Using staves is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */
                 _.map(staves, (stave: C.IStave, idx: number) => {

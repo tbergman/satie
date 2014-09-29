@@ -54,6 +54,7 @@ export class Context implements C.MetreContext {
         var error: Error = null;
         var result: C.IAnnotationResult;
         assert(from.bar !== 0);
+        assert(this._staves, "Staves must be set!");
 
         try {
             result = this._annotateImpl(from, mutation, cursor, disableRecording);
@@ -918,7 +919,7 @@ class PrivIterator {
 
     /**
      * Merges information from all componentSnapshots into context.
-     *
+     * 
      * @param origSnapshot the snapshot from the previous index
      * @param componentSnapshots the snapshots to merge into ctx
      * @param filtered true if at least one placeholder has been removed from componentSnapshots
@@ -973,7 +974,6 @@ class PrivIterator {
                     ctx.prevClefByStave[i] = componentSnapshots[visibleStaveIdx].prevClefByStave[i];
                 }
             }
-            console.log("@", ctx.prevClefByStave);
         }
     }
 
@@ -1123,7 +1123,7 @@ class PrivIterator {
     }
 
     private _clearCursor() {
-        if (this._parent.line === this._cursor.annotatedLine) {
+        if (this._cursor && this._parent.line === this._cursor.annotatedLine) {
             this._cursor.annotatedLine = null;
             this._cursor.annotatedObj = null;
             this._cursor.annotatedPage = null;
@@ -1206,7 +1206,7 @@ class PrivIteratorComponent {
         this._nextBeat = ctx.beat;
         ///
 
-        var isClean = status === C.IterationStatus.SUCCESS && !this._mutation && this._cursor.annotatedObj;
+        var isClean = status === C.IterationStatus.SUCCESS && !this._mutation && (!this._cursor || this._cursor.annotatedObj);
         var isNewline = this.curr && this.curr.type === C.Type.NEWLINE;
 
         if (status === C.IterationStatus.SUCCESS && shouldUpdateVC) {

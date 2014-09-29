@@ -67,7 +67,6 @@ class NewlineModel extends Model {
         ctx.x = ctx.initialX;
         ctx.y += ctx.lineSpacing;
         ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
-        console.log("|", ctx.prevClefByStave);
         ctx.prevKeySignature = ctx.keySignature;
         ctx.smallest = 10000;
         ctx.clef = null;

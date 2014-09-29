@@ -45,7 +45,7 @@ export function Component(props: IProps) {
                 fontSize: props.fontSize,
                 notehead: spec.restHead,
                 stroke: spec.color,
-                x: spec.x,
+                x: spec.isRest && spec.isWholebar ? spec.getWholebarRestX() : spec.x,
                 y: spec.y},
             markings
         );

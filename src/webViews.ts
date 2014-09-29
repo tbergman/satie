@@ -44,7 +44,7 @@ export function initWebViews() { "use strict";
     defineType(C.Type.TIME_SIGNATURE, TimeSignatureModel, TimeSignatureView.Component);
 
     function defineType(type: C.Type, model: any, view: C.IViewComponent) {
-        Model.constructorsByType[C.Type[type]] = function (spec: any) { return new model(spec); }
+        Model.constructorsByType[C.Type[type]] = function (spec: any) { return new model(spec); };
         model.setView(view);
     }
 };

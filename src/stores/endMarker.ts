@@ -81,7 +81,6 @@ class EndMarkerModel extends Model {
                     return new DurationModel(beat, C.Source.ANNOTATOR);
                 });
 
-            console.log("UF");
             ctx.splice(this.idx, 0, toAdd);
 
             return C.IterationStatus.RETRY_LINE; // we really need a RETRY_BAR...
