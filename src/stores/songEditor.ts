@@ -34,8 +34,9 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * Flux store for the song being edited.
  */
 export class SongEditorStore extends TSEE {
-    constructor() {
+    constructor(session: SessionStore.SessionStore) {
         super();
+        this._session = session;
         this.clear();
 
         Dispatcher.Instance.register(this.handleAction.bind(this));
@@ -50,7 +51,7 @@ export class SongEditorStore extends TSEE {
         switch(action.description) {
             case "GET /api/v0/song":
             case "PUT /local/song/show":
-                activeSong = SessionStore.Instance.activeSong;
+                activeSong = this._session.activeSong;
                 if (USING_LEGACY_AUDIO) {
                     _.defer(this.downloadLegacyAudio.bind(this));
                 }
@@ -87,7 +88,7 @@ export class SongEditorStore extends TSEE {
                 break;
 
             case "PUT /api/v0/song":
-                activeSong = SessionStore.Instance.activeSong;
+                activeSong = this._session.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     this._savesInTransit++;
@@ -96,7 +97,7 @@ export class SongEditorStore extends TSEE {
                 break;
 
             case "PUT /api/v0/song DONE":
-                activeSong = SessionStore.Instance.activeSong;
+                activeSong = this._session.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     this._savesInTransit--;
@@ -175,7 +176,7 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /api/v0/song ERROR":
                 alert("Could not save changes. Check your Internet connection.");
-                activeSong = SessionStore.Instance.activeSong;
+                activeSong = this._session.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
                     this._savesInTransit--;
@@ -185,7 +186,7 @@ export class SongEditorStore extends TSEE {
 
             case "PUT /local/song/forceUpdate":
                 this.clear();
-                activeSong = SessionStore.Instance.activeSong;
+                activeSong = this._session.activeSong;
                 this.reparse(activeSong.src);
                 this.emit(CHANGE_EVENT);
                 break;
@@ -1236,11 +1237,11 @@ export class SongEditorStore extends TSEE {
     }
 
     throttledAutosave = _.throttle(() => {
-        if (SessionStore.Instance.apiRole !== C.ApiRole.PRIMARY) {
+        if (this._session.apiRole !== C.ApiRole.PRIMARY) {
             return;
         }
 
-        var active = SessionStore.Instance.activeSong;
+        var active = this._session.activeSong;
         if (active) {
             Dispatcher.PUT("/api/v0/song/_" + active._id, { src: this.src });
         }
@@ -1276,12 +1277,12 @@ export class SongEditorStore extends TSEE {
             this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
         }
 
-        var permission = SessionStore.Instance.apiRole === C.ApiRole.PRIMARY ? "[BROADCAST]" : "[REQUEST]";
+        var permission = this._session.apiRole === C.ApiRole.PRIMARY ? "[BROADCAST]" : "[REQUEST]";
 
         var msg = permission + "PATCH\n";
         msg += Collab.barKeysDiff(origBars, newBars) + "\n";
         msg += diff.join("") + "\n";
-        if (SessionStore.Instance.apiRole === C.ApiRole.OFFLINE) {
+        if (this._session.apiRole === C.ApiRole.OFFLINE) {
             this._relayHistory += "Offline: " + msg;
         } else {
             this._relayHistory += "Sending: " + msg + "\n";
@@ -1390,6 +1391,7 @@ export class SongEditorStore extends TSEE {
 	private _prevActiveSong: C.ISong = null;
 	private _savesInTransit: number = 0;
 	private _selection: Array<Model> = null;
+    private _session: SessionStore.SessionStore;
 	private _snapshots: { [key: string]: any } = {};
     private _socialModalVisible: boolean = false;
 	private _staveHeight: number = null;

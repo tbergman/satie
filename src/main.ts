@@ -26,7 +26,9 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     initTouchIfNeeded();
     setDebugGlobals();
     webViews.initWebViews();
-    Dispatcher.GET("/api/v0/user/session", null, render);
+
+    var session = new SessionStore.SessionStore();
+    Dispatcher.GET("/api/v0/user/session", null, render.bind(null, session));
 }());
 
 function initTouchIfNeeded() { "use strict";
@@ -46,22 +48,18 @@ function setDebugGlobals() { "use strict";
     global.ReactPerf = ReactPerf; // for monkeying around in the console
 }
 
-function render() { "use strict";
+function render(session: SessionStore.SessionStore) { "use strict";
     var component: React.ReactComponent<any, any>;
 
-    if (SessionStore.Instance.session.state !== undefined) {
-        component = Router.Component({
-            errors: SessionStore.Instance.errors,
-            session: SessionStore.Instance.session,
-            songs: SessionStore.Instance.songs
-        });
+    if (session.info.state !== undefined) {
+        component = Router.Component({ session: session });
     } else {
-        component = FiveOhFive({ session: SessionStore.Instance.session });
+        component = FiveOhFive({ session: session.info });
     }
 
     try {
         React.renderComponent(component, document.body);
     } catch(err) {
-        React.renderComponent(FiveOhFive({ session: SessionStore.Instance.session }), document.body);
+        React.renderComponent(FiveOhFive({ session: session.info }), document.body);
     }
 };
