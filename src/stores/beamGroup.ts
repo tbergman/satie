@@ -66,8 +66,7 @@ class BeamGroupModel extends Model {
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet || null;
-        var SongEditorStore = require("./songEditor"); // Recursive dependency.
-        SongEditorStore.beamCountIs(ctx.beat);
+        ctx.songEditor.beamCountIs(ctx.beat);
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {

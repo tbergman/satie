@@ -14,6 +14,7 @@ import Dispatcher = require("./dispatcher");
 import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
+import SongEditorStore = require("./songEditor");
 require("./session"); // Must be registered before PlaybackStore!
 
 var enabled = (typeof document !== "undefined");
@@ -46,11 +47,14 @@ export var CHANGE_EVENT = "change";
 export var LOAD_EVENT = "load";
 
 export class PlaybackStore extends TSEE {
-    constructor() {
+    constructor(songEditor: SongEditorStore.SongEditorStore) {
         super();
         Dispatcher.Instance.register(this.handleAction.bind(this));
 
-        _playing = false;
+        this._songEditor = songEditor;
+        this._playing = false;
+
+        songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
 
         if (USING_LEGACY_AUDIO) {
             var store = this;
@@ -90,11 +94,11 @@ export class PlaybackStore extends TSEE {
             case "PUT /local/visualCursor":
                 if (!this._pendingInstruments) {
                     if (action.resource === "togglePlay") {
-                        this._play(!_playing);
+                        this._play(!this._playing);
 
                         this.emit(CHANGE_EVENT);
-                    } else if (_playing && action.postData && !action.postData.step) {
-                        _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
+                    } else if (this._playing && action.postData && !action.postData.step) {
+                        this._timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
                     }
                 }
                 break;
@@ -121,7 +125,7 @@ export class PlaybackStore extends TSEE {
 
             case "PUT /local/bpm":
                 this._bpm = parseInt(action.postData, 10);
-                if (_playing) {
+                if (this._playing) {
                     this._play(false);
                     this._play(true);
                 }
@@ -132,9 +136,9 @@ export class PlaybackStore extends TSEE {
     }
 
     _play(on: boolean) {
-        _playing = on;
-        if (_playing) {
-            _timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
+        this._playing = on;
+        if (this._playing) {
+            this._timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
         } else {
             (this._remainingActions || []).forEach(m => {
                 m();
@@ -143,7 +147,6 @@ export class PlaybackStore extends TSEE {
     }
 
     continuePlay() {
-        var SongEditorStore = require("./songEditor");
         var Annotator = require("./annotator"); // Recursive.
         var beats: number;
         var delays: Array<number> = [];
@@ -152,7 +155,7 @@ export class PlaybackStore extends TSEE {
         });
         this._remainingActions = [];
 
-        var aobj = SongEditorStore.Instance.visualCursor.annotatedObj;
+        var aobj = this._songEditor.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
             Dispatcher.PUT("/local/visualCursor", {
                 step: 1,
@@ -165,12 +168,12 @@ export class PlaybackStore extends TSEE {
         var foundLegacyStart = false;
         var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < SongEditorStore.Instance.staves.length; ++h) {
-            var body: C.IBody = SongEditorStore.Instance.staves[h].body;
+        for (var h = 0; h < this._songEditor.staves.length; ++h) {
+            var body: C.IBody = this._songEditor.staves[h].body;
             if (!body) {
                 continue;
             }
-            var visualCursor = SongEditorStore.Instance.visualCursor;
+            var visualCursor = this._songEditor.visualCursor;
             var delay = 0;
             var bpm = this.bpm;
             var timePerBeat = 60/bpm;
@@ -180,7 +183,7 @@ export class PlaybackStore extends TSEE {
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(SongEditorStore.Instance.staves, {});
+            var ctx = new Annotator.Context(this._songEditor.staves, {});
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
@@ -239,12 +242,12 @@ export class PlaybackStore extends TSEE {
             lastIdx = idx;
 
             var to = global.setTimeout(() => {
-                if (!_playing) {
+                if (!this._playing) {
                     return;
                 }
                 if (idx === lastIdx) {
                     global.setTimeout(() => {
-                        _playing = false;
+                        this._playing = false;
                         this.emit(CHANGE_EVENT);
                     });
                 }
@@ -283,7 +286,7 @@ export class PlaybackStore extends TSEE {
     }
 
     get playing() {
-        return _playing;
+        return this._playing;
     }
 
     get ready() {
@@ -324,7 +327,7 @@ export class PlaybackStore extends TSEE {
             this.emit(LOAD_EVENT);
         }
 
-        if (_playing) {
+        if (this._playing) {
             this._play(false);
         }
 
@@ -354,10 +357,11 @@ export class PlaybackStore extends TSEE {
 
     private _bpm: number = 120;
     private _lastChannel: number = -1;
-}
+    private _songEditor: SongEditorStore.SongEditorStore;
 
-var _playing: boolean;
-var _timeoutId: number;
+    private _playing: boolean;
+    private _timeoutId: number;
+}
 
 export function hit(note: any, velocity?: number, duration?: any) {
     "use strict";
@@ -379,6 +383,4 @@ export function hit(note: any, velocity?: number, duration?: any) {
 TSEE.length;
 /* tslint:enable */
 
-export var Instance = new PlaybackStore();
 export var latestID = 0;
-global.PlaybackStore = Instance;

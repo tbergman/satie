@@ -246,10 +246,10 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     componentWillReceiveProps(newProps: IRendererProps) {
         if (this.props.tool !== newProps.tool) {
             if (this.props.tool) {
-                this.props.tool.toolWillBeUnactive();
+                this.props.tool.toolWillBeUnactive(this.props.store);
             }
             if (newProps.tool) {
-                newProps.tool.toolWillBeActive();
+                newProps.tool.toolWillBeActive(this.props.store);
             }
         }
     }
@@ -263,7 +263,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
 
         if (this.props.tool) {
-            this.props.tool.toolWillBeActive();
+            this.props.tool.toolWillBeActive(this.props.store);
         }
     }
 
@@ -664,9 +664,9 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     event.preventDefault(); // we control all undo behavior
                     if (event.ctrlKey || event.metaKey) {
                         if (event.shiftKey) {
-                            History.Instance.redo();
+                            this.props.history.redo();
                         } else {
-                            History.Instance.undo();
+                            this.props.history.undo();
                         }
                     }
                     break;
@@ -760,6 +760,7 @@ export interface IRendererProps {
     top?: number;
     selection?: Array<Model>;
     height?: number;
+    history?: History.History;
     paper?: C.Paper;
 }
 

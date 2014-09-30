@@ -10,6 +10,7 @@ import _ = require("lodash");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
+import SongEditorStore = require("./songEditor");
 import lylite = require("./lylite");
 
 export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>) {
@@ -30,7 +31,8 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 staves: parsed,
                 staveIdx: 0
             };
-            context = new Annotator.Context(parsed, opts);
+            var songEditor = new SongEditorStore.SongEditorStore();
+            context = new Annotator.Context(parsed, opts, songEditor);
             context.annotate(null, null, null, true);
         });
         _.each(tests, test => it(

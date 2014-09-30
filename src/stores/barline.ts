@@ -14,7 +14,6 @@ import Annotator = require("./annotator");
 import EndMarkerModel = require("./endMarker");
 import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
-import SongEditorStore = require("./songEditor");
 import TimeSignatureModel = require("./timeSignature");
 
 /**
@@ -60,8 +59,8 @@ class BarlineModel extends Model {
             } else {
                 ctx.body.splice(i, ctx.idx - i);
                 ctx.markEntireSongDirty();
-                SongEditorStore.markRendererLineDirty(ctx.line - 1);
-                SongEditorStore.markRendererLineDirty(ctx.line);
+                ctx.songEditor.markRendererLineDirty(ctx.line - 1);
+                ctx.songEditor.markRendererLineDirty(ctx.line);
                 ctx.idx = i;
                 return C.IterationStatus.LINE_REMOVED;
             }

@@ -10,6 +10,7 @@ import assert = require("assert");
 import BarlineModel = require("./barline");
 import C = require("./contracts");
 import Model = require("./model");
+import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 /**
@@ -28,8 +29,9 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
  *     after the change is made, the staves are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(staves: Array<C.IStave>, layout: ILayoutOpts) {
+    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: SongEditorStore.SongEditorStore) {
         this._staves = staves;
+        this.songEditor = editor;
 
         if (layout.snapshot) {
             _cpysnapshot(this, layout.snapshot);
@@ -633,7 +635,10 @@ export class Context implements C.MetreContext {
      */
     prevKeySignature: C.IKeySignature;
 
-
+    /**
+     * The Flux store.
+     */
+    songEditor: SongEditorStore.SongEditorStore;
 
     private static _ANNOTATING: boolean = false;
     disableRecordings: boolean = true;
@@ -1132,8 +1137,7 @@ class PrivIterator {
     }
 
     private _markLineDirty() {
-        var SongEditorStore = require("./songEditor"); // recursive dependency.
-        SongEditorStore.markRendererLineDirty(this._parent.line);
+        this._parent.songEditor.markRendererLineDirty(this._parent.line);
         this._canExitAtNewline = false;
     }
 

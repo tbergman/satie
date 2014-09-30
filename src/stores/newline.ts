@@ -9,7 +9,6 @@ import Model = require("./model");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import NewPageModel = require("./newpage");
-import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import _ = require("lodash");
@@ -119,8 +118,7 @@ class NewlineModel extends Model {
         assert(ctx.lines[ctx.line].prevClefByStave);
         this.DEBUG_line = ctx.line;
 
-        var SongEditorStore = require("./songEditor"); // Recursive dependency.
-        SongEditorStore.snapshot(ctx);
+        ctx.songEditor.snapshot(ctx);
 
         return C.IterationStatus.SUCCESS;
     }
@@ -214,7 +212,7 @@ class NewlineModel extends Model {
     }
 
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
-        SongEditorStore.markRendererLineDirty(ctx.line + 1);
+        ctx.songEditor.markRendererLineDirty(ctx.line + 1);
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {

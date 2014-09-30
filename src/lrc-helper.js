@@ -158,7 +158,7 @@ var renderUtil = require("ripienoUtil/renderUtil");
 var V_PADDING = renderUtil.V_PADDING;
 
 var Renderer = require("./renderer/renderer.ts");
-
+var songEditor = new SongEditorStore();
 
 var RendererEnv = React.createClass({
     render: function() {
@@ -167,7 +167,7 @@ var RendererEnv = React.createClass({
         var height = this.props.height;
 
         return state.staves ?
-            Renderer({
+            Renderer.Component({
                 height: height,
                 key: "renderer",
                 marginBottom: V_PADDING,
@@ -177,7 +177,7 @@ var RendererEnv = React.createClass({
                 selection: state.selection,
                 staveHeight: state.staveHeight,
                 staves: state.staves,
-                store: SongEditorStore.Instance,
+                store: songEditor,
                 top: 44,
                 raw: true,
                 width: width
@@ -185,7 +185,7 @@ var RendererEnv = React.createClass({
             null;
     },
     componentWillMount: function() {
-        SongEditorStore.addChangeListener(this._onChange);
+        songEditor.addChangeListener(this._onChange);
         PlaybackStore.addChangeListener(this._onChange);
     },
     _onChange: function() {
@@ -193,10 +193,10 @@ var RendererEnv = React.createClass({
     },
     storeState: function() {
         return {
-            pageSize: SongEditorStore.Instance.pageSize,
-            selection: SongEditorStore.Instance.selection,
-            staveHeight: SongEditorStore.Instance.staveHeight,
-            staves: SongEditorStore.Instance.staves,
+            pageSize: songEditor.pageSize,
+            selection: songEditor.selection,
+            staveHeight: songEditor.staveHeight,
+            staves: songEditor.staves,
             playing: PlaybackStore.playing,
             midiReady: PlaybackStore.ready
         };
