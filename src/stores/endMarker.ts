@@ -53,13 +53,6 @@ class EndMarkerModel extends Model {
                 ctx.body[ctx.idx + 2].priority !== C.Type.NEWPAGE))) {
             ctx.eraseCurrent();
 
-            var SongEditor_r = require("./songEditor"); // Recursive dependency.
-            var visualCursor = SongEditor_r.Instance.visualCursor;
-            if (visualCursor.type === C.Type.END_MARKER && visualCursor.bar === ctx.bar) {
-                visualCursor.bar++;
-                visualCursor.beat = 1;
-                visualCursor.endMarker = false;
-            }
             return C.IterationStatus.RETRY_CURRENT;
         }
 

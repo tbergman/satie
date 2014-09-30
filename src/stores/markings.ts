@@ -16,11 +16,12 @@ var CHANGE_EVENT = "change";
  * Flux store for recent markings.
  */
 export class MarkingsStore extends TSEE {
-    constructor() {
+    constructor(dispatcher: Dispatcher.Dispatcher) {
         super();
         this._loadFromLocalStorage();
+        this._dispatcher = dispatcher;
 
-        Dispatcher.Instance.register(this.handleAction.bind(this));
+        this._dispatcher.register(this.handleAction.bind(this));
     }
 
     handleAction(action: C.IFluxAction) {
@@ -73,6 +74,7 @@ export class MarkingsStore extends TSEE {
         this._model = newModel;
     }
 
+    private _dispatcher: Dispatcher.Dispatcher;
     private _model: Array<IMarking>;
 }
 
@@ -83,8 +85,3 @@ export interface IMarking {
     y: number;
     scale: number;
 };
-
-export var Instance = new MarkingsStore();
-
-// Exposed for console debugging.
-global.MarkingsStore = Instance;

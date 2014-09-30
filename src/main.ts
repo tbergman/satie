@@ -22,16 +22,19 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
 /**
  * The webapp entry point.
  */
-(function main() { "use strict";
+(function main() {
+    "use strict";
     initTouchIfNeeded();
     setDebugGlobals();
     webViews.initWebViews();
 
-    var session = new SessionStore.SessionStore();
-    Dispatcher.GET("/api/v0/user/session", null, render.bind(null, session));
+    var dispatcher = new Dispatcher.Dispatcher();
+    var session = new SessionStore.SessionStore(dispatcher);
+    dispatcher.GET("/api/v0/user/session", null, render.bind(null, dispatcher, session));
 }());
 
-function initTouchIfNeeded() { "use strict";
+function initTouchIfNeeded() {
+    "use strict";
     var mobileBrowsers = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
 
     if (typeof window !== "undefined" && mobileBrowsers.test(navigator.userAgent)) {
@@ -43,16 +46,21 @@ function initTouchIfNeeded() { "use strict";
     }
 }
 
-function setDebugGlobals() { "use strict";
+function setDebugGlobals() {
+    "use strict";
     global.React = React; // for Chrome DevTools extension and React typescript extension
     global.ReactPerf = ReactPerf; // for monkeying around in the console
 }
 
-function render(session: SessionStore.SessionStore) { "use strict";
+function render(dispatcher: Dispatcher.Dispatcher, session: SessionStore.SessionStore) {
+    "use strict";
     var component: React.ReactComponent<any, any>;
 
     if (session.info.state !== undefined) {
-        component = Router.Component({ session: session });
+        component = Router.Component({
+            dispatcher: dispatcher,
+            session: session
+        });
     } else {
         component = FiveOhFive({ session: session.info });
     }

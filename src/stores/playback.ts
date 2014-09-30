@@ -15,7 +15,6 @@ import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
 import SongEditorStore = require("./songEditor");
-require("./session"); // Must be registered before PlaybackStore!
 
 var enabled = (typeof document !== "undefined");
 
@@ -47,9 +46,10 @@ export var CHANGE_EVENT = "change";
 export var LOAD_EVENT = "load";
 
 export class PlaybackStore extends TSEE {
-    constructor(songEditor: SongEditorStore.SongEditorStore) {
+    constructor(dispatcher: Dispatcher.Dispatcher, songEditor: SongEditorStore.SongEditorStore) {
         super();
-        Dispatcher.Instance.register(this.handleAction.bind(this));
+        this._dispatcher = dispatcher;
+        dispatcher.register(this.handleAction.bind(this));
 
         this._songEditor = songEditor;
         this._playing = false;
@@ -157,7 +157,7 @@ export class PlaybackStore extends TSEE {
 
         var aobj = this._songEditor.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
-            Dispatcher.PUT("/local/visualCursor", {
+            this._dispatcher.PUT("/local/visualCursor", {
                 step: 1,
                 skipThroughBars: true,
                 loopThroughEnd: true
@@ -251,7 +251,7 @@ export class PlaybackStore extends TSEE {
                         this.emit(CHANGE_EVENT);
                     });
                 }
-                Dispatcher.PUT("/local/visualCursor", {
+                this._dispatcher.PUT("/local/visualCursor", {
                     step: 1,
                     skipThroughBars: true
                 });
@@ -349,6 +349,8 @@ export class PlaybackStore extends TSEE {
         });
         this.emit(CHANGE_EVENT);
     }
+
+    private _dispatcher: Dispatcher.Dispatcher;
 
     private _remainingActions: Array<any> = [];
     private _loadedSoundfonts: { [sfName: string]: boolean } = {};

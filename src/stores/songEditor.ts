@@ -34,12 +34,13 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * Flux store for the song being edited.
  */
 export class SongEditorStore extends TSEE {
-    constructor(session: SessionStore.SessionStore) {
+    constructor(dispatcher: Dispatcher.Dispatcher, session: SessionStore.SessionStore) {
         super();
         this._session = session;
+        this._dispatcher = dispatcher; // XXX: Mixed concerns!
         this.clear();
 
-        Dispatcher.Instance.register(this.handleAction.bind(this));
+        dispatcher.register(this.handleAction.bind(this));
         _.delay(this._ping.bind(this), 128);
     }
 
@@ -770,7 +771,7 @@ export class SongEditorStore extends TSEE {
     }
 
     downloadLegacyAudio(opts?: { forExport?: boolean }, cb?: () => void) {
-        Dispatcher.POST("/api/v0/synth", {
+        this._dispatcher.POST("/api/v0/synth", {
             data: this.getDragonAudio(),
             cb: "" + ++PlaybackStore.latestID,
             forExport: opts && opts.forExport
@@ -1243,7 +1244,7 @@ export class SongEditorStore extends TSEE {
 
         var active = this._session.activeSong;
         if (active) {
-            Dispatcher.PUT("/api/v0/song/_" + active._id, { src: this.src });
+            this._dispatcher.PUT("/api/v0/song/_" + active._id, { src: this.src });
         }
     }, (1000 * ((global.localStorage && global.localStorage.autosaveDelay) || 3)),
         { leading: false });
@@ -1298,13 +1299,13 @@ export class SongEditorStore extends TSEE {
             this._relayHistory += "Received: " + msg.data + "\n";
         }
         if (msg.data.indexOf("PATCH") === 0) {
-            Dispatcher.PUT("/local/song/patch", msg.data);
+            this._dispatcher.PUT("/local/song/patch", msg.data);
             return;
         }
         var parsed = JSON.parse(msg.data);
 
         if (parsed.newStatus) {
-            Dispatcher.PUT("/local/apiRole", parsed.newStatus);
+            this._dispatcher.PUT("/local/apiRole", parsed.newStatus);
         }
     }
 
@@ -1381,6 +1382,7 @@ export class SongEditorStore extends TSEE {
     private _copyModalVisible: boolean = false;
 	private _ctx: Annotator.Context = null;
 	private _dirty = false;
+    private _dispatcher: Dispatcher.Dispatcher;
     private _exportModalVisible: boolean = false;
 	private _linesToUpdate: { [key: string]: boolean } = {};
     private _metadataModalVisible: boolean = false;

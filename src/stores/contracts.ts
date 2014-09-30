@@ -128,6 +128,20 @@ export enum Clef {
 }
 
 /**
+ * An exception thrown during a dispatch event that states a different dispatch event
+ * should be executed.
+ */
+export class DispatcherRedirect {
+    constructor(verb: string, newUrl: string) {
+        this.newUrl = newUrl;
+        this.verb = verb;
+    }
+
+    newUrl: string;
+    verb: string;
+}
+
+/**
  * Any data structure that holds a duration, such as a chord or a rest.
  * A simple realization of IDuration can be constructed from C.makeDuration().
  * 

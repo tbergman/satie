@@ -255,7 +255,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     }
 
     componentDidMount() {
-        if (isBrowser) {
+        if (isBrowser && this.props.dispatcher) {
             this.setupBrowserListeners();
         }
         if (this.props.store) {
@@ -456,7 +456,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
         if (!this.props.tool && data.ctxData) {
-            Dispatcher.PUT("/local/visualCursor", {
+            this.props.dispatcher.PUT("/local/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
@@ -467,7 +467,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
-            Dispatcher.PUT("/local/tool/_action", {mouseData: data, fn: fn});
+            this.props.dispatcher.PUT("/local/tool/_action", {mouseData: data, fn: fn});
         }
         this.forceUpdate();
     }
@@ -493,7 +493,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 }
             });
             if (this.props.selection) {
-                Dispatcher.DELETE("/local/selection");
+                this.props.dispatcher.DELETE("/local/selection");
             }
         }
     }
@@ -525,7 +525,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 selectionRect: null
             });
             if (_selection) {
-                Dispatcher.PUT("/local/selection", _selection.length ? _selection : null);
+                this.props.dispatcher.PUT("/local/selection", _selection.length ? _selection : null);
             }
         }
     }
@@ -541,7 +541,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
             if (area > 1 && this.props.tool) {
-                Dispatcher.DELETE("/local/tool");
+                this.props.dispatcher.DELETE("/local/tool");
             }
             return;
         }
@@ -623,41 +623,41 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
                 case 32: // space
                     event.preventDefault(); // don't navigate backwards
-                    Dispatcher.PUT("/local/visualCursor/_togglePlay", null);
+                    this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
                     break;
                 case 27: // escape
-                    Dispatcher.PUT("/local/tool", null);
+                    this.props.dispatcher.PUT("/local/tool", null);
                     break;
                 case 8: // backspace
                 case 46: // delete
                     event.preventDefault(); // don't navigate backwards
                     if (_selection) {
-                        Dispatcher.POST("/local/selection/_eraseAll");
+                        this.props.dispatcher.POST("/local/selection/_eraseAll");
                     } else if (!this.props.tool) {
-                        Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                        this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                     }
                     if (this.props.tool) {
-                        this.props.tool.handleKeyPressEvent("backspace", event);
+                        this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
                     }
                     break;
                 case 37: // left arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    Dispatcher.PUT("/local/visualCursor", {step: -1});
+                    this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
                     break;
                 case 39: // right arrow
                     event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    Dispatcher.PUT("/local/visualCursor", {step: 1});
+                    this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
                     break;
                 case 38: // up arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        Dispatcher.PUT("/local/visualCursor/_octave", { delta: 1 });
+                        this.props.dispatcher.PUT("/local/visualCursor/_octave", { delta: 1 });
                     }
                     break;
                 case 40: // down arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        Dispatcher.PUT("/local/visualCursor/_octave", { delta: -1 });
+                        this.props.dispatcher.PUT("/local/visualCursor/_octave", { delta: -1 });
                     }
                     break;
                 case 90: // 'z'
@@ -700,18 +700,18 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (!this.props.tool) {
                 if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
                     key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                    Dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                 } else if (key === "r") {
-                    Dispatcher.PUT("/local/tool", new RestTool());
+                    this.props.dispatcher.PUT("/local/tool", new RestTool());
                 } else if (key === ".") {
-                    Dispatcher.PUT("/local/tool", new DotTool());
+                    this.props.dispatcher.PUT("/local/tool", new DotTool());
                 }
             }
             var toolFn = keyToTool[key];
             if (toolFn) {
-                Dispatcher.PUT("/local/tool", toolFn());
+                this.props.dispatcher.PUT("/local/tool", toolFn());
             } else if (this.props.tool) {
-                this.props.tool.handleKeyPressEvent(key, event);
+                this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
             }
         }, 70);
 
@@ -750,6 +750,7 @@ export var Component = ReactTS.createReactComponent(Renderer);
 
 export interface IRendererProps {
     context?: Annotator.Context;
+    dispatcher?: Dispatcher.Dispatcher;
     marginTop?: number;
     pageSize?: C.IPageSize;
     raw?: boolean;

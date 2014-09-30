@@ -399,6 +399,10 @@ export class Context implements C.MetreContext {
             .value();
     }
 
+    midiOutHint(out: Array<number>) {
+        // TODO
+    }
+
     get nextActualType(): number {
         var i = this.idx + 1;
         while (i < this.body.length && this.body[i].type === C.Type.PLACEHOLDER) {
@@ -1015,8 +1019,7 @@ class PrivIterator {
                 this._rollbackLine(this._parent.line - 1);
                 break;
             case C.IterationStatus.RETRY_BEAM:
-                var SongEditorStore = require("./songEditor"); // Recursive dependency.
-                this._parent.loc.beat = SongEditorStore.getBeamCount();
+                this._parent.loc.beat = this._parent.songEditor.getBeamCount();
                 this._rewind(C.Type.BEAM_GROUP);
                 this._parent.x = this._componentWithType(C.Type.BEAM_GROUP).x;
                 break;

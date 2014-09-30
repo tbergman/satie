@@ -69,7 +69,7 @@ export class Dispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    dispatch(action: C.IFluxAction) {
+    private _dispatch(action: C.IFluxAction) {
         if (FLUX_DEBUG || inAction) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
@@ -106,9 +106,120 @@ export class Dispatcher {
             });
         /* tslint:enable */
     }
-}
 
-export var Instance = new Dispatcher();
+    dispatch(url: string, verb: string, postData: any, cb?: () => void) : void {
+	    assert(verb, "Verb must be defined");
+
+	    var root = url;
+	    var resource: string = null;
+	    var query: string = null;
+
+	    if (root.indexOf("?") !== -1) {
+	        query = root.substr(root.indexOf("?") + 1);
+	        root = root.substr(0, root.indexOf("?"));
+	    }
+	    if (root.indexOf("/_") !== -1) {
+	        resource = root.substr(root.indexOf("/_") + 2);
+	        root = root.substr(0, root.indexOf("/_"));
+	    }
+
+	    if (verb === "GET") {
+	        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
+	            this._dispatch({
+	                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
+	                status: request.status,
+	                resource: resource,
+	                query: query,
+	                url: url,
+	                response: response,
+	                postData: null
+	            });
+
+	            if (cb) {
+	                cb();
+	            }
+	        });
+	    } else if (verb in immediateActions) {
+	        this._dispatch({
+	            description: verb + " " + root,
+	            resource: resource,
+	            response: null,
+	            status: null,
+	            query: query,
+	            postData: postData
+	        });
+
+	        if ((verb in networkActions) && !url.indexOf("/api")) {
+	            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
+	                this._dispatch({
+	                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
+	                    status: request.status,
+	                    resource: resource,
+	                    query: query,
+	                    url: url,
+	                    response: response,
+	                    postData: null
+	                });
+
+	                if (cb) {
+	                    cb();
+	                }
+	            });
+	        } else {
+	            assert(!cb, "Callbacks are only necessary for network actions.");
+	        }
+	    }
+	}
+
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+	DELETE(url: string, p?: any, cb?: () => void) {
+	    this.dispatch(url, "DELETE", p, cb);
+	}
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+	PUT(url: string, p?: any, cb?: () => void) {
+	    this.dispatch(url, "PUT", p, cb);
+	}
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+	POST(url: string, p?: any, cb?: () => void) {
+	    this.dispatch(url, "POST", p, cb);
+	}
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+	GET(url: string, p?: any, cb?: () => void) {
+	    this.dispatch(url, "GET", p, cb);
+	}
+}
 
 var inAction = false;
 
@@ -123,119 +234,6 @@ var networkActions = {
     POST: true,
     PUT: true,
     DELETE: true
-};
-
-export var dispatch = function(url: string, verb: string, postData: any, cb?: () => void) : void {
-    assert(verb, "Verb must be defined");
-
-    var root = url;
-    var resource: string = null;
-    var query: string = null;
-
-    if (root.indexOf("?") !== -1) {
-        query = root.substr(root.indexOf("?") + 1);
-        root = root.substr(0, root.indexOf("?"));
-    }
-    if (root.indexOf("/_") !== -1) {
-        resource = root.substr(root.indexOf("/_") + 2);
-        root = root.substr(0, root.indexOf("/_"));
-    }
-
-    if (verb === "GET") {
-        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
-            Instance.dispatch({
-                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
-                status: request.status,
-                resource: resource,
-                query: query,
-                url: url,
-                response: response,
-                postData: null
-            });
-
-            if (cb) {
-                cb();
-            }
-        });
-    } else if (verb in immediateActions) {
-        Instance.dispatch({
-            description: verb + " " + root,
-            resource: resource,
-            response: null,
-            status: null,
-            query: query,
-            postData: postData
-        });
-
-        if ((verb in networkActions) && !url.indexOf("/api")) {
-            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
-                Instance.dispatch({
-                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
-                    status: request.status,
-                    resource: resource,
-                    query: query,
-                    url: url,
-                    response: response,
-                    postData: null
-                });
-
-                if (cb) {
-                    cb();
-                }
-            });
-        } else {
-            assert(!cb, "Callbacks are only necessary for network actions.");
-        }
-    }
-};
-
-
-/**
- * Dispatch a Flux-style event.
- * 
- * @param cb The callback should not be used for any logic that could potentially
- * take place in the stores. If a callback is specified, the request must
- * be a network request. The callback will be called regardless of whether
- * the event suceeded or not.
- */
-export var DELETE = function(url: string, p?: any, cb?: () => void) {
-    dispatch(url, "DELETE", p, cb);
-};
-
-/**
- * Dispatch a Flux-style event.
- * 
- * @param cb The callback should not be used for any logic that could potentially
- * take place in the stores. If a callback is specified, the request must
- * be a network request. The callback will be called regardless of whether
- * the event suceeded or not.
- */
-export var PUT = function(url: string, p?: any, cb?: () => void) {
-    dispatch(url, "PUT", p, cb);
-};
-
-/**
- * Dispatch a Flux-style event.
- * 
- * @param cb The callback should not be used for any logic that could potentially
- * take place in the stores. If a callback is specified, the request must
- * be a network request. The callback will be called regardless of whether
- * the event suceeded or not.
- */
-export var POST = function(url: string, p?: any, cb?: () => void) {
-    dispatch(url, "POST", p, cb);
-};
-
-/**
- * Dispatch a Flux-style event.
- * 
- * @param cb The callback should not be used for any logic that could potentially
- * take place in the stores. If a callback is specified, the request must
- * be a network request. The callback will be called regardless of whether
- * the event suceeded or not.
- */
-export var GET = function(url: string, p?: any, cb?: () => void) {
-    dispatch(url, "GET", p, cb);
 };
 
 /**
