@@ -29,85 +29,29 @@ var _promises: Array<Promise<any>> = [];
 var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 
-/**
- * Add a promise to the queue of callback invocation promises.
- * @param {function} callback The Store"s registered callback.
- * @param {object} payload The data from the Action.
- */
-var _addPromise = function(callback: (payload: any) => boolean, payload: any) {
-    _promises.push(new Promise.Promise(function(resolve, reject) {
-        if (callback(payload)) {
-            resolve(payload);
-        } else {
-            reject(new Error("Dispatcher callback unsuccessful"));
-        }
-    }));
-};
-
-/**
- * Empty the queue of callback invocation promises.
- */
-var _clearPromises = function() {
-    _promises = [];
-    inAction = false;
-};
-
-export class Dispatcher {
-    /**
-     * Register a Store's callback so that it may be invoked by an action.
-     * @param {function} callback The callback to be registered.
-     * @return {number} The index of the callback within the _callbacks array.
-     */
+class Dispatcher implements C.IDispatcher {
     register(callback: (payload: any) => boolean) {
         _callbacks.push(callback);
         return _callbacks.length - 1; // index
     }
 
-    inAction : boolean = false;
+	DELETE(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "DELETE", p, cb);
+	}
 
-    /**
-     * dispatch
-     * @param  {object} action The data from the action.
-     */
-    private _dispatch(action: C.IFluxAction) {
-        if (FLUX_DEBUG || inAction) {
-            console.log(action.description +
-                (action.resource ? " " + action.resource : ""),
-                (action.query ? " " + action.query : ""),
-                (action.postData ? [action.postData] : []), [action]);
-        }
+	PUT(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "PUT", p, cb);
+	}
 
-        if (global.localStorage && localStorage["superCowPowers"]) {
-            if (_events.length > 6000) {
-                _events = _events.substr(_events.length - 6000);
-            }
-            _events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
-                JSON.stringify(action.query ? " " + action.query : "") + " " +
-                JSON.stringify(action.postData) + "\n";
-        }
+	POST(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "POST", p, cb);
+	}
 
-        if (inAction) {
-            assert(false, "Queuing an action during an action is a violation of Flux");
-        }
+	GET(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "GET", p, cb);
+	}
 
-        _.each(_callbacks, function(callback) {
-            _addPromise(callback, action);
-        });
-
-        this.inAction = true;
-        /* tslint:disable */
-        Promise.Promise
-            .all(_promises)
-            .then(_clearPromises)
-            ["catch"]((err) => { // For support with IE 6.
-                inAction = false;
-                console.warn("Exception occurred in promise", err);
-                console.log(err.stack);
-            });
-        /* tslint:enable */
-    }
-
-    dispatch(url: string, verb: string, postData: any, cb?: () => void) : void {
+    _dispatch(url: string, verb: string, postData: any, cb?: () => void) : void {
 	    assert(verb, "Verb must be defined");
 
 	    var root = url;
@@ -125,7 +69,7 @@ export class Dispatcher {
 
 	    if (verb === "GET") {
 	        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
-	            this._dispatch({
+	            this._dispatchImpl({
 	                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
 	                status: request.status,
 	                resource: resource,
@@ -140,7 +84,7 @@ export class Dispatcher {
 	            }
 	        });
 	    } else if (verb in immediateActions) {
-	        this._dispatch({
+	        this._dispatchImpl({
 	            description: verb + " " + root,
 	            resource: resource,
 	            response: null,
@@ -151,7 +95,7 @@ export class Dispatcher {
 
 	        if ((verb in networkActions) && !url.indexOf("/api")) {
 	            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
-	                this._dispatch({
+	                this._dispatchImpl({
 	                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
 	                    status: request.status,
 	                    resource: resource,
@@ -172,56 +116,78 @@ export class Dispatcher {
 	}
 
 
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-	DELETE(url: string, p?: any, cb?: () => void) {
-	    this.dispatch(url, "DELETE", p, cb);
-	}
+    /**
+     * Add a promise to the queue of callback invocation promises.
+     * @param {function} callback The Store"s registered callback.
+     * @param {object} payload The data from the Action.
+     */
+    private _addPromise(callback: (payload: any) => boolean, payload: any) {
+        _promises.push(new Promise.Promise(function(resolve, reject) {
+            if (callback(payload)) {
+                resolve(payload);
+            } else {
+                reject(new Error("Dispatcher callback unsuccessful"));
+            }
+        }));
+    }
 
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-	PUT(url: string, p?: any, cb?: () => void) {
-	    this.dispatch(url, "PUT", p, cb);
-	}
+    /**
+     * Empty the queue of callback invocation promises.
+     */
+    private _clearPromises = function _clearPromises() {
+        _promises = [];
+        this._inAction = false;
+    }.bind(this);
 
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-	POST(url: string, p?: any, cb?: () => void) {
-	    this.dispatch(url, "POST", p, cb);
-	}
+    /**
+     * For debugging
+     */
+    _events: string = "";
 
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-	GET(url: string, p?: any, cb?: () => void) {
-	    this.dispatch(url, "GET", p, cb);
-	}
+    private _inAction: boolean = false;
+
+    /**
+     * dispatch
+     * @param  {object} action The data from the action.
+     */
+    private _dispatchImpl(action: C.IFluxAction) {
+        if (FLUX_DEBUG || this._inAction) {
+            console.log(action.description +
+                (action.resource ? " " + action.resource : ""),
+                (action.query ? " " + action.query : ""),
+                (action.postData ? [action.postData] : []), [action]);
+        }
+
+        if (global.localStorage && localStorage["superCowPowers"]) {
+            if (this._events.length > 6000) {
+                this._events = this._events.substr(this._events.length - 6000);
+            }
+            this._events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
+                JSON.stringify(action.query ? " " + action.query : "") + " " +
+                JSON.stringify(action.postData) + "\n";
+        }
+
+        if (this._inAction) {
+            assert(false, "Queuing an action during an action is a violation of Flux");
+        }
+
+        _.each(_callbacks, callback => {
+            this._addPromise(callback, action);
+        });
+
+        this._inAction = true;
+        /* tslint:disable */
+        Promise.Promise
+            .all(_promises)
+            .then(this._clearPromises)
+            ["catch"]((err) => { // For support with IE 6.
+                this._inAction = false;
+                console.warn("Exception occurred in promise", err);
+                console.log(err.stack);
+            });
+        /* tslint:enable */
+    }
 }
-
-var inAction = false;
 
 var immediateActions = {
     PUT: true,      // update the server (replace an existing item)
@@ -236,9 +202,4 @@ var networkActions = {
     DELETE: true
 };
 
-/**
- * For debugging
- */
-export var _events: string = "";
-
-global.Dispatcher = module.exports;
+export = Dispatcher;

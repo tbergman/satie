@@ -12,7 +12,6 @@ import assert = require("assert");
 import Molasses = require("./molasses");
 var Victoria = require("./victoria/hellogl.jsx");
 
-import Dispatcher = require("../stores/dispatcher");
 import Annotator = require("../stores/annotator");
 import C = require("../stores/contracts");
 import Header = require("../views/_header");
@@ -750,7 +749,7 @@ export var Component = ReactTS.createReactComponent(Renderer);
 
 export interface IRendererProps {
     context?: Annotator.Context;
-    dispatcher?: Dispatcher.Dispatcher;
+    dispatcher?: C.IDispatcher;
     marginTop?: number;
     pageSize?: C.IPageSize;
     raw?: boolean;

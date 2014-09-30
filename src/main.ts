@@ -11,6 +11,7 @@
 
 import React = require("react");
 
+import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
 import Router = require("./router");
 import SessionStore = require("./stores/session");
@@ -28,7 +29,7 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     setDebugGlobals();
     webViews.initWebViews();
 
-    var dispatcher = new Dispatcher.Dispatcher();
+    var dispatcher = new Dispatcher;
     var session = new SessionStore.SessionStore(dispatcher);
     dispatcher.GET("/api/v0/user/session", null, render.bind(null, dispatcher, session));
 }());
@@ -52,7 +53,7 @@ function setDebugGlobals() {
     global.ReactPerf = ReactPerf; // for monkeying around in the console
 }
 
-function render(dispatcher: Dispatcher.Dispatcher, session: SessionStore.SessionStore) {
+function render(dispatcher: C.IDispatcher, session: SessionStore.SessionStore) {
     "use strict";
     var component: React.ReactComponent<any, any>;
 

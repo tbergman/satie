@@ -128,6 +128,58 @@ export enum Clef {
 }
 
 /**
+ * See Facebook's documentation on Flux Dispatchers.
+ */
+export interface IDispatcher {
+    /**
+     * Register a Store's callback so that it may be invoked by an action.
+     * @param {function} callback The callback to be registered.
+     * @return {number} The index of the callback within the _callbacks array.
+     */
+    register: (callback: (payload: any) => boolean) => void;
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+    DELETE: (url: string, p?: any, cb?: () => void) => void;
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+    PUT: (url: string, p?: any, cb?: () => void) => void;
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+    POST: (url: string, p?: any, cb?: () => void) => void;
+
+	/**
+	 * Dispatch a Flux-style event.
+	 * 
+	 * @param cb The callback should not be used for any logic that could potentially
+	 * take place in the stores. If a callback is specified, the request must
+	 * be a network request. The callback will be called regardless of whether
+	 * the event succeeded or not.
+	 */
+    GET: (url: string, p?: any, cb?: () => void) => void;
+}
+
+/**
  * An exception thrown during a dispatch event that states a different dispatch event
  * should be executed.
  */

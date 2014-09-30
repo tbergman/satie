@@ -10,7 +10,6 @@ import assert = require("assert");
 import _ = require("lodash");
 import TSEE = require("./tsee");
 
-import Dispatcher = require("./dispatcher");
 import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
@@ -46,7 +45,7 @@ export var CHANGE_EVENT = "change";
 export var LOAD_EVENT = "load";
 
 export class PlaybackStore extends TSEE {
-    constructor(dispatcher: Dispatcher.Dispatcher, songEditor: SongEditorStore.SongEditorStore) {
+    constructor(dispatcher: C.IDispatcher, songEditor: SongEditorStore.SongEditorStore) {
         super();
         this._dispatcher = dispatcher;
         dispatcher.register(this.handleAction.bind(this));
@@ -350,7 +349,7 @@ export class PlaybackStore extends TSEE {
         this.emit(CHANGE_EVENT);
     }
 
-    private _dispatcher: Dispatcher.Dispatcher;
+    private _dispatcher: C.IDispatcher;
 
     private _remainingActions: Array<any> = [];
     private _loadedSoundfonts: { [sfName: string]: boolean } = {};

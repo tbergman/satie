@@ -10,7 +10,6 @@ import assert = require("assert");
 import C = require("./contracts");
 import Collab = require("./collab");
 import Annotator = require("./annotator");
-import Dispatcher = require("./dispatcher");
 import Instruments = require("./instruments");
 import Model = require("./model");
 import Tool = require("./tool");
@@ -34,7 +33,7 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * Flux store for the song being edited.
  */
 export class SongEditorStore extends TSEE {
-    constructor(dispatcher: Dispatcher.Dispatcher, session: SessionStore.SessionStore) {
+    constructor(dispatcher: C.IDispatcher, session: SessionStore.SessionStore) {
         super();
         this._session = session;
         this._dispatcher = dispatcher; // XXX: Mixed concerns!
@@ -1382,7 +1381,7 @@ export class SongEditorStore extends TSEE {
     private _copyModalVisible: boolean = false;
 	private _ctx: Annotator.Context = null;
 	private _dirty = false;
-    private _dispatcher: Dispatcher.Dispatcher;
+    private _dispatcher: C.IDispatcher;
     private _exportModalVisible: boolean = false;
 	private _linesToUpdate: { [key: string]: boolean } = {};
     private _metadataModalVisible: boolean = false;

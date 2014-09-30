@@ -7,7 +7,6 @@
 import assert = require("assert");
 
 import C = require("./contracts");
-import Dispatcher = require("./dispatcher");
 import TSEE = require("./tsee");
 
 var CHANGE_EVENT = "change";
@@ -16,7 +15,7 @@ var CHANGE_EVENT = "change";
  * Flux store for recent markings.
  */
 export class MarkingsStore extends TSEE {
-    constructor(dispatcher: Dispatcher.Dispatcher) {
+    constructor(dispatcher: C.IDispatcher) {
         super();
         this._loadFromLocalStorage();
         this._dispatcher = dispatcher;
@@ -74,7 +73,7 @@ export class MarkingsStore extends TSEE {
         this._model = newModel;
     }
 
-    private _dispatcher: Dispatcher.Dispatcher;
+    private _dispatcher: C.IDispatcher;
     private _model: Array<IMarking>;
 }
 
