@@ -235,7 +235,7 @@ export interface IFluxAction {
     resource?: string;
 
     /**
-     * For requests like "GET /api/song?userId=blah&another=query",
+     * For requests like "GET /api/v0/song?userId=blah&another=query",
      * "userId=blah&another=query"
      */
     query: string;

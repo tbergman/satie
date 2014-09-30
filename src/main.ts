@@ -26,7 +26,7 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     initTouchIfNeeded();
     setDebugGlobals();
     webViews.initWebViews();
-    Dispatcher.GET("/api/user/start_session", null, render);
+    Dispatcher.GET("/api/v0/user/session", null, render);
 }());
 
 function initTouchIfNeeded() { "use strict";

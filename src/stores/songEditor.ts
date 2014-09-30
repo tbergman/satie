@@ -48,7 +48,7 @@ export class SongEditorStore extends TSEE {
         var h: number;
         var i: number;
         switch(action.description) {
-            case "GET /api/song":
+            case "GET /api/v0/song":
             case "PUT /local/song/show":
                 activeSong = SessionStore.Instance.activeSong;
                 if (USING_LEGACY_AUDIO) {
@@ -86,7 +86,7 @@ export class SongEditorStore extends TSEE {
                 this.emit(ANNOTATE_EVENT);
                 break;
 
-            case "PUT /api/song":
+            case "PUT /api/v0/song":
                 activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
@@ -95,7 +95,7 @@ export class SongEditorStore extends TSEE {
                 this._allChangesSent = true;
                 break;
 
-            case "PUT /api/song DONE":
+            case "PUT /api/v0/song DONE":
                 activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
                 if (action.resource === activeID) {
@@ -173,7 +173,7 @@ export class SongEditorStore extends TSEE {
                 this.emit(CHANGE_EVENT);
                 break;
 
-            case "PUT /api/song ERROR":
+            case "PUT /api/v0/song ERROR":
                 alert("Could not save changes. Check your Internet connection.");
                 activeSong = SessionStore.Instance.activeSong;
                 activeID = activeSong ? activeSong._id : null;
@@ -769,7 +769,7 @@ export class SongEditorStore extends TSEE {
     }
 
     downloadLegacyAudio(opts?: { forExport?: boolean }, cb?: () => void) {
-        Dispatcher.POST("/api/synth", {
+        Dispatcher.POST("/api/v0/synth", {
             data: this.getDragonAudio(),
             cb: "" + ++PlaybackStore.latestID,
             forExport: opts && opts.forExport
@@ -1242,7 +1242,7 @@ export class SongEditorStore extends TSEE {
 
         var active = SessionStore.Instance.activeSong;
         if (active) {
-            Dispatcher.PUT("/api/song/_" + active._id, { src: this.src });
+            Dispatcher.PUT("/api/v0/song/_" + active._id, { src: this.src });
         }
     }, (1000 * ((global.localStorage && global.localStorage.autosaveDelay) || 3)),
         { leading: false });
@@ -1256,7 +1256,7 @@ export class SongEditorStore extends TSEE {
             assert(false, "Why?");
         }
         this._peerRelay = new WebSocket("ws://" + window.location.host +
-            "/api/song/_" + id + "/peerRelay");
+            "/api/v0/song/_" + id + "/peerRelay");
         this._peerRelay.onmessage = this._handleRelayMessage.bind(this);
         // TODO : this._peerRelay.{onerror | onopen | onclose }
     }

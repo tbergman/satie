@@ -102,12 +102,12 @@ export class PlaybackStore extends TSEE {
                     }
                 }
                 break;
-            case "POST /api/synth":
+            case "POST /api/v0/synth":
                 _legacyAudioReady = false;
                 this.emit(CHANGE_EVENT);
                 break;
-            case "POST /api/synth DONE":
-                var url = "/api/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
+            case "POST /api/v0/synth DONE":
+                var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
                 if (action.response.forExport) {
                     window.location = <any> url;
                 } else if (action.response.cb === "" + latestID) {
