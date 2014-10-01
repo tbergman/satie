@@ -17,7 +17,6 @@ import C = require("../stores/contracts");
 import Header = require("../views/_header");
 import History = require("../stores/history");
 import Model = require("../stores/model");
-import SongEditorStore = require("../stores/songEditor");
 import Tool = require("../stores/tool");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 import svgCssBlob = require("./svgCssBlob");
@@ -233,7 +232,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
 
         if (this.props.store) {
-            this.props.store.markRendererClean();
+            this.props.store.dangerouslyMarkRenderDone();
         }
 
         if (PROFILER_ENABLED) {
@@ -466,7 +465,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
         var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
         if (fn) {
-            this.props.dispatcher.PUT("/local/tool/_action", {mouseData: data, fn: fn});
+            this.props.dispatcher.PUT("/local/tool/action", {mouseData: data, fn: fn});
         }
         this.forceUpdate();
     }
@@ -482,7 +481,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {
-                    this.props.store.markRendererDirty();
+                    this.props.store.dangerouslyMarkRendererDirty();
                 }
             }
             this.setState({
@@ -515,7 +514,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 });
                 // Bottleneck: detect lines with selected content
                 if (this.props.store) {
-                    this.props.store.markRendererDirty();
+                    this.props.store.dangerouslyMarkRendererDirty();
                 }
             } else {
                 _selection = null;
@@ -571,22 +570,17 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         if (fn === "hide" || !data.obj) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
             if (this.props.store) {
-                this.props.store.handleAction({
-                    description: "PUT /local/tool",
-                    response: null,
-                    query: null,
-                    postData: null,
-                    resource: "hide"
-                });
+                this.props.store.dangerouslyHidePreview(null);
             }
         } else if (fn && this.props.store) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            this.props.store.handleAction({
-                description: "PUT /local/tool",
-                resource: "preview",
+            this.props.store.dangerouslyShowPreview({
+                description: "PUT /local/tool/preview",
                 response: null,
                 query: null,
-                postData: { mouseData: data, fn: fn }
+                postData: {
+                    mouseData: data, fn: fn
+                }
             });
         }
 
@@ -602,7 +596,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     getCtx(): Annotator.Context {
         return this.props.context ?
             this.props.context :
-            (this.props.store && this.props.store.ctx);
+            (this.props.store && this.props.store.finalCtx);
     }
 
     setupBrowserListeners() {
@@ -631,7 +625,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 case 46: // delete
                     event.preventDefault(); // don't navigate backwards
                     if (_selection) {
-                        this.props.dispatcher.POST("/local/selection/_eraseAll");
+                        this.props.dispatcher.DELETE("/local/selection/contents");
                     } else if (!this.props.tool) {
                         this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                     }
@@ -650,13 +644,13 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 case 38: // up arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/_octave", { delta: 1 });
+                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
                     }
                     break;
                 case 40: // down arrow
                     if (this.props.tool instanceof NoteTool) {
                         event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/_octave", { delta: -1 });
+                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
                     }
                     break;
                 case 90: // 'z'
@@ -755,7 +749,7 @@ export interface IRendererProps {
     raw?: boolean;
     staveHeight?: number;
     staves?: Array<C.IStave>;
-    store?: SongEditorStore.SongEditorStore;
+    store?: C.ISongEditor;
     tool?: Tool;
     top?: number;
     selection?: Array<Model>;
@@ -799,18 +793,18 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty;
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
-        var lineDirty = this.props.store && this.props.store.isLineDirty(nextProps.idx, nextProps.h);
+        var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
             if (PROFILER_ENABLED) {
                 console.log("Line dirty", this.props.idx);
             }
             if (this.props.store) {
-                this.props.store.handleAction({
-                    description: "DELETE /local/song",
+                this.props.store.dangerouslyMarkRendererLineClean({
+                    description: null,
+                    response: null,
                     query: null,
-                    resource: "lineDirty", postData: nextProps.h + "_" + nextProps.idx,
-                    response: null
+                    postData: nextProps.h + "_" + nextProps.idx
                 });
             }
         }
@@ -872,7 +866,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     staveHeight: number;
-    store: SongEditorStore.SongEditorStore;
+    store: C.ISongEditor;
 }
 
 interface ILineState {

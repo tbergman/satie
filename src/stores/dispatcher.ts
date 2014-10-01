@@ -36,20 +36,15 @@ class Dispatcher implements C.IDispatcher {
     }
 
 	DELETE(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "DELETE", p, cb);
-	}
-
-	PUT(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "PUT", p, cb);
-	}
-
-	POST(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "POST", p, cb);
-	}
-
+	    this._dispatch(url, "DELETE", p, cb); }
 	GET(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "GET", p, cb);
-	}
+	    this._dispatch(url, "GET", p, cb); }
+    PATCH(url: string, p?: any, cb?: () => void) {
+        this._dispatch(url, "PATCH", p, cb); }
+	POST(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "POST", p, cb); }
+	PUT(url: string, p?: any, cb?: () => void) {
+	    this._dispatch(url, "PUT", p, cb); }
 
     _dispatch(url: string, verb: string, postData: any, cb?: () => void) : void {
 	    assert(verb, "Verb must be defined");
@@ -190,6 +185,7 @@ class Dispatcher implements C.IDispatcher {
 }
 
 var immediateActions = {
+    PATCH: true,
     PUT: true,      // update the server (replace an existing item)
     POST: true,     // update the server (create a new item)
     DELETE: true    // deactivate a local object
@@ -197,6 +193,7 @@ var immediateActions = {
 
 var networkActions = {
     GET: true,
+    PATCH: true,
     POST: true,
     PUT: true,
     DELETE: true

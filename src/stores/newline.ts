@@ -118,7 +118,7 @@ class NewlineModel extends Model {
         assert(ctx.lines[ctx.line].prevClefByStave);
         this.DEBUG_line = ctx.line;
 
-        ctx.songEditor.snapshot(ctx);
+        ctx.songEditor.dangerouslyTakeSnapshot(ctx);
 
         return C.IterationStatus.SUCCESS;
     }
@@ -212,7 +212,7 @@ class NewlineModel extends Model {
     }
 
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
-        ctx.songEditor.markRendererLineDirty(ctx.line + 1);
+        ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         var l = 0;
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {

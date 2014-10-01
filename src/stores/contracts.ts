@@ -146,37 +146,11 @@ export interface IDispatcher {
 	 * be a network request. The callback will be called regardless of whether
 	 * the event succeeded or not.
 	 */
-    DELETE: (url: string, p?: any, cb?: () => void) => void;
-
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-    PUT: (url: string, p?: any, cb?: () => void) => void;
-
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
-    POST: (url: string, p?: any, cb?: () => void) => void;
-
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
     GET: (url: string, p?: any, cb?: () => void) => void;
+    DELETE: (url: string, p?: any, cb?: () => void) => void;
+    PATCH: (url: string, p?: any, cb?: () => void ) => void;
+    PUT: (url: string, p?: any, cb?: () => void) => void;
+    POST: (url: string, p?: any, cb?: () => void) => void;
 }
 
 /**
@@ -743,6 +717,52 @@ export interface ISong {
     secret?: boolean;
     path?: string;
     clefs?: string;
+};
+
+export interface ISongEditor {
+    addChangeListener: (callback: any) => void;
+    addAnnotationListener: (callback: any) => void;
+    addHistoryListener: (callback: any) => void;
+    addClearHistoryListener: (callback: any) => void;
+    removeChangeListener: (callback: any) => void;
+    removeAnnotationListener: (callback: any) => void;
+    removeHistoryListener: (callback: any) => void;
+    removeClearHistoryListener: (callback: any) => void;
+
+    autosaveModalVisible: boolean;
+    beamStartBeat: number;
+    changesPending: boolean;
+    copyModalVisible: boolean;
+    dirty: boolean;
+    dragonAudio: Array<string>;
+    exportModalVisible: boolean;
+    finalCtx: Annotator.Context;
+    getLineDirty: (idx: number, h: number) => void;
+    ly: string;
+    metadataModalVisible: boolean;
+    pageSize: IPageSize;
+    paper: Paper;
+    partModalStave: IStave;
+    selection: Array<Model>;
+    socialModalVisible: boolean;
+    staveHeight: number;
+    staves: Array<IStave>;
+    src: string;
+    tool: any;
+    visualCursor: IVisualCursor;
+
+    ctxFromSnapshot: (pointerData: IPointerData, staves: Array<IStave>) => Annotator.Context;
+    dangerouslyHidePreview: (action: IFluxAction) => void;
+    dangerouslyMarkRenderDone: () => void;
+    dangerouslyMarkRendererDirty: () => void;
+    dangerouslyMarkRendererLineClean: (action: IFluxAction) => void;
+    dangerouslyMarkRendererLineDirty: (line: number) => void;
+    dangerouslySetVisualCursor: (visualCursor: IVisualCursor) => void;
+    dangerouslySetBeamStartBeat: (beamCount: number) => void;
+    dangerouslyStepCursor: (spec: any) => boolean;
+    dangerouslyShowPreview: (action: IFluxAction) => void;
+    dangerouslyTakeSnapshot: (ctx: Annotator.Context) => void;
+    ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void;
 };
 
 /**

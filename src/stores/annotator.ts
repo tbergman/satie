@@ -10,7 +10,6 @@ import assert = require("assert");
 import BarlineModel = require("./barline");
 import C = require("./contracts");
 import Model = require("./model");
-import SongEditorStore = require("./songEditor");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 /**
@@ -29,7 +28,7 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
  *     after the change is made, the staves are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: SongEditorStore.SongEditorStore) {
+    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: C.ISongEditor) {
         this._staves = staves;
         this.songEditor = editor;
 
@@ -642,7 +641,7 @@ export class Context implements C.MetreContext {
     /**
      * The Flux store.
      */
-    songEditor: SongEditorStore.SongEditorStore;
+    songEditor: C.ISongEditor;
 
     private static _ANNOTATING: boolean = false;
     disableRecordings: boolean = true;
@@ -1019,7 +1018,7 @@ class PrivIterator {
                 this._rollbackLine(this._parent.line - 1);
                 break;
             case C.IterationStatus.RETRY_BEAM:
-                this._parent.loc.beat = this._parent.songEditor.getBeamCount();
+                this._parent.loc.beat = this._parent.songEditor.beamStartBeat;
                 this._rewind(C.Type.BEAM_GROUP);
                 this._parent.x = this._componentWithType(C.Type.BEAM_GROUP).x;
                 break;
@@ -1140,7 +1139,7 @@ class PrivIterator {
     }
 
     private _markLineDirty() {
-        this._parent.songEditor.markRendererLineDirty(this._parent.line);
+        this._parent.songEditor.dangerouslyMarkRendererLineDirty(this._parent.line);
         this._canExitAtNewline = false;
     }
 

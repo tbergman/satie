@@ -35,7 +35,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             };
             var dispatcher = new Dispatcher;
             var session = new SessionStore.SessionStore(dispatcher);
-            var songEditor = new SongEditorStore.SongEditorStore(dispatcher, session);
+            var songEditor = new SongEditorStore(dispatcher, session);
             context = new Annotator.Context(parsed, opts, songEditor);
             context.annotate(null, null, null, true);
         });
