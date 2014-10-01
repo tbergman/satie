@@ -14,13 +14,12 @@ import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
 
+var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 var enabled = (typeof document !== "undefined");
 
 if (!global.AudioContext && global.webkitAudioContext) {
     global.AudioContext = global.webkitAudioContext;
 }
-
-export var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 
 var Audio5js: any;
 var MIDI: any;
@@ -40,21 +39,21 @@ if (enabled) {
     }
 }
 
-export var CHANGE_EVENT = "change";
-export var LOAD_EVENT = "load";
+var CHANGE_EVENT = "change";
+var LOAD_EVENT = "load";
 
-export class PlaybackStore extends TSEE {
+class PlaybackStore extends TSEE implements C.IPlaybackStore {
     constructor(dispatcher: C.IDispatcher, songEditor: C.ISongEditor) {
         super();
         this._dispatcher = dispatcher;
-        dispatcher.register(this.handleAction.bind(this));
+        dispatcher.register(this._handleAction.bind(this));
 
         this._songEditor = songEditor;
         this._playing = false;
 
-        songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
+        songEditor.ensureSoundfontLoaded = this._ensureLoaded.bind(this);
 
-        if (USING_LEGACY_AUDIO) {
+        if (PlaybackStore.USING_LEGACY_AUDIO) {
             var store = this;
             _.defer(() => {
                 global.audio5js = audio5js = new Audio5js({
@@ -78,73 +77,95 @@ export class PlaybackStore extends TSEE {
         }
     }
 
-    handleAction(action: C.IFluxAction) {
-        switch(action.description) {
-            case "DELETE /local/song/show":
-            case "PUT /local/song/show":
-                this._play(false);
-                break;
-            case "POST /local/midiOut":
-                if (!this._pendingInstruments) {
-                    hit(action.postData);
-                }
-                break;
-            case "PUT /local/visualCursor":
-                if (!this._pendingInstruments) {
-                    if (action.resource === "togglePlay") {
-                        this._play(!this._playing);
+    ///////////////////
+    // SUBSCRIPTIONS // 
+    ///////////////////
 
-                        this.emit(CHANGE_EVENT);
-                    } else if (this._playing && action.postData && !action.postData.step) {
-                        this._timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
-                    }
-                }
-                break;
-            case "POST /api/v0/synth":
-                _legacyAudioReady = false;
-                this.emit(CHANGE_EVENT);
-                break;
-            case "POST /api/v0/synth DONE":
-                var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
-                if (action.response.forExport) {
-                    window.location = <any> url;
-                } else if (action.response.cb === "" + latestID) {
-                    var play = function () {
-                        audio5js.load(url);
-                    };
-                    if (audio5js.ready) {
-                        play();
-                    } else {
-                        audio5js.pending = play;
-                    }
-                }
-                this.emit(CHANGE_EVENT);
-                break;
+    addChangeListener(callback: Function) {
+        this.on(CHANGE_EVENT, callback); }
 
-            case "PUT /local/bpm":
-                this._bpm = parseInt(action.postData, 10);
-                if (this._playing) {
-                    this._play(false);
-                    this._play(true);
-                }
-                this.emit(CHANGE_EVENT);
-                break;
+    addLoadingListener(callback: Function) {
+        this.on(LOAD_EVENT, callback); }
+
+    removeChangeListener(callback: Function) {
+        this.removeListener(CHANGE_EVENT, callback); }
+
+    removeLoadingListener(callback: Function) {
+        this.removeListener(LOAD_EVENT, callback); }
+
+    /////////////////////////////////
+    // PROPERTIES AND DERIVED DATA // 
+    /////////////////////////////////
+
+    get bpm(): number {
+        return this._bpm; }
+
+    get playing(): boolean {
+        return this._playing; }
+
+    get ready(): boolean {
+        return !this._pendingInstruments && (!PlaybackStore.USING_LEGACY_AUDIO || _legacyAudioReady); }
+
+    //////////////////
+    // FLUX METHODS // 
+    //////////////////
+
+    "POST /api/v0/synth"(action: C.IFluxAction) {
+        _legacyAudioReady = false;
+        this.emit(CHANGE_EVENT);
+    }
+    "POST /api/v0/synth DONE"(action: C.IFluxAction) {
+        var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
+        if (action.response.forExport) {
+            window.location = <any> url;
+        } else if (action.response.cb === "" + PlaybackStore.latestID) {
+            var play = function () {
+                audio5js.load(url);
+            };
+            if (audio5js.ready) {
+                play();
+            } else {
+                audio5js.pending = play;
+            }
         }
-        return true;
+        this.emit(CHANGE_EVENT);
     }
 
-    _play(on: boolean) {
-        this._playing = on;
+    "PUT /local/bpm"(action: C.IFluxAction) {
+        this._bpm = parseInt(action.postData, 10);
         if (this._playing) {
-            this._timeoutId = global.setTimeout(this.continuePlay.bind(this), 0);
-        } else {
-            (this._remainingActions || []).forEach(m => {
-                m();
-            });
+            this._play(false);
+            this._play(true);
+        }
+        this.emit(CHANGE_EVENT);
+    }
+
+    "POST /local/midiOut"(action: C.IFluxAction) {
+        if (!this._pendingInstruments) {
+            hit(action.postData);
         }
     }
 
-    continuePlay() {
+    "PUT /local/song/show"(action: C.IFluxAction) {
+        this._play(false);
+    }
+    "DELETE /local/song/show" = this["PUT /local/song/show"].bind(this);
+    "PUT /local/visualCursor"(action: C.IFluxAction) {
+        if (!this._pendingInstruments) {
+            if (action.resource === "togglePlay") {
+                this._play(!this._playing);
+
+                this.emit(CHANGE_EVENT);
+            } else if (this._playing && action.postData && !action.postData.step) {
+                this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
+            }
+        }
+    }
+
+    static latestID: number = 0;
+    static USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
+
+    private _continuePlay() {
         var Annotator = require("./annotator"); // Recursive.
         var beats: number;
         var delays: Array<number> = [];
@@ -164,7 +185,7 @@ export class PlaybackStore extends TSEE {
 
         var seek = 0;
         var foundLegacyStart = false;
-        var startTime = USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
+        var startTime = PlaybackStore.USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
         for (var h = 0; h < this._songEditor.staves.length; ++h) {
             var body: C.IBody = this._songEditor.staves[h].body;
@@ -188,7 +209,7 @@ export class PlaybackStore extends TSEE {
                     var obj: Model = body[i];
                     foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
                             visualCursor.bar === obj.ctxData.bar);
-                    if (foundIdx && USING_LEGACY_AUDIO && !foundLegacyStart) {
+                    if (foundIdx && PlaybackStore.USING_LEGACY_AUDIO && !foundLegacyStart) {
                         audio5js.seek(seek);
                         audio5js.play();
                         foundLegacyStart = true;
@@ -203,7 +224,7 @@ export class PlaybackStore extends TSEE {
 
                     if (foundIdx && obj.isNote) {
                         beats = obj.note.getBeats(ctx);
-                        if (!USING_LEGACY_AUDIO && !obj.isRest) {
+                        if (!PlaybackStore.USING_LEGACY_AUDIO && !obj.isRest) {
                             _.each(obj.note.chord.map(C.midiNote), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
@@ -261,45 +282,7 @@ export class PlaybackStore extends TSEE {
         });
     }
 
-    /**
-     * @param {function} callback
-     */
-    addChangeListener(callback: Function) {
-        this.on(CHANGE_EVENT, callback);
-    }
-
-    addLoadingListener(callback: Function) {
-        this.on(LOAD_EVENT, callback);
-    }
-
-    /**
-     * @param {function} callback
-     */
-    removeChangeListener(callback: Function) {
-        this.removeListener(CHANGE_EVENT, callback);
-    }
-
-    removeLoadingListener(callback: Function) {
-        this.removeListener(LOAD_EVENT, callback);
-    }
-
-    get playing() {
-        return this._playing;
-    }
-
-    get ready() {
-        return !this._pendingInstruments && (!USING_LEGACY_AUDIO || _legacyAudioReady);
-    }
-
-    get bpm() {
-        return this._bpm;
-    }
-
-    set bpm(n: number) {
-        assert(false, "Use the dispatcher for this type of request");
-    }
-
-    ensureLoaded(soundfont: string, avoidEvent?: boolean): boolean {
+    private _ensureLoaded(soundfont: string, avoidEvent?: boolean): boolean {
         var isLoaded = this._loadedSoundfonts[soundfont];
         if (!isLoaded) {
             this._getInstrument(soundfont, avoidEvent);
@@ -307,12 +290,8 @@ export class PlaybackStore extends TSEE {
         return isLoaded;
     }
 
-    private _getPiano() {
-        this._getInstrument("acoustic_grand_piano", true);
-    }
-
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
-        if (!enabled || USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
+        if (!enabled || PlaybackStore.USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
             return; // Sorry IE, you only get a piano.
         }
 
@@ -348,22 +327,43 @@ export class PlaybackStore extends TSEE {
         this.emit(CHANGE_EVENT);
     }
 
-    private _dispatcher: C.IDispatcher;
+    private _getPiano() {
+        this._getInstrument("acoustic_grand_piano", true);
+    }
 
-    private _remainingActions: Array<any> = [];
-    private _loadedSoundfonts: { [sfName: string]: boolean } = {};
-    private _soundfontToChannel: { [soundfontToChannel: string]: number } = {};
-    private _pendingInstruments: number = 0;
+    private _handleAction(action: C.IFluxAction) {
+        assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
+        var fn: Function = (<any>this)[action.description];
+        if (fn) {
+            fn.call(this, action);
+        }
+        return true; // (Success)
+    }
+
+    private _play(on: boolean) {
+        this._playing = on;
+        if (this._playing) {
+            this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
+        } else {
+            (this._remainingActions || []).forEach(m => {
+                m();
+            });
+        }
+    }
 
     private _bpm: number = 120;
+    private _dispatcher: C.IDispatcher;
     private _lastChannel: number = -1;
-    private _songEditor: C.ISongEditor;
-
+    private _loadedSoundfonts: { [sfName: string]: boolean } = {};
+    private _pendingInstruments: number = 0;
     private _playing: boolean;
+    private _remainingActions: Array<any> = [];
+    private _songEditor: C.ISongEditor;
+    private _soundfontToChannel: { [soundfontToChannel: string]: number } = {};
     private _timeoutId: number;
 }
 
-export function hit(note: any, velocity?: number, duration?: any) {
+function hit(note: any, velocity?: number, duration?: any) {
     "use strict";
 
     if (note instanceof Array) {
@@ -383,4 +383,4 @@ export function hit(note: any, velocity?: number, duration?: any) {
 TSEE.length;
 /* tslint:enable */
 
-export var latestID = 0;
+export = PlaybackStore;

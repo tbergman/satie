@@ -650,6 +650,17 @@ export interface IPitchDuration extends IDuration {
     accToDelete?: number;
 };
 
+export interface IPlaybackStore {
+    addChangeListener: (callback: Function) => void;
+    addLoadingListener: (callback: Function) => void;
+    removeChangeListener: (callback: Function) => void;
+    removeLoadingListener: (callback: Function) => void;
+
+    bpm: number;
+    playing: boolean;
+    ready: boolean;
+}
+
 export enum PreviewMode {
     EXCLUDE_PREVIEWS = 0,
     INCLUDE_PREVIEWS = 1
