@@ -17,7 +17,7 @@ import TSEE = require("./tsee");
 import lylite = require("./lylite");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
-import PlaybackStore = require("./playback"); // must be registered before SongEditorStore!!!
+import PlaybackStore = require("./playback");
 
 var isBrowser = typeof window !== "undefined";
 var CHANGE_EVENT = "change";
