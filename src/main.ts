@@ -30,7 +30,7 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     webViews.initWebViews();
 
     var dispatcher = new Dispatcher;
-    var session = new SessionStore.SessionStore(dispatcher);
+    var session = new SessionStore(dispatcher);
     dispatcher.GET("/api/v0/user/session", null, render.bind(null, dispatcher, session));
 }());
 
@@ -53,7 +53,7 @@ function setDebugGlobals() {
     global.ReactPerf = ReactPerf; // for monkeying around in the console
 }
 
-function render(dispatcher: C.IDispatcher, session: SessionStore.SessionStore) {
+function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {
     "use strict";
     var component: React.ReactComponent<any, any>;
 

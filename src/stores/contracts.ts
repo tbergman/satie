@@ -679,6 +679,17 @@ export interface ISession {
     state: string;
 };
 
+export interface ISessionStore {
+    addChangeListener: (callback: () => void) => void;
+    removeChangeListener: (callback: () => void) => void;
+
+    activeSong: ISong;
+    apiRole: ApiRole;
+    errors: Array<IError>;
+    info: ISession;
+    songs: Array<ISong>;
+}
+
 /**
  * A song, directly from the server.
  * 

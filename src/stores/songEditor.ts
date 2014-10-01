@@ -17,7 +17,6 @@ import TSEE = require("./tsee");
 import lylite = require("./lylite");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
-import SessionStore = require("./session"); // must be registered before SongEditorStore!!!
 import PlaybackStore = require("./playback"); // must be registered before SongEditorStore!!!
 
 var isBrowser = typeof window !== "undefined";
@@ -72,7 +71,7 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * [       |     |        |      | PUT] /local/instrument
  */
 class SongEditorStore extends TSEE implements C.ISongEditor {
-    constructor(dispatcher: C.IDispatcher, session: SessionStore.SessionStore) {
+    constructor(dispatcher: C.IDispatcher, session: C.ISessionStore) {
         super();
         dispatcher.register(this._handleAction.bind(this));
 
@@ -1417,7 +1416,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _relayHistory: string = "";
 	private _savesInTransit: number = 0;
 	private _selection: Array<Model> = null;
-    private _session: SessionStore.SessionStore;
+    private _session: C.ISessionStore;
 	private _snapshots: { [key: string]: any } = {};
     private _socialModalVisible: boolean = false;
 	private _staveHeight: number = null;
