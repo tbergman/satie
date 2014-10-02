@@ -21,7 +21,7 @@ var ReactMultiChild = require("react/lib/ReactMultiChild");
 var mixInto = require("react/lib/mixInto");
 var merge = require("react/lib/merge");
 
-var RiactUpdateTransaction = require("../../riactUpdateTransaction.js");
+var RiactUpdateTransaction = require("../../util/riactUpdateTransaction.js");
 var SMuFL = require("../../util/SMuFL.ts");
 var bezierFS = require("./bezier.fs");
 var bezierVS = require("./bezier.vs");

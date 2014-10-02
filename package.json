@@ -35,13 +35,13 @@
     },
     "scripts": {
         "dev-server": "watchify --extension .ts -o build/browser-bundle.js -v -d . & nginx -c'./nginx.conf' -p ./nginx/",
-        "lrc-watchify": "watchify --extension .ts -v -o build/lrc-bundle.js -d ./src/lrc-helper.js --noparse lodash",
+        "lrc-watchify": "watchify --extension .ts -v -o build/libripienoclientBridge-bundle.js -d ./src/libripienoclientBridge.js --noparse lodash",
         "build": "NODE_ENV=production browserify --extension .ts . | uglifyjs -cm > build/browser-bundle.js",
         "collect-static": "collect-static . ./static",
         "test": "mochify --extensions ts --node $(find ./src | grep 'test/' | grep .ts$)",
         "test-watch": "mochify --extensions ts --watch --node $(find ./src | grep 'test/' | grep .ts$)",
-        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | uglifyjs -cm 2>/dev/null | node",
-        "chore-debug": "browserify --extension .ts --bare ./src/lyToSvg.ts --noparse lodash --noparse ./src/browserifySrv.js | node"
+        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/choreServer.ts --noparse lodash --noparse ./src/util/startExpressServer.js | uglifyjs -cm 2>/dev/null | node",
+        "chore-debug": "browserify --extension .ts --bare ./src/choreServer.ts --noparse lodash --noparse ./src/util/startExpressServer.js | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",

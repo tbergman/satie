@@ -15,7 +15,7 @@ import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
 import Router = require("./router");
 import SessionStore = require("./stores/session");
-import webViews = require("./webViews");
+import types = require("./stores/types");
 
 var ReactPerf = require("react/lib/ReactDefaultPerf");
 var FiveOhFive = require("./landing/fiveOhFive.jsx");
@@ -27,7 +27,7 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     "use strict";
     initTouchIfNeeded();
     setDebugGlobals();
-    webViews.initWebViews();
+    types.registerTypes();
 
     var dispatcher = new Dispatcher;
     var session = new SessionStore(dispatcher);
