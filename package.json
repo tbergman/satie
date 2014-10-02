@@ -27,6 +27,7 @@
         "react-typescript": "git://github.com/jnetterf/react-typescript",
         "react-typescript-definitions": "git://github.com/jnetterf/react-typescript-definitions",
         "reactify": "~0.14.0",
+        "soundManager": "git://github.com/scottschiller/SoundManager2.git",
         "statics": "~0.1.0",
         "typescriptifier": "^1.0.0",
         "uglify-js": "~2.4.14",
