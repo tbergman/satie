@@ -11,7 +11,7 @@ import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 import Beam = require("./_beam");
 import BeamGroupModel = require("../stores/beamGroup");
-var Group = require("./_group.jsx");
+import Group = require("./_group");
 import Note = require("./_note");
 
 /**

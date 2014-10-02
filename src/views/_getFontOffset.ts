@@ -6,13 +6,15 @@
  * @jsx React.DOM
  */
 
-var _ = require("lodash");
+import _ = require("lodash");
+import assert = require("assert");
 
 var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
 
 var getAnchor = _.memoize(notehead => SMuFL.bravuraMetadata.glyphsWithAnchors[notehead]);
 
-function getFontOffset(notehead, directionMult) {
+function getFontOffset(notehead?: string, directionMult?: number) {
+    "use strict";
     notehead = notehead || this.props.notehead;
     var dm = directionMult || 1;
 
@@ -20,12 +22,12 @@ function getFontOffset(notehead, directionMult) {
     if (!anchors) {
         return [0, 0];
     }
-    if (this.getDirection()*dm === 1) {
+    if (this.direction*dm === 1) {
         return anchors.stemUpSE || anchors.stemUpNW;
-    } else if (this.getDirection()*dm === -1) {
+    } else if (this.direction*dm === -1) {
         return anchors.stemDownNW || anchors.stemDownSW;
     }
-    console.assert(0);
+    assert(false, "Invalid direction");
 }
 
-module.exports = getFontOffset;
+export = getFontOffset;

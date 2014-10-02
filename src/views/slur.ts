@@ -4,10 +4,10 @@
 
 import ReactTS = require("react-typescript");
 
-var Bezier = require("./_bezier.jsx");
+import Bezier = require("./_bezier");
 import Note = require("./_note");
 import SlurGroupModel = require("../stores/slur");
-var getFontOffset = require("./_getFontOffset.jsx");
+import getFontOffset = require("./_getFontOffset");
 import hash = require("../../node_modules/ripienoUtil/hash");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
@@ -21,7 +21,7 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
         var x1 = this.getX1();
         var y2 = this.getY2(0);
         var y1 = this.getY1(0);
-        var dir = this.getDirection();
+        var dir = this.direction;
 
         var x2mx1 = x2 - x1;
         var x1mx2 = -x2mx1;
@@ -32,7 +32,7 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
             absw *= 2;
         }
 
-        return Bezier({
+        return Bezier.Component({
             x1: x2,
             y1: y2,
 
@@ -72,12 +72,12 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     }
 
     getYOffset() {
-        if (this.getDirection() === -1) {
+        if (this.direction === -1) {
             return -0.25;
         }
         return 0.25;
     }
-    getDirection() {
+    get direction() {
         return this.props.spec.direction;
     }
     getFontOffset = getFontOffset;
@@ -90,12 +90,12 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     getY1(idx: number) {
         return this.props.spec.y -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.lines1, -this.getDirection()) - 3)/4;
+            (getExtremeLine(this.props.spec.lines1, -this.direction) - 3)/4;
     }
     getY2(idx: number) {
         return this.props.spec.y -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.lines2, -this.getDirection()) - 3)/4;
+            (getExtremeLine(this.props.spec.lines2, -this.direction) - 3)/4;
     }
     hash: number = NaN;
 }

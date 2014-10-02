@@ -7,22 +7,22 @@
  * @jsx React.DOM
  */
 
-import React = require("react");
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
 
-var Accidental = require("./_accidental.jsx");
-var Dot = require("./_dot.jsx");
-var Flag = require("./_flag.jsx");
-var Group = require("./_group.jsx");
-var LedgerLine = require("./_ledgerLine.jsx");
-var NoteHead = require("./_noteHead.jsx");
-var NoteStem = require("./_noteStem.jsx");
+import Accidental = require("./_accidental");
+import Dot = require("./_dot");
+import Flag = require("./_flag");
+import Group = require("./_group");
+import LedgerLine = require("./_ledgerLine");
+import NoteHead = require("./_noteHead");
+import NoteMarking = require("./_noteMarking");
+import NoteStem = require("./_noteStem");
 
 export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
-        var direction = this.getDirection();
+        var direction = this.direction;
         var lines = this.getLines();
         var linesObj: { [key: string]: boolean } = {};
         var linesOffset: { [key: string]: number } = {};
@@ -51,9 +51,9 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
             }
         }
         return Group(null,
-            _.map(lines, (line: string, idx: number) => [
+            _.map(lines, (line: number, idx: number) => [
                 // XXX(profile) make more efficient
-                NoteHead({
+                <React.ReactComponent<any, any>> NoteHead.Component({
                     key: idx + "l",
                     x: this.props.x + (linesOffset[line] || 0),
                     y: this.props.y,
@@ -61,15 +61,16 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     line: line,
                     stroke: this.props.strokes[idx],
                     notehead: this.props.notehead})].concat(
-                this.props.dotted ? _.times(this.props.dotted, idx => Dot({
+                this.props.dotted ? _.times(this.props.dotted, idx => Dot.Component({
                     idx: idx,
                     key: idx + "d",
                     stroke: this.props.strokes[0],
+                    radius: 0.06,
                     x: this.props.x,
                     y: this.props.y,
                     fontSize: this.props.fontSize,
                     line: line})): null)).concat([
-            this.props.hasStem && NoteStem({
+            this.props.hasStem && NoteStem.Component({
                 x: this.props.x,
                 y: this.props.y,
                 key: "stem",
@@ -79,17 +80,19 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 height: this.getStemHeight(),
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead}),
-            this.props.flag && Flag({
+            this.props.flag && Flag.Component({
                 key: "flag",
                 x: this.props.x,
                 y: this.props.y,
                 line: this.getHeightDeterminingLine(),
                 stroke: this.props.secondaryStroke,
+                stemHeight: null,
+                stemWidth: null,
                 flag: this.props.flag,
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead,
                 direction: direction})]).concat(
-            this.props.children && _.map(this.props.children, (element: { props: IProps }, idx: number) => {
+            this.props.children && _.map(this.props.children, (element: NoteMarking.NoteMarking, idx: number) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;
@@ -117,7 +120,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         };
     }
 
-    getDirection(): number {
+    get direction(): number {
         if (this.props.direction) {
             return this.props.direction;
         }
@@ -145,10 +148,10 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         return _.reduce(this.getLines(), (a: number, b: number) => Math.max(a, b), -99999);
     }
     getStartingLine() {
-        return (this.getDirection() === 1 ? this.getLowestLine : this.getHighestLine)();
+        return (this.direction === 1 ? this.getLowestLine : this.getHighestLine)();
     }
     getHeightDeterminingLine() {
-        return (this.getDirection() === 1 ? this.getHighestLine : this.getLowestLine)();
+        return (this.direction === 1 ? this.getHighestLine : this.getLowestLine)();
     }
     getStemHeight() {
         if (this.props.stemHeight) {
@@ -162,7 +165,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
 
         var start = this.getHeightDeterminingLine();
-        var idealExtreme = start + this.getDirection()*idealStemHeight;
+        var idealExtreme = start + this.direction*idealStemHeight;
 
         if (idealExtreme >= 6.5) {
             return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 6.5));
@@ -181,12 +184,12 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         if (!this.isOnLedger()) { // check is here to force isOnLedgerLine to be accurate
             return false;
         }
-        var ret: Array<number> = [];
+        var ret: Array<React.ReactComponent<any, any>> = [];
         var lowest = this.getLowestLine();
         var highest = this.getHighestLine();
         if (lowest < 0.5) {
             ret = ret.concat(_.times(Math.floor(1 - lowest), idx =>
-                LedgerLine({
+                LedgerLine.Component({
                     key: idx + "low",
                     line: -idx,
                     notehead: this.props.notehead,
@@ -195,7 +198,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         }
         if (highest > 5.5) {
             ret = ret.concat(_.times(Math.floor(highest - 5), idx =>
-                LedgerLine({
+                LedgerLine.Component({
                     key: idx + "high",
                     line: 6 + idx,
                     notehead: this.props.notehead,
@@ -247,7 +250,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     default:
                         assert(0, "Not reached");
                 }
-                return Accidental({
+                return Accidental.Component({
                     x: this.props.x - (glyphOffset || this.accidentalSpacing()),
                     y: this.props.y,
                     stroke: this.props.accStrokes[idx],
@@ -257,7 +260,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                     idx: idx,
                     accidental: glyphName});
             } else {
-                return false;
+                return null;
             }
         });
     }
@@ -272,7 +275,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         return Tie.Component({key: "tie_0",
             fontSize: this.props.fontSize,
             spec: {
-                direction: -this.getDirection(),
+                direction: -this.direction,
                 x: this.props.x + fullWidth/8 + 0.15,
                 y: this.props.y,
                 lines1: [this.getStartingLine()],
@@ -300,7 +303,7 @@ export var Component = ReactTS.createReactComponent(Note);
 export interface IProps {
     accidentals?: any;
     accStrokes?: any;
-    children?: React.ReactComponent<any, any>[];
+    children?: Array<NoteMarking.NoteMarking>;
     direction?: number;
     dotted?: number;
     idx?: number;

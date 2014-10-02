@@ -11,11 +11,11 @@ import _ = require("lodash");
 import C = require("../stores/contracts");
 import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
-var Glyph = require("./_glyph.jsx");
-var Group = require("./_group.jsx");
-var RenderableMixin = require("./_renderable.jsx");
-var Victoria = require("../renderer/victoria/hellogl.jsx");
-var getFontOffset: Function = require("./_getFontOffset.jsx");
+import Glyph = require("./_glyph");
+import Group = require("./_group");
+import RenderableMixin = require("./_renderable");
+var Victoria = require("../renderer/victoria/victoria");
+import getFontOffset = require("./_getFontOffset");
 
 /**
  * Calculates a way to render a beam given two endpoints.
@@ -117,14 +117,14 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
      * Offset because the note-head has a non-zero width.
      */
     getLineXOffset() {
-        return this.getDirection() * -this.props.stemWidth / 2;
+        return this.direction * -this.props.stemWidth / 2;
     }
 
     /**
      *  1 if the notes go up,
      * -1 if the notes go down.
      */
-    getDirection() {
+    get direction() {
         return this.props.direction;
     }
 
@@ -147,18 +147,18 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
     private _getY1(incl: number, idx: number) {
         return this.props.y -
             this._getYOffset() -
-            this.getDirection()*this.getFontOffset(this.props.notehead1)[1]/4 -
+            this.direction*this.getFontOffset(this.props.notehead1)[1]/4 -
             (this.props.line1 - 3)/4 +
-            this.getDirection()*idx*0.22 +
+            this.direction*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
     private _getY2(incl: number, idx: number) {
         return this.props.y -
             this._getYOffset() -
-            this.getDirection()*this.getFontOffset(this.props.notehead2)[1]/4 -
+            this.direction*this.getFontOffset(this.props.notehead2)[1]/4 -
             (this.props.line2 - 3)/4 +
-            this.getDirection()*idx*0.22 +
+            this.direction*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
@@ -173,7 +173,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
      * The note-head is NOT CENTERED at its local origin.
      */
     private _getYOffset() {
-        if (this.getDirection() === -1) {
+        if (this.direction === -1) {
             return 0.025;
         }
         return 0.005;
@@ -189,10 +189,10 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
             var offset = this._getX2() - this._getX1();
             var y = (this._getY1(1, this.props.beams - 1) +
                         this._getY2(1, this.props.beams - 1))/2 -
-                    (0.3 + 0.2*this.props.beams)*this.getDirection();
+                    (0.3 + 0.2*this.props.beams)*this.direction;
 
             // XXX: all tuplets are drawn as triplets.
-            return Glyph({
+            return Glyph.Component({
                 selectioninfo: "beamTuplet",
                 fill: this.props.tupletsTemporary ? "#A5A5A5" : "#000000",
                 glyphName: "tuplet3",

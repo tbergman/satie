@@ -7,21 +7,22 @@
 import ReactTS = require("react-typescript");
 
 import BeginModel = require("../stores/begin");
-var Brace = require("./_brace.jsx");
-var Group = require("./_group.jsx");
-var StaveLines = require("./_staveLines.jsx");
+import Brace = require("./_brace");
+import Group = require("./_group");
+import StaveLines = require("./_staveLines");
 
 export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
         var spec = this.props.spec;
 
         return Group(null,
-            spec.pianoStaff && Brace({
+            spec.pianoStaff && Brace.Component({
+                idx: 1,
                 x: spec.x,
                 fontSize: this.props.fontSize,
                 y: spec.braceY,
                 y2: spec.braceY2}),
-            StaveLines({
+            StaveLines.Component({
                 key: "StaveLines",
                 width: this.props.spec.width,
                 x: spec.x,

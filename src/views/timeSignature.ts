@@ -5,8 +5,8 @@
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 
-var Glyph = require("./_glyph.jsx");
-var Group = require("./_group.jsx");
+import Glyph = require("./_glyph");
+import Group = require("./_group");
 import TimeSignatureModel = require("../stores/timeSignature");
 
 export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
@@ -19,14 +19,14 @@ export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
             var beatType = ts.beatType;
 
             if (beats === 4 && beatType === 4) {
-                return Glyph({
+                return Glyph.Component({
                     x: spec.x,
                     y: spec.y,
                     fill: spec.color,
                     fontSize: this.props.fontSize,
                     glyphName: "timeSigCommon"});
             } else if (beats === 2 && beatType === 2) {
-                return Glyph({
+                return Glyph.Component({
                     x: spec.x,
                     y: spec.y,
                     fill: spec.color,
@@ -86,7 +86,7 @@ export interface IState {
 
 function TimeSignatureNumber(props: ITSProps, children: number) {
     "use strict";
-    return _.map((children + "").split(""), (c, i) => Glyph({
+    return _.map((children + "").split(""), (c, i) => Glyph.Component({
         key: "ts-" + i,
         x: props.x + i/4,
         y: props.y,

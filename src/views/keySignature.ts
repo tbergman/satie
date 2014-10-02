@@ -5,8 +5,8 @@
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 
-var Accidental = require("./_accidental.jsx");
-var Group = require("./_group.jsx");
+import Accidental = require("./_accidental");
+import Group = require("./_group");
 import KeySignatureModel = require("../stores/keySignature");
 
 export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
@@ -14,7 +14,7 @@ export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
         var spec = this.props.spec;
 
         return Group(null,
-            _.map(this.getAccidentals(), (a, idx) => Accidental({
+            _.map(this.getAccidentals(), (a, idx) => Accidental.Component({
                 key: idx, /* for React */
                 x: spec.x + idx/4,
                 y: spec.y,

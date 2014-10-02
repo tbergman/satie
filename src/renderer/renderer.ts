@@ -10,7 +10,7 @@ import _ = require("lodash");
 import assert = require("assert");
 
 import Molasses = require("./molasses");
-var Victoria = require("./victoria/hellogl.jsx");
+var Victoria = require("./victoria/victoria");
 
 import Annotator = require("../stores/annotator");
 import C = require("../stores/contracts");
@@ -20,10 +20,10 @@ import Model = require("../stores/model");
 import Tool = require("../stores/tool");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 import svgCssBlob = require("./svgCssBlob");
-var Rect = require("../views/_rect.jsx");
-var Group = require("../views/_group.jsx");
-var Line = require("../views/_line.jsx");
-var SelectionRect = require("./selectionRect.jsx");
+import Rect = require("../views/_rect");
+import Group = require("../views/_group");
+import Line = require("../views/_line");
+import SelectionRect = require("./selectionRect");
 
 var isBrowser = typeof window !== "undefined";
 var useGL = (typeof global.libripienoclient !== "undefined") ||
@@ -158,7 +158,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                 }
                                                 if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
                                                     selProps.width = Math.abs(s[i].x - selProps.x);
-                                                    components[selIdx] = Rect(selProps);
+                                                    components[selIdx] = Rect.Component(selProps);
                                                     selIdx = -1;
                                                 }
                                                 if (s[i].visible()) {
@@ -182,7 +182,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     _pointerData,
                     fontSize,
                     pidx),
-                this.state.selectionRect && SelectionRect({
+                this.state.selectionRect && SelectionRect.Component({
                     fontSize: fontSize,
                     x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x),
                     y: Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y),
@@ -193,7 +193,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                 (pidx === this.state.visualCursor.annotatedPage) &&
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
                             style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
-                        Line({
+                        Line.Component({
                             x1: this.state.visualCursor.annotatedObj.x - 0.2,
                             x2: this.state.visualCursor.annotatedObj.x - 0.2,
                             y1: this.state.visualCursor.annotatedObj.y - renderUtil.staveSeperation *

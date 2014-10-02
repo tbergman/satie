@@ -17,9 +17,7 @@ var ReactBrowserComponentMixin = require("react/lib/ReactBrowserComponentMixin")
 var ReactComponent = require("react/lib/ReactComponent");
 var ReactDOMComponent = require("react/lib/ReactDOMComponent");
 var ReactDescriptor = require("react/lib/ReactDescriptor");
-var ReactMount = require("react/lib/ReactMount");
 var ReactMultiChild = require("react/lib/ReactMultiChild");
-var ReactUpdates = require("react/lib/ReactUpdates");
 var mixInto = require("react/lib/mixInto");
 var merge = require("react/lib/merge");
 
@@ -34,7 +32,7 @@ var glyphVS = require("./glyph.vs");
 var rectFS = require("./rect.fs");
 var rectVS = require("./rect.vs");
 var pixmapData = require("./bravura48PixmapData.json");
-var globalGL = typeof gl === "undefined" ? null : gl;
+var globalGL = typeof global.gl === "undefined" ? null : global.gl;
 
 var BLANK_PROPS = {};
 var DEBUG_GLYPH_POSITION = false;
@@ -81,7 +79,7 @@ ReactLegacyDescriptorFactory.wrapFactory = function(factory) {
     ReactDescriptor.isValidFactory(factory),
     'This is suppose to accept a descriptor factory'
   );
-  var legacyDescriptorFactory = function(config, children) {
+  var legacyDescriptorFactory = function(/*config, children*/) {
     // This factory should not be called when the new JSX transform is in place.
     // TODO: Warning - Use JSX instead of direct function calls.
     return factory.apply(this, arguments);
@@ -124,7 +122,7 @@ var ContainerMixin = merge(ReactMultiChild.Mixin, {
     createChild: function(child, childNode) {
         child._mountImage = childNode;
         var mostRecentlyPlacedChild = this._mostRecentlyPlacedChild;
-        if (mostRecentlyPlacedChild == null) {
+        if (mostRecentlyPlacedChild === null) {
             if (this.node.firstChild) {
                 childNode.injectBefore(this.node.firstChild);
             } else {
@@ -179,7 +177,7 @@ var ContainerMixin = merge(ReactMultiChild.Mixin, {
                 if (mountedImages[i].inject) {
                     mountedImages[i].inject(this.node);
                 } else {
-                    //console.warn(mountedImages[i], "is not a Victoria component");
+                    console.warn(mountedImages[i], "is not a Victoria component");
                 }
                 i++;
             }
@@ -230,9 +228,9 @@ var VG = createComponent(
     ReactComponentMixin,
     ContainerMixin, {
 
-    mountComponent: function(rootID, transaction, mountDepth) {
+    mountComponent: function(rootID, transaction/*, mountDepth*/) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
-        this.node = new VGNode;
+        this.node = new VGNode();
         this.applyGroupProps(BLANK_PROPS, this.props);
         this.mountAndInjectChildren(this.props.children, transaction);
         this.node.props = this.props;
@@ -246,7 +244,7 @@ var VG = createComponent(
         this.node.props = this.props = props;
     },
 
-    applyGroupProps: function(oldProps, props) {
+    applyGroupProps: function(/*oldProps, props*/) {
         // pass
     },
 
@@ -273,7 +271,7 @@ VGlyphNode.prototype.eject = function() {
     this._parent = null;
 };
 
-_.each(pixmapData.glyphs, (g, idx) => {
+_.each(pixmapData.glyphs, function(g, idx)  {
     g.idx = idx;
 });
 var idxByUnicode = _.indexBy(pixmapData.glyphs, "code");
@@ -282,21 +280,21 @@ var VGlyph = createComponent(
     'VGlyph',
     ReactComponentMixin, {
 
-    mountComponent: function(rootID, transaction, mountDepth) {
+    mountComponent: function(/*rootID, transaction, mountDepth*/) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
-        this.node = new VGlyphNode;
+        this.node = new VGlyphNode();
         this.node.props = this.props;
         this.node.idx = this.getIDX(this.props);
         return this.node;
     },
 
-    receiveComponent: function(nextComponent, transaction) {
+    receiveComponent: function(nextComponent/*, transaction*/) {
         var props = nextComponent.props;
         this.node.props = this.props = props;
         this.node.idx = this.getIDX(props);
     },
 
-    applyGroupProps: function(oldProps, props) {
+    applyGroupProps: function(/*oldProps, props*/) {
         // pass
     },
 
@@ -329,15 +327,15 @@ var VRect = createComponent(
     'VRect',
     ReactComponentMixin, {
 
-    mountComponent: function(rootID, transaction, mountDepth) {
+    mountComponent: function(/*rootID, transaction, mountDepth*/) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
-        this.node = new VRectNode;
+        this.node = new VRectNode();
         this.node.props = this.props;
         this.setDefaults(this.props);
         return this.node;
     },
 
-    receiveComponent: function(nextComponent, transaction) {
+    receiveComponent: function(nextComponent/*, transaction*/) {
         var props = nextComponent.props;
         this.node.props = this.props = props;
         this.setDefaults(this.props);
@@ -377,14 +375,14 @@ var VCircle = createComponent(
     'VCircle',
     ReactComponentMixin, {
 
-    mountComponent: function(rootID, transaction, mountDepth) {
+    mountComponent: function(/*rootID, transaction, mountDepth*/) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
-        this.node = new VCircleNode;
+        this.node = new VCircleNode();
         this.node.props = this.props;
         return this.node;
     },
 
-    receiveComponent: function(nextComponent, transaction) {
+    receiveComponent: function(nextComponent/*, transaction*/) {
         var props = nextComponent.props;
         this.node.props = this.props = props;
     },
@@ -417,14 +415,14 @@ var VBezier = createComponent(
     'VBezier',
     ReactComponentMixin, {
 
-    mountComponent: function(rootID, transaction, mountDepth) {
+    mountComponent: function(/*rootID, transaction, mountDepth*/) {
         ReactComponentMixin.mountComponent.apply(this, arguments);
-        this.node = new VBezierNode;
+        this.node = new VBezierNode();
         this.node.props = this.props;
         return this.node;
     },
 
-    receiveComponent: function(nextComponent, transaction) {
+    receiveComponent: function(nextComponent/*, transaction*/) {
         var props = nextComponent.props;
         this.node.props = this.props = props;
     },
@@ -444,15 +442,15 @@ var HelloGL = createComponent(
     mountComponent: function(rootID, transaction, mountDepth) {
         this.state = this.getInitialState();
         this.node = {
-            injectChild: (node, type) => {
+            injectChild: function(node, type)  {
                 this.node[type].push(node);
-            },
-            ejectChild: (node, type) => {
+            }.bind(this),
+            ejectChild: function(node, type)  {
                 var g = this.node[type].indexOf(node);
                 if (g !== -1) {
                     this.node[type].splice(g, 1);
                 }
-            },
+            }.bind(this),
             glyphs: [],
             rects: [],
             circles: [],
@@ -546,9 +544,9 @@ var HelloGL = createComponent(
 
         gl.useProgram(this.node.rectProgram);
 
-        var oldRed, oldGreen, oldBlue, oldSkew;
+        var oldRed, oldGreen, oldBlue, oldSkew, oldIDX;
 
-        _.each(rects, rect => {
+        _.each(rects, function(rect)  {
             var x = rect.props.x1;
             var y = rect.props.y1;
             var width = rect.props.x2 - rect.props.x1;
@@ -582,12 +580,12 @@ var HelloGL = createComponent(
             }
 
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        });
+        }.bind(this));
 
         var PNG_SPACE = 44; // 51 px @ 128 dpi
 
         if (DEBUG_GLYPH_POSITION) {
-            _.each(glyphs, (glyph, idx) => {
+            _.each(glyphs, function(glyph)  {
                 var i = glyph.idx;
 
                 var rect = pixmapData.glyphs[i].rect.split(" ");
@@ -598,7 +596,7 @@ var HelloGL = createComponent(
 
                 // Outer border
                 var width = pixmapData.glyphs[i].width*fx;
-                var height = pixmapData.height*fy;;
+                var height = pixmapData.height*fy;
 
                 var x = glyph.props.x;
                 var y = glyph.props.y - pixmapData.height*fy/2;
@@ -642,9 +640,9 @@ var HelloGL = createComponent(
                     width/(this.stepsInWidth/2),
                     height/(this.stepsInWidth/this.aspectRatio/2));
 
-                var red = 0;
-                var green = Math.random()/2 + 0.5;
-                var blue = 0;
+                red = 0;
+                green = Math.random()/2 + 0.5;
+                blue = 0;
 
                 if (red !== oldRed || green !== oldGreen || blue !== oldBlue) {
                     gl.uniform4f(this.node.rectUniforms.colorAndSkew,
@@ -660,13 +658,13 @@ var HelloGL = createComponent(
 
                 gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
-            });
+            }.bind(this));
         }
 
         oldRed = oldGreen = oldBlue = oldIDX = null;
 
         gl.useProgram(this.node.glyphProgram);
-        _.each(glyphs, glyph => {
+        _.each(glyphs, function(glyph)  {
             var i = glyph.idx;
 
             // Outer border
@@ -721,14 +719,14 @@ var HelloGL = createComponent(
             }
 
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        });
+        }.bind(this));
 
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer);
         gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, 0, 0, 0);
 
         gl.useProgram(this.node.circleProgram);
-        _.each(circles, circle => {
+        _.each(circles, function(circle)  {
             var cx = circle.props.cx;
             var cy = circle.props.cy;
             var radius = circle.props.radius;
@@ -747,21 +745,21 @@ var HelloGL = createComponent(
                 parseInt(color.slice(5, 5 + 2), 16)/255);
 
             gl.drawArrays(gl.TRIANGLE_FAN, 0, CIRCLE_RESOLUTION);
-        });
+        }.bind(this));
 
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.tTexBuffer2);
         gl.vertexAttribPointer(this.vertexTexCoordAttribute, 1, gl.FLOAT, 0, 0, 0);
 
         gl.useProgram(this.node.bezierProgram);
-        _.each(beziers, bezier => {
+        _.each(beziers, function(bezier)  {
             var color = bezier.props.fill;
 
             gl.uniform4f(this.node.bezierUniforms.x,
-                (bezier.props.x1)/(this.stepsInWidth/2) - 1,
-                (bezier.props.x2)/(this.stepsInWidth/2) - 1,
-                (bezier.props.x3)/(this.stepsInWidth/2) - 1,
-                (bezier.props.x4)/(this.stepsInWidth/2) - 1)
+                (bezier.props.x1) / (this.stepsInWidth / 2) - 1,
+                (bezier.props.x2) / (this.stepsInWidth / 2) - 1,
+                (bezier.props.x3) / (this.stepsInWidth / 2) - 1,
+                (bezier.props.x4) / (this.stepsInWidth / 2) - 1);
 
             gl.uniform4f(this.node.bezierUniforms.y,
                 1 - (bezier.props.y1)/(this.stepsInWidth/this.aspectRatio/2),
@@ -782,7 +780,7 @@ var HelloGL = createComponent(
                 0.03);
 
             gl.drawArrays(gl.TRIANGLE_STRIP, 0, BEZIER_RESOLUTION);
-        });
+        }.bind(this));
     },
     componentWillUnmount: function() {
         ReactComponentMixin.unmountComponent.call(this);
@@ -790,6 +788,7 @@ var HelloGL = createComponent(
     },
 
     initGL: function() {
+        var gl;
         if (!globalGL) {
             var canvas = this.getDOMNode();
             try {
@@ -803,9 +802,9 @@ var HelloGL = createComponent(
                 return;
             }
 
-            var gl = this.node.gl;
+            gl = this.node.gl;
         } else {
-            var gl = globalGL;
+            gl = globalGL;
         }
 
         gl.clearColor(1.0, 1.0, 1.0, 1.0);
@@ -827,7 +826,7 @@ var HelloGL = createComponent(
         }
 
         var t2s = [];
-        for (var i = 0; i < BEZIER_RESOLUTION/2; ++i) {
+        for (i = 0; i < BEZIER_RESOLUTION/2; ++i) {
             t2s.push(i/(BEZIER_RESOLUTION - 1));
             t2s.push(1 - i/(BEZIER_RESOLUTION - 1));
         }
@@ -936,7 +935,7 @@ var HelloGL = createComponent(
         ////////////////
 
         this.node.spiritTexture = loadImageTexture(gl, "/res/bravura48.png",
-                () => this.paint());
+                function()  {return this.paint();}.bind(this));
         this.node.gl = gl;
     },
     newProgram: function(vsSRC, fsSRC) {
@@ -950,10 +949,10 @@ var HelloGL = createComponent(
         var vs = gl.createShader(gl.VERTEX_SHADER);
         gl.shaderSource(vs, prelude + vsSRC()); 
         gl.compileShader(vs);
-        if(!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
             console.log("invalid shader1: " + gl.getShaderInfoLog(vs));
             return null;
-        };
+        }
         gl.attachShader(shaderProgram, vs);
 
         var fs = gl.createShader(gl.FRAGMENT_SHADER);
@@ -962,7 +961,7 @@ var HelloGL = createComponent(
         if(!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
             console.log("invalid shader2: " + gl.getShaderInfoLog(fs));
             return null;
-        };
+        }
         gl.attachShader(shaderProgram, fs);
 
         gl.linkProgram(shaderProgram);
@@ -979,15 +978,6 @@ var HelloGL = createComponent(
 // Array of images curently loading
 var g_loadingImages = [];
 
-// Clears all the images currently loading.
-// This is used to handle context lost events.
-function clearLoadingImages() {
-    for (var ii = 0; ii < g_loadingImages.length; ++ii) {
-        g_loadingImages[ii].onload = undefined;
-    }
-    g_loadingImages = [];
-}
-
 //
 // loadImageTexture
 //
@@ -995,19 +985,19 @@ function clearLoadingImages() {
 // object and return the WebGLTexture.
 //
 var loadImageTexture = (globalGL && globalGL.ripieno_loadImageTexture) ||
-        function(ctx, url, cb) {
-    var texture = ctx.createTexture();
-    ctx.bindTexture(ctx.TEXTURE_2D, texture);
-    ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
-    var image = new Image();
-    g_loadingImages.push(image);
-    image.onload = function() {
-        doLoadImageTexture(ctx, image, texture);
-        cb();
+    function (ctx, url, cb) {
+        var texture = ctx.createTexture();
+        ctx.bindTexture(ctx.TEXTURE_2D, texture);
+        ctx.texImage2D(ctx.TEXTURE_2D, 0, ctx.RGBA, 1, 1, 0, ctx.RGBA, ctx.UNSIGNED_BYTE, null);
+        var image = new Image();
+        g_loadingImages.push(image);
+        image.onload = function () {
+            doLoadImageTexture(ctx, image, texture);
+            cb();
+        };
+        image.src = url;
+        return texture;
     };
-    image.src = url;
-    return texture;
-}
 
 function doLoadImageTexture(ctx, image, texture)
 {
@@ -1025,11 +1015,11 @@ function doLoadImageTexture(ctx, image, texture)
 var CIRCLE_RESOLUTION = 40;
 var BEZIER_RESOLUTION = 120;
 
-module.exports = React.createClass({
+module.exports = React.createClass({displayName: 'exports',
     render: function() {
-        return <HelloGL ref="glContext">
-            {this.props.children}
-        </HelloGL>;
+        return HelloGL({ref: "glContext"}, 
+            this.props.children
+        );
     },
 
     /**
@@ -1040,7 +1030,6 @@ module.exports = React.createClass({
         if (!globalGL) {
             // We are using WebGL
             var canvas = this.getDOMNode();
-            var r = canvas.getBoundingClientRect();
 
             var devicePixelRatio = window.devicePixelRatio ||
                                     window.webkitDevicePixelRatio ||
@@ -1061,7 +1050,7 @@ module.exports = React.createClass({
 
             this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
             this.refs.glContext.aspectRatio = width / height;
-            gl.viewport(0, 0, width, height);
+            globalGL.viewport(0, 0, width, height);
         }
     },
 

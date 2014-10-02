@@ -1,5 +1,5 @@
 /**
- * @file SVG renderer for sheet music.  See also hellogl.jsx.
+ * @file SVG renderer for sheet music.  See also victoria.js.
  * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.

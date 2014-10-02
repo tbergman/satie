@@ -10,8 +10,8 @@ import assert = require("assert");
 
 import DurationModel = require("../stores/duration");
 import Note = require("./_note");
-var NoteMarking = require("./_noteMarking.jsx");
-var Rest = require("./_rest.jsx");
+import NoteMarking = require("./_noteMarking");
+import Rest = require("./_rest");
 import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
 
 var html = React.DOM;
@@ -28,7 +28,17 @@ export function Component(props: IProps) {
     assert(spec instanceof DurationModel);
 
     var markings = _.map(spec.displayMarkings || [], (m, idx) =>
-        NoteMarking({fontSize: props.fontSize, marking: m, key: idx})
+        NoteMarking.Component({
+            idx: 1,
+            direction: this.props.direction,
+            fontSize: props.fontSize,
+            marking: m,
+            key: idx,
+            line: 3,
+            notehead: props.spec.notehead,
+            x: NaN, // assigned later
+            y: NaN  // assigned later
+        })
     );
 
     /**
@@ -37,7 +47,8 @@ export function Component(props: IProps) {
     var zeroOffsetMode = !renderUtil.useGL && !spec.isRest && !spec.tie;
 
     if (spec.isRest) {
-        return Rest({
+        return Rest.Component({
+                children: [],
                 dotted: spec.displayDots,
                 line: 3,
                 key: spec.key,

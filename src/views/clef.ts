@@ -7,12 +7,12 @@
 import ReactTS = require("react-typescript");
 
 import ClefModel = require("../stores/clef");
-var Glyph = require("./_glyph.jsx");
+import Glyph = require("./_glyph");
 
 export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {
         var spec = this.props.spec;
-        return Glyph({
+        return Glyph.Component({
             x: spec.x - (spec.isChange ? 0.2 : 0),
             y: spec.y - (this.line - 3)/4,
             fill: spec.color,

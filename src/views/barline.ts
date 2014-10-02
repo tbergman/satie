@@ -9,9 +9,9 @@ import ReactTS = require("react-typescript");
 
 import C = require("../stores/contracts");
 import BarlineModel = require("../stores/barline");
-var Group = require("./_group.jsx");
-var Rect = require("./_rect.jsx");
-var Line = require("./_line.jsx");
+import Group = require("./_group");
+import Rect = require("./_rect");
+import Line = require("./_line");
 import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
 import hash = require("../../node_modules/ripienoUtil/hash");
 
@@ -26,7 +26,7 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
 
         if (spec.barline === C.Barline.Double) {
             return Group(null,
-                [Line({key: 1,
+                [Line.Component({key: 1,
                     x1: spec.x,
                     x2: spec.x,
                     y1: spec.y - spec.height - spec.yOffset,
@@ -35,7 +35,7 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
                     victoriaYStrokeWidthFactor: 0,
                     fill: spec.color,
                     strokeWidth: defaults.thinBarlineThickness/4}),
-                Line({key: 2,
+                Line.Component({key: 2,
                     x1: thickX,
                     x2: thickX,
                     y1: spec.y - spec.height - spec.yOffset,
@@ -46,8 +46,9 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
                     strokeWidth: defaults.thickBarlineThickness/4}),
                 // HACK HACK HACK: We're drawing a white bar to
                 // cover over the empty part of the stave.
-                Rect({
+                Rect.Component({
                     key: 3,
+                    opacity: 1.0,
                     x: spec.x + defaults.barlineSeparation/4 +
                         defaults.thickBarlineThickness/4 +
                         defaults.thinBarlineThickness/4,
@@ -58,7 +59,7 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
                     width: 400})]
             );
         }
-        return Line({
+        return Line.Component({
             x1: spec.x,
             x2: spec.x,
             y1: spec.y - spec.height - spec.yOffset,
