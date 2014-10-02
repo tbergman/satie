@@ -138,19 +138,21 @@ export interface IDispatcher {
      */
     register: (callback: (payload: any) => boolean) => void;
 
-	/**
-	 * Dispatch a Flux-style event.
-	 * 
-	 * @param cb The callback should not be used for any logic that could potentially
-	 * take place in the stores. If a callback is specified, the request must
-	 * be a network request. The callback will be called regardless of whether
-	 * the event succeeded or not.
-	 */
+    /**
+     * Dispatch a Flux-style event.
+     * 
+     * @param cb The callback should not be used for any logic that could potentially
+     * take place in the stores. If a callback is specified, the request must
+     * be a network request. The callback will be called regardless of whether
+     * the event succeeded or not.
+     */
     GET: (url: string, p?: any, cb?: () => void) => void;
     DELETE: (url: string, p?: any, cb?: () => void) => void;
-    PATCH: (url: string, p?: any, cb?: () => void ) => void;
+    PATCH: (url: string, p?: any, cb?: () => void) => void;
     PUT: (url: string, p?: any, cb?: () => void) => void;
     POST: (url: string, p?: any, cb?: () => void) => void;
+
+    _events: string;
 }
 
 /**
