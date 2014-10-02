@@ -2,7 +2,7 @@
  * @jsx React.DOM
  */
 
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 var RenderableMixin = {
     render: function() {

@@ -5,12 +5,12 @@
  */
 
 import ReactTS = require("react-typescript");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 import Line = require("./_line");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 
 export class Brace extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {

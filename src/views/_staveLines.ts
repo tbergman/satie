@@ -7,7 +7,7 @@ import _ = require("lodash");
 
 import Group = require("./_group");
 import Line = require("./_line");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 
 export class StaveLines extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {

@@ -7,7 +7,7 @@
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 import Beam = require("./_beam");
 import BeamGroupModel = require("../stores/beamGroup");

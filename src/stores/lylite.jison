@@ -7,7 +7,7 @@
      * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
      */
     var _ = require("lodash");
-    var util = require("ripienoUtil/renderUtil");
+    var util = require("../util/renderUtil.ts");
 
     var BarlineModel = require("./barline.ts");
     var C = require("./contracts.ts")

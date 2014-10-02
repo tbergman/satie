@@ -154,7 +154,7 @@ SongEditorStore = require("./stores/songEditor.ts");
  *******************/
 
 require("./webViews.ts");
-var renderUtil = require("ripienoUtil/renderUtil");
+var renderUtil = require("./util/renderUtil");
 var V_PADDING = renderUtil.V_PADDING;
 
 var Renderer = require("./renderer/renderer.ts");

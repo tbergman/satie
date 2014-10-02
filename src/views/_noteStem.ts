@@ -8,7 +8,7 @@ import ReactTS = require("react-typescript");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Line = require("./_line");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
 var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;

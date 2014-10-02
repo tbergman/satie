@@ -10,7 +10,7 @@ import assert = require("assert");
 import BarlineModel = require("./barline");
 import C = require("./contracts");
 import Model = require("./model");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 /**
  * Annotator has two goals:

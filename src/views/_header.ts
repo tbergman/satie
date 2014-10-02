@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 import C = require("../stores/contracts");
 

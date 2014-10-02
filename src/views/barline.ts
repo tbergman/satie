@@ -12,8 +12,8 @@ import BarlineModel = require("../stores/barline");
 import Group = require("./_group");
 import Rect = require("./_rect");
 import Line = require("./_line");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
-import hash = require("../../node_modules/ripienoUtil/hash");
+import SMuFL = require("../util/SMuFL");
+import hash = require("../util/hash");
 
 export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
     render() {

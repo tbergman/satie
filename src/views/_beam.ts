@@ -9,8 +9,8 @@ import ReactTS = require("react-typescript");
 import _ = require("lodash");
 
 import C = require("../stores/contracts");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import SMuFL = require("../util/SMuFL");
+import renderUtil = require("../util/renderUtil");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
 import RenderableMixin = require("./_renderable");

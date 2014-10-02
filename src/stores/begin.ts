@@ -10,7 +10,7 @@ import Model = require("./model");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 import _ = require("lodash");
 

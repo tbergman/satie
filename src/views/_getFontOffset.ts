@@ -9,7 +9,7 @@
 import _ = require("lodash");
 import assert = require("assert");
 
-var SMuFL = require("../../node_modules/ripienoUtil/SMuFL.ts");
+var SMuFL = require("../util/SMuFL.ts");
 
 var getAnchor = _.memoize(notehead => SMuFL.bravuraMetadata.glyphsWithAnchors[notehead]);
 

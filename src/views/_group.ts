@@ -5,7 +5,7 @@
 import React = require("react");
 
 var Victoria = require("../renderer/victoria/victoria");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 var VG = Victoria.VG;
 

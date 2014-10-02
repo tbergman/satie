@@ -7,7 +7,7 @@
 import ReactTS = require("react-typescript");
 
 import Glyph = require("./_glyph");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
 export class NoteMarking extends ReactTS.ReactComponentBase<IProps, {}> {

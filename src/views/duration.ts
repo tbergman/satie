@@ -12,7 +12,7 @@ import DurationModel = require("../stores/duration");
 import Note = require("./_note");
 import NoteMarking = require("./_noteMarking");
 import Rest = require("./_rest");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 var html = React.DOM;
 

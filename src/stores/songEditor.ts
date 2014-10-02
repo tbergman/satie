@@ -15,7 +15,7 @@ import Model = require("./model");
 import Tool = require("./tool");
 import TSEE = require("./tsee");
 import lylite = require("./lylite");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 import PlaybackStore = require("./playback");
 

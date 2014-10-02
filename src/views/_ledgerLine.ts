@@ -7,7 +7,7 @@
 import ReactTS = require("react-typescript");
 
 import Line = require("./_line");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 
 export class LedgerLine extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {

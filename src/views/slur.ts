@@ -8,8 +8,8 @@ import Bezier = require("./_bezier");
 import Note = require("./_note");
 import SlurGroupModel = require("../stores/slur");
 import getFontOffset = require("./_getFontOffset");
-import hash = require("../../node_modules/ripienoUtil/hash");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import hash = require("../util/hash");
+import renderUtil = require("../util/renderUtil");
 
 var getExtremeLine = Note.getExtremeLine;
 

@@ -9,9 +9,9 @@ import React = require("react");
 import ReactTS = require("react-typescript");
 
 import RenderableMixin = require("./_renderable");
-import SMuFL = require("../../node_modules/ripienoUtil/SMuFL");
+import SMuFL = require("../util/SMuFL");
 var Victoria = require("../renderer/victoria/victoria");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 var VGlyph = Victoria.VGlyph;
 

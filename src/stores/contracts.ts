@@ -16,7 +16,7 @@ import assert = require("assert");
 
 import Model = require("./model");
 import Annotator = require("./annotator");
-import renderUtil = require("../../node_modules/ripienoUtil/renderUtil");
+import renderUtil = require("../util/renderUtil");
 
 /**
  * Represents the client's policy for communicating changes with each other and saving them
