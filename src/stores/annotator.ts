@@ -852,6 +852,7 @@ class PrivIterator {
         this._parent.loc = JSON.parse(JSON.stringify(from));
         this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         var visibleSidx = -1;
+        recordMetreData(this._staves);
         for (var i = 0; i < staves.length; ++i) {
             if (staves[i].body) {
                 ++visibleSidx;

@@ -46,7 +46,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     constructor(dispatcher: C.IDispatcher, songEditor: C.ISongEditor) {
         super();
         this._dispatcher = dispatcher;
-        dispatcher.register(this._handleAction.bind(this));
+        dispatcher.register(this._handleAction);
 
         this._songEditor = songEditor;
         this._playing = false;
@@ -75,6 +75,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         if (enabled) {
             _.defer(() => this._getPiano());
         }
+    }
+
+    destructor() {
+        this._play(false);
+        this._dispatcher.unregister(this._handleAction);
     }
 
     ///////////////////
@@ -331,14 +336,14 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._getInstrument("acoustic_grand_piano", true);
     }
 
-    private _handleAction(action: C.IFluxAction) {
+    private _handleAction = (action: C.IFluxAction) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
             fn.call(this, action);
         }
         return true; // (Success)
-    }
+    };
 
     private _play(on: boolean) {
         this._playing = on;

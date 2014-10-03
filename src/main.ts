@@ -63,12 +63,12 @@ function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {
             session: session
         });
     } else {
-        component = FiveOhFive({ session: session.info });
+        component = FiveOhFive({ sessionInfo: session.info });
     }
 
     try {
         React.renderComponent(component, document.body);
     } catch(err) {
-        React.renderComponent(FiveOhFive({ session: session.info }), document.body);
+        React.renderComponent(FiveOhFive({ sessionInfo: session.info }), document.body);
     }
 };

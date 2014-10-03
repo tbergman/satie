@@ -73,13 +73,19 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 class SongEditorStore extends TSEE implements C.ISongEditor {
     constructor(dispatcher: C.IDispatcher, session: C.ISessionStore) {
         super();
-        dispatcher.register(this._handleAction.bind(this));
+        dispatcher.register(this._handleAction);
 
         this._dispatcher = dispatcher;
         this._session = session;
 
         this._clear();
         this._ping();
+    }
+
+    destructor() {
+        this._dispatcher.unregister(this._handleAction);
+        this._clear();
+        this._ping = (): void => undefined;
     }
 
     ///////////////////
@@ -915,7 +921,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             console.time("annotate");
         }
 
-        var oldBarKeys = Collab.getBarKeys(staves[4].body); // XXX: MULTISTAVE
+        var aBody: C.IBody; // XXX: MULTISTAVE
+        for (var i = 0; i < staves.length; ++i) {
+            if (staves[i].body) {
+                aBody = staves[i].body;
+                break;
+            }
+        }
+        var oldBarKeys = Collab.getBarKeys(aBody);
         var cursor = this._visualCursor;
 
         if (!pointerData) {
@@ -937,9 +950,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         if (godAction) {
             godAction();
         }
-
-        // Records ctxData for every item.
-        Annotator.recordMetreData(staves);
 
         // Get a context.
 
@@ -1090,14 +1100,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(CHANGE_EVENT);
     }
 
-    private _handleAction(action: C.IFluxAction) {
+    private _handleAction = (action: C.IFluxAction) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
             fn.call(this, action);
         }
         return true; // (Success)
-    }
+    };
 
     private _handleRelayMessage(msg: any) {
         if (global.localStorage && localStorage["superCowPowers"]) {
@@ -1131,12 +1141,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    private _ping() {
+    private _ping = () => {
         if (this._peerRelay && this._peerRelay.readyState === WebSocket.OPEN) {
             this._peerRelay.send("");
         }
-        _.delay(this._ping.bind(this), 128);
-    }
+        _.delay(this._ping, 128);
+    };
 
     private _recreateSnapshot(line: number) {
         var lines: Array<any> = [];

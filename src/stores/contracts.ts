@@ -137,6 +137,7 @@ export interface IDispatcher {
      * @return {number} The index of the callback within the _callbacks array.
      */
     register: (callback: (payload: any) => boolean) => void;
+    unregister: (callback: (payload: any) => boolean) => void;
 
     /**
      * Dispatch a Flux-style event.
@@ -146,11 +147,11 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET: (url: string, p?: any, cb?: () => void) => void;
-    DELETE: (url: string, p?: any, cb?: () => void) => void;
-    PATCH: (url: string, p?: any, cb?: () => void) => void;
-    PUT: (url: string, p?: any, cb?: () => void) => void;
-    POST: (url: string, p?: any, cb?: () => void) => void;
+    GET: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    DELETE: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    PATCH: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    PUT: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    POST: (url: string, p?: any, cb?: () => void) => Promise<void>;
 
     _events: string;
 }
@@ -502,6 +503,7 @@ export class MetreContext {
     timeSignature: ITimeSignature = { beats: 4, beatType: 4 };
     bar: number = 1;
     beat: number = 0;
+    defaultCount: number = 4;
     constructor(other?: MetreContext) {
         if (other) {
             this.timeSignature = {
@@ -511,6 +513,7 @@ export class MetreContext {
             this.bar = other.bar;
             this.beat = other.beat;
             this.endMarker = other.endMarker || false;
+            this.defaultCount = other.defaultCount || 4;
         }
     }
 }
@@ -658,6 +661,8 @@ export interface IPlaybackStore {
     removeChangeListener: (callback: Function) => void;
     removeLoadingListener: (callback: Function) => void;
 
+    destructor: () => void;
+
     bpm: number;
     playing: boolean;
     ready: boolean;
@@ -752,6 +757,8 @@ export interface ISongEditor {
     removeAnnotationListener: (callback: any) => void;
     removeHistoryListener: (callback: any) => void;
     removeClearHistoryListener: (callback: any) => void;
+
+    destructor: () => void;
 
     autosaveModalVisible: boolean;
     beamStartBeat: number;

@@ -37,7 +37,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             var session = new SessionStore(dispatcher);
             var songEditor = new SongEditorStore(dispatcher, session);
             context = new Annotator.Context(parsed, opts, songEditor);
-            context.annotate(null, null, null, true);
+            context.annotate({ bar: 1, beat: 0 }, null, null, true);
         });
         _.each(tests, test => it(
             test[0],

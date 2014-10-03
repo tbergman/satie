@@ -24,6 +24,16 @@ import TimeSignatureModel = require("./timeSignature");
  */
 class DurationModel extends Model implements C.IPitchDuration {
     recordMetreDataImpl(mctx: C.MetreContext) {
+        // A note's duration, when unspecified, is set by the previous note.
+        if (!this._count) {
+            assert(mctx.defaultCount, "Never null (the initial count is '4')");
+            this.count = mctx.defaultCount;
+        }
+
+        // Update the context to reflect the current note's duration.
+        mctx.defaultCount = this.count;
+
+        // Guess bar and beat (annotation could add rests and shift it!)
         this.ctxData = new C.MetreContext(mctx);
 
         this._beats = this.getBeats(mctx, null, true);
@@ -44,16 +54,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.impliedTS = ctx.timeSignature;
         if (!this.impliedTS) { return TimeSignatureModel.createTS(ctx); }
 
-        // A note's duration, when unspecified, is set by the previous note.
-        if (!this._count) {
-            assert(ctx.defaultCount, "Never null (the initial count is '4')");
-            this.count = ctx.defaultCount;
-        }
-
-        assert(this._beats !== null);
-
-        // Update the context to reflect the current note's duration.
-        ctx.defaultCount = this.count;
+        assert(this._beats !== null, "Unknown beat count");
 
         this.isWholeBar = this._beats === ctx.timeSignature.beats;
 

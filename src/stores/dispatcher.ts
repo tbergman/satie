@@ -23,31 +23,34 @@ import assert = require("assert");
 import C = require("./contracts");
 import ajax = require("../util/ajax");
 
-var _callbacks: Array<(payload: any) => boolean> = [];
-var _promises: Array<Promise<any>> = [];
-
 var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 
 class Dispatcher implements C.IDispatcher {
     register(callback: (payload: any) => boolean) {
-        _callbacks.push(callback);
-        return _callbacks.length - 1; // index
+        this._callbacks.push(callback);
+        return this._callbacks.length - 1; // index
     }
 
-	DELETE(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "DELETE", p, cb); }
-	GET(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "GET", p, cb); }
-    PATCH(url: string, p?: any, cb?: () => void) {
-        this._dispatch(url, "PATCH", p, cb); }
-	POST(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "POST", p, cb); }
-	PUT(url: string, p?: any, cb?: () => void) {
-	    this._dispatch(url, "PUT", p, cb); }
+    unregister(callback: (payload: any) => boolean) {
+        this._callbacks = this._callbacks.filter(cb => cb !== callback);
+    }
 
-    _dispatch(url: string, verb: string, postData: any, cb?: () => void) : void {
+	DELETE(url: string, p?: any, cb?: () => void): Promise<void> {
+	    return this._dispatch(url, "DELETE", p, cb); }
+	GET(url: string, p?: any, cb?: () => void): Promise<void> {
+	    return this._dispatch(url, "GET", p, cb); }
+    PATCH(url: string, p?: any, cb?: () => void): Promise<void> {
+        return this._dispatch(url, "PATCH", p, cb); }
+	POST(url: string, p?: any, cb?: () => void): Promise<void> {
+	    return this._dispatch(url, "POST", p, cb); }
+	PUT(url: string, p?: any, cb?: () => void): Promise<void> {
+	    return this._dispatch(url, "PUT", p, cb); }
+
+    _dispatch(url: string, verb: string, postData: any, cb?: () => void) : Promise<void> {
 	    assert(verb, "Verb must be defined");
+
+        var pr: Promise<void>;
 
 	    var root = url;
 	    var resource: string = null;
@@ -79,7 +82,7 @@ class Dispatcher implements C.IDispatcher {
 	            }
 	        });
 	    } else if (verb in immediateActions) {
-	        this._dispatchImpl({
+	        pr = this._dispatchImpl({
 	            description: verb + " " + root,
 	            resource: resource,
 	            response: null,
@@ -108,6 +111,8 @@ class Dispatcher implements C.IDispatcher {
 	            assert(!cb, "Callbacks are only necessary for network actions.");
 	        }
 	    }
+
+        return pr;
 	}
 
 
@@ -117,7 +122,7 @@ class Dispatcher implements C.IDispatcher {
      * @param {object} payload The data from the Action.
      */
     private _addPromise(callback: (payload: any) => boolean, payload: any) {
-        _promises.push(new Promise.Promise(function(resolve, reject) {
+        this._promises.push(new Promise.Promise(function(resolve, reject) {
             if (callback(payload)) {
                 resolve(payload);
             } else {
@@ -129,17 +134,17 @@ class Dispatcher implements C.IDispatcher {
     /**
      * Empty the queue of callback invocation promises.
      */
-    private _clearPromises = function _clearPromises() {
-        _promises = [];
-        this._inAction = false;
-    }.bind(this);
+    private _clearPromises = () => {
+        this._promises = [];
+        this._inAction = null;
+    };
 
     /**
      * For debugging
      */
     _events: string = "";
 
-    private _inAction: boolean = false;
+    private _inAction: string = null;
 
     /**
      * dispatch
@@ -163,25 +168,29 @@ class Dispatcher implements C.IDispatcher {
         }
 
         if (this._inAction) {
-            assert(false, "Queuing an action during an action is a violation of Flux");
+            assert(false, "Queuing an action (" + action.description +
+                ") during an action (" + this._inAction + ") is a violation of Flux");
         }
 
-        _.each(_callbacks, callback => {
+        _.each(this._callbacks, callback => {
             this._addPromise(callback, action);
         });
 
-        this._inAction = true;
+        this._inAction = action.description;
         /* tslint:disable */
-        Promise.Promise
-            .all(_promises)
+        return Promise.Promise
+            .all(this._promises)
             .then(this._clearPromises)
             ["catch"]((err) => { // For support with IE 6.
-                this._inAction = false;
+                this._inAction = null;
                 console.warn("Exception occurred in promise", err);
                 console.log(err.stack);
             });
         /* tslint:enable */
     }
+
+    _callbacks: Array<(payload: any) => boolean> = [];
+    _promises: Array<Promise<any>> = [];
 }
 
 var immediateActions = {

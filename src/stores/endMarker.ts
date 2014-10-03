@@ -21,6 +21,7 @@ import _ = require("lodash");
 class EndMarkerModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext({
+            defaultCount: 4,
             timeSignature: mctx.timeSignature,
             beat: mctx.timeSignature.beats,
             bar: mctx.bar - 1,
