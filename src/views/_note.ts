@@ -3,8 +3,6 @@
  * Either rendered by DurationModel or BeamGroup. Does not render beams.
  *
  * The stem height is calculated in this file.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");
@@ -86,8 +84,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 y: this.props.y,
                 line: this.getHeightDeterminingLine(),
                 stroke: this.props.secondaryStroke,
-                stemHeight: null,
-                stemWidth: null,
+                stemHeight: this.getStemHeight(),
+                stemWidth: 0.035,
                 flag: this.props.flag,
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead,

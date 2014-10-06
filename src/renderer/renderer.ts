@@ -451,7 +451,6 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         svg_pt.x = event.clientX;
         svg_pt.y = event.clientY;
         var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
-        console.log(this.props.staveHeight, pt);
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,

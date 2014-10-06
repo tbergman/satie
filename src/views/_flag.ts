@@ -1,7 +1,5 @@
 /**
- * Responsible for rendering the "flag" on unbeamed eigth notes and shorter.
- *
- * @jsx React.DOM
+ * Responsible for rendering the "flag" on unbeamed notes shorter than quarter notes.
  */
 
 import ReactTS = require("react-typescript");
@@ -13,11 +11,12 @@ import getFontOffset = require("./_getFontOffset");
 export class Flag extends ReactTS.ReactComponentBase<IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset(this.glyphName);
+        var noteOffset = this.getFontOffset();
         return Glyph.Component({
             x: this.props.x +
                 fontOffset[0]/4 +
                 ((this.props.direction === 1) ?
-                    fontOffset[0]/4 - this.props.stemWidth :
+                    noteOffset[0]/4 - this.props.stemWidth :
                     0),
             y: this.props.y -
                 (this.props.line - 3)/4 -
