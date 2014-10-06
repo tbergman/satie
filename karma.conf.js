@@ -1,6 +1,6 @@
 module.exports = function(karma) {
     karma.set({
-        browsers: ["Chrome"],
+        browsers: ["PhantomJS"],
         frameworks: ["mocha"],
         files: ["build/deps.min.js"],
         reporters: ["mocha", "notify", "coverage"],

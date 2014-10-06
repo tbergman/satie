@@ -9,6 +9,7 @@ var streamify = require("gulp-streamify");
 var uglify = require("gulp-uglify");
 var watchify = require("watchify");
 var concat = require("gulp-concat");
+var jasmine = require('gulp-jasmine');
 var karma = require("gulp-karma");
 var generateSuite = require("gulp-mocha-browserify-sweet");
 
@@ -51,13 +52,14 @@ gulp.task("test", ["test-suite"], function() {
         return bundler.bundle()
             .pipe(source("deps.min.js"))
             .pipe(gulp.dest("build"))
-            .pipe(karma({
-                configFile: "karma.conf.js",
-                action: "run",
-                autoWatch: false,
-                singleRun: true,
-                dieOnError: false
-            }))
+            .pipe(streamify(jasmine()))
+            //.pipe(karma({
+            //    configFile: "karma.conf.js",
+            //    action: "run",
+            //    autoWatch: false,
+            //    singleRun: true,
+            //    dieOnError: false
+            //}))
             .on("error", gutil.log.bind(gutil, "Test Error"));
     }
 

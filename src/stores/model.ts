@@ -48,7 +48,7 @@ class Model {
         assert(this instanceof Model);
         var self: { [key: string]: any } = <any> this;
         for (var prop in spec) {
-            if (spec.hasOwnProperty(prop)) {
+            if (spec.hasOwnProperty(prop) && prop !== "type") {
                 self[prop] = spec[prop];
             }
         }
