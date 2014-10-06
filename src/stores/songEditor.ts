@@ -122,8 +122,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     get autosaveModalVisible() {
         return this._autosaveModalVisible; }
-    get beamStartBeat(): number {
-        return this._beamStartBeat; }
     get changesPending() {
         return this._changesPending; }
 
@@ -358,12 +356,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
      * To be called by the Annotator.
      */
     dangerouslySetVisualCursor: (visualCursor: C.IVisualCursor) => void = this._visualCursorIs.bind(this);
-
-    /**
-     * Sets the start beat of the current or previous beam.
-     * To be called by the Annotator.
-     */
-    dangerouslySetBeamStartBeat: (beamCount: number) => void = this._setBeamStartBeat.bind(this);
 
     /**
      * Goes forwards or backwards by a step.
@@ -1194,15 +1186,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    /**
-     * Called at the beginning of every beam. Called so that if the annotator has
-     * to be "backed up", it can do so without recalculating from the beginning
-     * of the line.
-     */
-    private _setBeamStartBeat(beamCount: number) {
-        this._beamStartBeat = beamCount;
-    }
-
     private _stepCursor(spec: any) {
         if (!this._visualCursor || !this._visualCursor.annotatedObj) {
             return;
@@ -1408,7 +1391,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _activeStaveIdx: number;
     private _allChangesSent: boolean = true;
     private _autosaveModalVisible: boolean = false;
-    private _beamStartBeat = 0;
     private _changesPending: boolean;
 	private _cleanupFn: Function = null;
     private _copyModalVisible: boolean = false;

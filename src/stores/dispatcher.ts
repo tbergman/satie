@@ -22,11 +22,15 @@ import assert = require("assert");
 
 import C = require("./contracts");
 import ajax = require("../util/ajax");
+import types = require("./types");
 
 var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 
 class Dispatcher implements C.IDispatcher {
+    constructor() {
+        types.ensureRegistered();
+    }
     register(callback: (payload: any) => boolean) {
         this._callbacks.push(callback);
         return this._callbacks.length - 1; // index
@@ -67,7 +71,7 @@ class Dispatcher implements C.IDispatcher {
 
 	    if (verb === "GET") {
 	        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
-	            this._dispatchImpl({
+	            var ev = this._dispatchImpl({
 	                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
 	                status: request.status,
 	                resource: resource,
@@ -78,7 +82,7 @@ class Dispatcher implements C.IDispatcher {
 	            });
 
 	            if (cb) {
-	                cb();
+                    ev.then(cb);
 	            }
 	        });
 	    } else if (verb in immediateActions) {
@@ -93,7 +97,7 @@ class Dispatcher implements C.IDispatcher {
 
 	        if ((verb in networkActions) && !url.indexOf("/api")) {
 	            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
-	                this._dispatchImpl({
+	                var ev = this._dispatchImpl({
 	                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
 	                    status: request.status,
 	                    resource: resource,
@@ -104,7 +108,7 @@ class Dispatcher implements C.IDispatcher {
 	                });
 
 	                if (cb) {
-	                    cb();
+                        ev.then(cb);
 	                }
 	            });
 	        } else {
@@ -151,7 +155,7 @@ class Dispatcher implements C.IDispatcher {
      * @param  {object} action The data from the action.
      */
     private _dispatchImpl(action: C.IFluxAction) {
-        if (FLUX_DEBUG || this._inAction) {
+        if (FLUX_DEBUG) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
                 (action.query ? " " + action.query : ""),
@@ -167,7 +171,7 @@ class Dispatcher implements C.IDispatcher {
                 JSON.stringify(action.postData) + "\n";
         }
 
-        if (this._inAction) {
+        if (this._inAction) { // temporary workaround
             assert(false, "Queuing an action (" + action.description +
                 ") during an action (" + this._inAction + ") is a violation of Flux");
         }

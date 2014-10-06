@@ -66,7 +66,7 @@ class BeamGroupModel extends Model {
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet || null;
-        ctx.songEditor.dangerouslySetBeamStartBeat(ctx.beat);
+        ctx.startOfBeamBeat = ctx.beat;
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {

@@ -43,7 +43,7 @@ var CHANGE_EVENT = "change";
 var LOAD_EVENT = "load";
 
 class PlaybackStore extends TSEE implements C.IPlaybackStore {
-    constructor(dispatcher: C.IDispatcher, songEditor: C.ISongEditor) {
+    constructor(dispatcher: C.IDispatcher, songEditor?: C.ISongEditor) {
         super();
         this._dispatcher = dispatcher;
         dispatcher.register(this._handleAction);
@@ -51,7 +51,9 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._songEditor = songEditor;
         this._playing = false;
 
-        songEditor.ensureSoundfontLoaded = this._ensureLoaded.bind(this);
+        if (songEditor) {
+            songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
+        }
 
         if (PlaybackStore.USING_LEGACY_AUDIO) {
             var store = this;
@@ -287,7 +289,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         });
     }
 
-    private _ensureLoaded(soundfont: string, avoidEvent?: boolean): boolean {
+    ensureLoaded(soundfont: string, avoidEvent?: boolean): boolean {
         var isLoaded = this._loadedSoundfonts[soundfont];
         if (!isLoaded) {
             this._getInstrument(soundfont, avoidEvent);
@@ -329,7 +331,9 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                 }
             }
         });
-        this.emit(CHANGE_EVENT);
+        if (!avoidEvent) {
+            this.emit(CHANGE_EVENT);
+        }
     }
 
     private _getPiano() {

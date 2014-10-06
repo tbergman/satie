@@ -15,7 +15,6 @@ import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
 import Router = require("./router");
 import SessionStore = require("./stores/session");
-import types = require("./stores/types");
 
 var ReactPerf = require("react/lib/ReactDefaultPerf");
 var FiveOhFive = require("./landing/fiveOhFive.jsx");
@@ -27,7 +26,6 @@ var FiveOhFive = require("./landing/fiveOhFive.jsx");
     "use strict";
     initTouchIfNeeded();
     setDebugGlobals();
-    types.registerTypes();
 
     var dispatcher = new Dispatcher;
     var session = new SessionStore(dispatcher);
@@ -70,5 +68,6 @@ function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {
         React.renderComponent(component, document.body);
     } catch(err) {
         React.renderComponent(FiveOhFive({ sessionInfo: session.info }), document.body);
+        throw err;
     }
 };

@@ -38,8 +38,9 @@ class EndMarkerModel extends Model {
                 if (ctx.body[i].type === C.Type.NEWLINE) {
                     ctx.splice(i, 1);
                     ctx.markEntireSongDirty();
-                    var SongEditor = require("./songEditor"); // Recursive dependency.
-                    SongEditor.Instance.markRendererDirty();
+                    if (ctx.songEditor) {
+                        ctx.songEditor.dangerouslyMarkRendererDirty();
+                    }
                     return C.IterationStatus.RETRY_FROM_ENTRY;
                 }
             }

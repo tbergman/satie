@@ -30,8 +30,12 @@ import SlurView = require("../views/slur");
 import TimeSignatureModel = require("./timeSignature");
 import TimeSignatureView = require("../views/timeSignature");
 
-export function registerTypes() {
+var registered = false;
+
+export function ensureRegistered() {
     "use strict";
+    if (registered) { return; }
+    registered = true;
     registerType(C.Type.BARLINE, BarlineModel, BarlineView.Component);
     registerType(C.Type.BEAM_GROUP, BeamGroupModel, BeamGroupView.Component);
     registerType(C.Type.BEGIN, BeginModel, BeginView.Component);

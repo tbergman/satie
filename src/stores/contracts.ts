@@ -661,6 +661,7 @@ export interface IPlaybackStore {
     removeChangeListener: (callback: Function) => void;
     removeLoadingListener: (callback: Function) => void;
 
+    ensureLoaded: (soundfont: string, avoidEvent?: boolean) => boolean;
     destructor: () => void;
 
     bpm: number;
@@ -761,7 +762,6 @@ export interface ISongEditor {
     destructor: () => void;
 
     autosaveModalVisible: boolean;
-    beamStartBeat: number;
     changesPending: boolean;
     copyModalVisible: boolean;
     dirty: boolean;
@@ -789,7 +789,6 @@ export interface ISongEditor {
     dangerouslyMarkRendererLineClean: (action: IFluxAction) => void;
     dangerouslyMarkRendererLineDirty: (line: number) => void;
     dangerouslySetVisualCursor: (visualCursor: IVisualCursor) => void;
-    dangerouslySetBeamStartBeat: (beamCount: number) => void;
     dangerouslyStepCursor: (spec: any) => boolean;
     dangerouslyShowPreview: (action: IFluxAction) => void;
     dangerouslyTakeSnapshot: (ctx: Annotator.Context) => void;

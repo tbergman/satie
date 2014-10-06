@@ -49,9 +49,19 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             console.time("render");
         }
 
-        var fontSize = this.props.staveHeight;
+        var fontSize = NaN;
         var y = 0;
         var staves = this.props.staves;
+        var bodyLength = 0;
+
+        for (var i = 0; i < staves.length; ++i) {
+            if (staves[i].body) {
+                bodyLength = staves[i].body.length;
+            }
+            if (staves[i].staveHeight) {
+                fontSize = staves[i].staveHeight;
+            }
+        }
 
         var pages: Array<IPage> = [];
         var ctx = this.getCtx();
@@ -65,7 +75,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         }
         pages.push({
             from: pageStarts[pageCount - 1],
-            to: staves[4].body.length, // XXX: Unbreak
+            to: bodyLength,
             idx: pageCount - 1
         });
 
@@ -129,6 +139,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             function (s: Array<Model>, lidx: number) {
 
                                 return LineContainerComponent({
+                                        staves: this.props.staves,
                                         isCurrent: this.state.visualCursor.annotatedLine ===
                                             lidx + pageLines[page.idx],
                                         store: this.props.store,
@@ -413,9 +424,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     getInitialState() {
         return {
             mouse: {x: 0, y: 0},
-            visualCursor: this.props.store && this.props.store.visualCursor || {
-                annotatedPage: 0
-            } // TODO: render multiple pages
+            visualCursor: this.props.store && this.props.store.visualCursor ||
+                this.props.cursor || { annotatedPage: 0 }
         };
     }
 
@@ -441,6 +451,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         svg_pt.x = event.clientX;
         svg_pt.y = event.clientY;
         var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
+        console.log(this.props.staveHeight, pt);
         return {
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
@@ -743,6 +754,7 @@ export var Component = ReactTS.createReactComponent(Renderer);
 
 export interface IRendererProps {
     context?: Annotator.Context;
+    cursor?: C.IVisualCursor;
     dispatcher?: C.IDispatcher;
     marginTop?: number;
     pageSize?: C.IPageSize;
@@ -791,7 +803,8 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     }
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
-        var songDirty = this.props.store && this.props.store.dirty;
+        var songDirty = this.props.store && this.props.store.dirty ||
+                nextProps.staves !== this.props.staves;
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
@@ -809,8 +822,9 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
             }
         }
         if (songDirty || heightChanged || lineDirty || this.dirty) {
-            // Throttle updating, unless we're on the active line.
-            if (this.props.isCurrent) {
+            // Throttle updating, unless we're on the active line, or if we're
+            // completely replacing the song.
+            if (this.props.isCurrent || this.props.staves !== nextProps.staves) {
                 this.dirty = false;
                 return true;
             } else {
@@ -866,6 +880,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     staveHeight: number;
+    staves: Array<C.IStave>;
     store: C.ISongEditor;
 }
 

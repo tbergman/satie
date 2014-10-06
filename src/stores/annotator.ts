@@ -458,6 +458,13 @@ export class Context implements C.MetreContext {
     currStaveIdx: number;
 
     /**
+     * Set at the beginning of every beam. Called so that if the annotator has
+     * to be "backed up", it can do so without recalculating from the beginning
+     * of the line.
+     */
+    startOfBeamBeat: number = NaN;
+
+    /**
      * @deprecated DO NOT USE
      * 
      * Use loc.beat
@@ -1019,7 +1026,7 @@ class PrivIterator {
                 this._rollbackLine(this._parent.line - 1);
                 break;
             case C.IterationStatus.RETRY_BEAM:
-                this._parent.loc.beat = this._parent.songEditor.beamStartBeat;
+                this._parent.loc.beat = this._parent.startOfBeamBeat;
                 this._rewind(C.Type.BEAM_GROUP);
                 this._parent.x = this._componentWithType(C.Type.BEAM_GROUP).x;
                 break;
@@ -1140,7 +1147,9 @@ class PrivIterator {
     }
 
     private _markLineDirty() {
-        this._parent.songEditor.dangerouslyMarkRendererLineDirty(this._parent.line);
+        if (this._parent.songEditor) {
+            this._parent.songEditor.dangerouslyMarkRendererLineDirty(this._parent.line);
+        }
         this._canExitAtNewline = false;
     }
 
