@@ -2,7 +2,6 @@ var browserify = require("browserify");
 var exorcist = require("exorcist");
 var gulp = require("gulp");
 var gutil = require("gulp-util");
-var mocha = require("gulp-mocha");
 var source = require("vinyl-source-stream");
 var spawn = require("child_process").spawn;
 var streamify = require("gulp-streamify");

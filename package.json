@@ -13,7 +13,6 @@
         "express": "~4.8.2",
         "lodash": "~2.4.1",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
-        "mocha": "~1.21.4",
         "node-jsx": "~0.11.0",
         "node-lessify": "~0.0.3",
         "react": "~0.11.1",

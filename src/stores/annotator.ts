@@ -896,15 +896,14 @@ class PrivIterator {
             }
             this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
 
-            if (verbose) {
-                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], this._parent.songEditor.testly, C.IterationStatus[componentStatus], ">");
-            }
-            ///
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
             ///
 
             if (verbose) {
-                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], this._parent.songEditor.testly, C.IterationStatus[componentStatus]);
+                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type],
+                    C.Type[this._components[i].curr.priority],
+                    this._parent.songEditor.testly,
+                    C.IterationStatus[componentStatus]);
             }
 
             switch(componentStatus) {
