@@ -49,18 +49,22 @@ gulp.task("test", ["test-suite"], function() {
 
     function retest() {
         console.log("Retesting...");
-        return bundler.bundle()
-            .pipe(source("deps.min.js"))
-            .pipe(gulp.dest("build"))
-            .pipe(streamify(jasmine()))
-            //.pipe(karma({
-            //    configFile: "karma.conf.js",
-            //    action: "run",
-            //    autoWatch: false,
-            //    singleRun: true,
-            //    dieOnError: false
-            //}))
-            .on("error", gutil.log.bind(gutil, "Test Error"));
+        try {
+            return bundler.bundle()
+                .pipe(source("deps.min.js"))
+                .pipe(gulp.dest("build"))
+                .pipe(streamify(jasmine({includeStackTrace: true})));
+                //.pipe(karma({
+                //    configFile: "karma.conf.js",
+                //    action: "run",
+                //    autoWatch: false,
+                //    singleRun: true,
+                //    dieOnError: false
+                //}))
+                //.on("error", gutil.log.bind(gutil, "Test Error"));
+        } catch(err) {
+            console.log(err);
+        }
     }
 
     return retest();

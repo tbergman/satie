@@ -51,6 +51,7 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * [       |     |        |      | PUT] /local/song/indent/decrease
  * [DELETE |     |        |      | PUT] /local/song/lineDirty*
  * [                      |      | PUT] /local/song/pageSize
+ * 
  * [DELETE |     |        |      | PUT] /local/song/show
  * [       |     |        |      | PUT] /local/song/src
  * [       |     |        |      | PUT] /local/song/transpose
@@ -78,6 +79,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._dispatcher = dispatcher;
         this._session = session;
 
+        global.SongEditor = this;
         this._clear();
         this._ping();
     }
@@ -181,6 +183,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         return this._linesToUpdate[h + "_" + idx]; }
 
     get ly() {
+        return this._ly(false);
+    }
+
+    get testly() {
+        return this._ly(true);
+    }
+
+    private _ly(stupidMode: boolean) {
         var staves = this._staves;
 
         var lyliteArr: Array<string> = [];
@@ -188,19 +198,30 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         var inPianoStaff = false;
         _.each(staves, (stave, sidx) => {
             if (stave.body) {
-                if (inPianoStaff) {
-                    lyliteArr.push("{");
-                } else if (stave.pianoStaff) {
-                    lyliteArr.push("\\new PianoStaff << {\n");
-                } else {
-                    lyliteArr.push("\\new Staff {\n");
+                if (!stupidMode) {
+                    if (inPianoStaff) {
+                        lyliteArr.push("{");
+                    } else if (stave.pianoStaff) {
+                        lyliteArr.push("\\new PianoStaff << {\n");
+                    } else {
+                        lyliteArr.push("\\new Staff {\n");
+                    }
+                    lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
                 }
-                lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
 
                 var body = stave.body;
                 for (var i = 0; i < body.length; ++i) {
                     var obj = body[i];
                     obj.toLylite(lyliteArr, unresolved);
+                    if (stupidMode) {
+                        if (body[i].placeholder) {
+                            lyliteArr.push(":" + C.Type[body[i].priority]);
+                        } else {
+                            if (body[i].type === C.Type.END_MARKER) {
+                                lyliteArr.push("/$");
+                            }
+                        }
+                    }
 
                     for (var j = 0; j < unresolved.length; ++j) {
                         var ret: boolean = unresolved[j](obj);
@@ -212,24 +233,28 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     }
                 }
 
-                lyliteArr.push("}\n");
+                if (stupidMode) {
+                    lyliteArr.push("###");
+                } else {
+                    lyliteArr.push("}\n");
+                }
                 if (stave.pianoStaff) {
                     inPianoStaff = true;
-                } else if (inPianoStaff) {
+                } else if (inPianoStaff && !stupidMode) {
                     lyliteArr.push(">>");
                     inPianoStaff = false;
                 }
-            } else if (stave.staveHeight) {
+            } else if (stave.staveHeight && !stupidMode) {
                 lyliteArr.push("#(set-global-staff-size " +
                     stave.staveHeight*renderUtil.ptPerMM + ")\n");
-            } else if (stave.pageSize) {
+            } else if (stave.pageSize && !stupidMode) {
                 if (!stave.pageSize.lilypondName) {
                     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
                     return;
                 }
                 lyliteArr.push("#(set-default-paper-size \"" +
                     stave.pageSize.lilypondName + "\")\n");
-            } else if (stave.paper) {
+            } else if (stave.paper && !stupidMode) {
                 lyliteArr.push("\\paper {");
                 if (stave.paper.leftMargin) {
                     lyliteArr.push("left-margin=" + stave.paper.leftMargin);
@@ -239,7 +264,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 }
                 lyliteArr.push("}\n");
 
-            } else if (stave.header) {
+            } else if (stave.header && !stupidMode) {
                 lyliteArr.push("\\header {");
                 if (stave.header.title) {
                     // XXX: XSS
@@ -253,6 +278,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             }
         });
         var lyliteStr = lyliteArr.join(" ");
+        if (stupidMode) {
+            return lyliteStr.split("\n").join("");
+        }
         return lyliteStr;
     }
 

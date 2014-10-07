@@ -81,17 +81,25 @@ class PlaceholderModel extends Model {
             return PlaceholderModel.fillMissingBeats(ctx);
         }
 
+        if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.DURATION) {
+            assert(realItems[0], "We can't have an entire column of fake durations,");
+            return PlaceholderModel.fillMissingBeats(ctx, realItems[0].getBeats(ctx));
+        }
+
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
             case C.Type.BARLINE:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.BEGIN:
                 ctx.body.splice(ctx.idx, 1, new BeginModel({}));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.CLEF:
                 if (!ctx.clef) {
                     ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }));
+                    ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
                 }
                 break;
@@ -101,28 +109,34 @@ class PlaceholderModel extends Model {
                     var bodies: Array<Model> = ctx.findVertical(() => true, this.idx + 1);
                     ctx.eraseFuture(this.idx + 1);
                     ctx.insertPastVertical(bodies);
+                    ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
                 }
                 break;
             case C.Type.END_MARKER:
                 ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.KEY_SIGNATURE:
                 if (!ctx.keySignature) {
                     ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
+                    ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
                 }
                 break;
             case C.Type.NEWLINE:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.NEWPAGE:
                 ctx.body.splice(ctx.idx, 1, new NewpageModel({}));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.TIME_SIGNATURE:
                 var tses = ctx.findVertical(obj => obj.type === C.Type.TIME_SIGNATURE);
                 assert(tses.length, "Staves cannot all be placeholders!");
                 ctx.body.splice(ctx.idx, 1, new TimeSignatureModel({ timeSignature: tses[0].timeSignature }));
+                ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
         }
 
@@ -132,9 +146,11 @@ class PlaceholderModel extends Model {
         return C.IterationStatus.SUCCESS;
     }
 
-    constructor(spec: {_priority: string}) {
+    constructor(spec: {_priority: string}, source: C.Source) {
         super(spec);
         assert(isNaN(<any>spec._priority), "Expected string");
+
+        this.source = source;
 
         this._priority = (<any>C.Type)[spec._priority];
         assert(!isNaN(this._priority));
@@ -145,7 +161,7 @@ class PlaceholderModel extends Model {
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
-        return; // noop
+        return; // no-op
     }
 
     toJSON(): {} {
@@ -160,7 +176,7 @@ class PlaceholderModel extends Model {
     }
 
     set priority(p: C.Type) {
-        assert(!isNaN(p), "Expected enum");
+        assert(!isNaN(p), "Expected priority enumeration");
         this._priority = p;
     }
 
@@ -176,14 +192,21 @@ class PlaceholderModel extends Model {
         assert(false, "A PlaceholderModel cannot help but be a placeholder, however much it tries...");
     }
 
-    static fillMissingBeats(ctx: Annotator.Context): C.IterationStatus {
+    static fillMissingBeats(ctx: Annotator.Context, extraBeats?: number): C.IterationStatus {
+        extraBeats = extraBeats || 0;
         var rest: {} = { chord: [{ pitch: "r", octave: null, acc: null }] };
-        var missingBeats = Metre.subtract(ctx.__globalBeat__, ctx.beat, ctx, ctx.beat)
-            .map(spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest), C.Source.ANNOTATOR));
+        var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
+            ctx.beat, ctx).map(
+                spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
+                    C.Source.ANNOTATOR));
+        while (ctx.curr.type === C.Type.PLACEHOLDER && ctx.curr.priority === C.Type.DURATION) {
+            ctx.body.splice(ctx.idx, 1);
+            --ctx.idx;
+        };
         for (var i = missingBeats.length - 1; i >= 0; --i) {
-            ctx.insertPast(missingBeats[i]);
+            ctx.body.splice(ctx.idx + 1, 0, missingBeats[i]);
         }
-        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+        return C.IterationStatus.RETRY_LINE;
     }
 }
 

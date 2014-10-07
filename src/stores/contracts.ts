@@ -779,6 +779,7 @@ export interface ISongEditor {
     staveHeight: number;
     staves: Array<IStave>;
     src: string;
+    testly: string;
     tool: any;
     visualCursor: IVisualCursor;
 

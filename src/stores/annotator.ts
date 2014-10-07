@@ -295,7 +295,7 @@ export class Context implements C.MetreContext {
                     this.body.splice(index, 0, obj);
                 } else {
                     var PlaceholderModel = require("./placeholder");
-                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
+                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }, obj.source));
                 }
             }
         }
@@ -324,7 +324,7 @@ export class Context implements C.MetreContext {
                     this.body.splice(index, 0, obj);
                 } else {
                     var PlaceholderModel = require("./placeholder");
-                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }));
+                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }, obj.source));
                 }
             }
         }
@@ -376,7 +376,7 @@ export class Context implements C.MetreContext {
                         var PlaceholderModel = require("./placeholder");
                         var placeholders: Array<Model> = [];
                         for (var j = 0; j < replaceWith.length; ++j) {
-                            placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }));
+                            placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }, replaceWith[j].source));
                         }
                         Array.prototype.splice.apply(stave.body, [start, count].concat(<any>placeholders));
                     } else {
@@ -896,12 +896,15 @@ class PrivIterator {
             }
             this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
 
+            if (verbose) {
+                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], this._parent.songEditor.testly, C.IterationStatus[componentStatus], ">");
+            }
             ///
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
             ///
 
             if (verbose) {
-                console.log(i, this._components[i]._idx, this._components[i].curr, C.IterationStatus[componentStatus]);
+                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], this._parent.songEditor.testly, C.IterationStatus[componentStatus]);
             }
 
             switch(componentStatus) {
@@ -1193,7 +1196,7 @@ class PrivIteratorComponent {
 
         if (!this._location.eq(from)) {
             var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }));
+            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }, C.Source.ANNOTATOR /* ?? */));
         }
         this._mutation = mutation;
     }
@@ -1269,7 +1272,9 @@ class PrivIteratorComponent {
      * the location just before 'loc'.
      */
     rewindSeek(loc: C.Location, priority: number) {
-        while (this._idx >= 0 && (loc.lt(this._body[this._idx].ctxData) ||
+        while (this._idx >= 0 && (
+                !this._body[this._idx].ctxData ||
+                loc.lt(this._body[this._idx].ctxData) ||
                 loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].priority > priority)) {
             --this._idx;
         }
@@ -1294,8 +1299,11 @@ class PrivIteratorComponent {
 
     ensurePriorityIs(priority: number) {
         if (this.nextPriority !== priority) {
+            var nextIsPlaceholder = this._body[this._idx + 1].placeholder;
             var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx + 1, 0, new PlaceholderModel({ _priority: C.Type[priority] }));
+            this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
+                new PlaceholderModel({ _priority: C.Type[priority] },
+                    C.Source.ANNOTATOR /* ? */));
         }
     }
 
@@ -1349,7 +1357,7 @@ class PrivIteratorComponent {
 
     private _addPadding(ctx: Context) {
         var PlaceholderModel = require("./placeholder");
-        this._body.splice(ctx.idx, 0, new PlaceholderModel({ _priority: C.Type[ctx.curr.priority] }));
+        this._body.splice(ctx.idx, 0, new PlaceholderModel({ _priority: C.Type[ctx.curr.priority] }, C.Source.ANNOTATOR /* ? */));
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     }
@@ -1382,7 +1390,8 @@ class PrivIteratorComponent {
                     var isPlaceholder = allNexts[i] && allNexts[i].type === C.Type.PLACEHOLDER  ;
                     var PlaceholderModel = require("./placeholder");
                     ctx._staves[sidx].body.splice(ctx.idx + 1, isPlaceholder ? 1 : 0,
-                        new PlaceholderModel({ _priority: C.Type[lowestPriority] }));
+                        new PlaceholderModel({ _priority: C.Type[lowestPriority] },
+                            C.Source.ANNOTATOR));
                     ctx._staves[sidx].body[ctx.idx + 1].ctxData = ctxData; // XXX: Clone here?
                 }
             }

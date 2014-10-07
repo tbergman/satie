@@ -67,8 +67,9 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
     }
     var be = currElt.getBeats(ctx);
 
-    var curr = ctx.body[ctx.idx];
-    var next = ctx.body[ctx.idx + 1];
+    var curr = ctx.curr;
+    var nextIdx = ctx.nextIdx(c => !c.placeholder);
+    var next = ctx.body[nextIdx];
 
     var n1 = curr.note;
     var n1b = n1.getBeats(ctx);
@@ -101,8 +102,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
         });
 
         var DurationModel = require("./duration"); // Recursive.
-        Array.prototype.splice.apply(ctx.body, [ctx.idx, 1].concat(
-            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR))));
+        ctx.splice(ctx.idx, nextIdx - ctx.idx, replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)));
         var after = ctx.idx + replaceWith.length;
         if (!n1.isRest) {
             for (var i = ctx.idx; i < after - 1; ++i) {
@@ -110,11 +110,10 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
             }
         }
 
-        return C.IterationStatus.RETRY_CURRENT;
+        return C.IterationStatus.RETRY_LINE;
     }
 
     // Combine rests that can be combined.
-
     if (curr.isRest && next.isRest && ctx.curr.source !== C.Source.USER) {
         var n2 = next.note;
         var n2b = n2.getBeats(ctx);
@@ -160,7 +159,8 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                     ++jdx;
                     ++toErase;
                     while (ctx.body[jdx].type === C.Type.BEAM_GROUP ||
-                            ctx.body[jdx].type === C.Type.SLUR) {
+                            ctx.body[jdx].type === C.Type.SLUR ||
+                            ctx.body[jdx].type === C.Type.PLACEHOLDER) {
                         ++jdx;
                     }
                     if (ctx.body[jdx] && ctx.body[jdx].isNote) {

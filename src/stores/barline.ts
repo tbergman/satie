@@ -95,7 +95,7 @@ class BarlineModel extends Model {
                     whole[i].tie = false;
                 }
                 Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(whole));
-                return C.IterationStatus.SUCCESS;
+                return C.IterationStatus.RETRY_LINE;
             }
         }
 
