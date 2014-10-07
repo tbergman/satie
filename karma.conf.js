@@ -1,7 +1,7 @@
 module.exports = function(karma) {
-    karma.set({
-        browsers: ["PhantomJS"],
-        frameworks: ["mocha"],
+    var configuration = {
+        browsers: ["Chrome", "Firefox"],
+        frameworks: ["jasmine"],
         files: ["build/deps.min.js"],
         reporters: ["mocha", "notify", "coverage"],
         singleRun: true,
@@ -16,5 +16,9 @@ module.exports = function(karma) {
             type : 'html',
             dir : 'build/coverage/'
         }
-    });
+    };
+    if(process.env.TRAVIS) {
+        configuration.browsers = ["Firefox"];
+    }
+    karma.set(configuration);
 };

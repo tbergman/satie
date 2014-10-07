@@ -1,5 +1,5 @@
 var browserify = require("browserify");
-var exorcist = require("exorcist");
+var exit = require("gulp-exit");
 var gulp = require("gulp");
 var gutil = require("gulp-util");
 var source = require("vinyl-source-stream");
@@ -42,35 +42,64 @@ gulp.task("watch", function() {
     return rebundle(true);
 });
 
-gulp.task("test", ["test-suite"], function() {
+gulp.task("cli-test-daemon", ["create-test-suite"], function() {
+    nodeTest(true);
+});
+
+gulp.task("cli-test-once", ["create-test-suite"], function() {
+    nodeTest(false);
+});
+
+gulp.task("gui-test-once", ["create-test-suite"], function() {
+    nodeTest(false, true);
+});
+
+gulp.task("gui-test-daemon", ["create-test-suite"], function() {
+    nodeTest(true, true);
+});
+
+function nodeTest(daemonize, karmalize) {
     var bundler = watchify(browserify({entries: "./build/suite.js", debug: true}, browserifyOpts));
-    bundler.on("update", retest);
+    if (daemonize) {
+        bundler.on("update", retest);
+    }
 
     function retest() {
-        console.log("Retesting...");
+        console.log("Streaming test...");
         try {
-            return bundler.bundle()
+            var stream = bundler.bundle()
                 .pipe(source("deps.min.js"))
                 .pipe(gulp.dest("build"))
                 .pipe(streamify(jasmine({includeStackTrace: true})));
-                //.pipe(karma({
-                //    configFile: "karma.conf.js",
-                //    action: "run",
-                //    autoWatch: false,
-                //    singleRun: true,
-                //    dieOnError: false
-                //}))
-                //.on("error", gutil.log.bind(gutil, "Test Error"));
+
+            if (karmalize) {
+                stream = stream
+                    .pipe(karma({
+                        configFile: "karma.conf.js",
+                        action: "run",
+                        autoWatch: false,
+                        singleRun: true,
+                        dieOnError: true
+                    }))
+                    .on("error", gutil.log.bind(gutil, "Test Error"));
+            }
+            if (!daemonize) {
+                stream = stream
+                    .pipe(exit());
+            }
+            return stream;
         } catch(err) {
             console.log(err);
         }
     }
 
     return retest();
-});
+};
 
-gulp.task("test-suite", function() {
-    return gulp.src("src/**/test/*.ts")
+
+gulp.task("create-test-suite", function() {
+    // TODO: Remove es5-shim when we upgrade to PhantomJS 2.
+    return gulp.src(["node_modules/es5-shim/es5-shim.js", "src/**/test/*.ts"])
         .pipe(generateSuite({addPrefix: "../test"}))
         .pipe(concat("suite.js"))
         .pipe(gulp.dest("build"));
