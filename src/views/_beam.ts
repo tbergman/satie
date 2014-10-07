@@ -24,7 +24,7 @@ import getFontOffset = require("./_getFontOffset");
 export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
-        if (this.props.beams === C.IBeamCount.VARIABLE) {
+        if (this.props.beams === C.BeamCount.VARIABLE) {
             var xLow = this._getX1();
             var xHi = this._getX2();
 
@@ -210,7 +210,7 @@ Beam.applyMixins(RenderableMixin);
 export var Component = ReactTS.createReactComponent(Beam);
 
 export interface IProps {
-    beams: C.IBeamCount;
+    beams: C.BeamCount;
     direction: number;
     fontSize: number;
     line1: number;

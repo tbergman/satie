@@ -1,8 +1,6 @@
 /**
  * Renders an accidental centered at (x, y) on line 'line'.
  * Position adjustments of accidentals should be taken care of by DurationModel.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");

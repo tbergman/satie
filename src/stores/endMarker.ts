@@ -83,13 +83,13 @@ class EndMarkerModel extends Model {
 
         // Double barlines terminate a piece.
         if (!ctx.next() && (prev.type !== C.Type.BARLINE ||
-            prev.barline !== C.Barline.Double)) {
+            prev.barline !== C.Barline.DOUBLE)) {
             if (prev.type === C.Type.BARLINE) {
-                prev.barline = C.Barline.Double;
+                prev.barline = C.Barline.DOUBLE;
                 return C.IterationStatus.RETRY_LINE;
             } else {
                 var BarlineModel = require("./barline"); // Recursive dependency.
-                return BarlineModel.createBarline(ctx, C.Barline.Double);
+                return BarlineModel.createBarline(ctx, C.Barline.DOUBLE);
             }
         }
 

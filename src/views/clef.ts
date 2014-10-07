@@ -1,7 +1,5 @@
 /**
  * Responsible for the rendering of a full-sized clef.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");

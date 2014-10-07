@@ -1,8 +1,6 @@
 /**
  * Most musical elements are rendered as glyphs. Exceptions include
  * slurs, ties, dots in dotted notes, ledger lines, and stave lines.
- *
- * @jsx React.DOM
  */
 
 import React = require("react");

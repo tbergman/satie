@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Mixin for a primitive component that can be rendered via GLES or SVG.
  */
 
 import renderUtil = require("../util/renderUtil");

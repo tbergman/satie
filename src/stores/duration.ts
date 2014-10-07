@@ -70,13 +70,13 @@ class DurationModel extends Model implements C.IPitchDuration {
             if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
                 // The current note/rest is multi-bar, which is allowed. However, multi-bar notes must
                 // start at beat 0.
-                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+                return BarlineModel.createBarline(ctx, C.Barline.STANDARD);
             } else if (!this.isMultibar) {
                 // The number of beats in a bar must not exceed that specified by the time signature.
                 if (ctx.beat + this._beats > ctx.timeSignature.beats) {
                     var overfill = ctx.beat + this._beats - ctx.timeSignature.beats;
                     if (this._beats === overfill) {
-                        var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
+                        var ret = BarlineModel.createBarline(ctx, C.Barline.STANDARD);
                         return ret;
                     } else {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
@@ -95,7 +95,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                                 addAfterBar[i].tie = true;
                             }
                         }
-                        BarlineModel.createBarline(ctx, C.Barline.Standard);
+                        BarlineModel.createBarline(ctx, C.Barline.STANDARD);
                         ctx.splice(ctx.idx, 0, replaceWith);
                         ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar);
                         return C.IterationStatus.RETRY_LINE;

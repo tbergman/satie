@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Renders a group with up to 6 children.
  */
 
 import React = require("react");

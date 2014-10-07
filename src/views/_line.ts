@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Renders a straight line.
  */
 
 import React = require("react");

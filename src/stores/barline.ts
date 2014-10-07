@@ -78,7 +78,7 @@ class BarlineModel extends Model {
             return ctx.eraseCurrent();
         }
 
-        if (this.barline === C.Barline.Double) {
+        if (this.barline === C.Barline.DOUBLE) {
             // The document cannot be entirely empty.
             okay = false;
             for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
@@ -114,8 +114,8 @@ class BarlineModel extends Model {
         }
 
         // Double barlines only exist at the end of a piece.
-        if (this.barline === C.Barline.Double && ctx.next(null, 2)) {
-            this.barline = C.Barline.Standard;
+        if (this.barline === C.Barline.DOUBLE && ctx.next(null, 2)) {
+            this.barline = C.Barline.STANDARD;
             return C.IterationStatus.RETRY_CURRENT;
         }
 
@@ -153,7 +153,7 @@ class BarlineModel extends Model {
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
     static createBarline = (ctx: Annotator.Context, mode: C.Barline): C.IterationStatus => {
-        mode = mode || C.Barline.Standard;
+        mode = mode || C.Barline.STANDARD;
 
         if (ctx.curr.type === C.Type.BEAM_GROUP) {
             ctx.eraseCurrent();

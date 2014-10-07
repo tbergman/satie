@@ -632,7 +632,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                     this.props.dispatcher.PUT("/local/tool", null);
                     break;
                 case 8: // backspace
-                case 46: // delete
+                case 46: // DELETE
                     event.preventDefault(); // don't navigate backwards
                     if (_selection) {
                         this.props.dispatcher.DELETE("/local/selection/contents");

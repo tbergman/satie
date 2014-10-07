@@ -1,7 +1,5 @@
 /**
  * Appears at the very beginning of a line, except the first line.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");

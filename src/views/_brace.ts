@@ -1,7 +1,5 @@
 /**
  * Renders a piano bracket or other kind of brace.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");

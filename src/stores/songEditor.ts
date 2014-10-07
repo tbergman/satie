@@ -1228,7 +1228,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (this._staves[h].body[i] === obj) {
                     if ((!this._staves[h].body[i + 1] ||
                             this._staves[h].body[i + 1].type !== C.Type.BARLINE ||
-                            this._staves[h].body[i + 1].barline === C.Barline.Double) &&
+                            this._staves[h].body[i + 1].barline === C.Barline.DOUBLE) &&
                             spec.loopThroughEnd) {
                         this._visualCursorIs({
                             beat: 0,

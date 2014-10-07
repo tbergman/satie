@@ -1,8 +1,6 @@
 /**
  * Responsible for the rendering of a dot as part of a dotted note.
  * This is not used to render staccatos.
- *
- * @jsx React.DOM
  */
 
 import React = require("react");

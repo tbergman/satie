@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Renders a rest.
  */
 
 import ReactTS = require("react-typescript");

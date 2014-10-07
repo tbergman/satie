@@ -1,8 +1,6 @@
 /**
  * Renderes a full-stave-height barline at (x,y).
  * Does not do any interesting calculations.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");
@@ -24,7 +22,7 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
         var thickX = spec.x + defaults.barlineSeparation/4 +
             defaults.thickBarlineThickness/4;
 
-        if (spec.barline === C.Barline.Double) {
+        if (spec.barline === C.Barline.DOUBLE) {
             return Group(null,
                 [Line.Component({key: 1,
                     x1: spec.x,

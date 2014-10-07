@@ -1,8 +1,6 @@
 /**
  * Responsible for the rendering a bezier curve, such as a
  * slur or a tie.
- *
- * @jsx React.DOM
  */
 
 import React = require("react");

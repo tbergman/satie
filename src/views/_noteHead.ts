@@ -1,7 +1,5 @@
 /**
  * Renders a note head.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");

@@ -69,7 +69,7 @@ class PlaceholderModel extends Model {
         }
 
         // Make sure the placeholder has the correct type.
-        // Ideally, we would never get in such a situation, however it is possible because of the "real item"
+        // Ideally, we would never GET in such a situation, however it is possible because of the "real item"
         // condition above.
         if (this._priority !== realItems[0].type) {
             ctx.body.splice(ctx.idx, 1);
@@ -89,7 +89,7 @@ class PlaceholderModel extends Model {
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
             case C.Type.BARLINE:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.STANDARD }));
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.BEGIN:

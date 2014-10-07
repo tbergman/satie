@@ -299,7 +299,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
         if (!enabled || PlaybackStore.USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
-            return; // Sorry IE, you only get a piano.
+            return; // Sorry IE, you only GET a piano.
         }
 
         if (this._loadedSoundfonts[soundfont] && typeof console !== "undefined") {

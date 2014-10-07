@@ -72,7 +72,7 @@ class BeamGroupModel extends Model {
         if (_.all(this.beam, b => b.count === b1)) {
             this.beams = Math.round(Math.log(this.beam[0].count) / Math.log(2)) - 2;
         } else {
-            this.beams = C.IBeamCount.VARIABLE;
+            this.beams = C.BeamCount.VARIABLE;
             this.variableBeams = _.map(this.beam,
                 b => Math.round(Math.log(b.count) / Math.log(2)) - 2);
         }
@@ -187,7 +187,7 @@ class BeamGroupModel extends Model {
     /**
      * The number of lines in the beam (1-9), or VARIABLE.
      */
-    beams: C.IBeamCount;
+    beams: C.BeamCount;
 
     /**
      * The beam counts if beams is VARIABLE.

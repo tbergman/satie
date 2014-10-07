@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Renders a rectangle (can be rotated!)
  */
 
 import React = require("react");

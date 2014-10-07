@@ -89,15 +89,15 @@ export interface IAnnotationOpts {
 };
 
 export enum Barline {
-    Standard,
-    Double
+    STANDARD,
+    DOUBLE
 }
 
 /**
  * The stupid enumeration is the way it because I didn't know how to make a type
  * that is either a number or variable.
  */
-export enum IBeamCount {
+export enum BeamCount {
     VARIABLE = -1,
     ONE = 1,
     TWO = 2,
@@ -590,7 +590,6 @@ export class Paper {
         assert(!isNaN(this.rightMargin));
     }
 
-
     /**
      * Left margin in mm (Lilypond's name)
      */
@@ -620,7 +619,6 @@ export class Paper {
     set rightMargin(m: number) {
         this["right-margin"] = m;
     }
-
 
     indent: number;
 }
@@ -696,6 +694,7 @@ export interface ISession {
      * Either LoggedIn or LoggedOut
      */
     state: string;
+    csrf: string;
 };
 
 export interface ISessionStore {
@@ -909,6 +908,11 @@ export interface IUser {
      * MongoDB id
      */
     _id: string;
+
+    identity: {
+        id: string;
+        displayName: string;
+    }
 };
 
 /**
@@ -971,8 +975,7 @@ export function makeDuration(spec: IDurationSpec): IDuration {
         tuplet: spec.tuplet || null,
         actualTuplet: null,
         getBeats(ctx: MetreContext, inheritedCount?: number): number {
-            var Metre = require("./metre");
-            return Metre.getBeats(
+            return require("./metre").getBeats(
                 this.count || inheritedCount,
                 this.dots, this.tuplet, ctx.timeSignature);
         }
@@ -985,8 +988,7 @@ export function makeDuration(spec: IDurationSpec): IDuration {
 export function midiNote(p: IPitch) {
     "use strict";
 
-    var DurationModel = require("./duration");
-    var base = DurationModel.chromaticScale[p.pitch] + 48;
+    var base = require("./duration").chromaticScale[p.pitch] + 48;
     return base + (p.octave || 0)*12 + (p.acc || 0);
 }
 

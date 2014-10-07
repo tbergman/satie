@@ -13,11 +13,11 @@ import React = require("react");
 
 import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
+import FiveOhFive = require("./landing/fiveOhFive");
 import Router = require("./router");
 import SessionStore = require("./stores/session");
 
 var ReactPerf = require("react/lib/ReactDefaultPerf");
-var FiveOhFive = require("./landing/fiveOhFive.jsx");
 
 /**
  * The webapp entry point.
@@ -61,13 +61,19 @@ function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {
             session: session
         });
     } else {
-        component = FiveOhFive({ sessionInfo: session.info });
+        component = FiveOhFive.Component({
+            dispatcher: null,
+            sessionInfo: session.info
+        });
     }
 
     try {
         React.renderComponent(component, document.body);
     } catch(err) {
-        React.renderComponent(FiveOhFive({ sessionInfo: session.info }), document.body);
+        React.renderComponent(FiveOhFive.Component({
+            dispatcher: null,
+            sessionInfo: session.info
+        }), document.body);
         throw err;
     }
 };

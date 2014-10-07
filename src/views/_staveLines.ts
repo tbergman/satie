@@ -1,5 +1,5 @@
 /**
- * @jsx React.DOM
+ * Renders the (usually 5) lines that make up a stave.
  */
 
 import ReactTS = require("react-typescript");

@@ -1,7 +1,5 @@
 /**
  * Appears at the very beginning of a stave.
- *
- * @jsx React.DOM
  */
 
 import ReactTS = require("react-typescript");
