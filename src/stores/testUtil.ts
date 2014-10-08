@@ -7,9 +7,10 @@
  */
 
 import _ = require("lodash");
+import assert = require("assert");
 
-import C = require("./contracts");
 import Annotator = require("./annotator");
+import C = require("./contracts");
 import Dispatcher = require("./dispatcher");
 import SessionStore = require("./session");
 import SongEditorStore = require("./songEditor");
@@ -21,10 +22,13 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
     describe(desc, function() {
         var parsed: Array<C.IStave>;
         var context: Annotator.Context;
-        it("should be parsable", () => {
+        var dispatcher = new Dispatcher;
+        var session = new SessionStore(dispatcher);
+        var songEditor = new SongEditorStore(dispatcher, session);
+        it("should parse", () => {
             parsed = lylite.parse(ly);
         });
-        it("should be annotatable", () => {
+        it("should be annotable", () => {
             if (!parsed) {
                 return;
             }
@@ -33,9 +37,6 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 staves: parsed,
                 staveIdx: 0
             };
-            var dispatcher = new Dispatcher;
-            var session = new SessionStore(dispatcher);
-            var songEditor = new SongEditorStore(dispatcher, session);
             context = new Annotator.Context(parsed, opts, songEditor);
             context.annotate({ bar: 1, beat: 0 }, null, null, true);
         });
@@ -43,4 +44,48 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             test[0],
             () => parsed && context && test[1](parsed, context)));
     });
+}
+
+export function multiPart(a: string, b: string, key?: string) {
+    "use strict";
+    if (key === void 0) {
+        key = "\\key g";
+    }
+    return "\\new PianoStaff <<" +
+        "   \\new Staff { \\clef treble " + key + " \\major " + a + "}\n" +
+        "   \\new Staff { \\clef bass " + key + " \\major " + b + "}\n" +
+        ">>";
+}
+
+export function calledExactly(target: number, description?: string) {
+    "use strict";
+    var called = 0;
+    return {
+        verify: function () {
+            assert.equal(called, target, description);
+        },
+        listener: function () {
+            ++called;
+            assert(called <= target, description);
+        }
+    };
+}
+
+export function singleChange(verb: string, command: string, data: any,
+        before: (songEditor: SongEditorStore) => void,
+        after: (songEditor: SongEditorStore) => void) {
+    "use strict";
+    var dispatcher = new Dispatcher;
+    var session = new SessionStore(dispatcher);
+    var songEditor = new SongEditorStore(dispatcher, session);
+    var listener = calledExactly(1, "Dispatcher emits a single update");
+    var annotationListener = calledExactly(0, "No annotation update");
+
+    before(songEditor);
+    songEditor.addAnnotationListener(annotationListener.listener);
+    songEditor.addChangeListener(listener.listener);
+    (<any>dispatcher)[verb](command, data);
+    after(songEditor);
+    annotationListener.verify();
+    listener.verify();
 }

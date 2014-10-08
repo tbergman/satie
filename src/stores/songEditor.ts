@@ -192,7 +192,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     private _ly(debugMode: boolean) {
         var staves = this._staves;
-
+        return SongEditorStore.ly(debugMode, staves);
+    }
+    static ly(debugMode: boolean, staves: Array<C.IStave>) {
         var lyliteArr: Array<string> = [];
         var unresolved: Array<(obj: Model) => boolean> = [];
         var inPianoStaff = false;
