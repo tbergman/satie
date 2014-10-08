@@ -56,14 +56,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         assert(this._beats !== null, "Unknown beat count");
 
-        this.isWholeBar = this._beats === ctx.timeSignature.beats;
-
-        this.getWholebarRestX = null;
-        if (this.isWholebar && this.isRest) {
-            var prev = ctx.prev();
-            var next = ctx.next();
-            this.getWholebarRestX = () => (prev.x && next.x) ? (prev.x + next.x) / 2 : this.x;
-        }
+        this.isWholebar = this._beats === ctx.timeSignature.beats;
 
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
@@ -1197,8 +1190,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return str;
     }
 
-    getWholebarRestX: () => number;
-
     get temporary(): boolean { return !!(this._flags & Flags.TEMPORARY); }
     set temporary(v: boolean) {
         if (v) { this._flags = this._flags | Flags.TEMPORARY;
@@ -1210,7 +1201,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else { this._flags = this._flags & ~Flags.RELATIVE; } }
 
     get isWholebar(): boolean { return !!(this._flags & Flags.WHOLE_BAR); }
-    set isWholeBar(v: boolean) {
+    set isWholebar(v: boolean) {
         if (v) { this._flags = this._flags | Flags.WHOLE_BAR;
         } else { this._flags = this._flags & ~Flags.WHOLE_BAR; } }
 

@@ -651,6 +651,7 @@ export interface IPitchDuration extends IDuration {
     isRest?: boolean;
     tie?: boolean;
     accToDelete?: number;
+    isWholebar?: boolean;
 };
 
 export interface IPlaybackStore {

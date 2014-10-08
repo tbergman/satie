@@ -114,7 +114,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
     }
 
     // Combine rests that can be combined.
-    if (curr.isRest && next.isRest && ctx.curr.source !== C.Source.USER) {
+    if (curr.isRest && next && next.isRest && ctx.curr.source !== C.Source.USER) {
         var n2 = next.note;
         var n2b = n2.getBeats(ctx);
         var b3 = b2 + n2b;

@@ -724,7 +724,11 @@ export class Context implements C.MetreContext {
                 minX = Math.min(minX, bodies[j][i].x);
             }
             for (var j = 0; j < bodies.length; ++j) {
-                bodies[j][i].x = minX - offset;
+                if (bodies[j][i].isRest && bodies[j][i].note.isWholebar) {
+                    // Centered notes are already perfect.
+                } else {
+                    bodies[j][i].x = minX - offset;
+                }
             }
         }
     }

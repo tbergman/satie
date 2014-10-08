@@ -9,6 +9,7 @@ import Model = require("./model");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import NewPageModel = require("./newpage");
+import SMuFL = require("../util/SMuFL");
 import renderUtil = require("../util/renderUtil");
 
 import _ = require("lodash");
@@ -279,15 +280,43 @@ class NewlineModel extends Model {
                 nw = (1 - weight)*nw;
                 lw = nw * n;
             }
-            for (i = ctx.idx; i >= 0 && ctx.body[i].type !==
-                    C.Type.NEWLINE; --i) {
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
                 if (ctx.body[i].priority === C.Type.DURATION) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
             }
+
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+                if (ctx.body[i].type === C.Type.BARLINE) {
+                    NewlineModel.centerWholeBarRests(ctx.body, i);
+                }
+            }
         }
     };
+
+    static centerWholeBarRests(body: Array<Model>, idx: number) {
+        // Whole-bar rests are centered.
+        var toCenter: Array<Model> = [];
+        var defaults = SMuFL.bravuraMetadata.engravingDefaults;
+        // -2 because we want to avoid BARLINE and END_MARKER
+        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.BARLINE; --i) {
+            if (body[i].isRest && body[i].note.isWholebar) {
+                toCenter.push(body[i]);
+            }
+        }
+        for (var j = 0; j < toCenter.length; ++j) {
+            var bbox = SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
+            var offset = 0;
+            if (body[i].type === C.Type.BARLINE) {
+            } else if (body[i].type === C.Type.TIME_SIGNATURE) {
+                offset += 0.7/4;
+            }
+            toCenter[j].x = offset + (body[i].x + body[idx].x) / 2 -
+                (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8;
+        }
+    }
+
 
     toJSON(): {} {
         return _.extend(super.toJSON(), {
