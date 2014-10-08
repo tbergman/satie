@@ -55,6 +55,7 @@ export function Component(props: IProps) {
                 isNote: true, // In this context, we mean not a wrapper.
                 fontSize: props.fontSize,
                 notehead: spec.restHead,
+                spacing: spec.spacing,
                 stroke: spec.color,
                 x: spec.x,
                 y: spec.y},

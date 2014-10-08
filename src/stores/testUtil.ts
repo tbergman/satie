@@ -25,10 +25,11 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
         var dispatcher = new Dispatcher;
         var session = new SessionStore(dispatcher);
         var songEditor = new SongEditorStore(dispatcher, session);
-        it("should parse", () => {
+        it("should parse", function () {
             parsed = lylite.parse(ly);
+            assert(parsed, "Did it parse?");
         });
-        it("should be annotable", () => {
+        it("should be annotatable", function () {
             if (!parsed) {
                 return;
             }
@@ -42,7 +43,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
         });
         _.each(tests, test => it(
             test[0],
-            () => parsed && context && test[1](parsed, context)));
+            () => parsed && test[1](parsed, context)));
     });
 }
 

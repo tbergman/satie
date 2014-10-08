@@ -51,7 +51,7 @@ export class Glyph extends ReactTS.ReactComponentBase<IProps, {}> {
             return React.DOM.g(null,
                 text,
                 React.DOM.rect({
-                    "data-selection-info": this.props.selectioninfo,
+                    "data-selection-info": this.props["selection-info"],
                     width: "0.4em",
                     height: "0.5em",
                     x: <any> (this.props.x - 0.12 + "em"),

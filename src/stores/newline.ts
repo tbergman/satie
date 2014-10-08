@@ -313,8 +313,8 @@ class NewlineModel extends Model {
             if (body[i].type === C.Type.TIME_SIGNATURE) {
                 offset += 0.7/4;
             }
-            toCenter[j].x = offset + (body[i].x + body[idx].x) / 2 -
-                (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8;
+            toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
+                (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8 - toCenter[j].x;
         }
     }
 

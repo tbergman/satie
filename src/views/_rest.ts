@@ -16,7 +16,7 @@ export class Rest extends ReactTS.ReactComponentBase<IProps, {}> {
         return Group(null,
             Glyph.Component({
                 key: "r",
-                x: this.props.x,
+                x: this.props.x + this.props.spacing,
                 y: this.props.y,
                 fill: this.props.stroke,
                 fontSize: this.props.fontSize,
@@ -26,7 +26,7 @@ export class Rest extends ReactTS.ReactComponentBase<IProps, {}> {
                 key: idx + "d",
                 radius: 0.06,
                 stroke: this.props.stroke,
-                x: this.props.x,
+                x: this.props.x + this.props.spacing,
                 y: this.props.y,
                 fontSize: this.props.fontSize,
                 line: line})): null,
@@ -61,6 +61,7 @@ export interface IProps {
     fontSize: number;
     line: number;
     notehead: string;
+    spacing: number;
     stroke: string;
     x: number;
     y: number;

@@ -33,6 +33,7 @@ class Model {
             // Beamed notes are placed by the BeamGroupModel
             this.x = ctx.x;
             this.y = ctx.y;
+            this.spacing = 0;
         }
         this.idx = ctx.idx;
 
@@ -213,6 +214,7 @@ class Model {
     key: string = Model._generateKey();
     x: number = NaN;
     y: number = NaN;
+    spacing: number = 0;
     endMarker: boolean;
     idx: number;
     _flags: number = 0;
