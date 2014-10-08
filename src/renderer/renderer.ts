@@ -455,7 +455,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
             y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
             page: parseInt(svg_elt.getAttribute("data-page"), 10),
-            selectionInfo: target.getAttribute("data-selectioninfo")
+            selectionInfo: target.getAttribute("data-selection-info")
         };
     }
 
@@ -778,7 +778,7 @@ export interface IRendererState {
 
 /**
  * Contains a line. Exists for two reasons:
- *  1. React prefers deeper trees to shallower trees.
+ *  1. React prefers deep trees to wide trees.
  *  2. We know, based on annotation, when a line needs to be updated
  *     and when it does not need to be updated.
  * 
@@ -887,7 +887,7 @@ interface ILineState {
 
 }
 
-// Ratio between svg coordinate system and 1mm.
+// Ratio between SVG coordinate system and 1mm.
 export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
 
 var _pointerData: C.IPointerData = {

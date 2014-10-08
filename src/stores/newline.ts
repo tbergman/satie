@@ -66,8 +66,11 @@ class NewlineModel extends Model {
 
         ctx.x = ctx.initialX;
         ctx.y += ctx.lineSpacing;
-        ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
-        ctx.prevKeySignature = ctx.keySignature;
+        if (ctx.clef) {
+            // This is guarded in case another stave called a RETRY_CURRENT.
+            ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
+            ctx.prevKeySignature = ctx.keySignature;
+        }
         ctx.smallest = 10000;
         ctx.clef = null;
         ctx.keySignature = null;
@@ -298,7 +301,6 @@ class NewlineModel extends Model {
     static centerWholeBarRests(body: Array<Model>, idx: number) {
         // Whole-bar rests are centered.
         var toCenter: Array<Model> = [];
-        var defaults = SMuFL.bravuraMetadata.engravingDefaults;
         // -2 because we want to avoid BARLINE and END_MARKER
         for (var i = idx - 2; i >= 0 && body[i].type > C.Type.BARLINE; --i) {
             if (body[i].isRest && body[i].note.isWholebar) {
@@ -308,8 +310,7 @@ class NewlineModel extends Model {
         for (var j = 0; j < toCenter.length; ++j) {
             var bbox = SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
             var offset = 0;
-            if (body[i].type === C.Type.BARLINE) {
-            } else if (body[i].type === C.Type.TIME_SIGNATURE) {
+            if (body[i].type === C.Type.TIME_SIGNATURE) {
                 offset += 0.7/4;
             }
             toCenter[j].x = offset + (body[i].x + body[idx].x) / 2 -

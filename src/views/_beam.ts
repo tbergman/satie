@@ -193,7 +193,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
 
             // XXX: all tuplets are drawn as triplets.
             return Glyph.Component({
-                selectioninfo: "beamTuplet",
+                "selection-info": "beamTuplet",
                 fill: this.props.tupletsTemporary ? "#A5A5A5" : "#000000",
                 glyphName: "tuplet3",
                 fontSize: this.props.fontSize,

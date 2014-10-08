@@ -16,13 +16,13 @@ export class Dot extends ReactTS.ReactComponentBase<IProps, {}> {
         // See rationale for hidden rect in _glyph.jsx
         return React.DOM.g(null,
             React.DOM.circle({
-                "data-selectioninfo": "dotted",
+                "data-selection-info": "dotted",
                 cx: <any> (this.cx + "em"),
                 cy: <any> (this.cy + "em"),
                 fill: this.props.stroke,
                 r: <any>(this.props.radius + "em")}),
             React.DOM.rect({
-                "data-selectioninfo": "dotted",
+                "data-selection-info": "dotted",
                 width: <any> "0.3em",
                 height: <any> "0.3em",
                 x: <any> (this.cx - 0.1 + "em"),

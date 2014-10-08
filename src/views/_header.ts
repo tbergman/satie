@@ -23,7 +23,7 @@ var Header = React.createClass({displayName: "Header",
         return React.DOM.g({style: style},
             model.title &&
                 React.DOM.text({className: "tn_ " + (model.titleHovered ? "svgLink" : ""),
-                    "data-selectioninfo": "song_title",
+                    "data-selection-info": "song_title",
                     style: {textAnchor: "middle"},
                     x: this.props.middle*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
                     y: 2*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR},
@@ -32,7 +32,7 @@ var Header = React.createClass({displayName: "Header",
 
             model.composer &&
                 React.DOM.text({className: "tn_ " + (model.composerHovered ? "svgLink" : ""),
-                    "data-selectioninfo": "song_composer",
+                    "data-selection-info": "song_composer",
                     style: {textAnchor: "end", fontSize: 0.75 + "em"},
                     x: this.props.right*0.75*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
                     y: 3/0.75*0.75*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR},

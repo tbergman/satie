@@ -107,6 +107,7 @@ export class Context implements C.MetreContext {
             maxX: this.maxX,
             maxY: this.maxY,
             pageSize: this.pageSize,
+            prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevLine: this.lines[this.line - 1],
             partialLine: this.lines[this.line],
             timeSignature: this.timeSignature
@@ -672,13 +673,14 @@ export class Context implements C.MetreContext {
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._staves, mutation, cursor); !it.atEnd; it.next(status)) {
+        for (var it = new PrivIterator(this, from, this._staves, mutation, cursor);
+                !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
                 stopIn = 20;
             }
             if (--stopIn === 0) {
-                throw "because of timeout.";
+                throw "because of timeout";
             }
             status = it.annotate(verbose);
         }
@@ -809,6 +811,7 @@ export interface IPartialSnapshot {
     lineSpacing: number;
     maxX: number;
     maxY: number;
+    prevClefByStave: { [key: number]: string };
     pageSize: C.IPageSize;
     prevLine: ILineSnapshot;
     partialLine: ILineSnapshot;
@@ -877,9 +880,11 @@ class PrivIterator {
                     /* visual cursor */ cursor));
             }
         }
+        this._assertOffsetsOK(); // very early
     }
 
     annotate(verbose: boolean): C.IterationStatus {
+        this._assertOffsetsOK();
         // Statuses with higher numbers go back further. Return the highest one.
         var maxStatus: C.IterationStatus = C.IterationStatus.EXIT_EARLY;
 
@@ -887,20 +892,20 @@ class PrivIterator {
         var componentSnapshots: Array<ILineSnapshot> = [];
         var filtered = false;
 
-        var n = this._components[0]._idx;
-        for (var i = 0; i < this._components.length; ++i) {
-            assert(n === this._components[i]._idx, "Invalid offset");
-        }
-
         for (var i = 0; i < this._components.length; ++i) {
             this._ensureAllOrNoneAtEnd();
             if (this.atEnd) {
                 // All staves are now at the end.
+                this._assertOffsetsOK();
                 return C.IterationStatus.RETRY_CURRENT; // Don't go to next!
             }
             this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
 
+            this._assertOffsetsOK();
+
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
+
+            this._assertOffsetsOK();
             ///
 
             if (verbose) {
@@ -933,9 +938,13 @@ class PrivIterator {
             _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
         }
 
+        this._assertOffsetsOK();
+
         if (maxStatus <= C.IterationStatus.SUCCESS) {
             this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
         }
+
+        this._assertOffsetsOK();
         return maxStatus;
     }
 
@@ -943,7 +952,7 @@ class PrivIterator {
      * Merges information from all componentSnapshots into context.
      * 
      * @param origSnapshot the snapshot from the previous index
-     * @param componentSnapshots the snapshots to merge into ctx
+     * @param componentSnapshots the snapshots to merge into the context
      * @param filtered true if at least one placeholder has been removed from componentSnapshots
      */
     private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
@@ -976,8 +985,10 @@ class PrivIterator {
             ctx.y = componentSnapshots[0].y;
         }
 
-        ctx.accidentals = componentSnapshots[0].accidentals; // XXX: stave-specific
-        ctx.beat = _.min(componentSnapshots, "beat").beat; // Note: also tracked per-staff. See also __globalBeat__
+        // XXX: stave-specific
+        ctx.accidentals = componentSnapshots[0].accidentals;
+        // Note: also tracked per-staff. See also __globalBeat__
+        ctx.beat = _.min(componentSnapshots, "beat").beat;
         for (var i = 0; i < this._components.length; ++i) {
             if (this._components[i].nextLocation.bar === ctx.bar &&
                     this._components[i].nextLocation.beat < ctx.beat) {
@@ -994,6 +1005,7 @@ class PrivIterator {
                 ++visibleStaveIdx;
                 if (componentSnapshots[visibleStaveIdx].prevClefByStave[i]) {
                     ctx.prevClefByStave[i] = componentSnapshots[visibleStaveIdx].prevClefByStave[i];
+                    assert(ctx.prevClefByStave[i] !== null, "prevClefByStave is invalid");
                 }
             }
         }
@@ -1044,9 +1056,13 @@ class PrivIterator {
                 assert(false, "Invalid status");
         }
 
+        this._assertOffsetsOK();
+
         if (status !== C.IterationStatus.SUCCESS) {
             recordMetreData(this._staves);
         }
+
+        this._assertOffsetsOK();
     }
 
     get atEnd(): boolean {
@@ -1061,6 +1077,13 @@ class PrivIterator {
     // This is kind of ugly. Another (probably better) option would be to have a
     // EndOfFileModel which handles the semi-justification for the end of the song.
     eofJustificationDirty: boolean = true;
+
+    private _assertOffsetsOK() {
+        var n = this._components[0]._idx;
+        for (var k = 0; k < this._components.length; ++k) {
+            assert(n === this._components[k]._idx, "Invalid offset");
+        }
+    }
 
     private _componentWithType(type: C.Type): Model {
         for (var i = 0; i < this._components.length; ++i) {
@@ -1440,7 +1463,6 @@ class PrivIteratorComponent {
         //
 
         this._mutation = null;  // If we have to backtrack, don't repeat this action
-
         return exitCode;
     }
 
@@ -1529,6 +1551,7 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             case "maxY": ctx.maxY = layout.maxY; break;
             case "pageSize": ctx.pageSize = layout.pageSize; break;
             case "partialLine": break; // skipped
+            case "prevClefByStave": ctx.prevClefByStave = layout.prevClefByStave;
             case "prevLine": break; // skipped
             case "timeSignature": ctx.timeSignature = layout.timeSignature; break;
             default: assert(false, "Not reached");

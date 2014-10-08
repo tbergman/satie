@@ -15,7 +15,7 @@ export class Accidental extends ReactTS.ReactComponentBase<IProps, {}> {
             fill: this.props.stroke,
             fontSize: this.props.fontSize,
             glyphName: this.props.accidental,
-			selectioninfo: "accidental-" + this.props.idx});
+			"selection-info": "accidental-" + this.props.idx});
     }
 }
 

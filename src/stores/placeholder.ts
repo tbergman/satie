@@ -31,23 +31,36 @@ import assert = require("assert");
  */
 class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
-        this.ctxData = new C.MetreContext(mctx);
+        // EXCEPTION -- if we are a DurationModel at beat 0, we actually should be
+        // at the end of the bar. See duration.ts
+        if (this.priority === C.Type.DURATION && mctx.beat === 0) {
+            this.ctxData = new C.MetreContext({
+                beat: mctx.timeSignature.beats,
+                bar: mctx.bar - 1,
+                endMarker: false,
+                timeSignature: mctx.timeSignature,
+                defaultCount: mctx.defaultCount
+            });
+        } else {
+            this.ctxData = new C.MetreContext(mctx);
+        }
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Make sure a model (be it a placeholder or not) is needed here because either:
         //  1) One of the models at the current location is not a placeholder
         //  2) The starting beat is different (this isn't a stable situation -- the
         //     annotation process will eventually either make (1) true, or decide that no
-        //     model is required at this index). If we haven't gotten to writing the starting beat,
-        //     conservatively assume this placeholder is needed.
+        //     model is required at this index). If we haven't gotten to writing the
+        //     starting beat, conservatively assume this placeholder is needed.
         var loc = new C.Location(ctx.loc);
         var usefulItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER || !obj.ctxData || !loc.eq(obj.ctxData));
         if (!usefulItems.length) {
             return ctx.eraseCurrent();
         }
 
-        // See if the next real (not placeholder) model could replace this model (same type & starting beat).
-        // If so, remove everything between the previous element and that model, exclusive.
+        // See if the next real (not placeholder) model could replace this model
+        // (same type & starting beat). If so, remove everything between the
+        // previous element and that model, exclusive.
         var realItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER);
         if (ctx.nextActualType === realItems[0].type) {
             var changed = false;
@@ -69,8 +82,7 @@ class PlaceholderModel extends Model {
         }
 
         // Make sure the placeholder has the correct type.
-        // Ideally, we would never GET in such a situation, however it is possible because of the "real item"
-        // condition above.
+        // Getting in this situation most likely indicates a bug.
         if (this._priority !== realItems[0].type) {
             ctx.body.splice(ctx.idx, 1);
             return C.IterationStatus.RETRY_CURRENT;

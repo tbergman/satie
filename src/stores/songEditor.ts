@@ -190,7 +190,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         return this._ly(true);
     }
 
-    private _ly(stupidMode: boolean) {
+    private _ly(debugMode: boolean) {
         var staves = this._staves;
 
         var lyliteArr: Array<string> = [];
@@ -198,7 +198,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         var inPianoStaff = false;
         _.each(staves, (stave, sidx) => {
             if (stave.body) {
-                if (!stupidMode) {
+                if (!debugMode) {
                     if (inPianoStaff) {
                         lyliteArr.push("{");
                     } else if (stave.pianoStaff) {
@@ -213,13 +213,13 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 for (var i = 0; i < body.length; ++i) {
                     var obj = body[i];
                     obj.toLylite(lyliteArr, unresolved);
-                    if (stupidMode) {
+                    if (debugMode) {
                         if (body[i].placeholder) {
                             lyliteArr.push(":" + C.Type[body[i].priority]);
-                        } else {
-                            if (body[i].type === C.Type.END_MARKER) {
-                                lyliteArr.push("/$");
-                            }
+                        } else if (body[i].type === C.Type.END_MARKER) {
+                            lyliteArr.push("/$");
+                        } else if (body[i].type === C.Type.NEWLINE) {
+                            lyliteArr.push("/n");
                         }
                     }
 
@@ -233,28 +233,28 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     }
                 }
 
-                if (stupidMode) {
+                if (debugMode) {
                     lyliteArr.push("###");
                 } else {
                     lyliteArr.push("}\n");
                 }
                 if (stave.pianoStaff) {
                     inPianoStaff = true;
-                } else if (inPianoStaff && !stupidMode) {
+                } else if (inPianoStaff && !debugMode) {
                     lyliteArr.push(">>");
                     inPianoStaff = false;
                 }
-            } else if (stave.staveHeight && !stupidMode) {
+            } else if (stave.staveHeight && !debugMode) {
                 lyliteArr.push("#(set-global-staff-size " +
                     stave.staveHeight*renderUtil.ptPerMM + ")\n");
-            } else if (stave.pageSize && !stupidMode) {
+            } else if (stave.pageSize && !debugMode) {
                 if (!stave.pageSize.lilypondName) {
                     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
                     return;
                 }
                 lyliteArr.push("#(set-default-paper-size \"" +
                     stave.pageSize.lilypondName + "\")\n");
-            } else if (stave.paper && !stupidMode) {
+            } else if (stave.paper && !debugMode) {
                 lyliteArr.push("\\paper {");
                 if (stave.paper.leftMargin) {
                     lyliteArr.push("left-margin=" + stave.paper.leftMargin);
@@ -264,7 +264,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 }
                 lyliteArr.push("}\n");
 
-            } else if (stave.header && !stupidMode) {
+            } else if (stave.header && !debugMode) {
                 lyliteArr.push("\\header {");
                 if (stave.header.title) {
                     // XXX: XSS
@@ -278,7 +278,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             }
         });
         var lyliteStr = lyliteArr.join(" ");
-        if (stupidMode) {
+        if (debugMode) {
             return lyliteStr.split("\n").join("");
         }
         return lyliteStr;
@@ -978,6 +978,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         // present on other staffs.  Contexts are retrieved from snapshots
         // when modifying a line other than the first.
         var context = this.ctxFromSnapshot(pointerData, staves) || new Annotator.Context(staves, layout, this);
+        if (context.line !== 0) {
+            assert(Object.keys(context.prevClefByStave).length >= 1, "Previous clefs were not stored");
+        }
 
         var y = 0;
         for (var i = 0; i < staves.length; ++i) {
