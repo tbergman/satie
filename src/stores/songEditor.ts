@@ -24,6 +24,7 @@ var CHANGE_EVENT = "change";
 var ANNOTATE_EVENT = "annotate";
 var HISTORY_EVENT = "history";
 var CLEAR_HISTORY_EVENT = "clearHistory";
+var MIDI_OUT_HINT = "midiOut";
 
 var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
@@ -106,6 +107,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     addClearHistoryListener(callback: any) {
         this.on(CLEAR_HISTORY_EVENT, callback); }
 
+    addMidiHintListener(callback: (out: Array<number>) => void) {
+        this.on(MIDI_OUT_HINT, callback); }
+
     removeChangeListener(callback: any) {
         this.removeListener(CHANGE_EVENT, callback); }
 
@@ -117,6 +121,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     removeClearHistoryListener(callback: any) {
         this.removeListener(CLEAR_HISTORY_EVENT, callback); }
+
+    removeMidiHintListener(callback: (out: Array<number>) => void) {
+        this.removeListener(MIDI_OUT_HINT, callback); }
 
     /////////////////////////////////
     // PROPERTIES AND DERIVED DATA // 
@@ -906,6 +913,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(HISTORY_EVENT);
         stave.body.instrument = instrument;
         this.emit(CHANGE_EVENT);
+    }
+
+    midiOutHint(out: Array<number>) {
+        this.emit(MIDI_OUT_HINT, out);
     }
 
     /////////////

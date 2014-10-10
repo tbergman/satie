@@ -753,10 +753,12 @@ export interface ISongEditor {
     addChangeListener: (callback: any) => void;
     addAnnotationListener: (callback: any) => void;
     addHistoryListener: (callback: any) => void;
+    addMidiHintListener: (callback: (out: Array<number>) => void) => void;
     addClearHistoryListener: (callback: any) => void;
     removeChangeListener: (callback: any) => void;
     removeAnnotationListener: (callback: any) => void;
     removeHistoryListener: (callback: any) => void;
+    removeMidiHintListener: (callback: (out: Array<number>) => void) => void;
     removeClearHistoryListener: (callback: any) => void;
 
     destructor: () => void;
@@ -771,6 +773,7 @@ export interface ISongEditor {
     getLineDirty: (idx: number, h: number) => void;
     ly: string;
     metadataModalVisible: boolean;
+    midiOutHint: (out: Array<number>) => void;
     pageSize: IPageSize;
     paper: Paper;
     partModalStave: IStave;

@@ -415,7 +415,7 @@ export class Context implements C.MetreContext {
     }
 
     midiOutHint(out: Array<number>) {
-        // TODO
+        this.songEditor.midiOutHint(out);
     }
 
     get nextActualType(): number {
