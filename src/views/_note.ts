@@ -48,7 +48,6 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 }
             }
         }
-        console.log("!!", this.props.dotted);
         return Group(null,
             _.map(lines, (line: number, idx: number) => [
                 // XXX(profile) make more efficient
