@@ -67,7 +67,7 @@ class PlaceholderModel extends Model {
             while (ctx.body[ctx.idx].type === C.Type.PLACEHOLDER && realItems[0].ctxData &&
                     (new C.Location(realItems[0].ctxData)).ge(loc)) {
                 changed = true;
-                ctx.body.splice(ctx.idx, 1);
+                ctx.splice(ctx.idx, 1);
             }
             if (changed) {
                 return C.IterationStatus.RETRY_CURRENT;
@@ -75,17 +75,13 @@ class PlaceholderModel extends Model {
         }
 
         // Remove extraneous placeholders that may have been caused by the above operation.
-        if (ctx.idx + 1 !== ctx.body.length) {
-            while (!ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
-                ctx.eraseFuture(ctx.idx + 1);
-            }
+        while (!ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
+            ctx.eraseFuture(ctx.idx + 1);
         }
 
-        // Make sure the placeholder has the correct type.
-        // Getting in this situation most likely indicates a bug.
         if (this._priority !== realItems[0].type) {
-            ctx.body.splice(ctx.idx, 1);
-            return C.IterationStatus.RETRY_CURRENT;
+            console.warn("Dangerously correcting a mismatched type.");
+            this._priority = realItems[0].type;
         }
 
         // Only correct rhythm if the beat is valid (otherwise, our rhythmicSpellcheck
@@ -105,16 +101,16 @@ class PlaceholderModel extends Model {
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
             case C.Type.BARLINE:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.STANDARD }));
+                ctx.splice(ctx.idx, 1, [new BarlineModel({ barline: C.Barline.STANDARD })]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.BEGIN:
-                ctx.body.splice(ctx.idx, 1, new BeginModel({}));
+                ctx.splice(ctx.idx, 1, [new BeginModel({})]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.CLEF:
                 if (!ctx.clef) {
-                    ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }));
+                    ctx.splice(ctx.idx, 1, [new ClefModel({ clef: "detect" })]);
                     ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
                 }
@@ -130,28 +126,28 @@ class PlaceholderModel extends Model {
                 }
                 break;
             case C.Type.END_MARKER:
-                ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
+                ctx.splice(ctx.idx, 1, [new EndMarkerModel({})]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.KEY_SIGNATURE:
                 if (!ctx.keySignature) {
-                    ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
+                    ctx.splice(ctx.idx, 1, [new KeySignatureModel({ keySignature: ctx.prevKeySignature })]);
                     ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
                 }
                 break;
             case C.Type.NEWLINE:
-                ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
+                ctx.splice(ctx.idx, 1, [new NewlineModel({})]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.NEWPAGE:
-                ctx.body.splice(ctx.idx, 1, new NewpageModel({}));
+                ctx.splice(ctx.idx, 1, [new NewpageModel({})]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.TIME_SIGNATURE:
                 var tses = ctx.findVertical(obj => obj.type === C.Type.TIME_SIGNATURE);
                 assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel({ timeSignature: tses[0].timeSignature }));
+                ctx.splice(ctx.idx, 1, [new TimeSignatureModel({ timeSignature: tses[0].timeSignature })]);
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RETRY_CURRENT;
         }
@@ -215,13 +211,7 @@ class PlaceholderModel extends Model {
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
                     C.Source.ANNOTATOR));
-        while (ctx.curr.type === C.Type.PLACEHOLDER && ctx.curr.priority === C.Type.DURATION) {
-            ctx.body.splice(ctx.idx, 1);
-            --ctx.idx;
-        };
-        for (var i = missingBeats.length - 1; i >= 0; --i) {
-            ctx.body.splice(ctx.idx + 1, 0, missingBeats[i]);
-        }
+        ctx.splice(ctx.idx, 1, missingBeats);
         return C.IterationStatus.RETRY_LINE;
     }
 }

@@ -57,7 +57,7 @@ class BarlineModel extends Model {
                 });
                 return C.IterationStatus.RETRY_CURRENT;
             } else {
-                ctx.body.splice(i, ctx.idx - i);
+                ctx.splice(i, ctx.idx - i);
                 ctx.markEntireSongDirty();
                 ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line - 1);
                 ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line);

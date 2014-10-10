@@ -341,6 +341,8 @@ export class Context implements C.MetreContext {
         }
         count += replaceFrom;
 
+        var ctxStartData = this.body[start].ctxData; 
+        var startPriority = this.body[start].priority;
 
         for (var i = 0; i < this._staves.length; ++i) {
             var stave = this._staves[i];
@@ -358,6 +360,7 @@ export class Context implements C.MetreContext {
                         var vidx = start;
                         var fidx = start + count;
                         var ffidx = start + replaceWith.length;
+                        var inCommon = 0;
                         var offset = 0;
                         for (var j = 0; j < replaceWith.length; ++j) {
                             if (vidx + j < Math.max(ffidx, fidx) &&
@@ -378,12 +381,19 @@ export class Context implements C.MetreContext {
                         }
                         for (var j = replaceWith.length; j < count; ++j) {
                             if (stave.body[vidx + j] && stave.body[vidx + j].isNote) {
-                                ++offset;
+                                ++inCommon;
                             } else {
                                 break;
                             }
                         }
-                        Array.prototype.splice.apply(stave.body, [start, count - offset].concat(<any>placeholders));
+
+                        if (count - inCommon === 0) { // For now...
+                            while (startPriority === C.Type.DURATION && stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
+                                ++offset;
+                            }
+                        }
+
+                        Array.prototype.splice.apply(stave.body, [start + offset, count - inCommon].concat(<any>placeholders));
 
                     } else {
                         stave.body.splice(start, count);
@@ -885,7 +895,7 @@ class PrivIterator {
                     /* visual cursor */ cursor));
             }
         }
-        this._assertOffsetsOK(); // very early
+        this._assertOffsetsOK();
     }
 
     annotate(verbose: boolean): C.IterationStatus {
@@ -1085,8 +1095,12 @@ class PrivIterator {
 
     private _assertOffsetsOK() {
         var n = this._components[0]._idx;
+        var len = this._components[0].len;
         for (var k = 0; k < this._components.length; ++k) {
             assert(n === this._components[k]._idx, "Invalid offset");
+            if (len !== this._components[k].len) {
+                console.warn("Mismatched body lengths");
+            }
         }
     }
 
@@ -1135,6 +1149,7 @@ class PrivIterator {
     private _increment() {
         var nextLoc = new C.Location(MAX_LOCATION);
         var nextPriority = C.MAX_NUM;
+        this._assertOffsetsOK();
 
         for (var i = 0; i < this._components.length; ++i) {
             var pri = this._components[i].nextPriority;
@@ -1144,10 +1159,12 @@ class PrivIterator {
                 nextPriority = pri;
             }
         }
+        this._assertOffsetsOK();
 
         for (var j = 0; j < this._components.length; ++j) {
             this._components[j].trySeek(nextLoc, nextPriority);
         }
+        this._assertOffsetsOK();
 
         // this._parent.loc = nextLoc;
         // Q: Why don't we do this?
@@ -1367,7 +1384,7 @@ class PrivIteratorComponent {
 
     get nextPriority(): number {
         var next = this._next;
-        return next && next.type !== C.Type.PLACEHOLDER ? next.priority : C.MAX_NUM;
+        return next ? next.priority : C.MAX_NUM;
     }
 
     get atEnd(): boolean {
@@ -1376,6 +1393,10 @@ class PrivIteratorComponent {
 
     get curr(): Model {
         return this._body[this._idx];
+    }
+
+    get len() {
+        return this._body.length;
     }
 
     private _aheadOfSchedule(ctx: Context): boolean {
@@ -1388,9 +1409,9 @@ class PrivIteratorComponent {
 
     private _addPadding(ctx: Context) {
         var PlaceholderModel = require("./placeholder");
-        this._body.splice(ctx.idx, 0, new PlaceholderModel({
+        ctx.splice(ctx.idx, 0, [new PlaceholderModel({
             _priority: C.Type[ctx.curr.priority]
-        }, C.Source.ANNOTATOR /* ? */));
+        }, C.Source.ANNOTATOR /* ? */)]);
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     }
