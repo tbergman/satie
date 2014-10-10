@@ -48,6 +48,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 }
             }
         }
+        console.log("!!", this.props.dotted);
         return Group(null,
             _.map(lines, (line: number, idx: number) => [
                 // XXX(profile) make more efficient
@@ -84,7 +85,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 y: this.props.y,
                 line: this.getStartingLine(),
                 stroke: this.props.secondaryStroke,
-                stemHeight: this.getStemHeight(),
+                stemHeight: this.getStemHeight() - this.direction/4,
                 stemWidth: 0.035,
                 flag: this.props.flag,
                 fontSize: this.props.fontSize,
@@ -156,7 +157,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
             return this.props.stemHeight;
         }
 
-        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2 + 1;
+        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2;
 
         var heightFromOtherNotes = this.getHighestLine() - this.getLowestLine();
         var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;

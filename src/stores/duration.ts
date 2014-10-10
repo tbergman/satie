@@ -831,7 +831,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.isWholebar && this.isRest) {
             return 0;
         }
-        return this._displayDots === undefined ? this.dots : this._displayDots;
+        return this._displayDots === void 0 || this._displayDots === null ?
+            this.dots : this._displayDots;
     }
 
     set displayDots(c: number) {
