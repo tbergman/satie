@@ -192,13 +192,21 @@ export class Context implements C.MetreContext {
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
-        return (this.body[idx + 1].type === C.Type.BEAM_GROUP) ?
-            (<any>this.body[idx + 1]).beam : null;
+        var inBeam = this.body[idx + 1].priority === C.Type.BEAM_GROUP;
+        if (inBeam) {
+            var beamed: Array<{ inBeam: boolean }> = [];
+            for (var i = 0; i < this._staves.length; ++i) {
+                if (this._staves[i].body &&
+                    this._staves[i].body[idx + 1].type === C.Type.BEAM_GROUP) {
+                    beamed = beamed.concat((<any>this._staves[i].body[idx + 1]).beam);
+                }
+            }
+            return beamed;
+        } else {
+            return null;
+        }
     }
 
-    /**
-     * Removes the next beam. One must exist.
-     */
     removeFollowingBeam(idx?: number, past?: boolean): C.IterationStatus {
         if (idx === null || idx === undefined) {
             idx = this.idx;
@@ -234,13 +242,7 @@ export class Context implements C.MetreContext {
      * @mutator
      */
     eraseCurrent(): C.IterationStatus {
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                stave.body.splice(this.idx, 1);
-            }
-        }
-        assert(this.body[0].priority !== C.Type.DURATION);
+        this.splice(this.idx, 1);
         return C.IterationStatus.RETRY_CURRENT;
     }
 
@@ -251,13 +253,7 @@ export class Context implements C.MetreContext {
     eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
 
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                stave.body.splice(idx, 1);
-            }
-        }
-        assert(this.body[0].priority !== C.Type.DURATION);
+        this.splice(idx, 1);
         return C.IterationStatus.SUCCESS;
     }
 
@@ -268,13 +264,7 @@ export class Context implements C.MetreContext {
     erasePast(idx: number): C.IterationStatus {
         assert(idx <= this.idx, "Invalid use of erasePast");
 
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                stave.body.splice(idx, 1);
-            }
-        }
-        assert(this.body[0].priority !== C.Type.DURATION);
+        this.splice(idx, 1);
         return C.IterationStatus.RETRY_FROM_ENTRY;
     }
 
@@ -288,19 +278,8 @@ export class Context implements C.MetreContext {
     insertFuture(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
+        this.splice(index, 0, [obj]);
 
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                if (this.body === stave.body) {
-                    this.body.splice(index, 0, obj);
-                } else {
-                    var PlaceholderModel = require("./placeholder");
-                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }, obj.source));
-                }
-            }
-        }
-        assert(this.body[0].priority !== C.Type.DURATION);
         return C.IterationStatus.SUCCESS;
     }
 
@@ -318,18 +297,8 @@ export class Context implements C.MetreContext {
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
 
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                if (this.body === stave.body) {
-                    this.body.splice(index, 0, obj);
-                } else {
-                    var PlaceholderModel = require("./placeholder");
-                    stave.body.splice(index, 0, new PlaceholderModel({ _priority: C.Type[obj.priority] }, obj.source));
-                }
-            }
-        }
-        assert(this.body[0].priority !== C.Type.DURATION);
+        this.splice(index, 0, [obj]);
+
         return exitCode;
     }
 
@@ -363,6 +332,16 @@ export class Context implements C.MetreContext {
     splice(start: number, count: number, replaceWith?: Array<Model>) {
         assert(!isNaN(start));
         assert(!isNaN(count));
+
+        var replaceFrom = 0;
+        for (var i = this.idx + count + 1;
+                i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
+                this.body[i].placeholder && this.body[i].priority === C.Type.DURATION; ++i) {
+            ++replaceFrom;
+        }
+        count += replaceFrom;
+
+
         for (var i = 0; i < this._staves.length; ++i) {
             var stave = this._staves[i];
             if (stave.body) {
@@ -376,10 +355,36 @@ export class Context implements C.MetreContext {
                     if (replaceWith) {
                         var PlaceholderModel = require("./placeholder");
                         var placeholders: Array<Model> = [];
+                        var vidx = start;
+                        var fidx = start + count;
+                        var ffidx = start + replaceWith.length;
+                        var offset = 0;
                         for (var j = 0; j < replaceWith.length; ++j) {
-                            placeholders.push(new PlaceholderModel({ _priority: C.Type[replaceWith[j].priority] }, replaceWith[j].source));
+                            if (vidx + j < Math.max(ffidx, fidx) &&
+                                    stave.body[vidx + j] &&
+                                    stave.body[vidx + j].priority === replaceWith[j].priority) {
+                                if (vidx + j >= fidx) {
+                                    placeholders.push(new PlaceholderModel({
+                                        _priority: C.Type[replaceWith[j].priority]
+                                    }, replaceWith[j].source));
+                                } else {
+                                    placeholders.push(stave.body[vidx + j]);
+                                }
+                            } else {
+                                placeholders.push(new PlaceholderModel({
+                                    _priority: C.Type[replaceWith[j].priority]
+                                }, replaceWith[j].source));
+                            }
                         }
-                        Array.prototype.splice.apply(stave.body, [start, count].concat(<any>placeholders));
+                        for (var j = replaceWith.length; j < count; ++j) {
+                            if (stave.body[vidx + j] && stave.body[vidx + j].isNote) {
+                                ++offset;
+                            } else {
+                                break;
+                            }
+                        }
+                        Array.prototype.splice.apply(stave.body, [start, count - offset].concat(<any>placeholders));
+
                     } else {
                         stave.body.splice(start, count);
                     }
@@ -395,7 +400,7 @@ export class Context implements C.MetreContext {
         return _.chain(this._staves)
             .filter(s => !!s.body)
             .map(s => s.body[idx])
-            .filter(s => !where || !!where(s))
+            .filter(s => s && (!where || !!where(s)))
             .value();
     }
 
@@ -1222,7 +1227,9 @@ class PrivIteratorComponent {
 
         if (!this._location.eq(from)) {
             var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx, 0, new PlaceholderModel({ _priority: C.Type[this.nextPriority] }, C.Source.ANNOTATOR /* ?? */));
+            this._body.splice(this._idx, 0, new PlaceholderModel({
+                _priority: C.Type[this.nextPriority]
+            }, C.Source.ANNOTATOR /* ?? */));
         }
         this._mutation = mutation;
     }
@@ -1243,8 +1250,6 @@ class PrivIteratorComponent {
         if (this._aheadOfSchedule(ctx)) {
             return this._addPadding(ctx);
         }
-
-        this._makeNextConsistent(ctx);
 
         ///
         var status = doCustomAction ? this._doCustomAction(ctx) : this._body[this._idx].annotate(ctx);
@@ -1383,46 +1388,11 @@ class PrivIteratorComponent {
 
     private _addPadding(ctx: Context) {
         var PlaceholderModel = require("./placeholder");
-        this._body.splice(ctx.idx, 0, new PlaceholderModel({ _priority: C.Type[ctx.curr.priority] }, C.Source.ANNOTATOR /* ? */));
+        this._body.splice(ctx.idx, 0, new PlaceholderModel({
+            _priority: C.Type[ctx.curr.priority]
+        }, C.Source.ANNOTATOR /* ? */));
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
-    }
-
-    private _makeNextConsistent(ctx: Context) {
-        while (true) {
-            var realNexts = ctx.findVertical(c => c && c.type !== C.Type.PLACEHOLDER, ctx.idx + 1);
-            if (!realNexts.length) {
-                ctx.splice(ctx.idx + 1, 1);
-                var anyNexts = ctx.findVertical(c => !!c, ctx.idx + 1);
-                if (anyNexts.length) {
-                    continue;
-                } else {
-                    break;
-                }
-            }
-            var lowestPriority = C.Type.UNKNOWN;
-            var ctxData: C.MetreContext = null;
-            for (var i = 0; i < realNexts.length; ++i) {
-                if (realNexts[i].priority < lowestPriority) {
-                    lowestPriority = realNexts[i].priority;
-                    ctxData = realNexts[i].ctxData ? JSON.parse(JSON.stringify(realNexts[i].ctxData)) : "soon";
-                }
-            }
-            var allNexts = ctx.findVertical(null, ctx.idx + 1);
-            var sidx = -1;
-            for (var i = 0; i < allNexts.length; ++i) {
-                do { ++sidx; } while (!ctx._staves[sidx].body);
-                if (!allNexts[i] || allNexts[i].priority !== lowestPriority) {
-                    var isPlaceholder = allNexts[i] && allNexts[i].type === C.Type.PLACEHOLDER  ;
-                    var PlaceholderModel = require("./placeholder");
-                    ctx._staves[sidx].body.splice(ctx.idx + 1, isPlaceholder ? 1 : 0,
-                        new PlaceholderModel({ _priority: C.Type[lowestPriority] },
-                            C.Source.ANNOTATOR));
-                    ctx._staves[sidx].body[ctx.idx + 1].ctxData = ctxData; // XXX: Clone here?
-                }
-            }
-            break;
-        }
     }
 
     private get _next() {

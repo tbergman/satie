@@ -132,16 +132,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 while(ctx.body[j].type !== C.Type.BEAM_GROUP) {
                     ++j;
                 }
-                var beam = (<any>ctx.body[j]).beam; // TSFIX
-                _.each(beam, (c: DurationModel) => {
-                    c.inBeam = false;
-                    return true;
-                });
-                if (j <= ctx.idx) {
-                    ctx.erasePast(j);
-                } else {
-                    ctx.eraseFuture(j);
-                }
+                ctx.removeFollowingBeam(j - 1, j <= ctx.idx);
             }
 
             _.each(b, function (b: DurationModel) {

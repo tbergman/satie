@@ -102,7 +102,8 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
         });
 
         var DurationModel = require("./duration"); // Recursive.
-        ctx.splice(ctx.idx, nextIdx - ctx.idx, replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)));
+        ctx.splice(ctx.idx, nextIdx - ctx.idx,
+            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)));
         var after = ctx.idx + replaceWith.length;
         if (!n1.isRest) {
             for (var i = ctx.idx; i < after - 1; ++i) {
@@ -128,7 +129,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                 (pattern[pidx + 1] && Math.abs(b3 - (beat + be + pattern[pidx + 1]
                     .getBeats(ctx))) < _e))) {
             n1.count /= 2; // Double the length.
-            ctx.eraseFuture(ctx.idx + 1);
+            ctx.splice(ctx.idx + 1, nextIdx - ctx.idx);
             return C.IterationStatus.RETRY_LINE;
         }
 
@@ -189,7 +190,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                         var dotFactor = Math.pow(1.5, dots);
                         if (Math.abs(ncb - ctx.timeSignature.beatType/po2*dotFactor) < _e) {
                             _.times(toErase, function () {
-                                ctx.eraseFuture(ctx.idx + 1);
+                                ctx.splice(ctx.idx + 1, nextIdx - ctx.idx);
                             });
                             n1.dots = dots;
                             n1.actualTuplet = n1.tuplet = null;
@@ -247,7 +248,7 @@ export function subtract(durr1: any, beats: number,
     var durr1Beats: number = isNaN(<any>durr1) ? durr1.getBeats(ctx) : <number> durr1;
     var beatsToFill = durr1Beats - beats;
     var bp = beamingPatterns[tsName];
-    var currBeat = ctx.beat + (beatOffset || 0);
+    var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.timeSignature.beats;
 
     for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;

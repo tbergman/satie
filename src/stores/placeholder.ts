@@ -88,14 +88,18 @@ class PlaceholderModel extends Model {
             return C.IterationStatus.RETRY_CURRENT;
         }
 
-        // Add in rests, if needed. (This is part of the reason (2) is needed above).
-        if (ctx.beat < ctx.__globalBeat__) {
-            return PlaceholderModel.fillMissingBeats(ctx);
-        }
+        // Only correct rhythm if the beat is valid (otherwise, our rhythmicSpellcheck
+        // won't give sensible results!)
+        if (ctx.timeSignature && ctx.__globalBeat__ < ctx.timeSignature.beats) {
+            // Add in rests, if needed. (This is part of the reason (2) is needed above).
+            if (ctx.beat < ctx.__globalBeat__) {
+                return PlaceholderModel.fillMissingBeats(ctx);
+            }
 
-        if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.DURATION) {
-            assert(realItems[0], "We can't have an entire column of fake durations,");
-            return PlaceholderModel.fillMissingBeats(ctx, realItems[0].getBeats(ctx));
+            if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.DURATION) {
+                assert(realItems[0], "We can't have an entire column of fake durations,");
+                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].getBeats(ctx));
+            }
         }
 
         // See if we should replace a placeholder for a real type...
