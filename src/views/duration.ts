@@ -63,6 +63,8 @@ export function Component(props: IProps) {
         );
     }
 
+    assert(spec.count);
+
     var note = Note.Component({
             accidentals: spec.displayedAccidentals,
             accStrokes: spec.accStrokes,

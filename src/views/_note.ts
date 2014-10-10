@@ -82,7 +82,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 key: "flag",
                 x: this.props.x,
                 y: this.props.y,
-                line: this.getHeightDeterminingLine(),
+                line: this.getStartingLine(),
                 stroke: this.props.secondaryStroke,
                 stemHeight: this.getStemHeight(),
                 stemWidth: 0.035,
@@ -146,17 +146,17 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         return _.reduce(this.getLines(), (a: number, b: number) => Math.max(a, b), -99999);
     }
     getStartingLine() {
-        return (this.direction === 1 ? this.getLowestLine : this.getHighestLine)();
+        return this.direction === 1 ? this.getLowestLine() : this.getHighestLine();
     }
     getHeightDeterminingLine() {
-        return (this.direction === 1 ? this.getHighestLine : this.getLowestLine)();
+        return this.direction === 1 ? this.getHighestLine() : this.getLowestLine();
     }
     getStemHeight() {
         if (this.props.stemHeight) {
             return this.props.stemHeight;
         }
 
-        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2;
+        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2 + 1;
 
         var heightFromOtherNotes = this.getHighestLine() - this.getLowestLine();
         var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;

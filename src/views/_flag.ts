@@ -20,8 +20,7 @@ export class Flag extends ReactTS.ReactComponentBase<IProps, {}> {
                     0),
             y: this.props.y -
                 (this.props.line - 3)/4 -
-                this.direction*fontOffset[1]/4 -
-                fontOffset[1]/4 -
+                noteOffset[1]/4 -
                 this.direction*this.props.stemHeight/4,
             fill: this.props.stroke,
             fontSize: this.props.fontSize,

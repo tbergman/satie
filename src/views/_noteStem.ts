@@ -19,8 +19,8 @@ export class NoteStem extends ReactTS.ReactComponentBase<IProps, {}> {
             x2: this.props.x + fontOffset[0]/4 + this.lineXOffset,
             y1: this.props.y - fontOffset[1]/4 - (this.props.line - 3)/4,
             y2: this.props.y -
-                fontOffset[1]/4 -
                 (this.props.line - 3)/4 -
+                fontOffset[1]/4 -
                 this.direction*this.height/4,
             stroke: this.props.stroke,
             strokeWidth: stemThickness});
