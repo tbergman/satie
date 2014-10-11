@@ -214,6 +214,7 @@ class Model {
     key: string = Model._generateKey();
     x: number = NaN;
     y: number = NaN;
+    cachedSpacing: number = 0;
     spacing: number = 0;
     endMarker: boolean;
     idx: number;

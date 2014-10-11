@@ -388,7 +388,8 @@ export class Context implements C.MetreContext {
                         }
 
                         if (count - inCommon === 0) { // For now...
-                            while (startPriority === C.Type.DURATION && stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
+                            while (startPriority === C.Type.DURATION &&
+                                stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
                                 ++offset;
                             }
                         }

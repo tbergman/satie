@@ -167,7 +167,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                                         };
                                                     }
                                                 }
-                                                if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
+                                                if (selIdx !== -1 &&
+                                                        (!s[i].selected || i + 1 === s.length)) {
                                                     selProps.width = Math.abs(s[i].x - selProps.x);
                                                     components[selIdx] = Rect.Component(selProps);
                                                     selIdx = -1;
@@ -299,7 +300,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                                 item.type === C.Type.TIME_SIGNATURE ||
                                 item.type === C.Type.CLEF ||
                                 item.type === C.Type.DURATION) &&
-                            Math.abs(dynX - item.x) < 0.27 +
+                            Math.abs(dynX - item.x + item.cachedSpacing*2) < 0.27 + item.cachedSpacing*4 +
                                 (item.isNote ? (item.note.dots||0)*0.2 : 0)) {
                         dynX = item.x;
                         foundIdx = j;
@@ -473,7 +474,16 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         if (!this.props.tool) {
             return;
         }
-        var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
+        try {
+            var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
+        } catch(err) {
+            if (err instanceof C.DispatcherRedirect) {
+                var redirect = <C.DispatcherRedirect> err;
+                (<any>this.props.dispatcher)[redirect.verb](redirect.newUrl);
+            } else {
+                throw err;
+            }
+        }
         if (fn) {
             this.props.dispatcher.PUT("/local/tool/action", {mouseData: data, fn: fn});
         }

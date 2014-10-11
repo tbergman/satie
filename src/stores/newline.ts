@@ -316,6 +316,9 @@ class NewlineModel extends Model {
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
                 (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8 - toCenter[j].x;
         }
+        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.BARLINE; --i) {
+            body[i].cachedSpacing = Math.max(body[i].cachedSpacing, body[i].spacing);
+        }
     }
 
 

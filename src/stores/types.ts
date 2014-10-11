@@ -24,6 +24,7 @@ import KeySignatureModel = require("./keySignature");
 import KeySignatureView = require("../views/keySignature");
 import NewlineModel = require("./newline");
 import NewlineView = require("../views/newline");
+import NewpageModel = require("./newpage");
 import PlaceholderModel = require("./placeholder");
 import SlurModel = require("./slur");
 import SlurView = require("../views/slur");
@@ -44,6 +45,7 @@ export function ensureRegistered() {
     registerType(C.Type.END_MARKER, EndMarkerModel, null);
     registerType(C.Type.KEY_SIGNATURE, KeySignatureModel, KeySignatureView.Component);
     registerType(C.Type.NEWLINE, NewlineModel, NewlineView.Component);
+    registerType(C.Type.NEWPAGE, NewpageModel, null);
     registerType(C.Type.PLACEHOLDER, PlaceholderModel, null);
     registerType(C.Type.SLUR, SlurModel, SlurView.Component);
     registerType(C.Type.TIME_SIGNATURE, TimeSignatureModel, TimeSignatureView.Component);
