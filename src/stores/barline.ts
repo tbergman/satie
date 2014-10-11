@@ -183,11 +183,11 @@ class BarlineModel extends Model {
             // We want to keep this barline where it is!
             ctx.body[jdx] = new BarlineModel({ barline: inTwo.barline });
             inTwo.barline = mode;
-            ctx.insertPast(inTwo);
+            ctx.insertPast(inTwo, null, true);
             return;
         }
 
-        ctx.insertPast(new BarlineModel({ barline: mode }));
+        ctx.insertPast(new BarlineModel({ barline: mode }), null, true);
     };
 
 

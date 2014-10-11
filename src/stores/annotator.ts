@@ -290,14 +290,21 @@ export class Context implements C.MetreContext {
      * @param index The absolute position to insert an element at.
      *     By default, just before current position.
      */
-    insertPast(obj: Model, index?: number): C.IterationStatus {
+    insertPast(obj: Model, index?: number, merge?: boolean): C.IterationStatus {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
+        if (merge) {
+            debugger;
+        }
 
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
+        var count = 0;
+        if (merge && this.body[index].placeholder && this.body[index].priority === obj.priority) {
+            ++count;
+        }
 
-        this.splice(index, 0, [obj]);
+        this.splice(index, count, [obj]);
 
         return exitCode;
     }
@@ -387,9 +394,11 @@ export class Context implements C.MetreContext {
                             }
                         }
 
-                        if (count - inCommon === 0) { // For now...
+                        if (replaceWith && replaceWith.length && count - inCommon === 0) { // For now...
                             while (startPriority === C.Type.DURATION &&
+                                replaceWith[0].priority === C.Type.DURATION &&
                                 stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
+                                debugger;
                                 ++offset;
                             }
                         }

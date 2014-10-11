@@ -145,8 +145,9 @@ class BeamGroupModel extends Model {
     }
 
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
-        return ctx.insertPast(new BeamGroupModel(
-            {beam: beam, source: C.Source.ANNOTATOR}));
+        var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BEAM_GROUP;
+        ctx.splice(ctx.idx - (replaceMode ? 1 : 0), replaceMode ? 1 : 0, [new BeamGroupModel({beam: beam, source: C.Source.ANNOTATOR})]);
+        return C.IterationStatus.RETRY_FROM_ENTRY;
     };
 
     static decideDirection = function(firstLines: Array<number>, lastLines: Array<number>) {
