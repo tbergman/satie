@@ -434,6 +434,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         body[j] = Model.fromJSON(body[j]);
                     }
                 }
+                if (staves[i].header) {
+                    staves[i].header.composerHovered = staves[i].header.titleHovered = false;
+                }
                 if (staves[i].paper) {
                     staves[i].paper = new C.Paper(staves[i].paper);
                 }
