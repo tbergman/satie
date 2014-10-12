@@ -36,7 +36,7 @@ export class Glyph extends ReactTS.ReactComponentBase<IProps, {}> {
             SMuFL.getGlyphCode(this.props.glyphName)
         );
 
-        if (!this.props["selection-info"]) {
+        if (!this.props["selection-info"] || global.isChoreServer) {
             return text;
         } else {
             // Some information, such as the exact position of dots and triplets

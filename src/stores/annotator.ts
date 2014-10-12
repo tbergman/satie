@@ -293,9 +293,6 @@ export class Context implements C.MetreContext {
     insertPast(obj: Model, index?: number, merge?: boolean): C.IterationStatus {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
-        if (merge) {
-            debugger;
-        }
 
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
@@ -398,7 +395,6 @@ export class Context implements C.MetreContext {
                             while (startPriority === C.Type.DURATION &&
                                 replaceWith[0].priority === C.Type.DURATION &&
                                 stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
-                                debugger;
                                 ++offset;
                             }
                         }
