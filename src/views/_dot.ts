@@ -21,7 +21,7 @@ export class Dot extends ReactTS.ReactComponentBase<IProps, {}> {
                 cy: <any> (this.cy + "em"),
                 fill: this.props.stroke,
                 r: <any>(this.props.radius + "em")}),
-            React.DOM.rect({
+        global.isChoreServer ? null : React.DOM.rect({
                 "data-selection-info": "dotted",
                 width: <any> "0.3em",
                 height: <any> "0.3em",

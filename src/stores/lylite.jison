@@ -137,6 +137,7 @@
 "\semicirculus"       return 'ARTIC'
 "\signumcongruentiae" return 'ARTIC'
 
+"\ripienoIsScale"	  return 'RIPIENO_IS_SCALE'
 "\pageBreak"          return 'PAGE_BREAK'
 
 "."+                  return 'DOTS'
@@ -295,6 +296,11 @@ parts
 		{
 			resetPartState();
 			$$ = [];
+		}
+  | parts RIPIENO_IS_SCALE
+		{
+			$$ = $1;
+			$$.isScale = true;
 		}
   | parts globalExpr                   
 		{

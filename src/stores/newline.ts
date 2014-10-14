@@ -260,8 +260,7 @@ class NewlineModel extends Model {
         var fullJustify = false;
         var i: number;
 
-        if (typeof window === "undefined" ||
-                global.location.href.indexOf("/scales/") !== -1) {
+        if ((<any>ctx._staves).isScale) {
             // XXX: HACK!!!
             fullJustify = true;
         }
