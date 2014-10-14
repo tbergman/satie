@@ -1119,6 +1119,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     if (type === C.Type.BARLINE) {
                         if (removeEntireBarStartingAt !== null) {
                             var delCount = i - removeEntireBarStartingAt;
+                            // XXX: Check this.
                             body.splice(removeEntireBarStartingAt, delCount);
                             i -= delCount;
                         }

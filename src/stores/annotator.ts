@@ -345,7 +345,7 @@ export class Context implements C.MetreContext {
         }
         count += replaceFrom;
 
-        var ctxStartData = this.body[start].ctxData; 
+        var ctxStartData = this.body[start].ctxData;
         var startPriority = this.body[start].priority;
 
         for (var i = 0; i < this._staves.length; ++i) {
@@ -353,60 +353,63 @@ export class Context implements C.MetreContext {
             if (stave.body) {
                 if (this.body === stave.body) {
                     if (replaceWith) {
-                        Array.prototype.splice.apply(stave.body, [start, count].concat(<any>replaceWith));
+                        Array.prototype.splice.apply(stave.body,
+                            [start, count].concat(<any>replaceWith));
                     } else {
                         stave.body.splice(start, count);
                     }
                 } else {
-                    if (replaceWith) {
-                        var PlaceholderModel = require("./placeholder");
-                        var placeholders: Array<Model> = [];
-                        var vidx = start;
-                        var fidx = start + count;
-                        var ffidx = start + replaceWith.length;
-                        var inCommon = 0;
-                        var offset = 0;
-                        for (var j = 0; j < replaceWith.length; ++j) {
-                            if (vidx + j < Math.max(ffidx, fidx) &&
-                                    stave.body[vidx + j] &&
-                                    stave.body[vidx + j].priority === replaceWith[j].priority) {
-                                if (vidx + j >= fidx) {
-                                    placeholders.push(new PlaceholderModel({
-                                        _priority: C.Type[replaceWith[j].priority]
-                                    }, replaceWith[j].source));
-                                } else {
-                                    placeholders.push(stave.body[vidx + j]);
-                                }
-                            } else {
+                    replaceWith = replaceWith || [];
+
+                    var PlaceholderModel = require("./placeholder");
+                    var placeholders: Array<Model> = [];
+                    var vidx = start;
+                    var fidx = start + count;
+                    var ffidx = start + replaceWith.length;
+                    var inCommon = 0;
+                    var offset = 0;
+                    for (var j = 0; j < replaceWith.length; ++j) {
+                        if (vidx + j < Math.max(ffidx, fidx) &&
+                                stave.body[vidx + j] &&
+                                stave.body[vidx + j].priority === replaceWith[j].priority) {
+                            if (vidx + j >= fidx) {
                                 placeholders.push(new PlaceholderModel({
                                     _priority: C.Type[replaceWith[j].priority]
                                 }, replaceWith[j].source));
-                            }
-                        }
-                        for (var j = replaceWith.length; j < count; ++j) {
-                            if (stave.body[vidx + j] && stave.body[vidx + j].isNote) {
-                                ++inCommon;
                             } else {
-                                break;
+                                placeholders.push(stave.body[vidx + j]);
                             }
+                        } else {
+                            placeholders.push(new PlaceholderModel({
+                                _priority: C.Type[replaceWith[j].priority]
+                            }, replaceWith[j].source));
                         }
-
-                        if (replaceWith && replaceWith.length && count - inCommon === 0) { // For now...
-                            while (startPriority === C.Type.DURATION &&
-                                replaceWith[0].priority === C.Type.DURATION &&
-                                stave.body[start + offset] && stave.body[start + offset].ctxData && new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
-                                ++offset;
-                            }
-                        }
-
-                        Array.prototype.splice.apply(stave.body, [start + offset, count - inCommon].concat(<any>placeholders));
-
-                    } else {
-                        stave.body.splice(start, count);
                     }
+                    for (var j = replaceWith.length; j < count; ++j) {
+                        if (stave.body[vidx + j] && stave.body[vidx + j].isNote) {
+                            ++inCommon;
+                        } else {
+                            break;
+                        }
+                    }
+
+                    if (replaceWith && replaceWith.length && count - inCommon === 0) { // XXX
+                        while (startPriority === C.Type.DURATION &&
+                            replaceWith[0].priority === C.Type.DURATION &&
+                            stave.body[start + offset] && stave.body[start + offset].ctxData &&
+                            new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
+                            ++offset;
+                        }
+                    }
+
+                    inCommon = 0;
+
+                    Array.prototype.splice.apply(stave.body, [start + offset, count - inCommon]
+                        .concat(<any>placeholders));
                 }
             }
         }
+        this._assertOffsetsOk();
     }
 
     findVertical(where?: (obj: Model) => boolean, idx?: number) {
@@ -752,6 +755,16 @@ export class Context implements C.MetreContext {
                 } else {
                     bodies[j][i].x = minX - offset;
                 }
+            }
+        }
+    }
+
+    private _assertOffsetsOk() {
+        var expectedLength = 0;
+        for (var i = 0; i < this._staves.length; ++i) {
+            if (this._staves[i].body) {
+                expectedLength = expectedLength || this._staves[i].body.length;
+                assert.equal(expectedLength, this._staves[i].body.length, "All staves must be the same length");
             }
         }
     }
@@ -1248,12 +1261,7 @@ class PrivIteratorComponent {
         this._cursor = cursor;
         this.reset(from);
 
-        if (!this._location.eq(from)) {
-            var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx, 0, new PlaceholderModel({
-                _priority: C.Type[this.nextPriority]
-            }, C.Source.ANNOTATOR /* ?? */));
-        }
+        assert(this._location.eq(from));
         this._mutation = mutation;
     }
 
@@ -1352,13 +1360,7 @@ class PrivIteratorComponent {
     }
 
     ensurePriorityIs(priority: number) {
-        if (this.nextPriority !== priority) {
-            var nextIsPlaceholder = this._body[this._idx + 1].placeholder;
-            var PlaceholderModel = require("./placeholder");
-            this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
-                new PlaceholderModel({ _priority: C.Type[priority] },
-                    C.Source.ANNOTATOR /* ? */));
-        }
+        assert.equal(this.nextPriority, priority, "New policy: priorities must now always match up");
     }
 
     resetLine() {
