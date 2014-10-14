@@ -321,6 +321,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             staveIdx: info.staveIdx,
                             musicLine: info.musicLine,
                             ctxData: item.ctxData,
+                            visualIdx: info.visualIdx,
                             obj: new Model({
                                 placeholder: true,
                                 idx: j,
@@ -366,7 +367,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
             mouse: mouse,
             musicLine: info && info.musicLine,
             obj: foundObj,
-            staveIdx: info && info.staveIdx
+            staveIdx: info && info.staveIdx,
+            visualIdx: info ? info.visualIdx : null
         };
 
         return _pointerData;
@@ -904,7 +906,8 @@ var _pointerData: C.IPointerData = {
     staveIdx: null,
     obj: null,
     musicLine: null,
-    idx: null
+    idx: null,
+    visualIdx: null
 };
 
 interface IPage {

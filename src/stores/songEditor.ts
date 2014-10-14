@@ -831,6 +831,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         obj: prevObj,
                         musicLine: this._visualCursor.annotatedLine,
                         idx: prevIdx,
+                        visualIdx: NaN,
                         staveIdx: this._activeStaveIdx
                     },
                     tmpTool.visualCursorAction(action.postData), null, null, null, false);
@@ -840,6 +841,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         obj: prevObj,
                         musicLine: this._visualCursor.annotatedLine,
                         idx: prevIdx,
+                        visualIdx: NaN,
                         staveIdx: this._activeStaveIdx
                     },
                     this._tool.visualCursorAction(action.postData), null, null, null, false);
@@ -886,6 +888,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                             obj: obj,
                             musicLine: line,
                             idx: i,
+                            visualIdx: NaN,
                             staveIdx: this._activeStaveIdx
                         },
                         etool.splice.bind(etool, false),

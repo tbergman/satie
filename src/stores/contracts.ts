@@ -675,6 +675,7 @@ export enum PreviewMode {
 
 export interface IPointerData {
     staveIdx: number;
+    visualIdx: number;
     obj: Model;
     musicLine: number;
     idx: number;
