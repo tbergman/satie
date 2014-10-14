@@ -333,9 +333,14 @@ export class Context implements C.MetreContext {
      * The sledgehammer of the mutator tools. Use sparingly.
      * @mutator
      */
-    splice(start: number, count: number, replaceWith?: Array<Model>) {
+    splice(start: number, count: number, replaceWith?: Array<Model>, splicePolicy?: SplicePolicy) {
+        var PlaceholderModel = require("./placeholder"); // Recursive
+        if (isNaN(splicePolicy)) {
+            splicePolicy = SplicePolicy.Destructive;
+        }
         assert(!isNaN(start));
         assert(!isNaN(count));
+        replaceWith = replaceWith || [];
 
         var replaceFrom = 0;
         for (var i = this.idx + count + 1;
@@ -344,6 +349,19 @@ export class Context implements C.MetreContext {
             ++replaceFrom;
         }
         count += replaceFrom;
+
+        if (splicePolicy === SplicePolicy.Masked) {
+            var end = start + count - replaceWith.length;
+            debugger;
+            for (var i = end - 1; i >= start; --i) {
+                var vertical = this.findVertical(m => !m.placeholder, i);
+                if (vertical.length > 1 || vertical.length === 1 && vertical[0] !== this.body[i]) {
+                    replaceWith = [new PlaceholderModel({
+                        _priority: C.Type[vertical[0].priority]
+                    }, vertical[0].source)].concat(replaceWith);
+                }
+            }
+        }
 
         var ctxStartData = this.body[start].ctxData;
         var startPriority = this.body[start].priority;
@@ -359,9 +377,6 @@ export class Context implements C.MetreContext {
                         stave.body.splice(start, count);
                     }
                 } else {
-                    replaceWith = replaceWith || [];
-
-                    var PlaceholderModel = require("./placeholder");
                     var placeholders: Array<Model> = [];
                     var vidx = start;
                     var fidx = start + count;
@@ -385,15 +400,7 @@ export class Context implements C.MetreContext {
                             }, replaceWith[j].source));
                         }
                     }
-                    for (var j = replaceWith.length; j < count; ++j) {
-                        if (stave.body[vidx + j] && stave.body[vidx + j].isNote) {
-                            ++inCommon;
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if (replaceWith && replaceWith.length && count - inCommon === 0) { // XXX
+                    if (replaceWith && replaceWith.length && count === 0) { // XXX
                         while (startPriority === C.Type.DURATION &&
                             replaceWith[0].priority === C.Type.DURATION &&
                             stave.body[start + offset] && stave.body[start + offset].ctxData &&
@@ -402,14 +409,65 @@ export class Context implements C.MetreContext {
                         }
                     }
 
-                    inCommon = 0;
-
-                    Array.prototype.splice.apply(stave.body, [start + offset, count - inCommon]
+                    Array.prototype.splice.apply(stave.body, [start + offset, count]
                         .concat(<any>placeholders));
                 }
             }
         }
         this._assertOffsetsOk();
+        if (splicePolicy === SplicePolicy.Masked) {
+            var clot = this.nextIdx(c => c.priority !== C.Type.DURATION);
+            this._realign(start, clot);
+        }
+    }
+
+    private _realign(start: number, end: number) {
+        var bodies = this._staves.filter(s => !!s.body).map(s => s.body);
+        var gBeat = 0;
+        var cBeats = bodies.map(b => 0);
+        var jIdx = bodies.map(b => start);
+        var placeholders = bodies.map(b => <Array<Model>>[]);
+        var reals = bodies.map(b => <Array<Model>>[]);
+        var aligned = bodies.map(b => <Array<Model>>[]);
+
+        for (var i = start; i < end; ++i) {
+            for (var j = 0; j < bodies.length; ++j) {
+                if (bodies[j][i].priority !== C.Type.DURATION) {
+                    assert(false, "Realign only takes durations.");
+                }
+                if (bodies[j][i].placeholder) {
+                    placeholders[j].push(bodies[j][i]);
+                } else {
+                    reals[j].push(bodies[j][i]);
+                }
+            }
+        }
+
+        while(_.any(reals, r => r.length)) {
+            var thisBeat = _.min(reals.map((r, j) => r.length ? cBeats[j] : 100000));
+            for (var j = 0; j < bodies.length; ++j) {
+                if (reals[j].length && (cBeats[j] === thisBeat)) {
+                    cBeats[j] += reals[j][0].getBeats(this);
+                    aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
+                } else {
+                    aligned[j] = aligned[j].concat(placeholders[j].splice(0, 1));
+                }
+            }
+        }
+
+        var firstSize = aligned[0].length;
+        var j = 0;
+        for (var k = 0; k < this._staves.length; ++k) {
+            if (!this._staves[k].body) {
+                continue;
+            }
+            assert.equal(firstSize, aligned[j].length);
+            Array.prototype.splice.apply(this._staves[k].body, [start, end - start].concat(<any>aligned[j]));
+
+            ++j;
+        }
+
+        recordMetreData(this._staves);
     }
 
     findVertical(where?: (obj: Model) => boolean, idx?: number) {
@@ -793,6 +851,17 @@ export class Context implements C.MetreContext {
      * @scope private
      */
     lines: Array<ILineSnapshot> = [];
+}
+
+export enum SplicePolicy {
+    /**
+     * Remove elements from non-current parts, if needed.
+     */
+    Destructive = 1,
+    /**
+     * Never remove elements from non-current parts.
+     */
+    Masked = 2
 }
 
 export interface ICustomAction {
