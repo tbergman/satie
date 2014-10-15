@@ -278,7 +278,7 @@ export class Context implements C.MetreContext {
     insertFuture(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
-        this.splice(index, 0, [obj]);
+        this.splice(index, 0, [obj], SplicePolicy.Additive);
 
         return C.IterationStatus.SUCCESS;
     }
@@ -296,12 +296,8 @@ export class Context implements C.MetreContext {
 
         var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
             C.IterationStatus.RETRY_FROM_ENTRY;
-        var count = 0;
-        if (merge && this.body[index].placeholder && this.body[index].priority === obj.priority) {
-            ++count;
-        }
 
-        this.splice(index, count, [obj]);
+        this.splice(index, 0, [obj], SplicePolicy.Additive);
 
         return exitCode;
     }
@@ -336,23 +332,27 @@ export class Context implements C.MetreContext {
     splice(start: number, count: number, replaceWith?: Array<Model>, splicePolicy?: SplicePolicy) {
         var PlaceholderModel = require("./placeholder"); // Recursive
         if (isNaN(splicePolicy)) {
-            splicePolicy = SplicePolicy.Destructive;
+            splicePolicy = SplicePolicy.Subtractive;
         }
         assert(!isNaN(start));
         assert(!isNaN(count));
+        if (splicePolicy === SplicePolicy.Additive) {
+            assert(!count, "You cannot remove anything in Additive mode");
+        }
         replaceWith = replaceWith || [];
 
         var replaceFrom = 0;
-        for (var i = this.idx + count + 1;
-                i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
-                this.body[i].placeholder && this.body[i].priority === C.Type.DURATION; ++i) {
-            ++replaceFrom;
+        if (splicePolicy === SplicePolicy.Subtractive) {
+            for (var i = this.idx + count + 1;
+                    i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
+                    this.body[i].placeholder && this.body[i].priority === C.Type.DURATION; ++i) {
+                ++replaceFrom;
+            }
+            count += replaceFrom;
         }
-        count += replaceFrom;
 
         if (splicePolicy === SplicePolicy.Masked) {
             var end = start + count - replaceWith.length;
-            debugger;
             for (var i = end - 1; i >= start; --i) {
                 var vertical = this.findVertical(m => !m.placeholder, i);
                 if (vertical.length > 1 || vertical.length === 1 && vertical[0] !== this.body[i]) {
@@ -414,10 +414,14 @@ export class Context implements C.MetreContext {
                 }
             }
         }
-        this._assertOffsetsOk();
+        this._assertAligned();
         if (splicePolicy === SplicePolicy.Masked) {
-            var clot = this.nextIdx(c => c.priority !== C.Type.DURATION);
+            var clot = start - 1;
+            while(this.body[clot + 1] && this.body[clot + 1].priority > C.Type.BARLINE) {
+                ++clot;
+            }
             this._realign(start, clot);
+            this._assertAligned();
         }
     }
 
@@ -430,11 +434,9 @@ export class Context implements C.MetreContext {
         var reals = bodies.map(b => <Array<Model>>[]);
         var aligned = bodies.map(b => <Array<Model>>[]);
 
-        for (var i = start; i < end; ++i) {
+        for (var i = start; i <= end; ++i) {
             for (var j = 0; j < bodies.length; ++j) {
-                if (bodies[j][i].priority !== C.Type.DURATION) {
-                    assert(false, "Realign only takes durations.");
-                }
+                assert(bodies[j][i].priority > C.Type.BARLINE, "Realign only takes durations and modifiers.");
                 if (bodies[j][i].placeholder) {
                     placeholders[j].push(bodies[j][i]);
                 } else {
@@ -462,7 +464,7 @@ export class Context implements C.MetreContext {
                 continue;
             }
             assert.equal(firstSize, aligned[j].length);
-            Array.prototype.splice.apply(this._staves[k].body, [start, end - start].concat(<any>aligned[j]));
+            Array.prototype.splice.apply(this._staves[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
 
             ++j;
         }
@@ -817,12 +819,19 @@ export class Context implements C.MetreContext {
         }
     }
 
-    private _assertOffsetsOk() {
+    private _assertAligned() {
         var expectedLength = 0;
+        var bodies: Array<C.IBody> = [];
         for (var i = 0; i < this._staves.length; ++i) {
             if (this._staves[i].body) {
                 expectedLength = expectedLength || this._staves[i].body.length;
                 assert.equal(expectedLength, this._staves[i].body.length, "All staves must be the same length");
+                bodies.push(this._staves[i].body);
+            }
+        }
+        for (var i = 0; i < bodies[0].length; ++i) {
+            for (var j = 1; j < bodies.length; ++j) {
+                assert.equal(bodies[j][i].priority, bodies[0][i].priority, "All staves must be aligned");
             }
         }
     }
@@ -855,13 +864,20 @@ export class Context implements C.MetreContext {
 
 export enum SplicePolicy {
     /**
-     * Remove elements from non-current parts, if needed.
+     * Remove elements from non-current parts, if needed or possible.
+     * This is the default policy.
      */
-    Destructive = 1,
+    Subtractive = 1,
+    /**
+     * Never remove elements from any part.
+     */
+    Additive = 2,
     /**
      * Never remove elements from non-current parts.
+     * This policy can only be used when splicing durations or duration placeholders
+     * from a sub-array with durations or duration placeholders.
      */
-    Masked = 2
+    Masked = 3
 }
 
 export interface ICustomAction {
@@ -1429,7 +1445,7 @@ class PrivIteratorComponent {
     }
 
     ensurePriorityIs(priority: number) {
-        assert.equal(this.nextPriority, priority, "New policy: priorities must now always match up");
+        assert.equal(this.nextPriority, priority, "Priorities must now always be aligned");
     }
 
     resetLine() {
@@ -1488,7 +1504,7 @@ class PrivIteratorComponent {
         var PlaceholderModel = require("./placeholder");
         ctx.splice(ctx.idx, 0, [new PlaceholderModel({
             _priority: C.Type[ctx.curr.priority]
-        }, C.Source.ANNOTATOR /* ? */)]);
+        }, C.Source.ANNOTATOR /* ? */)], SplicePolicy.Additive);
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
     }

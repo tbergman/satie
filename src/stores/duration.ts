@@ -164,6 +164,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
 
         if (!ctx.isBeam && this.inBeam) {
+            this.x = Math.max(this.x, ctx.x);
+            ctx.x = this.x + this.getWidth(ctx);
             this._handleTie(ctx);
             return C.IterationStatus.SUCCESS;
         } else if (!this.inBeam) {

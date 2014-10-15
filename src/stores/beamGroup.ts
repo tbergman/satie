@@ -28,9 +28,6 @@ class BeamGroupModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (ctx.prev().type === C.Type.PLACEHOLDER) {
-            this.x = ctx.x = ctx.prev().x;
-        }
         // A clef must exist on each line.
         if (this.beamCount) {
             this.beam = [];
@@ -88,6 +85,7 @@ class BeamGroupModel extends Model {
         })) {
             return mret;
         }
+        ctx.x = this.x;
         return C.IterationStatus.SUCCESS;
     }
 
@@ -146,7 +144,11 @@ class BeamGroupModel extends Model {
 
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
         var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BEAM_GROUP;
-        ctx.splice(ctx.idx - (replaceMode ? 1 : 0), replaceMode ? 1 : 0, [new BeamGroupModel({beam: beam, source: C.Source.ANNOTATOR})]);
+        var model = new BeamGroupModel({ beam: beam, source: C.Source.ANNOTATOR });
+        var offset = replaceMode ? 1 : 0;
+        var idx = ctx.idx - offset;
+        var spliceMode = replaceMode ? Annotator.SplicePolicy.Masked : Annotator.SplicePolicy.Subtractive;
+        ctx.splice(idx, offset, [model], spliceMode);
         return C.IterationStatus.RETRY_FROM_ENTRY;
     };
 

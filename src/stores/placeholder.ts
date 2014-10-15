@@ -58,16 +58,13 @@ class PlaceholderModel extends Model {
             return ctx.eraseCurrent();
         }
 
-        // See if the next real (not placeholder) model could replace this model
-        // (same type & starting beat). If so, remove everything between the
-        // previous element and that model, exclusive.
         var realItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER);
-        if (ctx.nextActualType === realItems[0].type) {
+        if (ctx.nextActualType === realItems[0].type && realItems[0].isNote) {
             var changed = false;
             while (ctx.body[ctx.idx].type === C.Type.PLACEHOLDER && realItems[0].ctxData &&
-                    (new C.Location(realItems[0].ctxData)).ge(loc)) {
+                    (new C.Location(realItems[0].ctxData)).eq(loc)) {
                 changed = true;
-                ctx.splice(ctx.idx, 1);
+                ctx.splice(ctx.idx, 1, null, Annotator.SplicePolicy.Masked);
             }
             if (changed) {
                 return C.IterationStatus.RETRY_CURRENT;
