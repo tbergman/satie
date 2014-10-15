@@ -71,9 +71,9 @@ class KeySignatureModel extends Model {
         return KeySignatureModel.getFlatCount(this.keySignature);
     }
     static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
+        var keySignature = ctx.prevKeySignature || { pitch: { pitch: "c" }, acc: 0, mode: C.MAJOR };
         return ctx.insertPast(new KeySignatureModel({
-            keySignature: ctx.prevKeySignature ||
-                {pitch: {pitch: "c"}, acc: 0, mode: C.MAJOR},
+            keySignature: keySignature,
             source: C.Source.ANNOTATOR
         }));
     };

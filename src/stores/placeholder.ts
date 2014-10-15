@@ -131,6 +131,7 @@ class PlaceholderModel extends Model {
                 return C.IterationStatus.RETRY_CURRENT;
             case C.Type.KEY_SIGNATURE:
                 if (!ctx.keySignature) {
+                    assert(ctx.prevKeySignature, "Undefined prevKeySignature!!");
                     ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
                     ctx.body[ctx.idx].source = this.source;
                     return C.IterationStatus.RETRY_CURRENT;
@@ -211,7 +212,7 @@ class PlaceholderModel extends Model {
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
                     C.Source.ANNOTATOR));
-        ctx.splice(ctx.idx, 1, missingBeats);
+        ctx.splice(ctx.idx, 1, missingBeats, Annotator.SplicePolicy.Masked);
         return C.IterationStatus.RETRY_LINE;
     }
 }

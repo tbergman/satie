@@ -103,7 +103,8 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
 
         var DurationModel = require("./duration"); // Recursive.
         ctx.splice(ctx.idx, nextIdx - ctx.idx,
-            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)));
+            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)),
+            Annotator.SplicePolicy.Masked);
         var after = ctx.idx + replaceWith.length;
         if (!n1.isRest) {
             for (var i = ctx.idx; i < after - 1; ++i) {
@@ -129,7 +130,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                 (pattern[pidx + 1] && Math.abs(b3 - (beat + be + pattern[pidx + 1]
                     .getBeats(ctx))) < _e))) {
             n1.count /= 2; // Double the length.
-            ctx.splice(ctx.idx + 1, nextIdx - ctx.idx);
+            ctx.splice(ctx.idx + 1, nextIdx - ctx.idx, null, Annotator.SplicePolicy.Masked);
             return C.IterationStatus.RETRY_LINE;
         }
 
@@ -190,7 +191,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                         var dotFactor = Math.pow(1.5, dots);
                         if (Math.abs(ncb - ctx.timeSignature.beatType/po2*dotFactor) < _e) {
                             _.times(toErase, function () {
-                                ctx.splice(ctx.idx + 1, nextIdx - ctx.idx);
+                                ctx.splice(ctx.idx + 1, nextIdx - ctx.idx, null, Annotator.SplicePolicy.Masked);
                             });
                             n1.dots = dots;
                             n1.actualTuplet = n1.tuplet = null;

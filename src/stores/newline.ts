@@ -68,7 +68,12 @@ class NewlineModel extends Model {
         ctx.y += ctx.lineSpacing;
         if (ctx.clef) {
             // This is guarded in case another stave called a RETRY_CURRENT.
+            // (Note: This is shady.)
             ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
+        } else if (global.console) {
+            console.warn("Not updating prevClefByStave because clef is not set. This is shady.");
+        }
+        if (ctx.keySignature) {
             ctx.prevKeySignature = ctx.keySignature;
         }
         ctx.smallest = 10000;
