@@ -687,7 +687,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
         this._cleanupFn = null;
         this._reparse(action.postData);
-        debugger;
         this.dangerouslyMarkRendererDirty();
         this.emit(CHANGE_EVENT);
         this.emit(ANNOTATE_EVENT);
