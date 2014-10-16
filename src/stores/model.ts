@@ -15,7 +15,7 @@ import _ = require("lodash");
  * Subclasses of Models handle the gap between the abstract representation of
  * a score (as, for example, parsed in lylite.jison) and the actual rendering
  * (which is done by components in ./primitives).
- *
+ * 
  * In particular, classes which extend Model provide three two functions:
  *   - annotateImpl: adds any missing information (default values) not provided
  *      by the parser, adds any missing elements (e.g., clefs, time signatures,
@@ -23,7 +23,7 @@ import _ = require("lodash");
  *   - render: returns the instance of a React component which renders the
  *      component. Does not accept anything. Any processing should be done in
  *      annotateImpl.
- *
+ * 
  * To see the kind of information held by Models, in your web browser's
  * console, look at 'SongEditorStore.staves()[...].body'. Every item is a Model.
  */
@@ -39,6 +39,9 @@ class Model {
 
         var ret: C.IterationStatus = this.annotateImpl(ctx);
         assert(ret !== undefined);
+        if (ret === C.IterationStatus.SUCCESS && this.source === C.Source.USER_PROPOSED) {
+            this.source = C.Source.USER;
+        }
         return ret;
     }
 
@@ -164,10 +167,28 @@ class Model {
         if (v) { this._flags = this._flags | Flags.SELECTED;
         } else { this._flags = this._flags & ~Flags.SELECTED; } }
 
-    get source(): C.Source { return !!(this._flags & Flags.ANNOTATOR) ? C.Source.ANNOTATOR : C.Source.USER; }
+    get source(): C.Source {
+        if (!!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
+            return C.Source.USER_PROPOSED;
+        } else if (!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
+            return C.Source.USER;
+        } else if (!(this._flags & Flags.PROPOSED) && !!(this._flags & Flags.ANNOTATOR)) {
+            return C.Source.ANNOTATOR;
+        }
+        assert(false, "Unknown source");
+    }
     set source(source: C.Source) {
-        if (source === C.Source.ANNOTATOR) { this._flags = this._flags | Flags.ANNOTATOR;
-        } else { this._flags = this._flags & ~Flags.ANNOTATOR; } }
+        if (source === C.Source.ANNOTATOR) {
+            this._flags = this._flags | Flags.ANNOTATOR;
+            this._flags = this._flags & ~Flags.PROPOSED;
+        } else if (source === C.Source.USER) {
+            this._flags = this._flags & ~Flags.ANNOTATOR;
+            this._flags = this._flags & ~Flags.PROPOSED;
+        } else if (source === C.Source.USER_PROPOSED) {
+            this._flags = this._flags & ~Flags.ANNOTATOR;
+            this._flags = this._flags | Flags.PROPOSED;
+        }
+    }
 
     toJSON(): {} {
         return {
@@ -179,7 +200,7 @@ class Model {
 
     /**
      * Return a Model that is equivalent to one that has been JSON.stringified.
-     *
+     * 
      * @param json Model, stringified model, or parsed stringified model
      * @param exisistingObjects Optional dictionary from keys to existing Models.
      *   If a model with the same key exists, it will be updated. Otherwise, a new
@@ -189,7 +210,7 @@ class Model {
 
     /**
      * Return a Model that is equivalent to one that has been JSON.stringified.
-     *
+     * 
      * @param json Model, stringified model, or parsed stringified model
      * @param exisistingObjects Optional dictionary from keys to existing Models.
      *   If a model with the same key exists, it will be updated. Otherwise, a new
@@ -258,7 +279,8 @@ enum Flags {
     IN_BEAM = 2 << 0,
     PLACEHOLDER = 2 << 1,
     SELECTED = 2 << 2,
-    ANNOTATOR = 2 << 3
+    ANNOTATOR = 2 << 3,
+    PROPOSED = 2 << 4
     // model-specific = 2 << 6
 }
 

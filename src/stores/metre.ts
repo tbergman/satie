@@ -101,7 +101,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
 
         var DurationModel: typeof DurationModelType = require("./duration");
         ctx.splice(ctx.idx, nextIdx - ctx.idx,
-            replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)),
+            replaceWith.map(m => new DurationModel(m, C.Source.USER_PROPOSED)),
             Annotator.SplicePolicy.Masked);
         var after = ctx.idx + replaceWith.length;
         if (!n1.isRest) {

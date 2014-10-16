@@ -227,7 +227,7 @@ export interface IDuration {
 export interface IDurationSpec {
     /**
      * The base of the note, as encoded by Lilypond.
-     *
+     * 
      * A quarter note is '4', a half note is '8', ...
      */
     count: number;
@@ -813,7 +813,20 @@ export enum Source {
     /**
      * The element was created to satisfy the annotation engine.
      */
-    ANNOTATOR
+    ANNOTATOR,
+
+    /**
+     * The element was created from an action performed by the user, but may be split or joined
+     * initially to satisfy a rhythmic spell-check. Becomes USER after succesful annotation.
+     */
+    USER_PROPOSED,
+
+    /**
+     * The element was created to satisfy the annotation engine, and may be removed.
+     * 
+     * (Unused so far.)
+     */
+    ANNOTATOR_PROPOSED
 }
 
 /**

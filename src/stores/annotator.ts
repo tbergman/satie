@@ -343,6 +343,7 @@ export class Context implements C.MetreContext {
             assert(!count, "You cannot remove anything in Additive mode");
         }
         replaceWith = replaceWith || [];
+        this._assertAligned();
 
         var replaceFrom = 0;
         if (splicePolicy === SplicePolicy.Subtractive) {
@@ -408,15 +409,17 @@ export class Context implements C.MetreContext {
                             }, replaceWith[j].source));
                         }
                     }
-                    if (replaceWith && replaceWith.length && count === 0 && ctxStartData) { // XXX
+                    if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
                         while (startPriority > C.Type.BARLINE &&
                             replaceWith[0].priority > C.Type.BARLINE &&
                             stave.body[start + offset] && stave.body[start + offset].ctxData &&
+                            stave.body[start + offset].priority > C.Type.BARLINE &&
                             new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
 
+                    debugger;
                     Array.prototype.splice.apply(stave.body, [start + offset, count]
                         .concat(<any>placeholders));
                 }
