@@ -30,8 +30,9 @@ import renderUtil = require("../util/renderUtil");
  *     after the change is made, the staves are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: C.ISongEditor) {
+    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
         this._staves = staves;
+        this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
 
         if (layout.snapshot) {
@@ -365,8 +366,14 @@ export class Context implements C.MetreContext {
             }
         }
 
-        var ctxStartData = this.body[start].ctxData;
-        var startPriority = this.body[start].priority;
+        if (this.body[start]) {
+            var ctxStartData = this.body[start].ctxData;
+            var startPriority = this.body[start].priority;
+        } else {
+            assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
+            console.log(this._staves, start, end);
+            assert(false);
+        }
 
         for (var i = 0; i < this._staves.length; ++i) {
             var stave = this._staves[i];
@@ -401,9 +408,9 @@ export class Context implements C.MetreContext {
                             }, replaceWith[j].source));
                         }
                     }
-                    if (replaceWith && replaceWith.length && count === 0) { // XXX
-                        while (startPriority === C.Type.DURATION &&
-                            replaceWith[0].priority === C.Type.DURATION &&
+                    if (replaceWith && replaceWith.length && count === 0 && ctxStartData) { // XXX
+                        while (startPriority > C.Type.BARLINE &&
+                            replaceWith[0].priority > C.Type.BARLINE &&
                             stave.body[start + offset] && stave.body[start + offset].ctxData &&
                             new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
@@ -435,7 +442,14 @@ export class Context implements C.MetreContext {
 
         for (var i = start; i <= end; ++i) {
             for (var j = 0; j < bodies.length; ++j) {
-                assert(bodies[j][i].priority > C.Type.BARLINE, "Realign only takes durations and modifiers.");
+                if (this._assertionPolicy !== AssertionPolicy.Strict && !bodies[j][i]) {
+                    break;
+                }
+                var valid = bodies[j][i].priority > C.Type.BARLINE;
+                if (this._assertionPolicy === AssertionPolicy.Strict) {
+                    assert(valid, "Realign only takes durations and modifiers.");
+                }
+
                 if (bodies[j][i].placeholder) {
                     placeholders[j].push(bodies[j][i]);
                 } else {
@@ -462,7 +476,9 @@ export class Context implements C.MetreContext {
             if (!this._staves[k].body) {
                 continue;
             }
-            assert.equal(firstSize, aligned[j].length);
+            if (this._assertionPolicy !== AssertionPolicy.NoAssertions) {
+                assert.equal(firstSize, aligned[j].length);
+            }
             Array.prototype.splice.apply(this._staves[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
 
             ++j;
@@ -756,7 +772,7 @@ export class Context implements C.MetreContext {
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._staves, mutation, cursor);
+        for (var it = new PrivIterator(this, from, this._staves, mutation, cursor, this._assertionPolicy);
                 !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
@@ -819,22 +835,25 @@ export class Context implements C.MetreContext {
     }
 
     private _assertAligned() {
-        var expectedLength = 0;
-        var bodies: Array<C.IBody> = [];
-        for (var i = 0; i < this._staves.length; ++i) {
-            if (this._staves[i].body) {
-                expectedLength = expectedLength || this._staves[i].body.length;
-                assert.equal(expectedLength, this._staves[i].body.length, "All staves must be the same length");
-                bodies.push(this._staves[i].body);
+        if (this._assertionPolicy === AssertionPolicy.Strict) {
+            var expectedLength = 0;
+            var bodies: Array<C.IBody> = [];
+            for (var i = 0; i < this._staves.length; ++i) {
+                if (this._staves[i].body) {
+                    expectedLength = expectedLength || this._staves[i].body.length;
+                    assert.equal(expectedLength, this._staves[i].body.length, "All staves must be the same length");
+                    bodies.push(this._staves[i].body);
+                }
             }
-        }
-        for (var i = 0; i < bodies[0].length; ++i) {
-            for (var j = 1; j < bodies.length; ++j) {
-                assert.equal(bodies[j][i].priority, bodies[0][i].priority, "All staves must be aligned");
+            for (var i = 0; i < bodies[0].length; ++i) {
+                for (var j = 1; j < bodies.length; ++j) {
+                    assert.equal(bodies[j][i].priority, bodies[0][i].priority, "All staves must be aligned");
+                }
             }
         }
     }
 
+    private _assertionPolicy: AssertionPolicy;
 
     /**
      * Whether this context is being run by a beam group
@@ -877,6 +896,11 @@ export enum SplicePolicy {
      * from a sub-array with durations or duration placeholders.
      */
     Masked = 3
+}
+
+export enum AssertionPolicy {
+    Strict = 0,
+    NoAssertions = 1
 }
 
 export interface ICustomAction {
@@ -976,12 +1000,14 @@ export function recordMetreData(staves: Array<C.IStave>) {
  * Internal. Iterates over a set of bodies in staves and annotates them. Owned by an Annotator.
  */
 class PrivIterator {
-    constructor(parent: Context, from: C.ILocation, staves: Array<C.IStave>, mutation: ICustomAction, cursor: C.IVisualCursor) {
+    constructor(parent: Context, from: C.ILocation, staves: Array<C.IStave>,
+            mutation: ICustomAction, cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._parent = parent;
         this._staves = staves;
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = JSON.parse(JSON.stringify(from));
+        this._assertionPolicy = assertionPolicy;
         this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         var visibleSidx = -1;
         recordMetreData(this._staves);
@@ -995,7 +1021,8 @@ class PrivIterator {
                     /* stave index */ i,
                     /* visible stave index*/ visibleSidx,
                     /* custom action */ isMutable ? mutation : null,
-                    /* visual cursor */ cursor));
+                    /* visual cursor */ cursor,
+                    this._assertionPolicy));
             }
         }
         this._assertOffsetsOK();
@@ -1197,12 +1224,15 @@ class PrivIterator {
     eofJustificationDirty: boolean = true;
 
     private _assertOffsetsOK() {
+        if (this._assertionPolicy === AssertionPolicy.NoAssertions) {
+            return;
+        }
         var n = this._components[0]._idx;
         var len = this._components[0].len;
         for (var k = 0; k < this._components.length; ++k) {
             assert(n === this._components[k]._idx, "Invalid offset");
             if (len !== this._components[k].len) {
-                console.warn("Mismatched body lengths");
+                assert(false, "Mismatched body lengths");
             }
         }
     }
@@ -1325,6 +1355,7 @@ class PrivIterator {
     private _from: C.ILocation;
     private _parent: Context;
     private _staves: Array<C.IStave>;
+    private _assertionPolicy: AssertionPolicy;
 }
 
 
@@ -1337,12 +1368,13 @@ class PrivIterator {
  */
 class PrivIteratorComponent {
     constructor(from: C.ILocation, stave: C.IStave, idx: number, visibleIdx: number, mutation: ICustomAction,
-            cursor: C.IVisualCursor) {
+            cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._stave = stave;
         this._body = stave.body;
         this._sidx = idx;
         this._visibleSidx = visibleIdx;
         this._cursor = cursor;
+        this._assertionPolicy = assertionPolicy;
         this.reset(from);
 
         assert(this._location.eq(from));
@@ -1444,7 +1476,15 @@ class PrivIteratorComponent {
     }
 
     ensurePriorityIs(priority: number) {
-        assert.equal(this.nextPriority, priority, "Priorities must now always be aligned");
+        if (this._assertionPolicy === AssertionPolicy.Strict) {
+            assert.equal(this.nextPriority, priority, "Priorities must be aligned");
+        } else if (this.nextPriority !== priority) {
+            var nextIsPlaceholder = this._body[this._idx + 1] && this._body[this._idx + 1].placeholder;
+            var PlaceholderModel = require("./placeholder");
+            this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
+                new PlaceholderModel({ _priority: C.Type[priority] },
+                    C.Source.ANNOTATOR /* ? */));
+        }
     }
 
     resetLine() {
@@ -1549,6 +1589,7 @@ class PrivIteratorComponent {
         return exitCode;
     }
 
+    private _assertionPolicy: AssertionPolicy;
     private _beat: number = null;
     private _nextBeat: number = null;
     private _body: C.IBody;

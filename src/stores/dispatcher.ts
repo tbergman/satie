@@ -126,7 +126,7 @@ class Dispatcher implements C.IDispatcher {
      * @param {object} payload The data from the Action.
      */
     private _addPromise(callback: (payload: any) => boolean, payload: any) {
-        this._promises.push(new Promise.Promise(function(resolve, reject) {
+        this._promises.push(new Promise.Promise(function resolvePromise(resolve, reject) {
             if (callback(payload)) {
                 resolve(payload);
             } else {

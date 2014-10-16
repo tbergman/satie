@@ -38,7 +38,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 staves: parsed,
                 staveIdx: 0
             };
-            context = new Annotator.Context(parsed, opts, songEditor);
+            context = new Annotator.Context(parsed, opts, songEditor, Annotator.AssertionPolicy.NoAssertions);
             context.annotate({ bar: 1, beat: 0 }, null, null, true);
         });
         _.each(tests, test => it(

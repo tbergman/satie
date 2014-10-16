@@ -130,9 +130,12 @@ class Model {
         for (var i = 0; i < staves.length; ++i) {
             for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
                 var item = staves[i].body[j];
-                if (item.source === C.Source.ANNOTATOR) {
-                    assert(false, "Not implemented");
-                    staves[i].body.splice(j, 1);
+                if (item.source === C.Source.ANNOTATOR && !item.placeholder) {
+                    for (var k = 0; k < staves.length; ++k) {
+                        if (staves[k].body) {
+                            staves[k].body.splice(j, 1);
+                        }
+                    }
                     --j;
                 } else if (item.inBeam) {
                     item.inBeam = false;

@@ -214,7 +214,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(this._songEditor.staves, null, this._songEditor);
+            var ctx = new Annotator.Context(this._songEditor.staves, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {

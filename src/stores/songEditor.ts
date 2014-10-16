@@ -162,7 +162,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
             var ctx = new Annotator.Context(staves, {
                 indent: 0
-            }, this);
+            }, this, Annotator.AssertionPolicy.NoAssertions);
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
@@ -322,7 +322,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     // STAVE MUTATORS // 
     ////////////////////
 
-    ctxFromSnapshot(pointerData: C.IPointerData, staves: Array<C.IStave>): Annotator.Context {
+    ctxFromSnapshot(pointerData: C.IPointerData, staves: Array<C.IStave>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
         var i: number;
 
         if (!pointerData) {
@@ -333,7 +333,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             var ctx = new Annotator.Context(staves, {
                 indent: 15, // FIXME
                 snapshot: this._recreateSnapshot(pointerData.musicLine)
-            }, this);
+            }, this, assertionPolicy);
             for (i = 0; i < staves.length; ++i) {
                 this._linesToUpdate[i + "_" + ctx.line] = true;
             }
@@ -941,7 +941,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._peerRelay = new WebSocket("ws://" + window.location.host +
             "/api/v0/song/_" + id + "/peerRelay");
         this._peerRelay.onmessage = this._handleRelayMessage.bind(this);
-        // TODO : this._peerRelay.{onerror | onopen | onclose }
+        // TODO : this._peerRelay.{onerror | onopen | onclose}
     }
 
     /**
@@ -954,7 +954,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             pageSize: C.IPageSize,
             profile: boolean,
             disableRecording: boolean,
-            godAction?: Function) {
+            godAction?: Function,
+            assertionPolicy?: Annotator.AssertionPolicy) {
+
+        assertionPolicy = isNaN(assertionPolicy) ? Annotator.AssertionPolicy.Strict : assertionPolicy;
 
         staves = staves || this._staves;
 
@@ -998,7 +1001,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         // beat, what accidentals have been set, and what accidentals are
         // present on other staffs.  Contexts are retrieved from snapshots
         // when modifying a line other than the first.
-        var context = this.ctxFromSnapshot(pointerData, staves) || new Annotator.Context(staves, layout, this);
+        var context = this.ctxFromSnapshot(pointerData, staves, assertionPolicy) ||
+            new Annotator.Context(staves, layout, this, assertionPolicy);
         if (context.line !== 0) {
             assert(Object.keys(context.prevClefByStave).length >= 1, "Previous clefs were not stored");
         }
@@ -1231,7 +1235,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             SongEditorStore.PROFILER_ENABLED = true;
         }
 
-        this._annotate(null, null, null, null, null, true);
+        this._annotate(null, null, null, null, null, true, null, Annotator.AssertionPolicy.NoAssertions);
         this._markLKG();
 
         if (profile) {

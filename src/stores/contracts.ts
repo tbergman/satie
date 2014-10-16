@@ -787,7 +787,6 @@ export interface ISongEditor {
     tool: any;
     visualCursor: IVisualCursor;
 
-    ctxFromSnapshot: (pointerData: IPointerData, staves: Array<IStave>) => Annotator.Context;
     dangerouslyHidePreview: (action: IFluxAction) => void;
     dangerouslyMarkRenderDone: () => void;
     dangerouslyMarkRendererDirty: () => void;

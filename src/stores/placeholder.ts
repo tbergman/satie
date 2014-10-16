@@ -72,7 +72,7 @@ class PlaceholderModel extends Model {
         }
 
         // Remove extraneous placeholders that may have been caused by the above operation.
-        while (!ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
+        while (ctx.next() && !ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
             ctx.eraseFuture(ctx.idx + 1);
         }
 
