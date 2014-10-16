@@ -306,38 +306,45 @@ parts
 		{
 			resetPartState();
 			$$ = $1.concat($2);
+			$$.isScale = $1.isScale;
 		}
   | parts header                      
 		{
 			resetPartState();
 			$$ = $1.concat({header: $2});
+			$$.isScale = $1.isScale;
 		}
   | parts paper                       
 		{
 			resetPartState();
 			$$ = $1.concat({paper: $2});
+			$$.isScale = $1.isScale;
 		}
   | parts musicExpr                   
 		{
 			$2.instrument = partInstrument;
 			resetPartState();
 			$$ = $1.concat({body: $2});
+			$$.isScale = $1.isScale;
 		}
   | parts 'NEW' 'NEW_STAFF' musicExpr 
 		{
 			$4.instrument = partInstrument;
 			resetPartState();
 			$$ = $1.concat({body: $4});
+			$$.isScale = $1.isScale;
 		}
   | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
         {
 			resetPartState();
             $$ = $1.concat($4);
+			$$.isScale = $1.isScale;
         }
   | parts newStaffExpr                
 		{
 			resetPartState();
 			$$ = $1.concat($2);
+			$$.isScale = $1.isScale;
 		}
   ;
 
