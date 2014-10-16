@@ -9,7 +9,7 @@ import Brace = require("./_brace");
 import Group = require("./_group");
 import StaveLines = require("./_staveLines");
 
-export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
+class NewlineView extends ReactTS.ReactComponentBase<NewlineView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
@@ -29,14 +29,15 @@ export class NewlineView extends ReactTS.ReactComponentBase<IProps, IState> {
     }
 };
 
-export var Component = ReactTS.createReactComponent(NewlineView);
 
-export interface IProps {
-    key: number;
-    spec: NewlineModel;
-    fontSize: number;
+module NewlineView {
+    export var Component = ReactTS.createReactComponent(NewlineView);
+
+    export interface IProps {
+        key: number;
+        spec: NewlineModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
+export = NewlineView;

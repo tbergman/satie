@@ -10,6 +10,7 @@ import assert = require("assert");
 import _ = require("lodash");
 import TSEE = require("./tsee");
 
+import AnnotatorType = require("./annotator"); // Cyclic dependency. For types only.
 import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
@@ -177,7 +178,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     static USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
 
     private _continuePlay() {
-        var Annotator = require("./annotator"); // Recursive.
+        var Annotator: typeof AnnotatorType = require("./annotator");
         var beats: number;
         var delays: Array<number> = [];
         _.each(this._remainingActions || [], m => {
@@ -213,7 +214,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(this._songEditor.staves, {});
+            var ctx = new Annotator.Context(this._songEditor.staves, null, this._songEditor);
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {

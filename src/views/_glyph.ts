@@ -17,7 +17,7 @@ if (typeof window !== "undefined") {
     require("./_glyph.less");
 }
 
-export class Glyph extends ReactTS.ReactComponentBase<IProps, {}> {
+class Glyph extends ReactTS.ReactComponentBase<Glyph.IProps, {}> {
     renderSVG() {
         var px = this.props.fontSize ?
                 this.props.x*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
@@ -75,7 +75,7 @@ export class Glyph extends ReactTS.ReactComponentBase<IProps, {}> {
             glyphName: this.props.glyphName});
     }
 
-    shouldComponentUpdate(nextProps: IProps) {
+    shouldComponentUpdate(nextProps: Glyph.IProps) {
         return this.props.x !== nextProps.x ||
             this.props.y !== nextProps.y ||
             this.props.fill !== nextProps.fill ||
@@ -87,14 +87,19 @@ export class Glyph extends ReactTS.ReactComponentBase<IProps, {}> {
 
 Glyph.applyMixins(RenderableMixin);
 
-export var Component = ReactTS.createReactComponent(Glyph);
+module Glyph {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Glyph);
 
-export interface IProps {
-    fill: string;
-    fontSize: number;
-    glyphName: string;
-    "selection-info"?: string;
-    transform?: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        fill: string;
+        fontSize: number;
+        glyphName: string;
+        "selection-info"?: string;
+        transform?: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = Glyph;

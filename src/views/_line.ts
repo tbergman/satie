@@ -10,7 +10,7 @@ var Victoria = require("../renderer/victoria/victoria");
 
 var VRect = Victoria.VRect;
 
-export class Line extends ReactTS.ReactComponentBase<IProps, {}> {
+class Line extends ReactTS.ReactComponentBase<Line.IProps, {}> {
     renderSVG() {
         return React.DOM.line({
             className: this.props.className,
@@ -53,14 +53,18 @@ export class Line extends ReactTS.ReactComponentBase<IProps, {}> {
 
 Line.applyMixins(RenderableMixin);
 
-export var Component = ReactTS.createReactComponent(Line);
+module Line {
+    export var Component = ReactTS.createReactComponent(Line);
 
-export interface IProps {
-    className?: string;
-    stroke: string;
-    strokeWidth: number;
-    x1: number;
-    x2: number;
-    y1: number;
-    y2: number;
+    export interface IProps {
+        className?: string;
+        stroke: string;
+        strokeWidth: number;
+        x1: number;
+        x2: number;
+        y1: number;
+        y2: number;
+    }
 }
+
+export = Line;

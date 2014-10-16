@@ -8,7 +8,7 @@ import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-export class NoteMarking extends ReactTS.ReactComponentBase<IProps, {}> {
+class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
@@ -94,15 +94,19 @@ export class NoteMarking extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(NoteMarking);
+module NoteMarking {
+    export var Component = ReactTS.createReactComponent(NoteMarking);
 
-export interface IProps {
-    direction: number; // -1 or 1
-    fontSize: number;
-    idx: number;
-    line: number;
-    marking: string;
-    notehead: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        direction: number; // -1 or 1
+        fontSize: number;
+        idx: number;
+        line: number;
+        marking: string;
+        notehead: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = NoteMarking;

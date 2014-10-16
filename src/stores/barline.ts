@@ -9,11 +9,12 @@ import Model = require("./model");
 import _ = require("lodash");
 import diff = require("diff");
 
-import C = require("./contracts");
 import Annotator = require("./annotator");
+import C = require("./contracts");
+import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
 import EndMarkerModel = require("./endMarker");
-import Metre = require("./metre");
 import KeySignatureModel = require("./keySignature");
+import Metre = require("./metre");
 import TimeSignatureModel = require("./timeSignature");
 
 /**
@@ -48,9 +49,9 @@ class BarlineModel extends Model {
         }
         if (!okay) {
             if (i === -1) { // Beginning of document.
-                var DurationModel_r = require("./duration"); // Recursive.
+                var DurationModel: typeof DurationModelType = require("./duration");
                 var fullRest = Metre.wholeNote(ctx)
-                    .map(spec => new DurationModel_r(spec, C.Source.ANNOTATOR));
+                    .map(spec => new DurationModel(spec, C.Source.ANNOTATOR));
                 _.each(fullRest, (r) => {
                     r.isRest = true;
                     ctx.insertPast(r);
@@ -88,13 +89,14 @@ class BarlineModel extends Model {
                 }
             }
             if (!okay) {
-                var DurationModel = require("./duration"); // Recursive.
+                var DurationModel: typeof DurationModelType = require("./duration");
                 var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, C.Source.ANNOTATOR));
                 for (i = 0; i < whole.length; ++i) {
-                    whole[i].chord = [{ pitch: "r"}];
+                    whole[i].chord = [{ pitch: "r", acc: null, octave: null }];
                     whole[i].tie = false;
                 }
-                Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(whole));
+                // This is dangerous, and probably wrong.
+                Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(<any>whole));
                 return C.IterationStatus.RETRY_LINE;
             }
         }

@@ -1,5 +1,9 @@
 /**
  * Renders a key signature. Not responsible for calculating the width.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import ReactTS = require("react-typescript");
@@ -9,7 +13,7 @@ import Accidental = require("./_accidental");
 import Group = require("./_group");
 import KeySignatureModel = require("../stores/keySignature");
 
-export class KeySignature extends ReactTS.ReactComponentBase<IProps, IState> {
+class KeySignature extends ReactTS.ReactComponentBase<KeySignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
@@ -79,14 +83,14 @@ var flats: { [key: string]: Array<number> } = {
     tenor: [3.5, 5, 3, 4.5, 2.5, 4, 2]
 };
 
-export interface IProps {
-    key: number;
-    spec: KeySignatureModel;
-    fontSize: number;
+module KeySignature {
+    export var Component = ReactTS.createReactComponent(KeySignature);
+
+    export interface IProps {
+        key: number;
+        spec: KeySignatureModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
-
-export var Component = ReactTS.createReactComponent(KeySignature);
+export = KeySignature;

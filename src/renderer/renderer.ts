@@ -31,7 +31,7 @@ var useGL = (typeof global.libripienoclient !== "undefined") ||
 
 renderUtil.useGL = useGL;
 
-var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses.Molasses = useGL
+var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses = useGL
     ? Victoria : Molasses.Component;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
@@ -43,7 +43,7 @@ var html = React.DOM;
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
  */
-export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRendererState> {
+class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Renderer.IRendererState> {
     render() {
         if (PROFILER_ENABLED) {
             console.time("render");
@@ -125,7 +125,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
                             key: "HEADER",
                             model: stave.header});
                     } else if (stave.body) {
-                        return Group({key: idx, style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
+                        return Group({key: idx, style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
                             _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
                                 if (obj.type === C.Type.NEWLINE) {
                                     memo.push([]);
@@ -201,7 +201,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
 
                 (pidx === this.state.visualCursor.annotatedPage) &&
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
-                            style: {fontSize: fontSize*FONT_SIZE_FACTOR + "px"}},
+                            style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
                         Line.Component({
                             x1: this.state.visualCursor.annotatedObj.x - 0.2,
                             x2: this.state.visualCursor.annotatedObj.x - 0.2,
@@ -250,7 +250,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         return ret;
     }
 
-    componentWillReceiveProps(newProps: IRendererProps) {
+    componentWillReceiveProps(newProps: Renderer.IRendererProps) {
         if (this.props.tool !== newProps.tool) {
             if (this.props.tool) {
                 this.props.tool.toolWillBeUnactive(this.props.store);
@@ -429,7 +429,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         };
     }
 
-    getPositionForMouse(event: React.MouseEvent): IPosInfo {
+    getPositionForMouse(event: React.MouseEvent): Renderer.IPosInfo {
         var target: Element;
         if (useGL) {
             var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
@@ -452,8 +452,8 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         svg_pt.y = event.clientY;
         var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
         return {
-            x: pt.x / this.props.staveHeight / FONT_SIZE_FACTOR - 0.15,
-            y: pt.y / this.props.staveHeight / FONT_SIZE_FACTOR,
+            x: pt.x / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR - 0.15,
+            y: pt.y / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR,
             page: parseInt(svg_elt.getAttribute("data-page"), 10),
             selectionInfo: target.getAttribute("data-selection-info")
         };
@@ -583,7 +583,7 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
         });
     }
 
-    handleMouseMoveThrottled = _.throttle((mouse: IPosInfo) => {
+    handleMouseMoveThrottled = _.throttle((mouse: Renderer.IPosInfo) => {
         var data = this._getPointerData(mouse);
         var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
         if (fn === "hide" || !data.obj) {
@@ -758,30 +758,33 @@ export class Renderer extends ReactTS.ReactComponentBase<IRendererProps, IRender
     _cleanup: () => void = null;
 }
 
-export var Component = ReactTS.createReactComponent(Renderer);
+module Renderer {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Renderer);
 
-export interface IRendererProps {
-    context?: Annotator.Context;
-    cursor?: C.IVisualCursor;
-    dispatcher?: C.IDispatcher;
-    marginTop?: number;
-    pageSize?: C.IPageSize;
-    raw?: boolean;
-    staveHeight?: number;
-    staves?: Array<C.IStave>;
-    store?: C.ISongEditor;
-    tool?: Tool;
-    top?: number;
-    selection?: Array<Model>;
-    height?: number;
-    history?: History.History;
-    paper?: C.Paper;
-}
+    export interface IRendererProps {
+        context?: Annotator.Context;
+        cursor?: C.IVisualCursor;
+        dispatcher?: C.IDispatcher;
+        marginTop?: number;
+        pageSize?: C.IPageSize;
+        raw?: boolean;
+        staveHeight?: number;
+        staves?: Array<C.IStave>;
+        store?: C.ISongEditor;
+        tool?: Tool;
+        top?: number;
+        selection?: Array<Model>;
+        height?: number;
+        history?: History.History;
+        paper?: C.Paper;
+    }
 
-export interface IRendererState {
-    selectionRect?: IRect;
-    visualCursor?: C.IVisualCursor;
-    mouse?: C.IMouse;
+    export interface IRendererState {
+        selectionRect?: IRect;
+        visualCursor?: C.IVisualCursor;
+        mouse?: C.IMouse;
+    }
 }
 
 
@@ -896,8 +899,11 @@ interface ILineState {
 
 }
 
-// Ratio between SVG coordinate system and 1mm.
-export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
+module Renderer {
+    "use strict";
+    // Ratio between SVG coordinate system and 1mm.
+    export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
+}
 
 var _pointerData: C.IPointerData = {
     staveIdx: null,
@@ -913,20 +919,25 @@ interface IPage {
     idx: number;
 }
 
-export interface IPosInfo {
-    x: number;
-    y: number;
-    page: number;
-    selectionInfo: any;
+module Renderer {
+    "use strict";
+    export interface IPosInfo {
+        x: number;
+        y: number;
+        page: number;
+        selectionInfo: any;
+    }
+
+    export interface IRect {
+        start: {
+            x: number;
+            y: number;
+        };
+        end: {
+            x: number;
+            y: number;
+        };
+    }
 }
 
-export interface IRect {
-    start: {
-        x: number;
-        y: number;
-    };
-    end: {
-        x: number;
-        y: number;
-    };
-}
+export = Renderer;

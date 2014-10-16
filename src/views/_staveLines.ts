@@ -9,7 +9,7 @@ import Group = require("./_group");
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 
-export class StaveLines extends ReactTS.ReactComponentBase<IProps, {}> {
+class StaveLines extends ReactTS.ReactComponentBase<StaveLines.IProps, {}> {
     render() {
         return Group(null,
             _.times(5, i => Line.Component({
@@ -31,10 +31,14 @@ export class StaveLines extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(StaveLines);
+module StaveLines {
+    export var Component = ReactTS.createReactComponent(StaveLines);
 
-export interface IProps {
-    width: number;
-    x: number;
-    y: number;
+    export interface IProps {
+        width: number;
+        x: number;
+        y: number;
+    }
 }
+
+export = StaveLines;

@@ -11,7 +11,7 @@ var Victoria = require("../renderer/victoria/victoria");
 
 var VBezier = Victoria.VBezier;
 
-export class Bezier extends ReactTS.ReactComponentBase<IProps, {}> {
+class Bezier extends ReactTS.ReactComponentBase<Bezier.IProps, {}> {
     renderSVG() {
         var f = this.props.fontSizeFactor;
         return React.DOM.path({
@@ -45,14 +45,17 @@ export class Bezier extends ReactTS.ReactComponentBase<IProps, {}> {
 
 Bezier.applyMixins(RenderableMixin);
 
-export interface IProps {
-    fill: string;
-    fontSizeFactor: number;
-    stroke: string;
-    strokeWidth: number;
-    x1: number; x2: number; x3: number; x4: number; x5: number; x6: number;
-    y1: number; y2: number; y3: number; y4: number; y5: number; y6: number;
+module Bezier {
+    export interface IProps {
+        fill: string;
+        fontSizeFactor: number;
+        stroke: string;
+        strokeWidth: number;
+        x1: number; x2: number; x3: number; x4: number; x5: number; x6: number;
+        y1: number; y2: number; y3: number; y4: number; y5: number; y6: number;
+    }
+
+    export var Component = ReactTS.createReactComponent(Bezier);
 }
 
-export var Component = ReactTS.createReactComponent(Bezier);
-
+export = Bezier;

@@ -6,18 +6,20 @@
 
 import _ = require("lodash");
 import assert = require("assert");
+import TSEE = require("./tsee");
 
+import Annotator = require("./annotator");
 import C = require("./contracts");
 import Collab = require("./collab");
-import Annotator = require("./annotator");
+import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
+import EraseToolType = require("./eraseTool"); // Cyclic dependency. For types only.
 import Instruments = require("./instruments");
-import Model = require("./model");
-import Tool = require("./tool");
-import TSEE = require("./tsee");
+import KeySignatureModelType = require("./keySignature"); // Cyclic dependency. For types only.
 import lylite = require("./lylite");
-import renderUtil = require("../util/renderUtil");
-
+import Model = require("./model");
 import PlaybackStore = require("./playback");
+import renderUtil = require("../util/renderUtil");
+import Tool = require("./tool");
 
 var isBrowser = typeof window !== "undefined";
 var CHANGE_EVENT = "change";
@@ -881,7 +883,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (obj.isNote) {
                     // The stepCursor call above invalidates _visualCursor
                     // DO NOT CHECK _visualCursor HERE!!!
-                    var EraseTool = require("./eraseTool"); // Recursive dependency.
+                    var EraseTool: typeof EraseToolType = require("./eraseTool");
                     var etool = new EraseTool(true);
                     this._annotate(
                         {
@@ -1363,7 +1365,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             _.each(this._selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
                     if (body[i].type === C.Type.KEY_SIGNATURE) {
-                        var KeySignatureModel = require("./keySignature"); // Recursive dependency
+                        var KeySignatureModel: typeof KeySignatureModelType = require("./keySignature");
                         accidentals = KeySignatureModel.getAccidentals(
                             (<any>body[i]).keySignature); // TSFIX
                     }
@@ -1381,7 +1383,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 var numToNote: { [key: number]: string } = "cdefgab";
 
                 // For "chromatic":
-                var DurationModel = require("./duration"); // Recursive dependency.
+                var DurationModel: typeof DurationModelType = require("./duration");
                 var noteToVal = DurationModel.chromaticScale;
 
                 var newNote: number;

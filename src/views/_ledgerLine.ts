@@ -7,7 +7,7 @@ import ReactTS = require("react-typescript");
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 
-export class LedgerLine extends ReactTS.ReactComponentBase<IProps, {}> {
+class LedgerLine extends ReactTS.ReactComponentBase<LedgerLine.IProps, {}> {
     render() {
         var sw = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
         var ne = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
@@ -23,7 +23,7 @@ export class LedgerLine extends ReactTS.ReactComponentBase<IProps, {}> {
             // Ledger lines should be thicker than regular lines.
     }
 
-    shouldComponentUpdate(nextProps: IProps) {
+    shouldComponentUpdate(nextProps: LedgerLine.IProps) {
         return this.props.line !== nextProps.x ||
             this.props.x !== nextProps.x ||
             this.props.line !== nextProps.line ||
@@ -31,11 +31,15 @@ export class LedgerLine extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(LedgerLine);
+module LedgerLine {
+    export var Component = ReactTS.createReactComponent(LedgerLine);
 
-export interface IProps {
-    line: number;
-    notehead: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        line: number;
+        notehead: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = LedgerLine;

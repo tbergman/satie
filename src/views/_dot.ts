@@ -11,7 +11,7 @@ var Victoria = require("../renderer/victoria/victoria");
 
 var VCircle = Victoria.VCircle;
 
-export class Dot extends ReactTS.ReactComponentBase<IProps, {}> {
+class Dot extends ReactTS.ReactComponentBase<Dot.IProps, {}> {
     renderSVG() {
         // See rationale for hidden rect in _glyph.jsx
         return React.DOM.g(null,
@@ -60,14 +60,17 @@ export class Dot extends ReactTS.ReactComponentBase<IProps, {}> {
 
 Dot.applyMixins(RenderableMixin);
 
-export var Component = ReactTS.createReactComponent(Dot);
+module Dot {
+    export var Component = ReactTS.createReactComponent(Dot);
 
-export interface IProps {
-    x: number;
-    y: number;
-    radius: number;
-    line: number;
-    idx: number;
-    stroke: string;
+    export interface IProps {
+        x: number;
+        y: number;
+        radius: number;
+        line: number;
+        idx: number;
+        stroke: string;
+    }
 }
 
+export = Dot;

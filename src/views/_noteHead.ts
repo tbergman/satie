@@ -6,7 +6,7 @@ import ReactTS = require("react-typescript");
 
 import Glyph = require("./_glyph");
 
-export class NoteHead extends ReactTS.ReactComponentBase<IProps, {}> {
+class NoteHead extends ReactTS.ReactComponentBase<NoteHead.IProps, {}> {
     render() {
         return Glyph.Component({
             x: this.props.x,
@@ -24,13 +24,17 @@ export class NoteHead extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(NoteHead);
+module NoteHead {
+    export var Component = ReactTS.createReactComponent(NoteHead);
 
-export interface IProps {
-    fontSize: number;
-    line: number;
-    notehead: string;
-    stroke: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        fontSize: number;
+        line: number;
+        notehead: string;
+        stroke: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = NoteHead;

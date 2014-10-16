@@ -10,6 +10,8 @@ import assert = require("assert");
 import BarlineModel = require("./barline");
 import C = require("./contracts");
 import Model = require("./model");
+import NewlineModelType = require("./newline"); // Cyclic dependency. For types only.
+import PlaceholderModelType = require("./placeholder"); // Cyclic dependency. For types only.
 import renderUtil = require("../util/renderUtil");
 
 /**
@@ -271,7 +273,7 @@ export class Context implements C.MetreContext {
     /**
      * Inserts an element somewhere after the current element. This is efficient.
      * @mutator
-     *
+     * 
      * @param index: The absolute position to insert an element at.
      *     By default, one after current position.
      */
@@ -330,7 +332,7 @@ export class Context implements C.MetreContext {
      * @mutator
      */
     splice(start: number, count: number, replaceWith?: Array<Model>, splicePolicy?: SplicePolicy) {
-        var PlaceholderModel = require("./placeholder"); // Recursive
+        var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         if (isNaN(splicePolicy)) {
             splicePolicy = SplicePolicy.Subtractive;
         }
@@ -356,7 +358,7 @@ export class Context implements C.MetreContext {
             for (var i = end - 1; i >= start; --i) {
                 var vertical = this.findVertical(m => !m.placeholder, i);
                 if (vertical.length > 1 || vertical.length === 1 && vertical[0] !== this.body[i]) {
-                    replaceWith = [new PlaceholderModel({
+                    replaceWith = [<Model> new PlaceholderModel({
                         _priority: C.Type[vertical[0].priority]
                     }, vertical[0].source)].concat(replaceWith);
                 }
@@ -381,7 +383,6 @@ export class Context implements C.MetreContext {
                     var vidx = start;
                     var fidx = start + count;
                     var ffidx = start + replaceWith.length;
-                    var inCommon = 0;
                     var offset = 0;
                     for (var j = 0; j < replaceWith.length; ++j) {
                         if (vidx + j < Math.max(ffidx, fidx) &&
@@ -427,9 +428,7 @@ export class Context implements C.MetreContext {
 
     private _realign(start: number, end: number) {
         var bodies = this._staves.filter(s => !!s.body).map(s => s.body);
-        var gBeat = 0;
         var cBeats = bodies.map(b => 0);
-        var jIdx = bodies.map(b => start);
         var placeholders = bodies.map(b => <Array<Model>>[]);
         var reals = bodies.map(b => <Array<Model>>[]);
         var aligned = bodies.map(b => <Array<Model>>[]);
@@ -792,7 +791,7 @@ export class Context implements C.MetreContext {
     }
 
     private _semiJustify(staves: Array<C.IStave>) {
-        var NewlineModel = require("./newline"); // Recursive dependency.
+        var NewlineModel: typeof NewlineModelType = require("./newline");
         var bodies: Array<C.IBody> = [];
         for (var i = 0; i < staves.length; ++i) {
             if (staves[i].body) {

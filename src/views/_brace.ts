@@ -10,7 +10,7 @@ import Glyph = require("./_glyph");
 import Group = require("./_group");
 import SMuFL = require("../util/SMuFL");
 
-export class Brace extends ReactTS.ReactComponentBase<IProps, {}> {
+class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
     render() {
         var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
@@ -41,13 +41,16 @@ export class Brace extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(Brace);
+module Brace {
+    export var Component = ReactTS.createReactComponent(Brace);
 
-export interface IProps {
-    x: number;
-    y: number;
-    y2: number;
-    idx: number;
-    fontSize: number;
+    export interface IProps {
+        x: number;
+        y: number;
+        y2: number;
+        idx: number;
+        fontSize: number;
+    }
 }
 
+export = Brace;

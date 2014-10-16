@@ -6,15 +6,16 @@
 
 import Model = require("./model");
 
-import Metre = require("./metre");
 import _ = require("lodash");
 import assert = require("assert");
 
-import BarlineModel = require("./barline");
-import C = require("./contracts");
 import Annotator = require("./annotator");
+import BarlineModel = require("./barline");
+import BeamGroupModelType = require("./beamGroup"); // Cyclic dependency. For types only.
+import C = require("./contracts");
 import EndMarkerModel = require("./endMarker");
 import KeySignatureModel = require("./keySignature");
+import Metre = require("./metre");
 import NewlineModel = require("./newline");
 import TimeSignatureModel = require("./timeSignature");
 
@@ -138,7 +139,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             _.each(b, function (b: DurationModel) {
                 b.inBeam = true;
             });
-            var BeamGroupModel = require("./beamGroup"); // Recursive dependency
+            var BeamGroupModel: typeof BeamGroupModelType = require("./beamGroup");
             BeamGroupModel.createBeam(ctx, b);
             return C.IterationStatus.RETRY_LINE;
         }

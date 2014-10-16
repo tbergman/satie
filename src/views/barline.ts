@@ -13,7 +13,7 @@ import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 import hash = require("../util/hash");
 
-export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
+class Barline extends ReactTS.ReactComponentBase<Barline.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
@@ -70,7 +70,7 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
     /**
      * React lifecycle method.
      */
-    shouldComponentUpdate(nextProps: IProps) {
+    shouldComponentUpdate(nextProps: Barline.IProps) {
         return this.getHash(nextProps.spec) !== this.hash;
     }
 
@@ -91,15 +91,15 @@ export class Barline extends ReactTS.ReactComponentBase<IProps, IState> {
     hash: number = NaN;
 };
 
-export var Component = ReactTS.createReactComponent(Barline);
+module Barline {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Barline);
 
-export interface IProps {
-    key: number;
-    spec: BarlineModel;
-    fontSize: number;
+    export interface IProps {
+        key: number;
+        spec: BarlineModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
-
+export = Barline;

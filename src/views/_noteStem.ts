@@ -11,7 +11,7 @@ import getFontOffset = require("./_getFontOffset");
 
 var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;
 
-export class NoteStem extends ReactTS.ReactComponentBase<IProps, {}> {
+class NoteStem extends ReactTS.ReactComponentBase<NoteStem.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset();
         return Line.Component({
@@ -52,14 +52,18 @@ export class NoteStem extends ReactTS.ReactComponentBase<IProps, {}> {
 
 NoteStem.applyMixins(PureRenderMixin);
 
-export var Component = ReactTS.createReactComponent(NoteStem);
+module NoteStem {
+    export var Component = ReactTS.createReactComponent(NoteStem);
 
-export interface IProps {
-    height: number;
-    direction: number; // -1 or 1
-    line: number;
-    notehead: string;
-    stroke: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        height: number;
+        direction: number; // -1 or 1
+        line: number;
+        notehead: string;
+        stroke: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = NoteStem;

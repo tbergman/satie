@@ -8,7 +8,7 @@ import assert = require("assert");
 import Glyph = require("./_glyph");
 import getFontOffset = require("./_getFontOffset");
 
-export class Flag extends ReactTS.ReactComponentBase<IProps, {}> {
+class Flag extends ReactTS.ReactComponentBase<Flag.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset(this.glyphName);
         var noteOffset = this.getFontOffset();
@@ -55,17 +55,21 @@ export class Flag extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(Flag);
+module Flag {
+    export var Component = ReactTS.createReactComponent(Flag);
 
-export interface IProps {
-    direction: number; // -1 or 1
-    flag: string;
-    fontSize: number;
-    line: number;
-    notehead: string;
-    stemHeight: number;
-    stemWidth: number;
-    stroke: string;
-    x: number;
-    y: number;
-};
+    export interface IProps {
+        direction: number; // -1 or 1
+        flag: string;
+        fontSize: number;
+        line: number;
+        notehead: string;
+        stemHeight: number;
+        stemWidth: number;
+        stroke: string;
+        x: number;
+        y: number;
+    };
+}
+
+export = Flag;

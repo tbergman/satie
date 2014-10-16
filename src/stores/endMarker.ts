@@ -7,12 +7,13 @@
 import Model = require("./model");
 
 import assert = require("assert");
-
-import C = require("./contracts");
-import Annotator = require("./annotator");
-import Metre = require("./metre");
-
 import _ = require("lodash");
+
+import Annotator = require("./annotator");
+import BarlineModelType = require("./barline"); // Cyclic dependency. For types only.
+import C = require("./contracts");
+import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
+import Metre = require("./metre");
 
 /**
  * A marker for the end of lines and bars. Its purpose is to help with
@@ -67,7 +68,7 @@ class EndMarkerModel extends Model {
             assert(beatsRemaining < ctx.timeSignature.beats,
                 "Don't run this on entirely blank bars!");
 
-            var DurationModel = require("./duration"); // Recursive dependency.
+            var DurationModel: typeof DurationModelType = require("./duration");
 
             var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beat, ctx)
                 .map((beat: C.IPitchDuration) => {
@@ -88,7 +89,7 @@ class EndMarkerModel extends Model {
                 prev.barline = C.Barline.DOUBLE;
                 return C.IterationStatus.RETRY_LINE;
             } else {
-                var BarlineModel = require("./barline"); // Recursive dependency.
+                var BarlineModel: typeof BarlineModelType = require("./barline");
                 return BarlineModel.createBarline(ctx, C.Barline.DOUBLE);
             }
         }

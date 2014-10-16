@@ -7,7 +7,7 @@ import ReactTS = require("react-typescript");
 
 import Glyph = require("./_glyph");
 
-export class Accidental extends ReactTS.ReactComponentBase<IProps, {}> {
+class Accidental extends ReactTS.ReactComponentBase<Accidental.IProps, {}> {
     render() {
         return Glyph.Component({
             x: this.props.x,
@@ -19,14 +19,18 @@ export class Accidental extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export interface IProps {
-    accidental: string;
-    fontSize: number;
-    idx?: number;
-    line: number;
-    stroke?: string;
-    x: number;
-    y: number;
+module Accidental {
+    export interface IProps {
+        accidental: string;
+        fontSize: number;
+        idx?: number;
+        line: number;
+        stroke?: string;
+        x: number;
+        y: number;
+    }
+
+    export var Component = ReactTS.createReactComponent(Accidental);
 }
 
-export var Component = ReactTS.createReactComponent(Accidental);
+export = Accidental;

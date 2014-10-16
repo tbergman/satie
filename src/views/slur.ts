@@ -13,7 +13,7 @@ import renderUtil = require("../util/renderUtil");
 
 var getExtremeLine = Note.getExtremeLine;
 
-export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
+class Slur extends ReactTS.ReactComponentBase<Slur.IProps, {}> {
     render() {
         this.hash = this.getHash(this.props.spec);
 
@@ -58,7 +58,7 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
         });
     }
 
-    shouldComponentUpdate(nextProps: IProps) {
+    shouldComponentUpdate(nextProps: Slur.IProps) {
         return this.getHash(nextProps.spec) !== this.hash;
     }
     getHash(spec: SlurGroupModel) {
@@ -100,14 +100,15 @@ export class Slur extends ReactTS.ReactComponentBase<IProps, IState> {
     hash: number = NaN;
 }
 
-export var Component = ReactTS.createReactComponent(Slur);
+module Slur {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Slur);
 
-export interface IProps {
-    key: number;
-    spec: SlurGroupModel;
-    fontSize: number;
+    export interface IProps {
+        key: number;
+        spec: SlurGroupModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
+export = Slur;

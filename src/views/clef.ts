@@ -7,7 +7,7 @@ import ReactTS = require("react-typescript");
 import ClefModel = require("../stores/clef");
 import Glyph = require("./_glyph");
 
-export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
+class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
     render() {
         var spec = this.props.spec;
         return Glyph.Component({
@@ -39,14 +39,14 @@ export class Clef extends ReactTS.ReactComponentBase<IProps, IState> {
     };
 };
 
-export var Component = ReactTS.createReactComponent(Clef);
+module Clef {
+    export var Component = ReactTS.createReactComponent(Clef);
 
-export interface IProps {
-    key: number;
-    spec: ClefModel;
-    fontSize: number;
+    export interface IProps {
+        key: number;
+        spec: ClefModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
+export = Clef;

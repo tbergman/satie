@@ -21,7 +21,7 @@ import getFontOffset = require("./_getFontOffset");
  * Calculates a way to render a beam given two endpoints.
  * See also BeamGroup and BeamGroupModel.
  */
-export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
+class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
         if (this.props.beams === C.BeamCount.VARIABLE) {
@@ -96,7 +96,7 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
     /**
      * Returns true if anything has changed. Beams are particularly slow to mount.
      */
-    shouldComponentUpdate(nextProps : IProps) {
+    shouldComponentUpdate(nextProps : Beam.IProps) {
         var ret =
             this.props.x !== nextProps.x ||
             this.props.y !== nextProps.y ||
@@ -207,23 +207,28 @@ export class Beam extends ReactTS.ReactComponentBase<IProps, {}> {
 
 Beam.applyMixins(RenderableMixin);
 
-export var Component = ReactTS.createReactComponent(Beam);
+module Beam {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Beam);
 
-export interface IProps {
-    beams: C.BeamCount;
-    direction: number;
-    fontSize: number;
-    line1: number;
-    line2: number;
-    notehead1: string;
-    notehead2: string;
-    stemWidth: number;
-    stroke: string;
-    tuplet: C.ITuplet;
-    tupletsTemporary: boolean;
-    variableBeams: Array<number>;
-    variableX: Array<number>;
-    width: number;
-    x: number;
-    y: number;
+    export interface IProps {
+        beams: C.BeamCount;
+        direction: number;
+        fontSize: number;
+        line1: number;
+        line2: number;
+        notehead1: string;
+        notehead2: string;
+        stemWidth: number;
+        stroke: string;
+        tuplet: C.ITuplet;
+        tupletsTemporary: boolean;
+        variableBeams: Array<number>;
+        variableX: Array<number>;
+        width: number;
+        x: number;
+        y: number;
+    }
 }
+
+export = Beam;

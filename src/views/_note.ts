@@ -18,7 +18,7 @@ import NoteHead = require("./_noteHead");
 import NoteMarking = require("./_noteMarking");
 import NoteStem = require("./_noteStem");
 
-export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
+class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
     render() {
         var direction = this.direction;
         var lines = this.getLines();
@@ -90,7 +90,7 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead,
                 direction: direction})]).concat(
-            this.props.children && _.map(this.props.children, (element: NoteMarking.NoteMarking, idx: number) => {
+            this.props.children && _.map(this.props.children, (element: NoteMarking, idx: number) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;
@@ -106,8 +106,8 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
         );
     }
 
-    getDefaultProps(): IProps {
-        return <IProps> {
+    getDefaultProps(): Note.IProps {
+        return <Note.IProps> {
             x: 0,
             y: 0,
             line: 3,
@@ -285,40 +285,42 @@ export class Note extends ReactTS.ReactComponentBase<IProps, IState> {
 var IDEAL_STEM_HEIGHT = 3.5;
 var MIN_STEM_HEIGHT = 2.5;
 
-export function getExtremeLine(line: any, direction: number) {
+module Note {
     "use strict";
-    if (!isNaN(line*1)) {
-        return line*1;
-    } else if (direction === 1) {
-        return _.reduce(line, (m: number, s: number) => Math.min(m, s), 99999);
-    } else {
-        return _.reduce(line, (m: number, s: number) => Math.max(m, s), -99999);
+    export function getExtremeLine(line: any, direction: number) {
+        "use strict";
+        if (!isNaN(line*1)) {
+            return line*1;
+        } else if (direction === 1) {
+            return _.reduce(line, (m: number, s: number) => Math.min(m, s), 99999);
+        } else {
+            return _.reduce(line, (m: number, s: number) => Math.max(m, s), -99999);
+        }
+    };
+
+    export var Component = ReactTS.createReactComponent(Note);
+
+    export interface IProps {
+        accidentals?: any;
+        accStrokes?: any;
+        children?: Array<NoteMarking>;
+        direction?: number;
+        dotted?: number;
+        idx?: number;
+        flag?: string;
+        fontSize?: number;
+        hasStem?: boolean;
+        heightDeterminingCount?: number;
+        key?: string;
+        line?: any;
+        notehead?: string;
+        secondaryStroke?: any;
+        stemHeight?: number;
+        strokes?: any;
+        tieTo?: any;
+        x?: number;
+        y?: number;
     }
-};
-
-export var Component = ReactTS.createReactComponent(Note);
-
-export interface IProps {
-    accidentals?: any;
-    accStrokes?: any;
-    children?: Array<NoteMarking.NoteMarking>;
-    direction?: number;
-    dotted?: number;
-    idx?: number;
-    flag?: string;
-    fontSize?: number;
-    hasStem?: boolean;
-    heightDeterminingCount?: number;
-    key?: string;
-    line?: any;
-    notehead?: string;
-    secondaryStroke?: any;
-    stemHeight?: number;
-    strokes?: any;
-    tieTo?: any;
-    x?: number;
-    y?: number;
 }
 
-export interface IState {
-}
+export = Note;

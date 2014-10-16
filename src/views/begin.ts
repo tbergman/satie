@@ -9,7 +9,7 @@ import Brace = require("./_brace");
 import Group = require("./_group");
 import StaveLines = require("./_staveLines");
 
-export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
+class BeginView extends ReactTS.ReactComponentBase<BeginView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
@@ -29,14 +29,14 @@ export class BeginView extends ReactTS.ReactComponentBase<IProps, IState> {
     }
 };
 
-export var Component = ReactTS.createReactComponent(BeginView);
+module BeginView {
+    export var Component = ReactTS.createReactComponent(BeginView);
 
-export interface IProps {
-    key: number;
-    spec: BeginModel;
-    fontSize: number;
+    export interface IProps {
+        key: number;
+        spec: BeginModel;
+        fontSize: number;
+    }
 }
 
-export interface IState {
-
-}
+export = BeginView;

@@ -9,9 +9,10 @@
 
 import Model = require("./model");
 
+import Annotator = require("./annotator");
+import BarlineModelType = require("./barline"); // Cyclic dependency. For types only.
 import BeginModel = require("./begin");
 import C = require("./contracts");
-import Annotator = require("./annotator");
 
 import _ = require("lodash");
 
@@ -32,8 +33,8 @@ class ClefModel extends Model {
 
         // Barlines should be before clefs when either is possible.
         if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
-            var BarlineModel = require("./barline"); // Recursive dependency.
-            return BarlineModel.createBarline(ctx);
+            var BarlineModel: typeof BarlineModelType = require("./barline");
+            return BarlineModel.createBarline(ctx, C.Barline.STANDARD);
         }
 
         // Copy information from the context that the view needs.

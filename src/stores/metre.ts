@@ -7,17 +7,15 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-"use strict";
-
 import assert = require("assert");
 import _ = require("lodash");
 
 import C = require("./contracts");
+import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
 import Annotator = require("./annotator");
-import DurationModel = require("./duration"); // For symbols only. Do not call.
 
 /**
- * Checks if the duration at the current index is rhythmically spelled correctly
+ * Checks if the duration at the current index is rhythSmically spelled correctly
  * within its context according to the time signature ("ts"), and fixes errors
  * if it is not.
  *
@@ -101,7 +99,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
             m.chord = JSON.parse(JSON.stringify(n1.chord));
         });
 
-        var DurationModel = require("./duration"); // Recursive.
+        var DurationModel: typeof DurationModelType = require("./duration");
         ctx.splice(ctx.idx, nextIdx - ctx.idx,
             replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)),
             Annotator.SplicePolicy.Masked);
@@ -311,12 +309,12 @@ export function subtract(durr1: any, beats: number,
  * @param idx the index where the beam would start
  * @param alt a string representing an alternative beaming. See beamingPatterns.
  */
-export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): Array<DurationModel> {
+export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): Array<DurationModelType> {
     "use strict";
 
     var body = ctx.body;
     var tsName = getTSString(ctx.timeSignature) + (alt ? "_" + alt : "");
-    var replaceWith: Array<DurationModel> = [];
+    var replaceWith: Array<DurationModelType> = [];
     var bp = beamingPatterns[tsName];
     var currBeat = ctx.beat;
 
@@ -376,7 +374,7 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
             }
 
             assert(body[i].isNote);
-            replaceWith.push(<DurationModel> body[i]);
+            replaceWith.push(<DurationModelType> body[i]);
 
             if (currBeat === bpCount + bpBeats) {
                 break;

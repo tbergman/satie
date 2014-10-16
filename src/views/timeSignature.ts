@@ -9,7 +9,7 @@ import Glyph = require("./_glyph");
 import Group = require("./_group");
 import TimeSignatureModel = require("../stores/timeSignature");
 
-export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
+class TimeSignature extends ReactTS.ReactComponentBase<TimeSignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var ts = spec.timeSignature;
@@ -72,19 +72,8 @@ export class TimeSignature extends ReactTS.ReactComponentBase<IProps, IState> {
         return 0;
     }
 };
-export var Component = ReactTS.createReactComponent(TimeSignature);
 
-export interface IProps {
-    key: number;
-    spec: TimeSignatureModel;
-    fontSize: number;
-}
-
-export interface IState {
-
-}
-
-function TimeSignatureNumber(props: ITSProps, children: number) {
+function TimeSignatureNumber(props: TimeSignature.ITSProps, children: number) {
     "use strict";
     return _.map((children + "").split(""), (c, i) => Glyph.Component({
         key: "ts-" + i,
@@ -95,11 +84,23 @@ function TimeSignatureNumber(props: ITSProps, children: number) {
         glyphName: "timeSig" + c}));
 }
 
-export interface ITSProps {
-    key: number;
-    x: number;
-    y: number;
-    stroke: string;
-    fontSize: number;
+module TimeSignature {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(TimeSignature);
+
+    export interface IProps {
+        key: number;
+        spec: TimeSignatureModel;
+        fontSize: number;
+    }
+
+    export interface ITSProps {
+        key: number;
+        x: number;
+        y: number;
+        stroke: string;
+        fontSize: number;
+    }
 }
 
+export = TimeSignature;

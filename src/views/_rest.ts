@@ -10,7 +10,7 @@ import Glyph = require("./_glyph");
 import Group = require("./_group");
 import NoteMarking = require("./_noteMarking");
 
-export class Rest extends ReactTS.ReactComponentBase<IProps, {}> {
+class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
     render() {
         var line = this.props.line;
         return Group(null,
@@ -53,16 +53,21 @@ export class Rest extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 }
 
-export var Component = ReactTS.createReactComponent(Rest);
+module Rest {
+    "use strict";
+    export var Component = ReactTS.createReactComponent(Rest);
 
-export interface IProps {
-    children: Array<NoteMarking.NoteMarking>;
-    dotted: number;
-    fontSize: number;
-    line: number;
-    notehead: string;
-    spacing: number;
-    stroke: string;
-    x: number;
-    y: number;
+    export interface IProps {
+        children: Array<NoteMarking>;
+        dotted: number;
+        fontSize: number;
+        line: number;
+        notehead: string;
+        spacing: number;
+        stroke: string;
+        x: number;
+        y: number;
+    }
 }
+
+export = Rest;

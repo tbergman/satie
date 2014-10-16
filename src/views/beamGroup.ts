@@ -18,7 +18,7 @@ import Note = require("./_note");
  * React component which draws notes and a beam given a collection
  * of notes that can be beamed.
  */
-export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
+class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var children = spec.generate(this.props.fontSize);
@@ -140,15 +140,19 @@ export class BeamGroup extends ReactTS.ReactComponentBase<IProps, {}> {
     }
 };
 
-export var Component = ReactTS.createReactComponent(BeamGroup);
-
-export interface IProps {
-    key: number;
-    spec: BeamGroupModel;
-    fontSize: number;
-}
-
 /**
  * The line of a chord furthest from the end of a stem.
  */
 var getExtremeLine = Note.getExtremeLine;
+
+module BeamGroup {
+    export var Component = ReactTS.createReactComponent(BeamGroup);
+
+    export interface IProps {
+        key: number;
+        spec: BeamGroupModel;
+        fontSize: number;
+    }
+}
+
+export = BeamGroup;
