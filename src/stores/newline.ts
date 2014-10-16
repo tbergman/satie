@@ -219,6 +219,12 @@ class NewlineModel extends Model {
             }
             ctx.body[i].x = newX;
         }
+
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+            if (ctx.body[i].type === C.Type.BARLINE) {
+                NewlineModel.centerWholeBarRests(ctx.body, i);
+            }
+        }
         return C.IterationStatus.SUCCESS;
     }
 

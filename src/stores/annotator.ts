@@ -371,7 +371,7 @@ export class Context implements C.MetreContext {
             var startPriority = this.body[start].priority;
         } else {
             assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
-            console.log(this._staves, start, end);
+            console.log(this._staves);
             assert(false);
         }
 
