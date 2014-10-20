@@ -48,7 +48,7 @@ class BeginModel extends Model {
         this.braceY2 = this.y + renderUtil.staveSeperation;
         this.pageSize = ctx.pageSize;
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
     toLylite() {
         // pass
@@ -63,7 +63,7 @@ class BeginModel extends Model {
     };
 
     get type() {
-        return C.Type.BEGIN;
+        return C.Type.Begin;
     }
 
     toJSON(): {} {

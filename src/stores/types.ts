@@ -37,18 +37,18 @@ export function ensureRegistered() {
     "use strict";
     if (registered) { return; }
     registered = true;
-    registerType(C.Type.BARLINE, BarlineModel, BarlineView.Component);
-    registerType(C.Type.BEAM_GROUP, BeamGroupModel, BeamGroupView.Component);
-    registerType(C.Type.BEGIN, BeginModel, BeginView.Component);
-    registerType(C.Type.CLEF, ClefModel, ClefView.Component);
-    registerType(C.Type.DURATION, DurationModel, DurationView.Component);
-    registerType(C.Type.END_MARKER, EndMarkerModel, null);
-    registerType(C.Type.KEY_SIGNATURE, KeySignatureModel, KeySignatureView.Component);
-    registerType(C.Type.NEWLINE, NewlineModel, NewlineView.Component);
-    registerType(C.Type.NEWPAGE, NewpageModel, null);
-    registerType(C.Type.PLACEHOLDER, PlaceholderModel, null);
-    registerType(C.Type.SLUR, SlurModel, SlurView.Component);
-    registerType(C.Type.TIME_SIGNATURE, TimeSignatureModel, TimeSignatureView.Component);
+    registerType(C.Type.Barline, BarlineModel, BarlineView.Component);
+    registerType(C.Type.BeamGroup, BeamGroupModel, BeamGroupView.Component);
+    registerType(C.Type.Begin, BeginModel, BeginView.Component);
+    registerType(C.Type.Clef, ClefModel, ClefView.Component);
+    registerType(C.Type.Duration, DurationModel, DurationView.Component);
+    registerType(C.Type.EndMarker, EndMarkerModel, null);
+    registerType(C.Type.KeySignature, KeySignatureModel, KeySignatureView.Component);
+    registerType(C.Type.NewLine, NewlineModel, NewlineView.Component);
+    registerType(C.Type.NewPage, NewpageModel, null);
+    registerType(C.Type.Placeholder, PlaceholderModel, null);
+    registerType(C.Type.Slur, SlurModel, SlurView.Component);
+    registerType(C.Type.TimeSignature, TimeSignatureModel, TimeSignatureView.Component);
 
     function registerType(type: C.Type, model: any, view: C.IViewComponent) {
         Model.constructorsByType[C.Type[type]] = function (spec: any) { return new model(spec); };

@@ -33,7 +33,7 @@ class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         // EXCEPTION -- if we are a DurationModel at beat 0, we actually should be
         // at the end of the bar. See duration.ts
-        if (this.priority === C.Type.DURATION && mctx.beat === 0) {
+        if (this.priority === C.Type.Duration && mctx.beat === 0) {
             this.ctxData = new C.MetreContext({
                 beat: mctx.timeSignature.beats,
                 bar: mctx.bar - 1,
@@ -53,26 +53,26 @@ class PlaceholderModel extends Model {
         //     model is required at this index). If we haven't gotten to writing the
         //     starting beat, conservatively assume this placeholder is needed.
         var loc = new C.Location(ctx.loc);
-        var usefulItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER || !obj.ctxData || !loc.eq(obj.ctxData));
+        var usefulItems = ctx.findVertical(obj => obj.type !== C.Type.Placeholder || !obj.ctxData || !loc.eq(obj.ctxData));
         if (!usefulItems.length) {
             return ctx.eraseCurrent();
         }
 
-        var realItems = ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER);
+        var realItems = ctx.findVertical(obj => obj.type !== C.Type.Placeholder);
         if (ctx.nextActualType === realItems[0].type && realItems[0].isNote) {
             var changed = false;
-            while (ctx.body[ctx.idx].type === C.Type.PLACEHOLDER && realItems[0].ctxData &&
+            while (ctx.body[ctx.idx].type === C.Type.Placeholder && realItems[0].ctxData &&
                     (new C.Location(realItems[0].ctxData)).eq(loc)) {
                 changed = true;
                 ctx.splice(ctx.idx, 1, null, Annotator.SplicePolicy.Masked);
             }
             if (changed) {
-                return C.IterationStatus.RETRY_CURRENT;
+                return C.IterationStatus.RetryCurrent;
             }
         }
 
         // Remove extraneous placeholders that may have been caused by the above operation.
-        while (ctx.next() && !ctx.findVertical(obj => obj.type !== C.Type.PLACEHOLDER, ctx.idx + 1).length) {
+        while (ctx.next() && !ctx.findVertical(obj => obj.type !== C.Type.Placeholder, ctx.idx + 1).length) {
             ctx.eraseFuture(ctx.idx + 1);
         }
 
@@ -89,7 +89,7 @@ class PlaceholderModel extends Model {
                 return PlaceholderModel.fillMissingBeats(ctx);
             }
 
-            if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.DURATION) {
+            if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.Duration) {
                 assert(realItems[0], "We can't have an entire column of fake durations,");
                 return PlaceholderModel.fillMissingBeats(ctx, realItems[0].getBeats(ctx));
             }
@@ -97,63 +97,63 @@ class PlaceholderModel extends Model {
 
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
-            case C.Type.BARLINE:
+            case C.Type.Barline:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.STANDARD }));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
-            case C.Type.BEGIN:
+                return C.IterationStatus.RetryCurrent;
+            case C.Type.Begin:
                 ctx.body.splice(ctx.idx, 1, new BeginModel({}));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
-            case C.Type.CLEF:
+                return C.IterationStatus.RetryCurrent;
+            case C.Type.Clef:
                 if (!ctx.clef) {
                     ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }));
                     ctx.body[ctx.idx].source = this.source;
-                    return C.IterationStatus.RETRY_CURRENT;
+                    return C.IterationStatus.RetryCurrent;
                 }
                 break;
-            case C.Type.DURATION:
-                assert(!ctx.findVertical(c => c.priority !== C.Type.DURATION).length);
-                if (ctx.next(null, 1, true).type /* not priority! */ === C.Type.BEAM_GROUP) {
+            case C.Type.Duration:
+                assert(!ctx.findVertical(c => c.priority !== C.Type.Duration).length);
+                if (ctx.next(null, 1, true).type /* not priority! */ === C.Type.BeamGroup) {
                     var bodies: Array<Model> = ctx.findVertical(() => true, this.idx + 1);
                     ctx.eraseFuture(this.idx + 1);
                     ctx.insertPastVertical(bodies);
                     ctx.body[ctx.idx].source = this.source;
-                    return C.IterationStatus.RETRY_CURRENT;
+                    return C.IterationStatus.RetryCurrent;
                 }
                 break;
-            case C.Type.END_MARKER:
+            case C.Type.EndMarker:
                 ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
-            case C.Type.KEY_SIGNATURE:
+                return C.IterationStatus.RetryCurrent;
+            case C.Type.KeySignature:
                 if (!ctx.keySignature) {
                     assert(ctx.prevKeySignature, "Undefined prevKeySignature!!");
                     ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
                     ctx.body[ctx.idx].source = this.source;
-                    return C.IterationStatus.RETRY_CURRENT;
+                    return C.IterationStatus.RetryCurrent;
                 }
                 break;
-            case C.Type.NEWLINE:
+            case C.Type.NewLine:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
-            case C.Type.NEWPAGE:
+                return C.IterationStatus.RetryCurrent;
+            case C.Type.NewPage:
                 ctx.body.splice(ctx.idx, 1, new NewpageModel({}));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
-            case C.Type.TIME_SIGNATURE:
-                var tses = ctx.findVertical(obj => obj.type === C.Type.TIME_SIGNATURE);
+                return C.IterationStatus.RetryCurrent;
+            case C.Type.TimeSignature:
+                var tses = ctx.findVertical(obj => obj.type === C.Type.TimeSignature);
                 assert(tses.length, "Staves cannot all be placeholders!");
                 ctx.body.splice(ctx.idx, 1, new TimeSignatureModel({ timeSignature: tses[0].timeSignature }));
                 ctx.body[ctx.idx].source = this.source;
-                return C.IterationStatus.RETRY_CURRENT;
+                return C.IterationStatus.RetryCurrent;
         }
 
         // HACK HACK HACK! Sometimes recordMetreDataImpl isn't run when only Placeholders have been added or removed.
         this.recordMetreDataImpl(ctx);
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     constructor(spec: {_priority: string}, source: C.Source) {
@@ -191,7 +191,7 @@ class PlaceholderModel extends Model {
     }
 
     get type(): C.Type {
-        return C.Type.PLACEHOLDER;
+        return C.Type.Placeholder;
     }
 
     get placeholder() {
@@ -210,7 +210,7 @@ class PlaceholderModel extends Model {
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
                     C.Source.ANNOTATOR));
         ctx.splice(ctx.idx, 1, missingBeats, Annotator.SplicePolicy.Masked);
-        return C.IterationStatus.RETRY_LINE;
+        return C.IterationStatus.RetryLine;
     }
 }
 

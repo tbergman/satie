@@ -12,7 +12,7 @@ import TimeSignatureModel = require("../stores/timeSignature");
 class TimeSignature extends ReactTS.ReactComponentBase<TimeSignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
-        var ts = spec.timeSignature;
+        var ts = spec.displayTimeSignature;
 
         if (ts.commonRepresentation) {
             var beats = ts.beats;
@@ -57,7 +57,7 @@ class TimeSignature extends ReactTS.ReactComponentBase<TimeSignature.IProps, {}>
 
     numOffset() {
         // XXX: crazy hack. fix.
-        var ts = this.props.spec.timeSignature;
+        var ts = this.props.spec.displayTimeSignature;
         if (ts.beats < 10 && ts.beatType >= 10) {
             return 1/8;
         }
@@ -65,7 +65,7 @@ class TimeSignature extends ReactTS.ReactComponentBase<TimeSignature.IProps, {}>
     }
     denOffset() {
         // crazy hack. fix.
-        var ts = this.props.spec.timeSignature;
+        var ts = this.props.spec.displayTimeSignature;
         if (ts.beatType < 10 && ts.beats >= 10) {
             return 1/8;
         }

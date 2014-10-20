@@ -43,7 +43,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        var status: C.IterationStatus = C.IterationStatus.SUCCESS;
+        var status: C.IterationStatus = C.IterationStatus.Success;
         var i: number;
         var j: number;
 
@@ -90,23 +90,23 @@ class DurationModel extends Model implements C.IPitchDuration {
                             }
                         }
                         BarlineModel.createBarline(ctx, C.Barline.STANDARD);
-                        ctx.splice(ctx.idx, 0, replaceWith);
-                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar);
-                        return C.IterationStatus.RETRY_LINE;
+                        ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherParts);
+                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherParts);
+                        return C.IterationStatus.RetryLine;
                     }
                 }
 
                 // Check rhythmic spelling
                 if (!this.inBeam) {
                     status = Metre.rythmicSpellcheck(ctx);
-                    if (status !== C.IterationStatus.SUCCESS) { return status; }
+                    if (status !== C.IterationStatus.Success) { return status; }
                 }
             }
 
             // All notes, chords, and rests throughout a line must have the same spacing.
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
-                return C.IterationStatus.RETRY_LINE;
+                return C.IterationStatus.RetryLine;
             }
 
             // Each note's width has a linear component proportional to the log of its duration.
@@ -117,7 +117,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
                 status = NewlineModel.createNewline(ctx);
             }
-            if (status !== C.IterationStatus.SUCCESS) { return status; }
+            if (status !== C.IterationStatus.Success) { return status; }
         }
 
         // Beams must follow the beam patterns
@@ -130,7 +130,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 while (ctx.body[j].inBeam) {
                     --j;
                 }
-                while(ctx.body[j].type !== C.Type.BEAM_GROUP) {
+                while(ctx.body[j].type !== C.Type.BeamGroup) {
                     ++j;
                 }
                 ctx.removeFollowingBeam(j - 1, j <= ctx.idx);
@@ -141,21 +141,21 @@ class DurationModel extends Model implements C.IPitchDuration {
             });
             var BeamGroupModel: typeof BeamGroupModelType = require("./beamGroup");
             BeamGroupModel.createBeam(ctx, b);
-            return C.IterationStatus.RETRY_LINE;
+            return C.IterationStatus.RetryLine;
         }
 
         // The document must end with a marker.
         if (!ctx.next()) {
             status = ctx.insertFuture(new EndMarkerModel({endMarker: true}));
         }
-        if (status !== C.IterationStatus.SUCCESS) { return status; }
+        if (status !== C.IterationStatus.Success) { return status; }
 
         // Middle note directions are set by surrounding notes.
         if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = NaN;
             status = this.decideMiddleLineStemDirection(ctx);
         }
-        if (status !== C.IterationStatus.SUCCESS) { return status; }
+        if (status !== C.IterationStatus.Success) { return status; }
 
         // Copy information the view needs from the context.
         this.lines = DurationModel.getLines(this, ctx);
@@ -168,7 +168,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             this.x = Math.max(this.x, ctx.x);
             ctx.x = this.x + this.getWidth(ctx);
             this._handleTie(ctx);
-            return C.IterationStatus.SUCCESS;
+            return C.IterationStatus.Success;
         } else if (!this.inBeam) {
             this._handleTie(ctx);
         }
@@ -185,7 +185,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     constructor(spec: C.IPitchDuration, source: C.Source) {
@@ -259,7 +259,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         this.forceMiddleNoteDirection = (check === undefined || check >= 3) ? -1 : 1;
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
 
@@ -923,7 +923,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get type() {
-        return C.Type.DURATION;
+        return C.Type.Duration;
     }
 
     static BEAMDATA: Array<DurationModel>;

@@ -230,7 +230,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                         });
                     }
 
-                    if (obj.type === C.Type.TIME_SIGNATURE) {
+                    if (obj.type === C.Type.TimeSignature) {
                         ctx.timeSignature = obj.timeSignature;
                     }
 

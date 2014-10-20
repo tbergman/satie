@@ -166,7 +166,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
             for (var i = 0; i < body.length; ++i) {
                 var obj = body[i];
-                if (obj.type === C.Type.TIME_SIGNATURE) {
+                if (obj.type === C.Type.TimeSignature) {
                     ctx.timeSignature = <any> obj; // TSFIX
                 } else if (obj.isNote && !obj.isRest) {
                     var note: C.IPitchDuration = <any> obj;
@@ -227,9 +227,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     if (debugMode) {
                         if (body[i].placeholder) {
                             lyliteArr.push(":" + C.Type[body[i].priority]);
-                        } else if (body[i].type === C.Type.END_MARKER) {
+                        } else if (body[i].type === C.Type.EndMarker) {
                             lyliteArr.push("/$");
-                        } else if (body[i].type === C.Type.NEWLINE) {
+                        } else if (body[i].type === C.Type.NewLine) {
                             lyliteArr.push("/n");
                         }
                     }
@@ -820,7 +820,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (this._staves[h].body[i] === this._visualCursor.annotatedObj) {
                     prevObj = this._staves[h].body[i - 1];
                     prevIdx = i - 1;
-                    if (prevObj.type === C.Type.BEAM_GROUP) {
+                    if (prevObj.type === C.Type.BeamGroup) {
                         prevObj = this._staves[h].body[i - 2];
                     }
                 }
@@ -872,7 +872,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 break;
             }
             while (i >= 0 && !this._staves[h].body[i].isNote &&
-                this._staves[h].body[i].type !== C.Type.BARLINE) {
+                this._staves[h].body[i].type !== C.Type.Barline) {
                 --i;
             }
             var obj = this._staves[h].body[i];
@@ -1056,12 +1056,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this._relayHistory = this._relayHistory.substr(this._relayHistory.length - 6000);
         }
 
-        var permission = this._session.apiRole === C.ApiRole.PRIMARY ? "[BROADCAST]" : "[REQUEST]";
+        var permission = this._session.apiRole === C.ApiRole.Primary ? "[BROADCAST]" : "[REQUEST]";
 
         var msg = permission + "PATCH\n";
         msg += Collab.barKeysDiff(origBars, newBars) + "\n";
         msg += diff.join("") + "\n";
-        if (this._session.apiRole === C.ApiRole.OFFLINE) {
+        if (this._session.apiRole === C.ApiRole.Offline) {
             this._relayHistory += "Offline: " + msg;
         } else {
             this._relayHistory += "Sending: " + msg + "\n";
@@ -1108,9 +1108,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 var removeEntireBarStartingAt: number = 0;
                 for (var i = 0; i < body.length; ++i) {
                     var type = body[i].type;
-                    if (type === C.Type.CLEF || type === C.Type.BEGIN ||
-                        type === C.Type.KEY_SIGNATURE ||
-                        type === C.Type.TIME_SIGNATURE) {
+                    if (type === C.Type.Clef || type === C.Type.Begin ||
+                        type === C.Type.KeySignature ||
+                        type === C.Type.TimeSignature) {
                         // We'll have to eventually have a way of getting rid of/hiding
                         // these...
                         removeEntireBarStartingAt = i + 1;
@@ -1118,11 +1118,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         continue;
                     }
 
-                    if (type === C.Type.DURATION && body[i].selected) {
+                    if (type === C.Type.Duration && body[i].selected) {
                         body[i].note.isRest = true;
                     }
 
-                    if (type === C.Type.BARLINE) {
+                    if (type === C.Type.Barline) {
                         if (removeEntireBarStartingAt !== null) {
                             var delCount = i - removeEntireBarStartingAt;
                             // XXX: Check this.
@@ -1130,7 +1130,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                             i -= delCount;
                         }
                         removeEntireBarStartingAt = i;
-                    } else if (type === C.Type.END_MARKER) {
+                    } else if (type === C.Type.EndMarker) {
                         // Pass.
                     } else if (!body[i].selected) {
                         removeEntireBarStartingAt = null;
@@ -1183,7 +1183,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 continue;
             }
             for (var j = 0; j < body.length; ++j) {
-                if (body[j].type === C.Type.BARLINE) {
+                if (body[j].type === C.Type.Barline) {
                     (<any>body[j]).markLKG(j, this.staves[i].body);
                 }
             }
@@ -1256,7 +1256,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             for (var i = 0; i < this._staves[h].body.length; ++i) {
                 if (this._staves[h].body[i] === obj) {
                     if ((!this._staves[h].body[i + 1] ||
-                            this._staves[h].body[i + 1].type !== C.Type.BARLINE ||
+                            this._staves[h].body[i + 1].type !== C.Type.Barline ||
                             this._staves[h].body[i + 1].barline === C.Barline.DOUBLE) &&
                             spec.loopThroughEnd) {
                         this._visualCursorIs({
@@ -1271,10 +1271,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         if (!this._staves[h].body[i]) {
                             break;
                         }
-                        if (this._staves[h].body[i].type === C.Type.BARLINE) {
+                        if (this._staves[h].body[i].type === C.Type.Barline) {
                             throughBar = true;
                         }
-                        if (this._staves[h].body[i].type === C.Type.NEWLINE) {
+                        if (this._staves[h].body[i].type === C.Type.NewLine) {
                             // TODO: we don't need to update all the lines
                             throughNewline = true;
                             this.dangerouslyMarkRendererDirty();
@@ -1298,7 +1298,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                                     this._staves[h].body[i].ctxData.beat === 0 && spec.skipThroughBars) {
                                 var tbar = this._staves[h].body[i].ctxData.bar;
                                 while (this._staves[h].body[i].ctxData.bar === tbar) {
-                                    if (this._staves[h].body[i].type === C.Type.NEWLINE) {
+                                    if (this._staves[h].body[i].type === C.Type.NewLine) {
                                         // TODO: we don't need to update all the lines
                                         throughNewline = true;
                                         this.dangerouslyMarkRendererDirty();
@@ -1315,7 +1315,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                             if (spec.skipThroughBars) {
                                 while (this._staves[h].body[i + 1] &&
                                         (this._staves[h].body[i].endMarker ||
-                                        this._staves[h].body[i].type === C.Type.BARLINE)) {
+                                        this._staves[h].body[i].type === C.Type.Barline)) {
                                     i += spec.step;
                                 }
                             }
@@ -1344,7 +1344,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     private _throttledAutosave = _.throttle(() => {
-        if (this._session.apiRole !== C.ApiRole.PRIMARY) {
+        if (this._session.apiRole !== C.ApiRole.Primary) {
             return;
         }
 
@@ -1368,7 +1368,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
             _.each(this._selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
-                    if (body[i].type === C.Type.KEY_SIGNATURE) {
+                    if (body[i].type === C.Type.KeySignature) {
                         var KeySignatureModel: typeof KeySignatureModelType = require("./keySignature");
                         accidentals = KeySignatureModel.getAccidentals(
                             (<any>body[i]).keySignature); // TSFIX

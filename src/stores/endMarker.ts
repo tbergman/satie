@@ -34,33 +34,33 @@ class EndMarkerModel extends Model {
         var prev = ctx.prev();
 
         // End markers must not touch other end markers.
-        if (next && next.type === C.Type.END_MARKER || prev && prev.type === C.Type.END_MARKER) {
+        if (next && next.type === C.Type.EndMarker || prev && prev.type === C.Type.EndMarker) {
             for (var i = ctx.idx; i >= 0; --i) {
-                if (ctx.body[i].type === C.Type.NEWLINE) {
+                if (ctx.body[i].type === C.Type.NewLine) {
                     ctx.splice(i, 1);
                     ctx.markEntireSongDirty();
                     if (ctx.songEditor) {
                         ctx.songEditor.dangerouslyMarkRendererDirty();
                     }
-                    return C.IterationStatus.RETRY_FROM_ENTRY;
+                    return C.IterationStatus.RetryFromEntry;
                 }
             }
             ctx.eraseCurrent();
-            return C.IterationStatus.RETRY_LINE;
+            return C.IterationStatus.RetryLine;
         }
 
         // End markers must only exist at the end of a line, document, or bar
-        if (next && next.priority !== C.Type.BARLINE &&
+        if (next && next.priority !== C.Type.Barline &&
                 (!ctx.body[ctx.idx + 2] ||
-                (ctx.body[ctx.idx + 2].priority !== C.Type.NEWLINE &&
-                ctx.body[ctx.idx + 2].priority !== C.Type.NEWPAGE))) {
+                (ctx.body[ctx.idx + 2].priority !== C.Type.NewLine &&
+                ctx.body[ctx.idx + 2].priority !== C.Type.NewPage))) {
             ctx.eraseCurrent();
 
-            return C.IterationStatus.RETRY_CURRENT;
+            return C.IterationStatus.RetryCurrent;
         }
 
         // Bars must not be under-filled (should be filled with rests)
-        if (prev.type !== C.Type.BARLINE &&
+        if (prev.type !== C.Type.Barline &&
                     ctx.beat && ctx.beat < ctx.timeSignature.beats) {
             // XXX: extend to work on things other than 4/4
             var beatsRemaining = ctx.timeSignature.beats - ctx.beat;
@@ -79,15 +79,15 @@ class EndMarkerModel extends Model {
 
             ctx.splice(this.idx, 0, toAdd);
 
-            return C.IterationStatus.RETRY_LINE; // we really need a RETRY_BAR...
+            return C.IterationStatus.RetryLine; // we really need a RETRY_BAR...
         }
 
         // Double barlines terminate a piece.
-        if (!ctx.next() && (prev.type !== C.Type.BARLINE ||
+        if (!ctx.next() && (prev.type !== C.Type.Barline ||
             prev.barline !== C.Barline.DOUBLE)) {
-            if (prev.type === C.Type.BARLINE) {
+            if (prev.type === C.Type.Barline) {
                 prev.barline = C.Barline.DOUBLE;
-                return C.IterationStatus.RETRY_LINE;
+                return C.IterationStatus.RetryLine;
             } else {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
                 return BarlineModel.createBarline(ctx, C.Barline.DOUBLE);
@@ -96,7 +96,7 @@ class EndMarkerModel extends Model {
 
         this.endMarker = true;
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
     visible() {
         return false;
@@ -105,7 +105,7 @@ class EndMarkerModel extends Model {
         // pass
     }
     get type() {
-        return C.Type.END_MARKER;
+        return C.Type.EndMarker;
     }
 
     toJSON(): {} {

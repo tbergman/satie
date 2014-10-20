@@ -58,7 +58,7 @@ class ClefModel extends Model {
             ctx.x += 0.6 + this._annotatedSpacing/4;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
     visible(): boolean {
         return this.isVisible !== false;
@@ -165,7 +165,7 @@ class ClefModel extends Model {
     };
 
     get type() {
-        return C.Type.CLEF;
+        return C.Type.Clef;
     }
 
     toJSON(): {} {

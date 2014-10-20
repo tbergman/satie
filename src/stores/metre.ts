@@ -13,200 +13,190 @@ import _ = require("lodash");
 import C = require("./contracts");
 import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
 import Annotator = require("./annotator");
+import Model = require("./model");
 
 /**
  * Checks if the duration at the current index is rhythSmically spelled correctly
  * within its context according to the time signature ("ts"), and fixes errors
  * if it is not.
- *
+ * 
  * It returns C.IterationStatus.SUCCESS if all of the following conditions are met:
- *
+ * 
  *  1. Rests and ties are not more verbose than needed according to
  *     the above chart.
  * 
  *  2. Rests and untied, non-dotted notes either fill an integer number
  *     of segments, or less than 1
- *
+ * 
  * These conditions can be overly strict. They're a good guess at what the user
  * wanted to convey, but the user can override any of these rules. If _annotate
  * is set to true, rhythmicSpellcheck won't change anything.
- *
+ * 
  * Otherwise, the function returns false. To correct the rhythmic spelling, run
  * correctMetre.
- *
+ * 
  * @prop context: Give timeSignature, and current index.
  */
 export function rythmicSpellcheck(ctx: Annotator.Context) {
     "use strict";
 
-    if (!ctx.curr.isNote || ctx.curr.source === C.Source.USER) {
-        return C.IterationStatus.SUCCESS;
+    // Only durations can be spell-checked.
+    if (!ctx.curr.isNote) {
+        return C.IterationStatus.Success;
     }
 
-    var tsName = getTSString(ctx.timeSignature);
-
-    var pattern = beamingPatterns[tsName];
-    assert(pattern, "Time signature must be one of the ones on page 155 of Behind Bars.");
-
-    var _e = 0.00000001;
-
-    var beat = 0;
-    var pidx = 0;
-    var currElt: C.IDuration = pattern[0];
-    while (currElt && beat + currElt.getBeats(ctx) <= ctx.beat) {
-        ++pidx;
-        beat += currElt.getBeats(ctx);
-        currElt = pattern[pidx];
+    // User-created durations cannot be spell-checked.
+    if (ctx.curr.source === C.Source.USER) {
+        return C.IterationStatus.Success;
     }
-    if (!currElt) {
-        // The note exceeds the length of a bar.
-        // XXX: Validate the note.
-        return C.IterationStatus.SUCCESS;
+
+    // This function does not deal with overfilled bars. Instead, the BarModel
+    // will split the note, and the line will be re-annotated.
+    if (ctx.curr.getBeats(ctx) + ctx.beat > ctx.timeSignature.beats) {
+        return C.IterationStatus.Success;
     }
-    var be = currElt.getBeats(ctx);
 
-    var curr = ctx.curr;
-    var nextIdx = ctx.nextIdx(c => !c.placeholder);
-    var next = ctx.body[nextIdx];
+    // TODO: allow custom beam patterns
+    var pattern = beamingPatterns[getTSString(ctx.timeSignature)];
+    assert(pattern, "Unknown beaming pattern");
 
-    var n1 = curr.note;
-    var n1b = n1.getBeats(ctx);
-    var b1 = ctx.beat;
-    var b2 = b1 + n1b;
+    var currNote = ctx.curr.note;
+    var currNoteStartBeat = ctx.beat;
+    var currNoteEndBeat = currNoteStartBeat + currNote.getBeats(ctx);
 
-    // Separate durations that cross a boundary and only partially fill that boundary.
-    // This isn't a problem if it completely fills another part.
-    // XXX: Make a way to disable this when needed.
-    var bExcess: number;
-    if (Math.abs(b1 % 1) < _e) {
-        bExcess = b2 - (beat + currElt.getBeats(ctx));
-        for (var p = pidx + 1; p < pattern.length && bExcess > 0; ++p) {
-            if (bExcess - pattern[p].getBeats(ctx) >= 0) {
-                bExcess -= pattern[p].getBeats(ctx);
-            }
+    var nextIdx = ctx.nextIdx(c => c.type === C.Type.Duration || c.priority === C.Type.Barline);
+    var nextObj = ctx.body[nextIdx];
+
+    var nextNote = nextIdx < ctx.body.length && // There needs to be a model...
+        (currNote.isRest && nextObj.isRest || // which is either a rest, or is...
+                nextObj.isNote && currNote.tie ? // ... tied to the current note
+            nextObj.note : null);
+
+    // Check 1: Separate durations that cross a boundary and only partially fill that boundary.
+    var excessBeats = 0;
+    var patternStartBeat = 0;
+    for (var p = 0; p < pattern.length; ++p) {
+        var patternEndBeat = patternStartBeat + pattern[p].getBeats(ctx);
+        if (currNoteStartBeat > patternStartBeat &&
+                currNoteEndBeat > patternEndBeat &&
+                currNoteStartBeat < patternEndBeat) {
+            excessBeats = currNoteEndBeat - patternEndBeat;
+            break;
         }
-    } else if ((b1 % n1b > _e) && (b2 % n1b > _e)) {
-        bExcess = b2 - (b1 + (b2 % n1b));
-    } else if (tsName === "3/4" && Math.abs(n1b - 1.5) < _e) {
-        bExcess = 0.5;
+        patternStartBeat = patternEndBeat;
     }
 
-    if (bExcess > 0) {
-        var replaceWith = subtract(n1, bExcess, ctx).concat(
-            subtract(n1, n1.getBeats(ctx) - bExcess, ctx));
-        replaceWith.forEach((m: any) => {
-            // Ideally there would be a PitchDuration constructor that would do this for us.
-            m.chord = JSON.parse(JSON.stringify(n1.chord));
-        });
-
-        var DurationModel: typeof DurationModelType = require("./duration");
-        ctx.splice(ctx.idx, nextIdx - ctx.idx,
-            replaceWith.map(m => new DurationModel(m, C.Source.USER_PROPOSED)),
-            Annotator.SplicePolicy.Masked);
-        var after = ctx.idx + replaceWith.length;
-        if (!n1.isRest) {
-            for (var i = ctx.idx; i < after - 1; ++i) {
-                ctx.body[i].note.tie = true;
-            }
-        }
-
-        return C.IterationStatus.RETRY_LINE;
+    if (excessBeats > 0) {
+        return clearExcessBeats(currNote, excessBeats, ctx);
     }
 
-    // Combine rests that can be combined.
-    if (curr.isRest && next && next.isRest && ctx.curr.source !== C.Source.USER) {
-        var n2 = next.note;
-        var n2b = n2.getBeats(ctx);
-        var b3 = b2 + n2b;
-        var alike = n1b === n2b;
+    // Check 2: Join rests and tied notes that don't cross a boundary.
+    // XXX: Right now this only considers combinations of two notes.
+    if (nextNote) {
+        var nextNoteEndBeat = currNoteStartBeat + nextNote.getBeats(ctx);
+        patternStartBeat = 0;
 
-        // Combine like rests that are not offset.
-        if (alike && (b3 % (n1b*2)) < _e && (
-                // It doesn't pass the next beam barrier...
-                (b3 - (beat + be) < _e) ||
-                // or it completely fills the next barrier...
-                (pattern[pidx + 1] && Math.abs(b3 - (beat + be + pattern[pidx + 1]
-                    .getBeats(ctx))) < _e))) {
-            n1.count /= 2; // Double the length.
-            ctx.splice(ctx.idx + 1, nextIdx - ctx.idx, null, Annotator.SplicePolicy.Masked);
-            return C.IterationStatus.RETRY_LINE;
-        }
-
-        // Combine any number of rests that:
-        //    - start on a beat and end on a barrier OR
-        //    - can be combined to form a whole bar rest
-        if (Math.abs(b1 % 1) < _e) {
-            var ok = false;
-            var pb: number;
-            var toErase = 1;
-            var jdx = ctx.idx + 1;
-            while (!ok) {
-                pb = beat;
-                for (var h = pidx; h < pattern.length; ++h) {
-                    if (pb + pattern[h].getBeats(ctx) === b3) {
-                        ok = true;
-                        break;
-                    }
-                    if (wholeNotePatterns[tsName].length === 1 &&
-                            wholeNotePatterns[tsName][0].getBeats(ctx) === b3) {
-                        ok = true;
-                        break;
-                    }
-
-                    pb += pattern[h].getBeats(ctx);
-                }
-                if (!ok) {
-                    ++jdx;
-                    ++toErase;
-                    while (ctx.body[jdx].type === C.Type.BEAM_GROUP ||
-                            ctx.body[jdx].type === C.Type.SLUR ||
-                            ctx.body[jdx].type === C.Type.PLACEHOLDER) {
-                        ++jdx;
-                    }
-                    if (ctx.body[jdx] && ctx.body[jdx].isNote) {
-                        var newBeats = ctx.body[jdx].note.getBeats(ctx);
-                        b3 += newBeats;
-                        n2b += newBeats;
-                    } else {
-                        break;
-                    }
+        for (var p = 0; p < pattern.length; ++p) {
+            var patternEndBeat = patternStartBeat + pattern[p].getBeats(ctx);
+            if (currNoteStartBeat >= patternStartBeat &&
+                    currNoteEndBeat < patternEndBeat &&
+                    nextNoteEndBeat <= patternEndBeat + 0.0000001) {
+                if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
+                    return C.IterationStatus.RetryCurrent;
                 }
             }
-            if (ok) {
-                // We can combine them.
-                var ncb = n1b + n2b;
-                for (var po2 = 128; po2 >= 1 / 32; po2 /= 2) {
-                    // The largest acceptable dotted note is the
-                    // biggest one smaller than the beat. In addition,
-                    // for readability, we don't go beyond 3 dots.
-                    var maxDot = (ncb === ctx.timeSignature.beats || po2 >= ctx.timeSignature.beatType) ? 3 : 0;
-
-                    // Exception: in 3/4, dotted quarter notes are not allowed.
-                    if (tsName === "3/4" && ncb === 1) {
-                        maxDot = 0;
-                    }
-                    for (var dots = 0; dots <= maxDot; ++dots) {
-                        var dotFactor = Math.pow(1.5, dots);
-                        if (Math.abs(ncb - ctx.timeSignature.beatType/po2*dotFactor) < _e) {
-                            _.times(toErase, function () {
-                                ctx.splice(ctx.idx + 1, nextIdx - ctx.idx, null, Annotator.SplicePolicy.Masked);
-                            });
-                            n1.dots = dots;
-                            n1.actualTuplet = n1.tuplet = null;
-                            n1.count = po2;
-                            return C.IterationStatus.RETRY_LINE;
-                        }
-                    }
-                }
-            }
+            patternStartBeat = patternEndBeat;
         }
     }
 
-    return C.IterationStatus.SUCCESS;
+    // Check 3: Join rests and tied notes that fully cover multiple boundaries.
+    // XXX: Right now this only covers combinations of two notes.
+    if (nextNote) {
+        var nextNoteEndBeat = currNoteStartBeat + nextNote.getBeats(ctx);
+        patternStartBeat = 0;
+
+        var gotFirstNote = false;
+        for (var p = 0; p < pattern.length; ++p) {
+            var patternEndBeat = patternStartBeat + pattern[p].getBeats(ctx);
+            if (!gotFirstNote) {
+                if (currNoteStartBeat > patternStartBeat) {
+                    break;
+                } else if (currNoteStartBeat === patternStartBeat) {
+                    gotFirstNote = true;
+                    continue;
+                }
+            } else {
+                if (nextNoteEndBeat > patternEndBeat) {
+                    break;
+                } else if (currNoteEndBeat === patternEndBeat) {
+                    if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
+                        return C.IterationStatus.RetryCurrent;
+                    }
+                    break;
+                }
+            }
+            patternStartBeat = patternEndBeat;
+        }
+    }
+
+    return C.IterationStatus.Success;
 };
 
 /**
- * Returns a TS string for lookup in the beamingPatterns array.
+ * Convenience function which tries to merge two notes.
+ * 
+ * @returns true on success, false otherwise.
+ * 
+ * @internal
+ */
+function tryMerge(currNote: C.IPitchDuration, nextObj: Model, nextIdx: number, ctx: Annotator.Context) {
+    if (nextObj.inBeam) {
+        return false;
+    }
+    var replaceWithMaybe = add(currNote, nextObj.note, ctx);
+    if (replaceWithMaybe.length !== 1) {
+        return false;
+    }
+
+    var spec = replaceWithMaybe[0];
+    currNote.count = spec.count;
+    currNote.dots = spec.dots;
+    currNote.tuplet = spec.tuplet;
+    ctx.splice(nextIdx, 1, null);
+    return true;
+}
+
+/**
+ * Convenience function which splits a note or rest into two correct parts.
+ * 
+ * @internal
+ */
+function clearExcessBeats(currNote: C.IPitchDuration, excessBeats: number, ctx: Annotator.Context) {
+    "use strict";
+    var nextIdx = ctx.nextIdx(c => !c.placeholder);
+    var replaceWith = subtract(currNote, excessBeats, ctx).concat(
+        subtract(currNote, currNote.getBeats(ctx) - excessBeats, ctx, currNote.getBeats(ctx) - excessBeats));
+    replaceWith.forEach((m: any) => {
+        // Ideally there would be a PitchDuration constructor that would do this for us.
+        m.chord = JSON.parse(JSON.stringify(currNote.chord));
+    });
+
+    var DurationModel: typeof DurationModelType = require("./duration");
+    ctx.splice(ctx.idx, nextIdx - ctx.idx,
+        replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)),
+        Annotator.SplicePolicy.Masked);
+    var after = ctx.idx + replaceWith.length;
+    if (!currNote.isRest) {
+        for (var i = ctx.idx; i < after - 1; ++i) {
+            ctx.body[i].note.tie = true;
+        }
+    }
+
+    return C.IterationStatus.RetryLine;
+}
+
+/**
+ * @returns a TS string for lookup in the beamingPatterns array.
  */
 export function getTSString(ts: C.ITimeSignature) {
     "use strict";
@@ -215,23 +205,29 @@ export function getTSString(ts: C.ITimeSignature) {
 }
 
 /**
- * Returns an array of Duration specs the is the result of adding "durr2" to "durr1".
+ * @returns an array of Duration specs that is the result of adding "durr2" to "durr1"
+ * 
+ * @param beatOffset number of beats after the current beat that durr1 is located.
  */
-export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ts: C.ITimeSignature) {
+export function add(durr1: C.IPitchDuration, durr2: C.IPitchDuration, ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
+export function add(durr1: number, durr2: C.IPitchDuration, ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
+
+export function add(durr1: any, durr2: C.IPitchDuration, ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration> {
     "use strict";
 
-    assert(false, "Not implemented");
+    // Bizarrely, we use subtract to add. That's just because I wrote subtract first.
+    return subtract((isNaN(durr1) ? durr1.getBeats(ctx) : durr1) + durr2.getBeats(ctx), 0, ctx, beatOffset);
 }
 
 /**
- * Returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
+ * @returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
 export function subtract(durr1: C.IPitchDuration, beats: number,
     ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
 /**
- * Returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
+ * @returns an array of Duration specs that is the result of subtracting "beats" from "durr1".
  * 
  * @param beatOffset number of beats after the current beat that durr1 is located.
  */
@@ -270,7 +266,7 @@ export function subtract(durr1: any, beats: number,
             var noteBeats = getBeats(note.count, note.dots, null, ctx.timeSignature);
 
             if (noteBeats <= beatsToFill) {
-                // The subtraction is allowed to completely fill multiple beaming sections
+                // The subtraction is allowed to completely fill multiple pattern sections
                 // but cannot partially fill more than 1.
                 var completelyFills = false;
                 var tmpBeats = currBeat + noteBeats;
@@ -336,7 +332,7 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     var prevInBeam = true;
 
     for (var i = idx; !body[i].endMarker; ++i) {
-        if (body[i].type === C.Type.BEAM_GROUP) {
+        if (body[i].type === C.Type.BeamGroup) {
             if (idx !== i) {
                 needsReplacement = true;
             }
@@ -407,7 +403,7 @@ export function getBeats(count: number, dots: number,
 };
 
 /**
- * Returns a spec array for a whole note. Note that in some time signatures,
+ * @returns a spec array for a whole note. Note that in some time signatures,
  * a whole note is composed of several notes, so the length of the array is not
  * always 1.
  */
@@ -428,20 +424,24 @@ var _32    = C.makeDuration({count: 32});
 var _32D   = C.makeDuration({count: 32, dots: 1});
 var _16    = C.makeDuration({count: 16});
 var _16D   = C.makeDuration({count: 16, dots: 1});
+var _16DD  = C.makeDuration({count: 16, dots: 2});
 var _8     = C.makeDuration({count: 8});
 var _8D    = C.makeDuration({count: 8, dots: 1});
+var _8DD   = C.makeDuration({count: 8, dots: 2});
 var _4     = C.makeDuration({count: 4});
 var _4D    = C.makeDuration({count: 4, dots: 1});
+var _4DD   = C.makeDuration({count: 4, dots: 2});
 var _2     = C.makeDuration({count: 2});
 var _2D    = C.makeDuration({count: 2, dots: 1});
-var _2DD   = C.makeDuration({count: 2, dots: 2});
+var _2DD   = C.makeDuration({count: 2, dots: 2}); // Warning: should be included in allNotes depending on TS
 var _1     = C.makeDuration({count: 1});
-var _1D    = C.makeDuration({count: 1, dots: 1});
-var _1DD   = C.makeDuration({count: 1, dots: 2});
-var _05    = C.makeDuration({ count: 1 / 2 });
+var _1D    = C.makeDuration({count: 1, dots: 1}); // Warning: should be included in allNotes depending on TS
+var _1DD   = C.makeDuration({count: 1, dots: 2}); // Warning: should be included in allNotes depending on TS
+var _05    = C.makeDuration({ count: 1 / 2 }); // Warning: should be included in allNotes depending on TS
 
-var allNotes = [_1, _2D, _2, _4D, _4, _8D, _8, _16D, _16, _32D, _32,
-    _64D, _64, _128D, _128, _256D, _256, _512];
+var allNotes = [_1, _2D, _2,
+    _4DD, _4D, _4, _8DD, _8D, _8, _16DD, _16D, _16, _32D,
+    _32, _64D, _64, _128D, _128, _256D, _256, _512];
 
 // Adapted from Behind Bars (E. Gould) page 155
 var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
@@ -481,7 +481,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
     "8/8_alt":  [_4D,   _4,     _4D             ],
     "8/8_alt2": [_4,    _4D,    _4D             ],
     "4/4":      [_2,            _2              ],
-    "4/4_clean":  [_4,    _4,     _4,    _4     ],
+    "4/4_clean":[_4,    _4,     _4,     _4      ],
     "2/2":      [_2,            _2              ],
     "1/1":      [_1                             ],  // << If only they were all like this...
 
@@ -495,7 +495,7 @@ var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
 
     "12/8":     [_4D,   _4D,    _4D,    _4D     ],
     "6/4":      [_2D,           _2D             ],
-    "3/2":      [_2D,       _2,      _2         ],
+    "3/2":      [_2,        _2,      _2         ],
 
     "7/4":      [_1,            _2D             ],
     "7/4_alt":  [_2D,           _1              ],

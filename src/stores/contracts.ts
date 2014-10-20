@@ -26,18 +26,18 @@ export enum ApiRole {
     /**
      * All changes are cached until the client can reconnect to the relay.
      */
-    OFFLINE = 0,
+    Offline = 0,
 
     /**
      * In charged of accepting or rejecting changes from peers, PUTs official version to
      * the server.
      */
-    PRIMARY = 1,
+    Primary = 1,
 
     /**
      * Sends all requests to PRIMARY peer via the relay. Does not save.
      */
-    SECONDARY = 2
+    Secondary = 2
 }
 
 /**
@@ -115,16 +115,16 @@ export interface IBody extends Array<Model> {
 }
 
 /**
- * Standard clefs or sets of clefs. Not to be used in Models (landing layer only).
+ * Standard clefs or sets of clefs.
  */
 export enum Clef {
-    TREBLE,
-    BASS,
-    ALTO,
-    TENOR,
-    PIANO,
-    CHORAL,
-    TREBLE_DRUMS,
+    Treble,
+    Bass,
+    Alto,
+    Tenor,
+    Piano,
+    Choral,
+    TrebleDrums,
 }
 
 /**
@@ -361,26 +361,26 @@ export enum IterationStatus {
      * No further annotation is necessary. The document is correct
      * and renderable.
      */
-    EXIT_EARLY,
+    ExitEarly,
 
     /**
      * All of the pre-conditions of the Model were met, and
      * the annotator should continue to the next item.
      */
-    SUCCESS,
+    Success,
 
     /**
      * At least one of the pre-conditions of the Model were not
      * met and an item has been inserted in place of the current
      * item.
      */
-    RETRY_CURRENT,
+    RetryCurrent,
 
     /**
      * Like RETRY_CURRENT, but explicitly state that the entire
      * remainder of the document must be re-annotated.
      */
-    RETRY_CURRENT_NO_OPTIMIZATIONS,
+    RetryCurrentNoOptimizations,
 
     /**
      * At least one of the pre-conditions of the Model were not
@@ -388,38 +388,38 @@ export enum IterationStatus {
      * 
      * The Model must be in a beam for this return type to be used.
      */
-    RETRY_BEAM,
+    RetryBeam,
 
     /**
      * The precondition is now met, but a line was removed. The index has already
      * been set to the correct previous line.
      */
-    LINE_REMOVED,
+    LineRemoved,
 
     /**
      * At least one of the pre-conditions of the Model were not
      * met and the entire line must be re-annotated.
      */
-    RETRY_LINE,
+    RetryLine,
 
     /**
      * The precondition is now met, but a line was added somewhere between
      * where the previous line was an idx. The annotator should re-annotate
      * the previous two lines.
      */
-    LINE_CREATED,
+    LineCreated,
 
     /**
      * The precondition is now met, but the previous line was modified. For example,
      * the visual cursor has been moved to the previous line.
      */
-    RETRY_PREVIOUS_LINE,
+    RetryPreviousLine,
 
     /**
      * At least one of the preconditions of the Model were not
      * met and the entire document must be re-annotated.
      */
-    RETRY_FROM_ENTRY
+    RetryFromEntry
 };
 
 /**
@@ -669,8 +669,8 @@ export interface IPlaybackStore {
 }
 
 export enum PreviewMode {
-    EXCLUDE_PREVIEWS = 0,
-    INCLUDE_PREVIEWS = 1
+    ExcludePreviews = 0,
+    IncludePreviews = 1
 }
 
 export interface IPointerData {
@@ -870,25 +870,25 @@ export interface IStave {
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
-    END_MARKER,
-    NEWPAGE,
-    NEWLINE,
+    EndMarker,
+    NewPage,
+    NewLine,
 
-    BEGIN,
-    CLEF,
-    KEY_SIGNATURE,
-    TIME_SIGNATURE,
+    Begin,
+    Clef,
+    KeySignature,
+    TimeSignature,
 
-    BARLINE,
+    Barline,
 
-    SLUR,
-    BEAM_GROUP,
+    Slur,
+    BeamGroup,
 
-    DURATION,
+    Duration,
 
-    PLACEHOLDER,
+    Placeholder,
 
-    UNKNOWN
+    Unknown
 };
 
 /**

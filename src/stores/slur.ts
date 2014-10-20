@@ -18,7 +18,7 @@ import TimeSignatureModel = require("./timeSignature");
 
 class SlurGroupModel extends Model {
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (ctx.prev().type === C.Type.PLACEHOLDER) {
+        if (ctx.prev().type === C.Type.Placeholder) {
             this.x = ctx.x = ctx.prev().x;
         }
 
@@ -40,7 +40,7 @@ class SlurGroupModel extends Model {
         var n: Array<DurationModel> = [];
         this._beam = undefined;
         for (var i = ctx.idx; i < ctx.body.length && n.length < this.slur; ++i) {
-            if (ctx.body[i].type === C.Type.BEAM_GROUP) {
+            if (ctx.body[i].type === C.Type.BeamGroup) {
                 this._beam = <any> ctx.body[i]; // TSFIX
             }
             if (ctx.body[i].isNote) {
@@ -61,7 +61,7 @@ class SlurGroupModel extends Model {
             this.lines2 = DurationModel.getLines(last, ctx);
             this.width = last.x - first.x;
         }
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var count = this.slur;
@@ -86,7 +86,7 @@ class SlurGroupModel extends Model {
     }
 
     get type() {
-        return C.Type.SLUR;
+        return C.Type.Slur;
     }
 
     toJSON(): {} {

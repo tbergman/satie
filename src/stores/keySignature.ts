@@ -30,7 +30,7 @@ class KeySignatureModel extends Model {
 
         // Copy information from the context that the view needs.
         this.clef = ctx.clef;
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION, true), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
         ctx.keySignature = this.keySignature;
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         if (intersectingNotes.length) {
@@ -48,7 +48,7 @@ class KeySignatureModel extends Model {
             ctx.x += this._annotatedSpacing/4 + 0.26*c;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
     toLylite(lylite: Array<string>) {
         if (this.source === C.Source.ANNOTATOR) {
@@ -202,7 +202,7 @@ class KeySignatureModel extends Model {
     static sharpCircle = "fcgdaeb";
 
     get type() {
-        return C.Type.KEY_SIGNATURE;
+        return C.Type.KeySignature;
     }
 
     toJSON(): {} {

@@ -41,7 +41,7 @@ class BarlineModel extends Model {
 
         // At least one note must exist before a barline on every line.
         okay = false;
-        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
             if (ctx.body[i].isNote) {
                 okay = true;
                 break;
@@ -56,21 +56,21 @@ class BarlineModel extends Model {
                     r.isRest = true;
                     ctx.insertPast(r);
                 });
-                return C.IterationStatus.RETRY_CURRENT;
+                return C.IterationStatus.RetryCurrent;
             } else {
                 ctx.splice(i, ctx.idx - i);
                 ctx.markEntireSongDirty();
                 ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line - 1);
                 ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line);
                 ctx.idx = i;
-                return C.IterationStatus.LINE_REMOVED;
+                return C.IterationStatus.LineRemoved;
             }
         }
 
         // At least one note must exist between barlines.
         okay = false;
-        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.BARLINE; --i) {
-            if (ctx.body[i].isNote || ctx.body[i].type === C.Type.NEWLINE) {
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.Barline; --i) {
+            if (ctx.body[i].isNote || ctx.body[i].type === C.Type.NewLine) {
                 okay = true;
                 break;
             }
@@ -82,7 +82,7 @@ class BarlineModel extends Model {
         if (this.barline === C.Barline.DOUBLE) {
             // The document cannot be entirely empty.
             okay = false;
-            for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
+            for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
                 if (ctx.body[i].isNote) {
                     okay = true;
                     break;
@@ -97,18 +97,18 @@ class BarlineModel extends Model {
                 }
                 // This is dangerous, and probably wrong.
                 Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(<any>whole));
-                return C.IterationStatus.RETRY_LINE;
+                return C.IterationStatus.RetryLine;
             }
         }
 
         // Barlines followed by newlines do not have any right padding
         var next = ctx.next();
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (
-            next.type === C.Type.NEWLINE || next.type === C.Type.NEWPAGE);
+            next.type === C.Type.NewLine || next.type === C.Type.NewPage);
 
         // Barlines followed by accidentals have additional padding. We check all
         // staves for following accidentals.
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         if (ctx.next().isNote) {
             this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.containsAccidental(ctx)) ? 1 : 0);
         } else {
@@ -118,7 +118,7 @@ class BarlineModel extends Model {
         // Double barlines only exist at the end of a piece.
         if (this.barline === C.Barline.DOUBLE && ctx.next(null, 2)) {
             this.barline = C.Barline.STANDARD;
-            return C.IterationStatus.RETRY_CURRENT;
+            return C.IterationStatus.RetryCurrent;
         }
 
         ctx.barKeys.push(this.key);
@@ -139,7 +139,7 @@ class BarlineModel extends Model {
         if (!ctx.disableRecordings) {
             ctx.record(this);
         }
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     constructor(spec: { barline: C.Barline }) {
@@ -157,7 +157,7 @@ class BarlineModel extends Model {
     static createBarline = (ctx: Annotator.Context, mode: C.Barline): C.IterationStatus => {
         mode = mode || C.Barline.STANDARD;
 
-        if (ctx.curr.type === C.Type.BEAM_GROUP) {
+        if (ctx.curr.type === C.Type.BeamGroup) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
@@ -171,17 +171,17 @@ class BarlineModel extends Model {
                     ++j;
                 }
             }
-            return C.IterationStatus.RETRY_LINE;
+            return C.IterationStatus.RetryLine;
         }
 
         BarlineModel._seperate(ctx, mode);
-        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+        return C.IterationStatus.RetryCurrentNoOptimizations;
     };
 
     private static _seperate = (ctx: Annotator.Context, mode: C.Barline) => {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
-        if (inTwo && inTwo.type === C.Type.BARLINE) {
+        if (inTwo && inTwo.type === C.Type.Barline) {
             // We want to keep this barline where it is!
             ctx.body[jdx] = new BarlineModel({ barline: inTwo.barline });
             inTwo.barline = mode;
@@ -194,7 +194,7 @@ class BarlineModel extends Model {
 
 
     get type() {
-        return C.Type.BARLINE;
+        return C.Type.Barline;
     }
     get barline() {
         return this._barline;
@@ -242,7 +242,7 @@ class BarlineModel extends Model {
 
     private _state(currIdx: number, body: C.IBody) {
         var history: string[] = [];
-        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.BARLINE; --i) {
+        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.Barline; --i) {
             history.push(JSON.stringify(body[i]).replace("\n", "")); // the spec does not specify whether there are \ns
         }
         return history.reverse().join("\n") + "\n";

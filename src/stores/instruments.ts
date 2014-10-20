@@ -16,7 +16,7 @@ import C = require("./contracts");
 export var List: Array<C.IInstrument> = [
     {
         name: "Acoustic Grand Piano",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "Piano",
         soundfont: "acoustic_grand_piano",
         lilypond: "acoustic grand",
@@ -25,7 +25,7 @@ export var List: Array<C.IInstrument> = [
     {
 
         name: "Bright Acoustic Piano",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "Piano",
         soundfont: "bright_acoustic_piano",
         lilypond: "bright acoustic",
@@ -33,7 +33,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Electric Grand Piano",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "Piano",
         soundfont: "electric_grand_piano",
         lilypond: "electric grand",
@@ -41,7 +41,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Honky-tonk Piano",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "HT Piano",
         soundfont: "honytonk_piano",
         lilypond: "honky-tonk",
@@ -49,7 +49,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Electric Piano 1",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "E Piano",
         soundfont: "electric_piano_1",
         lilypond: "electric piano 1",
@@ -57,7 +57,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Electric Piano 2",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "E Piano",
         soundfont: "electric_piano_2",
         lilypond: "electric piano 2",
@@ -65,7 +65,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Harpsichord",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "Harpsichord",
         soundfont: "harpsichord",
         lilypond: "harpsichord",
@@ -73,7 +73,7 @@ export var List: Array<C.IInstrument> = [
     },
     {
         name: "Clavi",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         shortName: "Clavi",
         soundfont: "clavichord",
         lilypond: "clav",
@@ -82,7 +82,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Celesta",
         shortName: "Celesta",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "celesta",
         lilypond: "celesta",
         program: 8
@@ -90,7 +90,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Glockenspiel",
         shortName: "Glockenspiel",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "glockenspiel",
         lilypond: "glockenspiel",
         program: 9
@@ -98,7 +98,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Music Box",
         shortName: "Music Box",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "music_box",
         lilypond: "music box",
         program: 10
@@ -106,7 +106,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Vibraphone",
         shortName: "Vibraphone",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "vibraphone",
         lilypond: "vibraphone",
         program: 11
@@ -114,7 +114,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Marimba",
         shortName: "Marimba",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "marimba",
         lilypond: "marimba",
         program: 12
@@ -122,7 +122,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Xylophone",
         shortName: "Xylophone",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "xylophone",
         lilypond: "xylophone",
         program: 13
@@ -130,7 +130,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tubular Bells",
         shortName: "Bells",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "tubular_bells",
         lilypond: "tubular bells",
         program: 14
@@ -138,7 +138,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Dulcimer",
         shortName: "Dulcimer",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "dulcimer",
         lilypond: "dulcimer",
         program: 15
@@ -146,7 +146,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Drawbar Organ",
         shortName: "Organ",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "drawbar_organ",
         lilypond: "drawbar organ",
         program: 16
@@ -154,7 +154,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Percussive Organ",
         shortName: "Organ",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "percussive_organ",
         lilypond: "percussive organ",
         program: 17
@@ -162,7 +162,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Rock Organ",
         shortName: "Organ",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "rock_organ",
         lilypond: "rock organ",
         program: 18
@@ -170,7 +170,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Church Organ",
         shortName: "Organ",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "church_organ",
         lilypond: "church organ",
         program: 19
@@ -178,7 +178,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Reed Organ",
         shortName: "Organ",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "reed_organ",
         lilypond: "reed organ",
         program: 20
@@ -186,7 +186,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Accordion",
         shortName: "Accordion",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "accordion",
         lilypond: "accordion",
         program: 21
@@ -194,7 +194,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tango Accordion",
         shortName: "Accordion",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "tango_accordion",
         lilypond: "concertina",
         program: 23
@@ -202,7 +202,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Harmonica",
         shortName: "Harmonica",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "harmonica",
         lilypond: "harmonica",
         program: 22
@@ -210,7 +210,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Acoustic Guitar (nylon)",
         shortName: "Acc. Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "acoustic_guitar_nylon",
         lilypond: "acoustic guitar (nylon)",
         program: 24
@@ -218,7 +218,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Acoustic Guitar (steel)",
         shortName: "Acc. Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "acoustic_guitar_steel",
         lilypond: "acoustic guitar (steel)",
         program: 25
@@ -226,7 +226,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Electric Guitar (jazz)",
         shortName: "E Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "acoustic_guitar_jazz",
         lilypond: "acoustic guitar (jazz)",
         program: 26
@@ -234,7 +234,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Electric Guitar (clean)",
         shortName: "E Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "electric_guitar_clean",
         lilypond: "acoustic guitar (clean)",
         program: 27
@@ -242,7 +242,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Electric Guitar (muted)",
         shortName: "E Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "electric_guitar_muted",
         lilypond: "acoustic guitar (muted)",
         program: 28
@@ -250,7 +250,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Overdriven Guitar",
         shortName: "E Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "overdriven_guitar",
         lilypond: "overdriven guitar",
         program: 29
@@ -258,7 +258,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Distortion Guitar",
         shortName: "E Guitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "distortion_guitar",
         lilypond: "distortion guitar",
         program: 30
@@ -266,7 +266,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Guitar harmonics",
         shortName: "Guitar Harm.",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "guitar_harmonics",
         lilypond: "guitar harmonics",
         program: 31
@@ -274,7 +274,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Acoustic Bass",
         shortName: "Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "acoustic_bass",
         lilypond: "acoustic bass",
         program: 32
@@ -282,7 +282,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Electric Bass (finger)",
         shortName: "E. Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "electric_bass_finger",
         lilypond: "electric bass (finger)",
         program: 33
@@ -290,7 +290,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Electric Bass (pick)",
         shortName: "E. Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "electric_bass_pick",
         lilypond: "electric bass (pick)",
         program: 34
@@ -298,7 +298,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Fretless Bass",
         shortName: "Fretless Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "fretless_bass",
         lilypond: "fretless bass",
         program: 35
@@ -306,7 +306,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Slap Bass 1",
         shortName: "Slap Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "slap_bass_1",
         lilypond: "slap bass 1",
         program: 36
@@ -314,7 +314,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Slap Bass 2",
         shortName: "Slap Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "slap_bass_2",
         lilypond: "slap bass 2",
         program: 37
@@ -322,7 +322,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Synth Bass 1",
         shortName: "Synth Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "synth_bass_1",
         lilypond: "synth bass 1",
         program: 38
@@ -330,7 +330,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Synth Bass 2",
         shortName: "Synth Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "synth_bass_2",
         lilypond: "synth bass 2",
         program: 39
@@ -338,7 +338,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Violin",
         shortName: "Violin",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "violin",
         lilypond: "violin",
         program: 40
@@ -346,7 +346,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Viola",
         shortName: "Viola",
-        clef: C.Clef.ALTO,
+        clef: C.Clef.Alto,
         soundfont: "viola",
         lilypond: "viola",
         program: 41
@@ -354,7 +354,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Cello",
         shortName: "Cello",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "cello",
         lilypond: "cello",
         program: 42
@@ -362,7 +362,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Contrabass",
         shortName: "Bass",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "contrabass",
         lilypond: "contrabass",
         program: 43
@@ -370,7 +370,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tremolo Strings",
         shortName: "Strings",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "tremolo_strings",
         lilypond: "tremolo strings",
         program: 44
@@ -378,7 +378,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pizzicato Strings",
         shortName: "Pizz. Strings",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "pizzicato_strings",
         lilypond: "pizzicato strings",
         program: 45
@@ -386,7 +386,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Orchestral Harp",
         shortName: "Harp",
-        clef: C.Clef.PIANO, // or treble.
+        clef: C.Clef.Piano, // or treble.
         soundfont: "orchestral_harp",
         lilypond: "orchestral harp",
         program: 46
@@ -394,7 +394,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Timpani",
         shortName: "Timpani",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "timpani",
         lilypond: "timpani",
         program: 47
@@ -402,7 +402,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "String Ensemble 1",
         shortName: "Strings",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "string_ensemble_1",
         lilypond: "string ensemble 1",
         program: 48
@@ -410,7 +410,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "String Ensemble 2",
         shortName: "Strings",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "string_ensemble_2",
         lilypond: "string ensemble 2",
         program: 49
@@ -418,7 +418,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "SynthStrings 1",
         shortName: "Synth Strings",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "synthstrings_1",
         lilypond: "synthstrings 1",
         program: 50
@@ -426,7 +426,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "SynthStrings 2",
         shortName: "Synth Strings",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "synthstrings_2",
         lilypond: "synthstrings 2",
         program: 51
@@ -434,7 +434,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Choir Aahs",
         shortName: "Choir",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "choir_aahs",
         lilypond: "choir aahs",
         program: 52
@@ -442,7 +442,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Voice Oohs",
         shortName: "Choir",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "voice_oohs",
         lilypond: "voice oohs",
         program: 53
@@ -450,7 +450,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Synth Voice",
         shortName: "Voice",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "synth_voice",
         lilypond: "synth voice",
         program: 54
@@ -458,7 +458,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Orchestra Hit",
         shortName: "Orch. Hit",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "orchestra_hit",
         lilypond: "orchestra hit",
         program: 55
@@ -466,7 +466,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Trumpet",
         shortName: "Trumpet",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "trumpet",
         lilypond: "trumpet",
         program: 56
@@ -474,7 +474,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Muted Trumpet",
         shortName: "Muted Trumpet",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "muted_trumpet",
         lilypond: "muted trumpet",
         program: 59
@@ -482,7 +482,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Trombone",
         shortName: "Trombone",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "trombone",
         lilypond: "trombone",
         program: 57
@@ -490,7 +490,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tenor Trombone",
         shortName: "Tnr. Trbne.",
-        clef: C.Clef.TENOR, // Sometimes TREBLE with Bb transposition, which is the same as TENOR
+        clef: C.Clef.Tenor, // Sometimes TREBLE with Bb transposition, which is the same as TENOR
         soundfont: "trombone",
         lilypond: "trombone<tenor>",
         program: 57
@@ -498,7 +498,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tuba",
         shortName: "Tuba",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "tuba",
         lilypond: "tuba",
         program: 58
@@ -506,7 +506,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "French Horn",
         shortName: "F. Horn",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "french_horn",
         lilypond: "french horn",
         program: 60
@@ -514,7 +514,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "French Horn (Bass)",
         shortName: "Bs. F. Horn",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "french_horn",
         lilypond: "french horn<bass>",
         program: 60
@@ -522,7 +522,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Brass Section",
         shortName: "Brass",
-        clef: C.Clef.CHORAL,
+        clef: C.Clef.Choral,
         soundfont: "brass_section",
         lilypond: "brass section",
         program: 61
@@ -530,7 +530,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "SynthBrass 1",
         shortName: "Synth Brass",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "synthbrass_1",
         lilypond: "synthbrass 1",
         program: 62
@@ -538,7 +538,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "SynthBrass 2",
         shortName: "Synth Brass",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "synthbrass_2",
         lilypond: "synthbrass 2",
         program: 63
@@ -546,7 +546,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Soprano Sax",
         shortName: "S. Sax",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "soprano_sax",
         lilypond: "soprano sax",
         program: 64
@@ -554,7 +554,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Alto Sax",
         shortName: "A. Sax",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "alto_sax",
         lilypond: "alto sax",
         program: 65
@@ -562,7 +562,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Tenor Sax",
         shortName: "T. Sax",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "tenor_sax",
         lilypond: "tenor sax",
         program: 66
@@ -570,7 +570,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Baritone Sax",
         shortName: "B. Sax",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "baritone_sax",
         lilypond: "baritone sax",
         program: 67
@@ -578,7 +578,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Oboe",
         shortName: "Oboe",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "oboe",
         lilypond: "oboe",
         program: 68
@@ -586,7 +586,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "English Horn",
         shortName: "E. Horn",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "english_horn",
         lilypond: "english horn",
         program: 69
@@ -594,7 +594,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Bassoon",
         shortName: "Bassoon",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "bassoon",
         lilypond: "bassoon",
         program: 70
@@ -602,7 +602,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Bassoon (tenor)",
         shortName: "Bassoon",
-        clef: C.Clef.TENOR,
+        clef: C.Clef.Tenor,
         soundfont: "bassoon",
         lilypond: "bassoon",
         program: 70
@@ -610,7 +610,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Clarinet",
         shortName: "Clarinet",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "clarinet",
         lilypond: "clarinet",
         program: 71
@@ -618,7 +618,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Bass Clarinet",
         shortName: "B. Clarinet",
-        clef: C.Clef.BASS,
+        clef: C.Clef.Bass,
         soundfont: "clarinet",
         lilypond: "clarinet",
         program: 71
@@ -626,7 +626,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Piccolo",
         shortName: "Piccolo",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "piccolo",
         lilypond: "piccolo",
         program: 72
@@ -634,7 +634,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Flute",
         shortName: "Flute",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "flute",
         lilypond: "flute",
         program: 73
@@ -642,7 +642,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Recorder",
         shortName: "Recorder",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "recorder",
         lilypond: "recorder",
         program: 74
@@ -650,7 +650,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pan Flute",
         shortName: "Pan Flute",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "pan_flute",
         lilypond: "pan flute",
         program: 75
@@ -658,7 +658,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Blown Bottle",
         shortName: "Bottle",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "blown_bottle",
         lilypond: "blown bottle",
         program: 76
@@ -666,7 +666,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Shakuhachi",
         shortName: "Shakuhachi",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "shakuhachi",
         lilypond: "shakuhachi",
         program: 77
@@ -674,7 +674,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Whistle",
         shortName: "Whistle",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "whistle",
         lilypond: "whistle",
         program: 78
@@ -682,7 +682,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Ocarina",
         shortName: "Ocarina",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "ocarina",
         lilypond: "ocarina",
         program: 79
@@ -690,7 +690,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 1 (square)",
         shortName: "Square",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_1_square",
         lilypond: "lead 1 (square)",
         program: 80
@@ -698,7 +698,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 2 (sawtooth)",
         shortName: "Sawtooth",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_2_sawtooth",
         lilypond: "lead 2 (sawtooth)",
         program: 81
@@ -706,7 +706,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 3 (calliope)",
         shortName: "Calliope",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_3_calliope",
         lilypond: "lead 3 (calliope)",
         program: 82
@@ -714,7 +714,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 4 (chiff)",
         shortName: "Chiff",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_4_chiff",
         lilypond: "lead 4 (chiff)",
         program: 83
@@ -722,7 +722,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 5 (charang)",
         shortName: "Charang",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_5_charang",
         lilypond: "lead 5 (charang)",
         program: 84
@@ -730,7 +730,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 6 (voice)",
         shortName: "Voice",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_6_voice",
         lilypond: "lead 6 (voice)",
         program: 85
@@ -738,7 +738,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 7 (fifths)",
         shortName: "Fifths",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_7_fifths",
         lilypond: "lead 7 (fifths)",
         program: 86
@@ -746,7 +746,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Lead 8 (bass + lead)",
         shortName: "Bass+Lead",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "lead_8_bass_lead",
         lilypond: "lead 8 (bass+lead)",
         program: 87
@@ -754,7 +754,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 1 (new age)",
         shortName: "Pad 1",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_1_new_age",
         lilypond: "pad 1 (new age)",
         program: 88
@@ -762,7 +762,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 2 (warm)",
         shortName: "Pad 2",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_2_warm",
         lilypond: "pad 2 (warm)",
         program: 89
@@ -770,7 +770,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 3 (polysynth)",
         shortName: "Pad 3",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_3_polysynth",
         lilypond: "pad 3 (polysynth)",
         program: 90
@@ -778,7 +778,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 4 (choir)",
         shortName: "Pad 4",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_4_choir",
         lilypond: "pad 4 (choir)",
         program: 91
@@ -786,7 +786,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 5 (bowed)",
         shortName: "Pad 5",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_5_bowed",
         lilypond: "pad 5 (bowed)",
         program: 92
@@ -794,7 +794,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 6 (metallic)",
         shortName: "Pad y",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_6_metallic",
         lilypond: "pad 6 (metallic)",
         program: 93
@@ -802,7 +802,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 7 (halo)",
         shortName: "Pad 7",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_7_halo",
         lilypond: "pad 7 (halo)",
         program: 94
@@ -810,7 +810,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Pad 8 (sweep)",
         shortName: "Pad 8",
-        clef: C.Clef.PIANO,
+        clef: C.Clef.Piano,
         soundfont: "pad_8_sweep",
         lilypond: "pad 8 (sweep)",
         program: 95
@@ -818,7 +818,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "FX 1 (rain)",
         shortName: "FX 1",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "fx_1_rain",
         lilypond: "fx 1 (rain)",
         program: 96
@@ -826,7 +826,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "FX 2 (soundtrack)",
         shortName: "FX 2",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "fx_2_soundtrack",
         lilypond: "fx 2 (soundtrack)",
         program: 97
@@ -834,7 +834,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "FX 3 (crystal)",
         shortName: "FX 3",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         soundfont: "fx_3_crystal",
         lilypond: "fx 3 (crystal)",
         program: 98
@@ -844,7 +844,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "FX 4",
         soundfont: "fx_4_atmosphere",
         lilypond: "fx 4 (atmosphere)",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 99
     },
     {
@@ -852,7 +852,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "FX 5",
         soundfont: "fx_5_brightness",
         lilypond: "fx 5 (brightness)",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 100
     },
     {
@@ -860,7 +860,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "FX 6",
         soundfont: "fx_6_goblins",
         lilypond: "fx 6 (goblins)",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 101
     },
     {
@@ -868,7 +868,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "FX 7",
         soundfont: "fx_7_echoes",
         lilypond: "fx 7 (echoes)",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 102
     },
     {
@@ -876,7 +876,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "FX 8",
         soundfont: "fx_8_scifi",
         lilypond: "fx 8 (scifi)",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 103
     },
     {
@@ -884,7 +884,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Sitar",
         soundfont: "sitar",
         lilypond: "sitar",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 104
     },
     {
@@ -892,7 +892,7 @@ export var List: Array<C.IInstrument> = [
         soundfont: "banjo",
         shortName: "Banjo",
         lilypond: "banjo",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 105
     },
     {
@@ -900,7 +900,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Shamisen",
         soundfont: "shamisen",
         lilypond: "shamisen",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 106
     },
     {
@@ -908,7 +908,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Koto",
         soundfont: "koto",
         lilypond: "koto",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 107
     },
     {
@@ -916,7 +916,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Kalimba",
         soundfont: "kalimba",
         lilypond: "kalimba",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 108
     },
     {
@@ -924,7 +924,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Bag Pipe",
         soundfont: "bag_pipe",
         lilypond: "bagpipe",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 109
     },
     {
@@ -932,7 +932,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Fiddle",
         soundfont: "fiddle",
         lilypond: "fiddle",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 110
     },
     {
@@ -940,7 +940,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Shanai",
         soundfont: "shanai",
         lilypond: "shanai",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 111
     },
     {
@@ -948,7 +948,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Tl. Bell",
         soundfont: "tinkle_bell",
         lilypond: "tinkle bell",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 112
     },
     {
@@ -956,7 +956,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Agogo",
         soundfont: "agogo",
         lilypond: "agogo",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 113
     },
     {
@@ -964,7 +964,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Steel Drums",
         soundfont: "steel_drums",
         lilypond: "steel drums",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 114
     },
     {
@@ -972,7 +972,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Woodblock",
         soundfont: "woodblock",
         lilypond: "woodblock",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 115
     },
     {
@@ -980,7 +980,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Taiko Drum",
         soundfont: "taiko_drum",
         lilypond: "taiko drum",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 116
     },
     {
@@ -988,7 +988,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Melodic Tom",
         soundfont: "melodic_tom",
         lilypond: "melodic tom",
-        clef: C.Clef.TREBLE,
+        clef: C.Clef.Treble,
         program: 117
     },
     {
@@ -996,7 +996,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Synth Drum",
         soundfont: "synth_drum",
         lilypond: "synth drum",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 118
     },
     {
@@ -1004,7 +1004,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Reverse Cymbal",
         soundfont: "reverse_cymbal",
         lilypond: "reverse cymbal",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 119
     },
     {
@@ -1012,7 +1012,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Guitar Fret",
         soundfont: "guitar_fret_noise",
         lilypond: "guitar fret noise",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 120
     },
     {
@@ -1020,7 +1020,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Breath",
         soundfont: "breath_noise",
         lilypond: "breath noise",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 121
     },
     {
@@ -1028,7 +1028,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Seashore",
         soundfont: "seashore",
         lilypond: "seashore",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 122
     },
     {
@@ -1036,7 +1036,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Tweet",
         soundfont: "bird_tweet",
         lilypond: "bird tweet",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 123
     },
     {
@@ -1044,7 +1044,7 @@ export var List: Array<C.IInstrument> = [
         shortName: "Telephone",
         soundfont: "telephone_ring",
         lilypond: "telephone ring",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 124
     },
     {
@@ -1052,13 +1052,13 @@ export var List: Array<C.IInstrument> = [
         shortName: "Helicopter",
         soundfont: "helicopter",
         lilypond: "helicopter",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         program: 125
     },
     {
         name: "Applause",
         shortName: "Applause",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         soundfont: "applause",
         lilypond: "applause",
         program: 126
@@ -1066,7 +1066,7 @@ export var List: Array<C.IInstrument> = [
     {
         name: "Gunshot",
         shortName: "Gunshot",
-        clef: C.Clef.TREBLE_DRUMS,
+        clef: C.Clef.TrebleDrums,
         soundfont: "gunshot",
         lilypond: "gunshot",
         program: 127

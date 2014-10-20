@@ -131,7 +131,7 @@ class NewlineModel extends Model {
             ctx.songEditor.dangerouslyTakeSnapshot(ctx);
         }
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     toLylite(lylite: Array<string>) {
@@ -139,7 +139,7 @@ class NewlineModel extends Model {
     }
 
     get type() {
-        return C.Type.NEWLINE;
+        return C.Type.NewLine;
     }
 
     /**
@@ -154,14 +154,14 @@ class NewlineModel extends Model {
             if (ctx.body[i].isNote) {
                 ++l;
             }
-            if (ctx.body[i].priority === C.Type.NEWLINE) {
+            if (ctx.body[i].priority === C.Type.NewLine) {
                 break;
             }
         }
         diff -= 0.0001; // adjust for bad floating point arithmetic
         var xOffset = diff;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].priority === C.Type.NEWLINE) {
+            if (ctx.body[i].priority === C.Type.NewLine) {
                 break;
             }
             if (ctx.body[i].isNote) {
@@ -171,8 +171,8 @@ class NewlineModel extends Model {
                 xOffset -= diff/l;
             }
             var newX = ctx.body[i].x + xOffset;
-            if (ctx.body[i].priority === C.Type.BARLINE &&
-                    (!ctx.body[i + 1] || ctx.body[i + 1].priority !== C.Type.NEWLINE)) {
+            if (ctx.body[i].priority === C.Type.Barline &&
+                    (!ctx.body[i + 1] || ctx.body[i + 1].priority !== C.Type.NewLine)) {
                 if (ctx.lines[ctx.line - 1] &&
                         _.any((<any>ctx.lines[ctx.line - 1]).barlineX, // TSFIX
                             (x:number) => Math.abs(x - newX) < 0.15)) {
@@ -183,13 +183,13 @@ class NewlineModel extends Model {
 
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
-                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
-                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.BARLINE; --j) {
+                    for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
@@ -200,14 +200,14 @@ class NewlineModel extends Model {
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
-                            C.Type.BARLINE; ++j) {
+                            C.Type.Barline; ++j) {
                         if (ctx.body[j].isNote) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
-                            C.Type.BARLINE; ++j) {
+                            C.Type.Barline; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
                         if (ctx.body[j].isNote) {
                             remaining -= offset/noteCount;
@@ -220,12 +220,12 @@ class NewlineModel extends Model {
             ctx.body[i].x = newX;
         }
 
-        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
-            if (ctx.body[i].type === C.Type.BARLINE) {
+        for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
+            if (ctx.body[i].type === C.Type.Barline) {
                 NewlineModel.centerWholeBarRests(ctx.body, i);
             }
         }
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
@@ -236,19 +236,19 @@ class NewlineModel extends Model {
         var fidx = ctx.idx;
         for (; fidx >=0; --fidx) {
             ctx.body[fidx].annotatedExtraWidth = 0;
-            if (ctx.body[fidx].type === C.Type.BARLINE) {
+            if (ctx.body[fidx].type === C.Type.Barline) {
                 break;
             }
         }
-        if (ctx.body[fidx + 1].type === C.Type.NEWPAGE) {
-            return C.IterationStatus.SUCCESS;
+        if (ctx.body[fidx + 1].type === C.Type.NewPage) {
+            return C.IterationStatus.Success;
         }
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
             if (ctx.body[i].source) {
-                if (ctx.body[i].type === C.Type.NEWLINE ||
-                        ctx.body[i].type === C.Type.CLEF ||
-                        ctx.body[i].type === C.Type.TIME_SIGNATURE ||
-                        ctx.body[i].type === C.Type.KEY_SIGNATURE) {
+                if (ctx.body[i].type === C.Type.NewLine ||
+                        ctx.body[i].type === C.Type.Clef ||
+                        ctx.body[i].type === C.Type.TimeSignature ||
+                        ctx.body[i].type === C.Type.KeySignature) {
                     ctx.eraseFuture(i);
                     --i;
                 }
@@ -260,7 +260,7 @@ class NewlineModel extends Model {
             source: C.Source.ANNOTATOR
         }), fidx + 1);
 
-        return C.IterationStatus.LINE_CREATED;
+        return C.IterationStatus.LineCreated;
     };
 
     /**
@@ -277,8 +277,8 @@ class NewlineModel extends Model {
         }
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
-                    C.Type.NEWLINE); --i) {
-            if (ctx.body[i].priority === C.Type.DURATION) {
+                    C.Type.NewLine); --i) {
+            if (ctx.body[i].priority === C.Type.Duration) {
                 ++n;
             }
         }
@@ -293,15 +293,15 @@ class NewlineModel extends Model {
                 nw = (1 - weight)*nw;
                 lw = nw * n;
             }
-            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
-                if (ctx.body[i].priority === C.Type.DURATION) {
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
+                if (ctx.body[i].priority === C.Type.Duration) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
             }
 
-            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NEWLINE; --i) {
-                if (ctx.body[i].type === C.Type.BARLINE) {
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
+                if (ctx.body[i].type === C.Type.Barline) {
                     NewlineModel.centerWholeBarRests(ctx.body, i);
                 }
             }
@@ -312,7 +312,7 @@ class NewlineModel extends Model {
         // Whole-bar rests are centered.
         var toCenter: Array<Model> = [];
         // -2 because we want to avoid BARLINE and END_MARKER
-        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.BARLINE; --i) {
+        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.Barline; --i) {
             if (body[i].isRest && body[i].note.isWholebar) {
                 toCenter.push(body[i]);
             }
@@ -320,13 +320,13 @@ class NewlineModel extends Model {
         for (var j = 0; j < toCenter.length; ++j) {
             var bbox = SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
             var offset = 0;
-            if (body[i].type === C.Type.TIME_SIGNATURE) {
+            if (body[i].type === C.Type.TimeSignature) {
                 offset += 0.7/4;
             }
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
                 (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8 - toCenter[j].x;
         }
-        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.BARLINE; --i) {
+        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.Barline; --i) {
             body[i].cachedSpacing = Math.max(body[i].cachedSpacing, body[i].spacing);
         }
     }

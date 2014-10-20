@@ -20,15 +20,15 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
-        var status: C.IterationStatus = C.IterationStatus.SUCCESS;
+        var status: C.IterationStatus = C.IterationStatus.Success;
         if (!ctx.clef) { status = ClefModel.createClef(ctx); }
-        if (status !== C.IterationStatus.SUCCESS) { return status; }
+        if (status !== C.IterationStatus.Success) { return status; }
 
         // A key signature must exist on each line
         if (!ctx.keySignature) { status = KeySignatureModel.createKeySignature(ctx); }
-        if (status !== C.IterationStatus.SUCCESS) { return status; }
+        if (status !== C.IterationStatus.Success) { return status; }
 
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.DURATION, true), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => n.containsAccidental(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
@@ -41,9 +41,9 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         }
 
         ctx.x += 0.7 + this._annotatedSpacing/4;
-        ctx.timeSignature = this.actualTS || this._timeSignature;
+        ctx.timeSignature = this._timeSignature;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     constructor(spec: { timeSignature: C.ITimeSignature }) {
@@ -79,16 +79,21 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
     get beatType() {
         return this._timeSignature.beatType;
     }
-    set timeSignature(ts: C.ITimeSignature) {
-        this._timeSignature = _.clone(ts);
-
-    }
     get timeSignature(): C.ITimeSignature {
         return this._timeSignature;
     }
+    set timeSignature(ts: C.ITimeSignature) {
+        this._timeSignature = _.clone(ts);
+    }
+    get displayTimeSignature(): C.ITimeSignature {
+        return this._displayTimeSignature || this._timeSignature;
+    }
+    set displayTimeSignature(ts: C.ITimeSignature) {
+        this._displayTimeSignature = ts;
+    }
 
     get type() {
-        return C.Type.TIME_SIGNATURE;
+        return C.Type.TimeSignature;
     }
 
     /**
@@ -112,10 +117,10 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
     _annotatedSpacing: number;
     color: string;
-    actualTS: C.ITimeSignature;
     temporary: boolean;
     selected: boolean;
     private _timeSignature: C.ITimeSignature = null;
+    private _displayTimeSignature: C.ITimeSignature = null;
 }
 
 /* tslint:disable */

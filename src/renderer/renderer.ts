@@ -127,7 +127,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                     } else if (stave.body) {
                         return Group({key: idx, style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
                             _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
-                                if (obj.type === C.Type.NEWLINE) {
+                                if (obj.type === C.Type.NewLine) {
                                     memo.push([]);
                                 }
                                 memo[memo.length - 1].push(obj);
@@ -150,8 +150,8 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                                             var selIdx = -1;
                                             var selProps: any = null;
                                             for (var i = 0; i < s.length; ++i) {
-                                                if (s[i].selected && s[i].type !== C.Type.NEWLINE &&
-                                                        s[i].type !== C.Type.END_MARKER) {
+                                                if (s[i].selected && s[i].type !== C.Type.NewLine &&
+                                                        s[i].type !== C.Type.EndMarker) {
                                                     if (selIdx === -1) {
                                                         selIdx = h++;
                                                         selProps = {
@@ -289,14 +289,14 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
             dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
             var body = this.props.staves[info.staveIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
-                    j < body.length && body[info.musicLine].type !== C.Type.NEWPAGE; ++j) {
+                    j < body.length && body[info.musicLine].type !== C.Type.NewPage; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
                 if (Math.abs(item.y - dynY) < 0.001) {
-                    if ((item.type === C.Type.KEY_SIGNATURE ||
-                                item.type === C.Type.TIME_SIGNATURE ||
-                                item.type === C.Type.CLEF ||
-                                item.type === C.Type.DURATION) &&
+                    if ((item.type === C.Type.KeySignature ||
+                                item.type === C.Type.TimeSignature ||
+                                item.type === C.Type.Clef ||
+                                item.type === C.Type.Duration) &&
                             Math.abs(dynX - item.x + item.cachedSpacing*2) < 0.27 + item.cachedSpacing*4 +
                                 (item.isNote ? (item.note.dots||0)*0.2 : 0)) {
                         dynX = item.x;
@@ -409,7 +409,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
             }
             var inRange = function(min: number, val: number, max: number)  {return min < val && val < max;};
 
-            for (var i = ctx.pageStarts[mouse.page]; i < body.length && body[i].type !== C.Type.NEWPAGE; ++i) {
+            for (var i = ctx.pageStarts[mouse.page]; i < body.length && body[i].type !== C.Type.NewPage; ++i) {
                 var item = body[i];
                 if (inRange(box.top - 1, item.y,
                             box.bottom + 1) &&

@@ -56,10 +56,10 @@ class BeamGroupModel extends Model {
         if (this.beam.length < 2) {
             _.each(this.beam, o => o.inBeam = false);
             ctx.eraseCurrent();
-            return C.IterationStatus.RETRY_CURRENT;
+            return C.IterationStatus.RetryCurrent;
         }
 
-        var mret = C.IterationStatus.RETRY_FROM_ENTRY;
+        var mret = C.IterationStatus.RetryFromEntry;
 
         var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
         this.tuplet = next && next.tuplet || null;
@@ -81,12 +81,12 @@ class BeamGroupModel extends Model {
             var ret = b.annotate(ctx);
             ctx.isBeam = undefined;
             mret = ret;
-            return (mret === C.IterationStatus.SUCCESS);
+            return (mret === C.IterationStatus.Success);
         })) {
             return mret;
         }
         ctx.x = this.x;
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     constructor(spec: any) {
@@ -138,18 +138,14 @@ class BeamGroupModel extends Model {
 
     }
 
-    getBeats(ctx: Annotator.Context) {
-        return this.beam[0].getBeats(ctx);
-    }
-
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
-        var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BEAM_GROUP;
+        var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BeamGroup;
         var model = new BeamGroupModel({ beam: beam, source: C.Source.ANNOTATOR });
         var offset = replaceMode ? 1 : 0;
         var idx = ctx.idx - offset;
-        var spliceMode = replaceMode ? Annotator.SplicePolicy.Masked : Annotator.SplicePolicy.Subtractive;
+        var spliceMode = replaceMode ? Annotator.SplicePolicy.Masked : Annotator.SplicePolicy.MatchedOnly;
         ctx.splice(idx, offset, [model], spliceMode);
-        return C.IterationStatus.RETRY_FROM_ENTRY;
+        return C.IterationStatus.RetryFromEntry;
     };
 
     static decideDirection = function(firstLines: Array<number>, lastLines: Array<number>) {
@@ -169,7 +165,7 @@ class BeamGroupModel extends Model {
     };
 
     get type() {
-        return C.Type.BEAM_GROUP;
+        return C.Type.BeamGroup;
     }
 
     toJSON(): {} {

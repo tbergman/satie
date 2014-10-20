@@ -39,7 +39,7 @@ class Model {
 
         var ret: C.IterationStatus = this.annotateImpl(ctx);
         assert(ret !== undefined);
-        if (ret === C.IterationStatus.SUCCESS && this.source === C.Source.USER_PROPOSED) {
+        if (ret === C.IterationStatus.Success && this.source === C.Source.USER_PROPOSED) {
             this.source = C.Source.USER;
         }
         return ret;
@@ -247,7 +247,7 @@ class Model {
     ctxData: C.MetreContext;
 
     get type(): C.Type {
-        return C.Type.UNKNOWN;
+        return C.Type.Unknown;
     }
 
     get note(): C.IPitchDuration {

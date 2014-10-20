@@ -140,7 +140,7 @@ export class Context implements C.MetreContext {
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
                 (condition && !condition(this.body[this.idx + i])))) {
             ++i;
         }
@@ -160,7 +160,7 @@ export class Context implements C.MetreContext {
             for (var j = this.idx + 1; j < body.length; ++j) {
                 if (body[j].type === type) { intersects.push(body[j]); }
 
-                if (body[j].priority === C.Type.DURATION) { break; }
+                if (body[j].priority === C.Type.Duration) { break; }
                 if (direct) { break; }
             }
         }
@@ -180,7 +180,7 @@ export class Context implements C.MetreContext {
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BEAM_GROUP && !allowBeams) ||
+                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
                 (cond && !cond(this.body[this.idx + i], this.idx + i)))) {
             ++i;
         }
@@ -195,12 +195,12 @@ export class Context implements C.MetreContext {
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
-        var inBeam = this.body[idx + 1].priority === C.Type.BEAM_GROUP;
+        var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
             var beamed: Array<{ inBeam: boolean }> = [];
             for (var i = 0; i < this._staves.length; ++i) {
                 if (this._staves[i].body &&
-                    this._staves[i].body[idx + 1].type === C.Type.BEAM_GROUP) {
+                    this._staves[i].body[idx + 1].type === C.Type.BeamGroup) {
                     beamed = beamed.concat((<any>this._staves[i].body[idx + 1]).beam);
                 }
             }
@@ -219,7 +219,7 @@ export class Context implements C.MetreContext {
                 "removing an already-processed beam (this is inefficient)");
         var beam = this.beamFollows(idx);
         assert(beam, "There must be a beam to remove");
-        beam.forEach(p => p.inBeam = false);
+        beam.forEach(p => { p.inBeam = false; });
         return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
 
@@ -246,7 +246,7 @@ export class Context implements C.MetreContext {
      */
     eraseCurrent(): C.IterationStatus {
         this.splice(this.idx, 1);
-        return C.IterationStatus.RETRY_CURRENT;
+        return C.IterationStatus.RetryCurrent;
     }
 
     /**
@@ -256,8 +256,8 @@ export class Context implements C.MetreContext {
     eraseFuture(idx: number): C.IterationStatus {
         assert(idx > this.idx, "Invalid use of eraseFuture");
 
-        this.splice(idx, 1);
-        return C.IterationStatus.SUCCESS;
+        this.splice(idx, 1, null);
+        return C.IterationStatus.Success;
     }
 
     /**
@@ -268,7 +268,7 @@ export class Context implements C.MetreContext {
         assert(idx <= this.idx, "Invalid use of erasePast");
 
         this.splice(idx, 1);
-        return C.IterationStatus.RETRY_FROM_ENTRY;
+        return C.IterationStatus.RetryFromEntry;
     }
 
     /**
@@ -283,7 +283,7 @@ export class Context implements C.MetreContext {
         assert(index > this.idx, "Otherwise, use 'insertPast'");
         this.splice(index, 0, [obj], SplicePolicy.Additive);
 
-        return C.IterationStatus.SUCCESS;
+        return C.IterationStatus.Success;
     }
 
     /**
@@ -297,8 +297,8 @@ export class Context implements C.MetreContext {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
 
-        var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
-            C.IterationStatus.RETRY_FROM_ENTRY;
+        var exitCode = this.idx === index ? C.IterationStatus.RetryCurrent :
+            C.IterationStatus.RetryFromEntry;
 
         this.splice(index, 0, [obj], SplicePolicy.Additive);
 
@@ -312,8 +312,8 @@ export class Context implements C.MetreContext {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
 
-        var exitCode = this.idx === index ? C.IterationStatus.RETRY_CURRENT :
-            C.IterationStatus.RETRY_FROM_ENTRY;
+        var exitCode = this.idx === index ? C.IterationStatus.RetryCurrent :
+            C.IterationStatus.RetryFromEntry;
 
         var visibleIdx = -1;
         for (var i = 0; i < this._staves.length; ++i) {
@@ -332,11 +332,8 @@ export class Context implements C.MetreContext {
      * The sledgehammer of the mutator tools. Use sparingly.
      * @mutator
      */
-    splice(start: number, count: number, replaceWith?: Array<Model>, splicePolicy?: SplicePolicy) {
+    splice(start: number, count: number, replaceWith?: Array<Model>, splicePolicy: SplicePolicy = SplicePolicy.MatchedOnly) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
-        if (isNaN(splicePolicy)) {
-            splicePolicy = SplicePolicy.Subtractive;
-        }
         assert(!isNaN(start));
         assert(!isNaN(count));
         if (splicePolicy === SplicePolicy.Additive) {
@@ -346,10 +343,10 @@ export class Context implements C.MetreContext {
         this._assertAligned();
 
         var replaceFrom = 0;
-        if (splicePolicy === SplicePolicy.Subtractive) {
+        if (splicePolicy === SplicePolicy.MatchedOnly) {
             for (var i = this.idx + count + 1;
                     i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
-                    this.body[i].placeholder && this.body[i].priority === C.Type.DURATION; ++i) {
+                    this.body[i].placeholder && this.body[i].priority === C.Type.Duration; ++i) {
                 ++replaceFrom;
             }
             count += replaceFrom;
@@ -402,6 +399,17 @@ export class Context implements C.MetreContext {
                                 }, replaceWith[j].source));
                             } else {
                                 placeholders.push(stave.body[vidx + j]);
+                                if (splicePolicy === SplicePolicy.ShortenOtherParts) {
+                                    var retained = placeholders[placeholders.length - 1];
+                                    var fromMainPart = replaceWith[j];
+                                    if (retained.getBeats(this) > fromMainPart.getBeats(this)) {
+                                        assert(retained.isNote, "Only notes have durations");
+                                        assert(replaceWith[j].isNote, "The retained and replaced notes should have the same priority");
+                                        retained.note.count = fromMainPart.note.count;
+                                        retained.note.dots = fromMainPart.note.dots;
+                                        retained.note.tuplet = fromMainPart.note.tuplet;
+                                    }
+                                }
                             }
                         } else {
                             placeholders.push(new PlaceholderModel({
@@ -410,16 +418,15 @@ export class Context implements C.MetreContext {
                         }
                     }
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
-                        while (startPriority > C.Type.BARLINE &&
-                            replaceWith[0].priority > C.Type.BARLINE &&
+                        while (startPriority > C.Type.Barline &&
+                            replaceWith[0].priority > C.Type.Barline &&
                             stave.body[start + offset] && stave.body[start + offset].ctxData &&
-                            stave.body[start + offset].priority > C.Type.BARLINE &&
+                            stave.body[start + offset].priority > C.Type.Barline &&
                             new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
 
-                    debugger;
                     Array.prototype.splice.apply(stave.body, [start + offset, count]
                         .concat(<any>placeholders));
                 }
@@ -428,8 +435,12 @@ export class Context implements C.MetreContext {
         this._assertAligned();
         if (splicePolicy === SplicePolicy.Masked) {
             var clot = start - 1;
-            while(this.body[clot + 1] && this.body[clot + 1].priority > C.Type.BARLINE) {
+            while(this.body[clot + 1] && this.body[clot + 1].priority > C.Type.Barline) {
                 ++clot;
+            }
+            assert(clot >= start);
+            while(this.body[start - 1] && this.body[start - 1].priority > C.Type.Barline) {
+                --start;
             }
             this._realign(start, clot);
             this._assertAligned();
@@ -448,7 +459,7 @@ export class Context implements C.MetreContext {
                 if (this._assertionPolicy !== AssertionPolicy.Strict && !bodies[j][i]) {
                     break;
                 }
-                var valid = bodies[j][i].priority > C.Type.BARLINE;
+                var valid = bodies[j][i].priority > C.Type.Barline;
                 if (this._assertionPolicy === AssertionPolicy.Strict) {
                     assert(valid, "Realign only takes durations and modifiers.");
                 }
@@ -463,8 +474,9 @@ export class Context implements C.MetreContext {
 
         while(_.any(reals, r => r.length)) {
             var thisBeat = _.min(reals.map((r, j) => r.length ? cBeats[j] : 100000));
+            var thisPriority = _.min(reals.map((r, j) => r.length && cBeats[j] === thisBeat ? r[0].priority : 100000)); 
             for (var j = 0; j < bodies.length; ++j) {
-                if (reals[j].length && (cBeats[j] === thisBeat)) {
+                if (reals[j].length && (cBeats[j] === thisBeat) && reals[j][0].priority === thisPriority) {
                     cBeats[j] += reals[j][0].getBeats(this);
                     aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
                 } else {
@@ -507,7 +519,7 @@ export class Context implements C.MetreContext {
 
     get nextActualType(): number {
         var i = this.idx + 1;
-        while (i < this.body.length && this.body[i].type === C.Type.PLACEHOLDER) {
+        while (i < this.body.length && this.body[i].type === C.Type.Placeholder) {
             ++i;
         }
         return this.body[i] ? this.body[i].type : null;
@@ -515,7 +527,7 @@ export class Context implements C.MetreContext {
 
     _barAfter(index: number): Model {
         for (var i = index; i < this.body.length; ++i) {
-            if (this.body[i].type === C.Type.BARLINE) {
+            if (this.body[i].type === C.Type.Barline) {
                 return this.body[i];
             }
         }
@@ -803,7 +815,7 @@ export class Context implements C.MetreContext {
             cursor: null,
             operations: 5,
             resetY: false,
-            skip: status === C.IterationStatus.EXIT_EARLY, // If skip is true, context is not updated.
+            skip: status === C.IterationStatus.ExitEarly, // If skip is true, context is not updated.
             success: true,
             patch: patch
         };
@@ -885,10 +897,10 @@ export class Context implements C.MetreContext {
 
 export enum SplicePolicy {
     /**
-     * Remove elements from non-current parts, if needed or possible.
+     * Remove models from non-current parts, unless they line up with the new part.
      * This is the default policy.
      */
-    Subtractive = 1,
+    MatchedOnly = 1,
     /**
      * Never remove elements from any part.
      */
@@ -898,7 +910,12 @@ export enum SplicePolicy {
      * This policy can only be used when splicing durations or duration placeholders
      * from a sub-array with durations or duration placeholders.
      */
-    Masked = 3
+    Masked = 3,
+    /**
+     * Like MatchedOnly, but shorten durations in other parts when replacing them.
+     * This is used for changing the time signature.
+     */
+    ShortenOtherParts = 4
 }
 
 export enum AssertionPolicy {
@@ -1034,7 +1051,7 @@ class PrivIterator {
     annotate(verbose: boolean): C.IterationStatus {
         this._assertOffsetsOK();
         // Statuses with higher numbers go back further. Return the highest one.
-        var maxStatus: C.IterationStatus = C.IterationStatus.EXIT_EARLY;
+        var maxStatus: C.IterationStatus = C.IterationStatus.ExitEarly;
 
         var origSnapshot: ILineSnapshot = JSON.parse(JSON.stringify(this._parent.captureLine()));
         var componentSnapshots: Array<ILineSnapshot> = [];
@@ -1045,7 +1062,7 @@ class PrivIterator {
             if (this.atEnd) {
                 // All staves are now at the end.
                 this._assertOffsetsOK();
-                return C.IterationStatus.RETRY_CURRENT; // Don't go to next!
+                return C.IterationStatus.RetryCurrent; // Don't go to next!
             }
             this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
 
@@ -1064,20 +1081,20 @@ class PrivIterator {
             }
 
             switch(componentStatus) {
-                case C.IterationStatus.LINE_CREATED:
+                case C.IterationStatus.LineCreated:
                     this._clearCursor();
                     this._markLineDirty();
                     break;
-                case C.IterationStatus.RETRY_PREVIOUS_LINE:
+                case C.IterationStatus.RetryPreviousLine:
                     this._markLineDirty();
                     break;
-                case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
+                case C.IterationStatus.RetryCurrentNoOptimizations:
                     this._canExitAtNewline = false;
                     break;
             }
 
             maxStatus = Math.max(maxStatus, componentStatus);
-            var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.PLACEHOLDER;
+            var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.Placeholder;
             if (!isPlaceholder) {
                 componentSnapshots.push(this._parent.captureLine());
             } else {
@@ -1088,7 +1105,7 @@ class PrivIterator {
 
         this._assertOffsetsOK();
 
-        if (maxStatus <= C.IterationStatus.SUCCESS) {
+        if (maxStatus <= C.IterationStatus.Success) {
             this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
         }
 
@@ -1161,43 +1178,43 @@ class PrivIterator {
 
     next(status: C.IterationStatus) {
         switch (status) {
-            case C.IterationStatus.SUCCESS:
+            case C.IterationStatus.Success:
                 this._increment();
                 break;
-            case C.IterationStatus.EXIT_EARLY:
+            case C.IterationStatus.ExitEarly:
                 for (var i = 0; i < this._components.length; ++i) {
                     this._components[i].markDone();
                 }
                 this.eofJustificationDirty = false;
                 break;
-            case C.IterationStatus.RETRY_FROM_ENTRY:
+            case C.IterationStatus.RetryFromEntry:
                 this._reset();
                 break;
-            case C.IterationStatus.LINE_CREATED:
+            case C.IterationStatus.LineCreated:
                 this._rollbackLine(this._parent.line);
                 this._rewindTwoNewlines();
                 this._increment();
                 break;
-            case C.IterationStatus.RETRY_PREVIOUS_LINE:
+            case C.IterationStatus.RetryPreviousLine:
                 this._rollbackLine(this._parent.line - 1);
                 this._rewindTwoNewlines();
                 this._increment();
                 break;
-            case C.IterationStatus.RETRY_LINE:
+            case C.IterationStatus.RetryLine:
                 this._rollbackLine(this._parent.line);
-                this._rewind(C.Type.NEWLINE);
+                this._rewind(C.Type.NewLine);
                 this._increment();
                 break;
-            case C.IterationStatus.LINE_REMOVED:
+            case C.IterationStatus.LineRemoved:
                 this._rollbackLine(this._parent.line - 1);
                 break;
-            case C.IterationStatus.RETRY_BEAM:
+            case C.IterationStatus.RetryBeam:
                 this._parent.loc.beat = this._parent.startOfBeamBeat;
-                this._rewind(C.Type.BEAM_GROUP);
-                this._parent.x = this._componentWithType(C.Type.BEAM_GROUP).x;
+                this._rewind(C.Type.BeamGroup);
+                this._parent.x = this._componentWithType(C.Type.BeamGroup).x;
                 break;
-            case C.IterationStatus.RETRY_CURRENT:
-            case C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS:
+            case C.IterationStatus.RetryCurrent:
+            case C.IterationStatus.RetryCurrentNoOptimizations:
                 this._ensureAllOrNoneAtEnd();
                 break;
             default:
@@ -1206,7 +1223,7 @@ class PrivIterator {
 
         this._assertOffsetsOK();
 
-        if (status !== C.IterationStatus.SUCCESS) {
+        if (status !== C.IterationStatus.Success) {
             recordMetreData(this._staves);
         }
 
@@ -1252,9 +1269,9 @@ class PrivIterator {
 
     private _rewindTwoNewlines() {
         for (var i = 0; i < this._components.length; ++i) {
-            this._components[i].rewind(C.Type.NEWLINE);
+            this._components[i].rewind(C.Type.NewLine);
             this._components[i].rewind();
-            this._components[i].rewind(C.Type.NEWLINE);
+            this._components[i].rewind(C.Type.NewLine);
         }
     }
 
@@ -1309,13 +1326,13 @@ class PrivIterator {
     }
 
     private _ensureAllOrNoneAtEnd() {
-        var pri = C.Type.UNKNOWN;
+        var pri = C.Type.Unknown;
         _.every(this._components, c => {
             if (c.curr) {
                 pri = Math.min(pri, c.curr.type);
             }
         });
-        if (pri !== C.Type.UNKNOWN) {
+        if (pri !== C.Type.Unknown) {
             _.each(this._components, (c: PrivIteratorComponent) => {
                 if (!c.curr) {
                     c.ensurePriorityIs(pri);
@@ -1406,10 +1423,10 @@ class PrivIteratorComponent {
         this._nextBeat = ctx.beat;
         ///
 
-        var isClean = status === C.IterationStatus.SUCCESS && !this._mutation && (!this._cursor || this._cursor.annotatedObj);
-        var isNewline = this.curr && this.curr.type === C.Type.NEWLINE;
+        var isClean = status === C.IterationStatus.Success && !this._mutation && (!this._cursor || this._cursor.annotatedObj);
+        var isNewline = this.curr && this.curr.type === C.Type.NewLine;
 
-        if (status === C.IterationStatus.SUCCESS && shouldUpdateVC) {
+        if (status === C.IterationStatus.Success && shouldUpdateVC) {
 		    this._cursor.annotatedObj = this.curr;
             this._cursor.annotatedStave = this._visibleSidx;
             this._cursor.annotatedLine = ctx.line;
@@ -1419,7 +1436,7 @@ class PrivIteratorComponent {
         this._clef = ctx.clef;
 
         if (canExitAtNewline && isNewline && isClean) {
-            return C.IterationStatus.EXIT_EARLY;
+            return C.IterationStatus.ExitEarly;
         }
 
         return status;
@@ -1433,7 +1450,7 @@ class PrivIteratorComponent {
             this._location = new C.Location(this._body[++this._idx].ctxData);
         } while ((from.bar !== 1 || from.beat !== 0) &&
             (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
-            this.curr.priority <= C.Type.BEGIN || this.curr.priority === C.Type.BARLINE)));
+            this.curr.priority <= C.Type.Begin || this.curr.priority === C.Type.Barline)));
         this._updateSubctx();
     }
 
@@ -1535,11 +1552,11 @@ class PrivIteratorComponent {
     }
 
     private _aheadOfSchedule(ctx: Context): boolean {
-        if (ctx.curr.type !== C.Type.DURATION) {
+        if (ctx.curr.type !== C.Type.Duration) {
             return false;
         }
-        var space = !!(ctx.findVertical(c => c.type !== C.Type.PLACEHOLDER && c !== ctx.curr).length);
-        return space && ctx.curr.type !== C.Type.PLACEHOLDER && ctx.beat > ctx.__globalBeat__;
+        var space = !!(ctx.findVertical(c => c.type !== C.Type.Placeholder && c !== ctx.curr).length);
+        return space && ctx.curr.type !== C.Type.Placeholder && ctx.beat > ctx.__globalBeat__;
     }
 
     private _addPadding(ctx: Context) {
@@ -1548,7 +1565,7 @@ class PrivIteratorComponent {
             _priority: C.Type[ctx.curr.priority]
         }, C.Source.ANNOTATOR /* ? */)], SplicePolicy.Additive);
         ctx.beat = ctx.__globalBeat__;
-        return C.IterationStatus.RETRY_CURRENT_NO_OPTIMIZATIONS;
+        return C.IterationStatus.RetryCurrentNoOptimizations;
     }
 
     private get _next() {
@@ -1570,7 +1587,7 @@ class PrivIteratorComponent {
         var target = this._cursor;
         var barMatches = ctx.bar === target.bar;
         var beatMatches = (!target.beat && !target.annotatedObj) || ctx.beat === target.beat;
-        var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.END_MARKER);
+        var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.EndMarker);
 
         return !this._mutation && // Wait until mutation has occurred & _mutation is unset.
             barMatches && beatMatches && typeMatches && !target.annotatedObj;
@@ -1578,7 +1595,7 @@ class PrivIteratorComponent {
 
 
     private _doCustomAction(ctx: Context): C.IterationStatus {
-        if (this.curr.type === C.Type.TIME_SIGNATURE) {
+        if (this.curr.type === C.Type.TimeSignature) {
             // HACK HACK HACK -- we don't want to annotate before the custom action, but
             // some actions expect a valid time signature.
             ctx.timeSignature = (<any>this.curr).timeSignature;
