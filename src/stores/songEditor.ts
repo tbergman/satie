@@ -59,8 +59,8 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * [       |     |        |      | PUT] /local/song/src
  * [       |     |        |      | PUT] /local/song/transpose
  * 
- * [       |     |        |      | PUT] /local/staveHeight/larger
- * [       |     |        |      | PUT] /local/staveHeight/smaller
+ * [       |     |        |      | PUT] /local/staveHeight/increase
+ * [       |     |        |      | PUT] /local/staveHeight/decrease
  * 
  * [DELETE |     |        |      | PUT] /local/tool
  * [       |     |        |      | PUT] /local/tool/action
@@ -698,7 +698,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(CHANGE_EVENT);
     }
 
-    "PUT /local/staveHeight/larger"(action: C.IFluxAction) {
+    "PUT /local/staveHeight/increase"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
         var h = Math.round(this._staveHeight * 100) / 100;
 
@@ -714,7 +714,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /local/staveHeight/smaller"(action: C.IFluxAction) {
+    "PUT /local/staveHeight/decrease"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
         var h = Math.round(this._staveHeight * 100) / 100;
         for (var i = 0; i < renderUtil.rastalToHeight.length; ++i) {
@@ -881,20 +881,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
                 // Remove items based on a white-list.
                 if (obj.isNote) {
-                    // The stepCursor call above invalidates _visualCursor
-                    // DO NOT CHECK _visualCursor HERE!!!
-                    var EraseTool: typeof EraseToolType = require("./eraseTool");
-                    var etool = new EraseTool(true);
-                    this._annotate(
-                        {
-                            obj: obj,
-                            musicLine: line,
-                            idx: i,
-                            visualIdx: NaN,
-                            staveIdx: this._activeStaveIdx
-                        },
-                        etool.splice.bind(etool, false),
-                        null, null, null, false);
+                    // TODO
                 } else {
                     this._annotate(null, null, null, null, null, false);
                     this._stepCursor({

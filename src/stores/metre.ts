@@ -150,6 +150,8 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
  * @internal
  */
 function tryMerge(currNote: C.IPitchDuration, nextObj: Model, nextIdx: number, ctx: Annotator.Context) {
+    "use strict";
+
     if (nextObj.inBeam) {
         return false;
     }
