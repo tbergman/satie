@@ -133,7 +133,13 @@ class DurationModel extends Model implements C.IPitchDuration {
                 while(ctx.body[j].type !== C.Type.BeamGroup) {
                     ++j;
                 }
-                ctx.removeFollowingBeam(j - 1, j <= ctx.idx);
+                var isInPast = j <= ctx.idx;
+                ctx.removeFollowingBeam(j - 1, isInPast);
+                    debugger;
+                if (isInPast) {
+                    // This is kind of gross, but hey.
+                    ++ctx.idx;
+                }
             }
 
             _.each(b, function (b: DurationModel) {
