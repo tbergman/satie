@@ -59,7 +59,7 @@ class BeginModel extends Model {
 
     static createBegin = (ctx: Annotator.Context) => {
         return ctx.insertPast(new BeginModel(
-            {source: C.Source.ANNOTATOR}));
+            {source: C.Source.Annotator}));
     };
 
     get type() {

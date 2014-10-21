@@ -34,7 +34,7 @@ class ClefModel extends Model {
         // Barlines should be before clefs when either is possible.
         if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
             var BarlineModel: typeof BarlineModelType = require("./barline");
-            return BarlineModel.createBarline(ctx, C.Barline.STANDARD);
+            return BarlineModel.createBarline(ctx, C.Barline.Standard);
         }
 
         // Copy information from the context that the view needs.
@@ -64,7 +64,7 @@ class ClefModel extends Model {
         return this.isVisible !== false;
     }
     toLylite(lylite: Array<string>) {
-        if (this.source === C.Source.ANNOTATOR) {
+        if (this.source === C.Source.Annotator) {
             return;
         }
         lylite.push("\\clef " + this.clef + "\n");
@@ -83,7 +83,7 @@ class ClefModel extends Model {
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
         return ctx.insertPast(new ClefModel({
             clef: (ctx.prevClefByStave[ctx.currStaveIdx] ? "detect" : "treble"),
-            source: C.Source.ANNOTATOR
+            source: C.Source.Annotator
         }));
     };
 

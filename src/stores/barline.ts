@@ -51,7 +51,7 @@ class BarlineModel extends Model {
             if (i === -1) { // Beginning of document.
                 var DurationModel: typeof DurationModelType = require("./duration");
                 var fullRest = Metre.wholeNote(ctx)
-                    .map(spec => new DurationModel(spec, C.Source.ANNOTATOR));
+                    .map(spec => new DurationModel(spec, C.Source.Annotator));
                 _.each(fullRest, (r) => {
                     r.isRest = true;
                     ctx.insertPast(r);
@@ -79,7 +79,7 @@ class BarlineModel extends Model {
             return ctx.eraseCurrent();
         }
 
-        if (this.barline === C.Barline.DOUBLE) {
+        if (this.barline === C.Barline.Double) {
             // The document cannot be entirely empty.
             okay = false;
             for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
@@ -90,7 +90,7 @@ class BarlineModel extends Model {
             }
             if (!okay) {
                 var DurationModel: typeof DurationModelType = require("./duration");
-                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, C.Source.ANNOTATOR));
+                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, C.Source.Annotator));
                 for (i = 0; i < whole.length; ++i) {
                     whole[i].chord = [{ pitch: "r", acc: null, octave: null }];
                     whole[i].tie = false;
@@ -116,8 +116,8 @@ class BarlineModel extends Model {
         }
 
         // Double barlines only exist at the end of a piece.
-        if (this.barline === C.Barline.DOUBLE && ctx.next(null, 2)) {
-            this.barline = C.Barline.STANDARD;
+        if (this.barline === C.Barline.Double && ctx.next(null, 2)) {
+            this.barline = C.Barline.Standard;
             return C.IterationStatus.RetryCurrent;
         }
 
@@ -155,7 +155,7 @@ class BarlineModel extends Model {
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
     static createBarline = (ctx: Annotator.Context, mode: C.Barline): C.IterationStatus => {
-        mode = mode || C.Barline.STANDARD;
+        mode = mode || C.Barline.Standard;
 
         if (ctx.curr.type === C.Type.BeamGroup) {
             ctx.eraseCurrent();

@@ -39,10 +39,14 @@ class Model {
 
         var ret: C.IterationStatus = this.annotateImpl(ctx);
         assert(ret !== undefined);
-        if (ret === C.IterationStatus.Success && this.source === C.Source.USER_PROPOSED) {
-            this.source = C.Source.USER;
+        if (ret === C.IterationStatus.Success && this.source === C.Source.UserProposed) {
+            this.source = C.Source.User;
         }
         return ret;
+    }
+
+    modelDidLoad(body: Array<Model>, idx: number) {
+
     }
 
     /**
@@ -133,7 +137,7 @@ class Model {
         for (var i = 0; i < staves.length; ++i) {
             for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
                 var item = staves[i].body[j];
-                if (item.source === C.Source.ANNOTATOR && !item.placeholder) {
+                if (item.source === C.Source.Annotator && !item.placeholder) {
                     for (var k = 0; k < staves.length; ++k) {
                         if (staves[k].body) {
                             staves[k].body.splice(j, 1);
@@ -169,22 +173,22 @@ class Model {
 
     get source(): C.Source {
         if (!!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.USER_PROPOSED;
+            return C.Source.UserProposed;
         } else if (!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.USER;
+            return C.Source.User;
         } else if (!(this._flags & Flags.PROPOSED) && !!(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.ANNOTATOR;
+            return C.Source.Annotator;
         }
         assert(false, "Unknown source");
     }
     set source(source: C.Source) {
-        if (source === C.Source.ANNOTATOR) {
+        if (source === C.Source.Annotator) {
             this._flags = this._flags | Flags.ANNOTATOR;
             this._flags = this._flags & ~Flags.PROPOSED;
-        } else if (source === C.Source.USER) {
+        } else if (source === C.Source.User) {
             this._flags = this._flags & ~Flags.ANNOTATOR;
             this._flags = this._flags & ~Flags.PROPOSED;
-        } else if (source === C.Source.USER_PROPOSED) {
+        } else if (source === C.Source.UserProposed) {
             this._flags = this._flags & ~Flags.ANNOTATOR;
             this._flags = this._flags | Flags.PROPOSED;
         }

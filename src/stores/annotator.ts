@@ -448,6 +448,7 @@ export class Context implements C.MetreContext {
     }
 
     private _realign(start: number, end: number) {
+        var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         var bodies = this._staves.filter(s => !!s.body).map(s => s.body);
         var cBeats = bodies.map(b => 0);
         var placeholders = bodies.map(b => <Array<Model>>[]);
@@ -474,13 +475,22 @@ export class Context implements C.MetreContext {
 
         while(_.any(reals, r => r.length)) {
             var thisBeat = _.min(reals.map((r, j) => r.length ? cBeats[j] : 100000));
-            var thisPriority = _.min(reals.map((r, j) => r.length && cBeats[j] === thisBeat ? r[0].priority : 100000)); 
+            var thisPriority = _.min(reals.map((r, j) => r.length && cBeats[j] === thisBeat ? r[0].priority : 100000));
             for (var j = 0; j < bodies.length; ++j) {
                 if (reals[j].length && (cBeats[j] === thisBeat) && reals[j][0].priority === thisPriority) {
-                    cBeats[j] += reals[j][0].getBeats(this);
+                    if (reals[j][0].isNote) {
+                        // Beams have beats, but that's because it's usually processed instead of the notes beats.
+                        cBeats[j] += reals[j][0].getBeats(this);
+                    }
                     aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
                 } else {
-                    aligned[j] = aligned[j].concat(placeholders[j].splice(0, 1));
+                    if (!placeholders[j][0] || placeholders[j][0].priority !== thisPriority) {
+                        console.warn("Sketchily adding a new placeholder to fix alignment (be worried)");
+                        aligned[j] = aligned[j].concat(new PlaceholderModel({ _priority: C.Type[thisPriority] }, C.Source.Annotator));
+                        //placeholders[j][0].priority = thisPriority;
+                    } else {
+                        aligned[j] = aligned[j].concat(placeholders[j].splice(0, 1));
+                    }
                 }
             }
         }
@@ -1500,10 +1510,10 @@ class PrivIteratorComponent {
             assert.equal(this.nextPriority, priority, "Priorities must be aligned");
         } else if (this.nextPriority !== priority) {
             var nextIsPlaceholder = this._body[this._idx + 1] && this._body[this._idx + 1].placeholder;
-            var PlaceholderModel = require("./placeholder");
+            var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
             this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
                 new PlaceholderModel({ _priority: C.Type[priority] },
-                    C.Source.ANNOTATOR /* ? */));
+                    C.Source.Annotator /* ? */));
         }
     }
 
@@ -1563,7 +1573,7 @@ class PrivIteratorComponent {
         var PlaceholderModel = require("./placeholder");
         ctx.splice(ctx.idx, 0, [new PlaceholderModel({
             _priority: C.Type[ctx.curr.priority]
-        }, C.Source.ANNOTATOR /* ? */)], SplicePolicy.Additive);
+        }, C.Source.Annotator /* ? */)], SplicePolicy.Additive);
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RetryCurrentNoOptimizations;
     }

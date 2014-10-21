@@ -6,6 +6,7 @@
 
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
+import assert = require("assert");
 
 import Model = require("./model");
 
@@ -54,22 +55,31 @@ class BeamGroupModel extends Model {
 
         // A beam must have at least two notes.
         if (this.beam.length < 2) {
-            _.each(this.beam, o => o.inBeam = false);
+            _.each(this.beam, o => { o.inBeam = false; });
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
         }
 
+        // A beam must not have unbeamable notes
+        for (var i = 0; i < this.beam.length; ++i) {
+            if (!this.beam[i].temporary && !this.beam[i].isRest && !this.beam[i].hasFlagOrBeam) {
+                _.each(this.beam, o => { o.inBeam = false; });
+                ctx.eraseCurrent();
+                return C.IterationStatus.RetryCurrent;
+            }
+        }
+
         var mret = C.IterationStatus.RetryFromEntry;
 
-        var next = <BeamGroupModel> ctx.next(obj => obj.isNote);
-        this.tuplet = next && next.tuplet || null;
+        var next = ctx.next(obj => obj.isNote).note;
+        this.tuplet = next ? next.displayTuplet : null;
         ctx.startOfBeamBeat = ctx.beat;
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {
             this.beams = Math.round(Math.log(this.beam[0].count) / Math.log(2)) - 2;
         } else {
-            this.beams = C.BeamCount.VARIABLE;
+            this.beams = C.BeamCount.Variable;
             this.variableBeams = _.map(this.beam,
                 b => Math.round(Math.log(b.count) / Math.log(2)) - 2);
         }
@@ -91,6 +101,17 @@ class BeamGroupModel extends Model {
 
     constructor(spec: any) {
         super(spec);
+    }
+
+    modelDidLoad(body: Array<Model>, idx: number) {
+        var toMark = this.beamCount;
+        for (var i = idx; toMark; ++i) {
+            assert(body[i]);
+            if (body[i].isNote) {
+                body[i].note.tuplet = JSON.parse(JSON.stringify(this.tuplet));
+                --toMark;
+            }
+        }
     }
 
     /**
@@ -140,7 +161,7 @@ class BeamGroupModel extends Model {
 
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
         var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BeamGroup;
-        var model = new BeamGroupModel({ beam: beam, source: C.Source.ANNOTATOR });
+        var model = new BeamGroupModel({ beam: beam, source: C.Source.Annotator });
         var offset = replaceMode ? 1 : 0;
         var idx = ctx.idx - offset;
         var spliceMode = replaceMode ? Annotator.SplicePolicy.Masked : Annotator.SplicePolicy.MatchedOnly;
@@ -166,6 +187,14 @@ class BeamGroupModel extends Model {
 
     get type() {
         return C.Type.BeamGroup;
+    }
+
+    getBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
+        var sum = 0;
+        for (var i = 0; i < this.beam.length; ++i) {
+            sum += this.beam[i].getBeats(ctx, inheritedCount, force);
+        }
+        return sum;
     }
 
     toJSON(): {} {

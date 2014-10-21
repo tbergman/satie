@@ -4,6 +4,7 @@
 
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
+import assert = require("assert");
 
 import Dot = require("./_dot");
 import Glyph = require("./_glyph");
@@ -13,6 +14,7 @@ import NoteMarking = require("./_noteMarking");
 class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
     render() {
         var line = this.props.line;
+        assert.deepEqual(line, [3]);
         return Group(null,
             Glyph.Component({
                 key: "r",
@@ -29,7 +31,7 @@ class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
                 x: this.props.x + this.props.spacing,
                 y: this.props.y,
                 fontSize: this.props.fontSize,
-                line: line})): null,
+                line: 3})): null,
             this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = this.direction;
                 element.props.line = this.startingLine;
@@ -61,7 +63,7 @@ module Rest {
         children: Array<NoteMarking>;
         dotted: number;
         fontSize: number;
-        line: number;
+        line: Array<number>;
         notehead: string;
         spacing: number;
         stroke: string;

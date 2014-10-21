@@ -38,7 +38,7 @@ class NewPageModel extends Model {
     }
 
     static createNewPage = (ctx: Annotator.Context) => {
-        ctx.insertPast(new NewPageModel({newpage: true, source: C.Source.ANNOTATOR}));
+        ctx.insertPast(new NewPageModel({newpage: true, source: C.Source.Annotator}));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
             if (ctx.body[i].type === C.Type.NewPage && ctx.body[i].source) {
                 ctx.eraseFuture(i);

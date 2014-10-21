@@ -74,7 +74,7 @@ class EndMarkerModel extends Model {
                 .map((beat: C.IPitchDuration) => {
                     beat.chord = [{ pitch: "r", octave: 0, acc: null }];
                     beat.tie = false;
-                    return new DurationModel(beat, C.Source.ANNOTATOR);
+                    return new DurationModel(beat, C.Source.Annotator);
                 });
 
             ctx.splice(this.idx, 0, toAdd);
@@ -84,13 +84,13 @@ class EndMarkerModel extends Model {
 
         // Double barlines terminate a piece.
         if (!ctx.next() && (prev.type !== C.Type.Barline ||
-            prev.barline !== C.Barline.DOUBLE)) {
+            prev.barline !== C.Barline.Double)) {
             if (prev.type === C.Type.Barline) {
-                prev.barline = C.Barline.DOUBLE;
+                prev.barline = C.Barline.Double;
                 return C.IterationStatus.RetryLine;
             } else {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
-                return BarlineModel.createBarline(ctx, C.Barline.DOUBLE);
+                return BarlineModel.createBarline(ctx, C.Barline.Double);
             }
         }
 

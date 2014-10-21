@@ -46,7 +46,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
     }
 
     // User-created durations cannot be spell-checked.
-    if (ctx.curr.source === C.Source.USER) {
+    if (ctx.curr.source === C.Source.User) {
         return C.IterationStatus.Success;
     }
 
@@ -185,7 +185,7 @@ function clearExcessBeats(currNote: C.IPitchDuration, excessBeats: number, ctx: 
 
     var DurationModel: typeof DurationModelType = require("./duration");
     ctx.splice(ctx.idx, nextIdx - ctx.idx,
-        replaceWith.map(m => new DurationModel(m, C.Source.ANNOTATOR)),
+        replaceWith.map(m => new DurationModel(m, C.Source.Annotator)),
         Annotator.SplicePolicy.Masked);
     var after = ctx.idx + replaceWith.length;
     if (!currNote.isRest) {
@@ -301,8 +301,7 @@ export function subtract(durr1: any, beats: number,
 
 /**
  * If there is a "better" way to beam the notes starting at "idx", return an array
- * of notes that make up that beam, else
- *  return null.
+ * of notes that make up that beam, else return null.
  * 
  * @param idx the index where the beam would start
  * @param alt a string representing an alternative beaming. See beamingPatterns.
@@ -329,16 +328,32 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     }
 
     var needsReplacement = false;
+    var needsReplacementVerified = false;
     var prevCount: number;
 
     var prevInBeam = true;
 
-    for (var i = idx; !body[i].endMarker; ++i) {
+    var foundNote = false;
+    var tuplet: C.ITuplet = null;
+
+    for (var i = idx; body[i] && !body[i].endMarker; ++i) {
         if (body[i].type === C.Type.BeamGroup) {
             if (idx !== i) {
                 needsReplacement = true;
             }
         } else if (body[i].isNote) {
+            if (foundNote) {
+                if (!!tuplet !== !!body[i].note.tuplet) {
+                    if (needsReplacement && !needsReplacementVerified) {
+                        needsReplacement = false;
+                    } else {
+                        needsReplacementVerified = true;
+                    }
+                    break;
+                }
+            }
+            foundNote = true;
+            tuplet = body[i].note.tuplet;
             prevCount = body[i].note.count || prevCount;
 
             if (body[i].note.isRest || !body[i].note.hasFlagOrBeam || body[i].note.temporary) {
@@ -380,8 +395,18 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
         }
     }
 
-    if (needsReplacement && replaceWith.length > 1) {
-        return replaceWith;
+    if (needsReplacement && replaceWith.length) {
+        var first = replaceWith[0];
+        var last = replaceWith[replaceWith.length - 1];
+        if (tsName.indexOf("/4") !== -1) {
+            // Rhythmic figures that are not part of a repeated pattern may be best beamed into separate beats,
+            // so that they are not mistaken for triplets nor for groups of three quavers in compound time.
+            while ((first.ctxData.beat % 1) !== 0 && Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
+                replaceWith.pop();
+                last = replaceWith[replaceWith.length - 1];
+            }
+        }
+        return replaceWith.length > 1 ? replaceWith : null;
     }
     return null;
 }

@@ -324,7 +324,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                                 idx: j,
                                 item: item,
                                 musicLine: info.musicLine,
-                                Source: C.Source.ANNOTATOR,
+                                Source: C.Source.Annotator,
                                 fontSize: 0,
                                 _key: null,
                                 x: () => NaN,

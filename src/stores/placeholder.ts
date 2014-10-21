@@ -98,7 +98,7 @@ class PlaceholderModel extends Model {
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
             case C.Type.Barline:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.STANDARD }));
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Begin:
@@ -208,7 +208,7 @@ class PlaceholderModel extends Model {
         var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
-                    C.Source.ANNOTATOR));
+                    C.Source.Annotator));
         ctx.splice(ctx.idx, 1, missingBeats, Annotator.SplicePolicy.Masked);
         return C.IterationStatus.RetryLine;
     }

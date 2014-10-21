@@ -257,7 +257,7 @@ class NewlineModel extends Model {
 
         ctx.insertPast(new NewlineModel({
             newline: true,
-            source: C.Source.ANNOTATOR
+            source: C.Source.Annotator
         }), fidx + 1);
 
         return C.IterationStatus.LineCreated;

@@ -62,21 +62,21 @@ class DurationModel extends Model implements C.IPitchDuration {
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
             if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
-                // The current note/rest is multi-bar, which is allowed. However, multi-bar notes must
+                // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
                 // start at beat 0.
-                return BarlineModel.createBarline(ctx, C.Barline.STANDARD);
+                return BarlineModel.createBarline(ctx, C.Barline.Standard);
             } else if (!this.isMultibar) {
                 // The number of beats in a bar must not exceed that specified by the time signature.
                 if (ctx.beat + this._beats > ctx.timeSignature.beats) {
                     var overfill = ctx.beat + this._beats - ctx.timeSignature.beats;
                     if (this._beats === overfill) {
-                        var ret = BarlineModel.createBarline(ctx, C.Barline.STANDARD);
+                        var ret = BarlineModel.createBarline(ctx, C.Barline.Standard);
                         return ret;
                     } else {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
-                            new DurationModel(<any>t, C.Source.ANNOTATOR));
+                            new DurationModel(<any>t, C.Source.Annotator));
                         var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx)
-                            .map(t => new DurationModel(<any>t, C.Source.ANNOTATOR));
+                            .map(t => new DurationModel(<any>t, C.Source.Annotator));
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
                             if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
@@ -89,7 +89,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                                 addAfterBar[i].tie = true;
                             }
                         }
-                        BarlineModel.createBarline(ctx, C.Barline.STANDARD);
+                        BarlineModel.createBarline(ctx, C.Barline.Standard);
                         ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherParts);
                         ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherParts);
                         return C.IterationStatus.RetryLine;
@@ -135,11 +135,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
                 var isInPast = j <= ctx.idx;
                 ctx.removeFollowingBeam(j - 1, isInPast);
-                    debugger;
-                if (isInPast) {
-                    // This is kind of gross, but hey.
-                    ++ctx.idx;
-                }
+                // This is kind of cross, but hey.
+                ctx.idx = j;
             }
 
             _.each(b, function (b: DurationModel) {
@@ -773,12 +770,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         return getBeats(
             this.count || inheritedCount,
             this.dots,
-            this.getTuplet(),
+            this.tuplet,
             ctx.timeSignature);
-    }
-
-    getTuplet() {
-        return DurationModel.getTuplet(this);
     }
 
     get accStrokes() {
@@ -817,7 +810,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayDots = null; // Kill preview.
         this._beats = null; // Kill optimizer.
     }
-
 
     /**
      * Returns the length of the beat, without dots or tuplet modifiers
@@ -920,16 +912,30 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get strokes() {
-        if (this.chord) {
-            return _.map(this.chord, c => c.temporary ?
-                    "#A5A5A5" :
-                    (this.selected ? "#75A1D0" : "#000000"));
-        }
-        return [this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000" )];
+        return _.map(this.chord, c => c.temporary ?
+                "#A5A5A5" :
+                (this.selected ? "#75A1D0" : "#000000"));
     }
 
     get type() {
         return C.Type.Duration;
+    }
+
+    get tuplet() {
+        return this._tuplet;
+    }
+
+    set tuplet(t: C.ITuplet) {
+        this._tuplet = t;
+        this._displayTuplet = t;
+    }
+
+    get displayTuplet() {
+        return this._displayTuplet || this._tuplet;
+    }
+
+    set displayTuplet(t: C.ITuplet) {
+        this._displayTuplet = t;
     }
 
     static BEAMDATA: Array<DurationModel>;
@@ -1061,7 +1067,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
 
     static getLine = (pitch: C.IPitch,
-            ctx: Annotator.Context, options?: { filterTemporary: boolean }): any => { // TSFIX
+            ctx: Annotator.Context, options?: { filterTemporary: boolean }): number => {
         options = options || {filterTemporary: false};
 
         if (pitch.isRest) {
@@ -1106,9 +1112,6 @@ class DurationModel extends Model implements C.IPitchDuration {
             acc: acc
         };
     };
-
-    static getTuplet = (obj: C.IPitchDuration) =>
-        (obj.actualTuplet !== undefined) ? obj.actualTuplet : obj.tuplet;
 
     static log2 = Math.log(2);
 
@@ -1228,10 +1231,11 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _displayCount: number;
     private _displayDots: number = undefined;
     private _displayMarkings: Array<string>;
+    private _displayTuplet: C.ITuplet;
     private _dots: number;
     private _markings: Array<string>;
+    private _tuplet: C.ITuplet;
     accToDelete: number;
-    actualTuplet: C.ITuplet;
     chord: Array<C.IPitch>;
     displayedAccidentals: Array<number>;
     forceMiddleNoteDirection: number;
@@ -1241,7 +1245,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
     lines: Array<number>;
     tieTo: DurationModel;
-    tuplet: C.ITuplet;
 
     get color(): string {
         var hex = this._color.toString(16);

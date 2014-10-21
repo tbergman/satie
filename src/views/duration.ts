@@ -50,7 +50,7 @@ export function Component(props: IProps) {
         return Rest.Component({
                 children: [],
                 dotted: spec.displayDots,
-                line: 3,
+                line: [3],
                 key: spec.key,
                 isNote: true, // In this context, we mean not a wrapper.
                 fontSize: props.fontSize,

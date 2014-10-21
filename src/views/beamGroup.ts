@@ -41,9 +41,9 @@ class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
             firstP = firstP || (note.props.isNote ? note.props : note.props.children.props);
 
             // YUCK: add refs or something.
-            lastP = note.props.isNote ? note.props : note.props.children.props;
+            lastP = (note.props.isNote ? note.props : note.props.children.props);
 
-            heightDeterminingCount = Math.max(heightDeterminingCount, lastP.heightDeterminingCount);
+            heightDeterminingCount = Math.max(heightDeterminingCount, lastP.heightDeterminingCount || 1);
 
             Xs.push(note.props.x);
             Ys.push(note.props.y);
@@ -51,10 +51,10 @@ class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
 
         var heightFromCount = Math.max(0, (Math.log(heightDeterminingCount) / Math.log(2)) - 2) / 2;
 
-        var direction = BeamGroupModel.decideDirection(firstP.line, lastP.line);
+        var direction = BeamGroupModel.decideDirection(firstP.line || 3, lastP.line);
 
-        var line1 = getExtremeLine(firstP.line, direction);
-        var line2 = getExtremeLine(lastP.line, direction);
+        var line1 = getExtremeLine(firstP.line || 3, direction);
+        var line2 = getExtremeLine(lastP.line || 3, direction);
 
         // y = m*x + b
         var m = children.length ? (line2 - line1)/(children.length - 1) : 0;
@@ -125,8 +125,6 @@ class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
                     direction * getSH(direction, 0, line1),
                 line2: parseFloat("" + line2) +
                     direction * getSH(direction, children.length - 1, line2),
-                notehead1: firstP.notehead,
-                notehead2: lastP.notehead,
                 scaleFactor: this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
                 stemWidth: 0.035,
                 stroke: strokeEnabled && strokeColor,
@@ -146,6 +144,7 @@ class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
 var getExtremeLine = Note.getExtremeLine;
 
 module BeamGroup {
+    "use strict";
     export var Component = ReactTS.createReactComponent(BeamGroup);
 
     export interface IProps {

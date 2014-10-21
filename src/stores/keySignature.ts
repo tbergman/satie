@@ -51,7 +51,7 @@ class KeySignatureModel extends Model {
         return C.IterationStatus.Success;
     }
     toLylite(lylite: Array<string>) {
-        if (this.source === C.Source.ANNOTATOR) {
+        if (this.source === C.Source.Annotator) {
             return;
         }
 
@@ -74,7 +74,7 @@ class KeySignatureModel extends Model {
         var keySignature = ctx.prevKeySignature || { pitch: { pitch: "c" }, acc: 0, mode: C.MAJOR };
         return ctx.insertPast(new KeySignatureModel({
             keySignature: keySignature,
-            source: C.Source.ANNOTATOR
+            source: C.Source.Annotator
         }));
     };
 

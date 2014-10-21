@@ -12,7 +12,6 @@ import Annotator = require("./annotator");
 import C = require("./contracts");
 import Collab = require("./collab");
 import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
-import EraseToolType = require("./eraseTool"); // Cyclic dependency. For types only.
 import Instruments = require("./instruments");
 import KeySignatureModelType = require("./keySignature"); // Cyclic dependency. For types only.
 import lylite = require("./lylite");
@@ -427,6 +426,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     static parse(src: string): Array<C.IStave> {
         var staves: Array<C.IStave> = null;
         if (src.length && src[0] === "[") {
+            // Ripieno native
             staves = JSON.parse(src);
             for (var i = 0; i < staves.length; ++i) {
                 var body = staves[i].body;
@@ -434,6 +434,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     body.instrument = Instruments.List[0];
                     for (var j = 0; j < body.length; ++j) {
                         body[j] = Model.fromJSON(body[j]);
+                    }
+                    for (var j = 0; j < body.length; ++j) {
+                        body[j].modelDidLoad(body, j);
                     }
                 }
                 if (staves[i].header) {
@@ -444,6 +447,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 }
             }
         } else {
+            // Lilypond!
             staves = lylite.parse(src);
         }
         return staves;
@@ -877,8 +881,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             }
             var obj = this._staves[h].body[i];
             if (obj) {
-                var line = this._visualCursor.annotatedLine;
-
                 // Remove items based on a white-list.
                 if (obj.isNote) {
                     // TODO
@@ -1244,7 +1246,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (this._staves[h].body[i] === obj) {
                     if ((!this._staves[h].body[i + 1] ||
                             this._staves[h].body[i + 1].type !== C.Type.Barline ||
-                            this._staves[h].body[i + 1].barline === C.Barline.DOUBLE) &&
+                            this._staves[h].body[i + 1].barline === C.Barline.Double) &&
                             spec.loopThroughEnd) {
                         this._visualCursorIs({
                             beat: 0,

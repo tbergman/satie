@@ -89,8 +89,8 @@ export interface IAnnotationOpts {
 };
 
 export enum Barline {
-    STANDARD,
-    DOUBLE
+    Standard,
+    Double
 }
 
 /**
@@ -98,16 +98,16 @@ export enum Barline {
  * that is either a number or variable.
  */
 export enum BeamCount {
-    VARIABLE = -1,
-    ONE = 1,
-    TWO = 2,
-    THREE = 3,
-    FOUR = 4,
-    FIVE = 5,
-    SIX = 6,
-    SEVEN = 7,
-    EIGHT = 8,
-    NINE = 9
+    Variable = -1,
+    One = 1,
+    Two = 2,
+    Three = 3,
+    Four = 4,
+    Five = 5,
+    Six = 6,
+    Seven = 7,
+    Eight = 8,
+    Nine = 9
 }
 
 export interface IBody extends Array<Model> {
@@ -178,12 +178,6 @@ export class DispatcherRedirect {
  */
 export interface IDuration {
     /**
-     * The tuplet to be displayed, if different from tuplet.
-     * 
-     */
-    actualTuplet?: ITuplet;
-
-    /**
      * The base of the note, as encoded by Lilypond.
      * 
      * A quarter note is '4', a half note is '8', ...
@@ -199,6 +193,11 @@ export interface IDuration {
      * The number of dots to be displayed, if different from dots.
      */
     displayDots?: number;
+
+    /**
+     * The tuplet to be displayed, if different from tuplet.
+     */
+    displayTuplet?: ITuplet;
 
     /**
      * Returns the number of beats in the duration, between 0 and the
@@ -808,25 +807,18 @@ export enum Source {
      * The element was created directly from an action performed by the user. This does not
      * include annotations from such an action.
      */
-    USER = 0,
+    User = 0,
 
     /**
      * The element was created to satisfy the annotation engine.
      */
-    ANNOTATOR,
+    Annotator,
 
     /**
      * The element was created from an action performed by the user, but may be split or joined
-     * initially to satisfy a rhythmic spell-check. Becomes USER after succesful annotation.
+     * initially to satisfy a rhythmic spell-check. Becomes User after successful annotation.
      */
-    USER_PROPOSED,
-
-    /**
-     * The element was created to satisfy the annotation engine, and may be removed.
-     * 
-     * (Unused so far.)
-     */
-    ANNOTATOR_PROPOSED
+    UserProposed
 }
 
 /**
@@ -990,7 +982,7 @@ export function makeDuration(spec: IDurationSpec): IDuration {
         count: spec.count,
         dots: spec.dots || 0,
         tuplet: spec.tuplet || null,
-        actualTuplet: null,
+        displayTuplet: null,
         getBeats(ctx: MetreContext, inheritedCount?: number): number {
             return require("./metre").getBeats(
                 this.count || inheritedCount,

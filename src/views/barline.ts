@@ -22,7 +22,7 @@ class Barline extends ReactTS.ReactComponentBase<Barline.IProps, {}> {
         var thickX = spec.x + defaults.barlineSeparation/4 +
             defaults.thickBarlineThickness/4;
 
-        if (spec.barline === C.Barline.DOUBLE) {
+        if (spec.barline === C.Barline.Double) {
             return Group(null,
                 [Line.Component({key: 1,
                     x1: spec.x,

@@ -52,7 +52,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
     }
 
     toLylite(lylite: Array<string>) {
-        if (this.source === C.Source.ANNOTATOR) {
+        if (this.source === C.Source.Annotator) {
             return;
         }
         if (!this._timeSignature.commonRepresentation) {
@@ -70,7 +70,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
                 beats: 4,
                 beatType: 4,
                 commonRepresentation: true
-            }, source: C.Source.ANNOTATOR}));
+            }, source: C.Source.Annotator}));
     };
 
     get beats() {

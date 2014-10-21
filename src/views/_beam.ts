@@ -24,7 +24,7 @@ import getFontOffset = require("./_getFontOffset");
 class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
-        if (this.props.beams === C.BeamCount.VARIABLE) {
+        if (this.props.beams === C.BeamCount.Variable) {
             var xLow = this._getX1();
             var xHi = this._getX2();
 
@@ -131,8 +131,10 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
     getFontOffset = getFontOffset;
 
     private _withXOffset(x: number) {
+        // Note that we use notehadBlack regardless of the notehead.
+        // This keeps spacing consistent, even in beam groups with rests.
         return x +
-            this.getFontOffset(this.props.notehead1)[0]/4 +
+            this.getFontOffset("noteheadBlack")[0]/4 +
             this.getLineXOffset();
     }
 
@@ -145,18 +147,22 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
     }
 
     private _getY1(incl: number, idx: number) {
+        // Note that we use notehadBlack regardless of the notehead.
+        // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction*this.getFontOffset(this.props.notehead1)[1]/4 -
+            this.direction*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line1 - 3)/4 +
             this.direction*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
     private _getY2(incl: number, idx: number) {
+        // Note that we use notehadBlack regardless of the notehead.
+        // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction*this.getFontOffset(this.props.notehead2)[1]/4 -
+            this.direction*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line2 - 3)/4 +
             this.direction*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
@@ -217,8 +223,6 @@ module Beam {
         fontSize: number;
         line1: number;
         line2: number;
-        notehead1: string;
-        notehead2: string;
         stemWidth: number;
         stroke: string;
         tuplet: C.ITuplet;
