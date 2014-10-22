@@ -20,7 +20,7 @@ var mixInto = require("react/lib/mixInto");
 var merge = require("react/lib/merge");
 
 var RiactUpdateTransaction = require("../../util/riactUpdateTransaction.js");
-var SMuFL = require("../../util/SMuFL.ts");
+var SMuFL = require("../../util/SMuFL");
 var bezierFS = require("./bezier.fs");
 var bezierVS = require("./bezier.vs");
 var circleFS = require("./circle.fs");

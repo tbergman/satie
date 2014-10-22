@@ -110,7 +110,7 @@ class BarlineModel extends Model {
         // staves for following accidentals.
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         if (ctx.next().isNote) {
-            this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.containsAccidental(ctx)) ? 1 : 0);
+            this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.note.containsAccidental(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
         }

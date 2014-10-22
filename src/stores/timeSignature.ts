@@ -30,7 +30,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, n => n.containsAccidental(ctx))) {
+            if (_.any(intersectingNotes, n => n.note.containsAccidental(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {

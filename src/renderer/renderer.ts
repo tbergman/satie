@@ -618,11 +618,11 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
     }
 
     setupBrowserListeners() {
-        var AccidentalTool = require("../stores/accidentalTool.ts");
-        var DotTool = require("../stores/dotTool.ts");
-        var NoteTool = require("../stores/noteTool.ts");
-        var RestTool = require("../stores/restTool.ts");
-        var TieTool = require("../stores/tieTool.ts");
+        var AccidentalTool = require("../stores/accidentalTool");
+        var DotTool = require("../stores/dotTool");
+        var NoteTool = require("../stores/noteTool");
+        var RestTool = require("../stores/restTool");
+        var TieTool = require("../stores/tieTool");
 
         // Handle keys that aren't letters or numbers, and keys with modifiers
         document.onkeydown = (event: KeyboardEvent) => {

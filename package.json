@@ -34,6 +34,7 @@
         "gulp-mocha-browserify-sweet": "0.2.1",
         "gulp-streamify": "0.0.5",
         "gulp-tslint": "1.3.1",
+        "gulp-typescript": "hakubo/gulp-typescript#patch-1",
         "gulp-uglify": "1.0.1",
         "gulp-util": "3.0.1",
         "jisonify": "git://github.com/jnetterf/jisonify.git",
@@ -46,7 +47,6 @@
         "karma-phantomjs-launcher": "0.1.4",
         "reactify": "0.14.0",
         "react-typescript-definitions": "git://github.com/jnetterf/react-typescript-definitions",
-        "typescriptifier": "1.0.0",
         "uglify-js": "2.4.15",
         "vinyl-buffer": "1.0.0",
         "vinyl-source-stream": "1.0.0",
@@ -61,14 +61,12 @@
         "cli-test-daemon": "gulp cli-test-daemon",
         "gui-test-once": "gulp gui-test-once",
         "gui-test-daemon": "gulp gui-test-daemon",
-        "chore": "NODE_ENV=production browserify --extension .ts --bare ./src/choreServer.ts --noparse lodash --noparse ./src/util/startExpressServer.js | uglifyjs -cm 2>/dev/null | node",
-        "chore-debug": "browserify --extension .ts --bare ./src/choreServer.ts --noparse lodash --noparse ./src/util/startExpressServer.js | node"
+        "chores-prod": "cat ./build/chore-server.js | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",
     "browserify": {
         "transform": [
-            ["typescriptifier", {"extension": [".ts"]}],
             ["reactify", {"es6": true}],
             "node-lessify",
             "jisonify",

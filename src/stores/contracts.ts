@@ -646,6 +646,7 @@ export interface IPitch {
  * DurationModels implement PitchDurations.
  */
 export interface IPitchDuration extends IDuration {
+    containsAccidental?(ctx: any, previewMode?: PreviewMode): boolean;
     chord?: Array<IPitch>;
     isRest?: boolean;
     tie?: boolean;

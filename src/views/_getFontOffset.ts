@@ -7,9 +7,9 @@
 import _ = require("lodash");
 import assert = require("assert");
 
-var SMuFL = require("../util/SMuFL.ts");
+var SMuFL = require("../util/SMuFL");
 
-var getAnchor = _.memoize(notehead => SMuFL.bravuraMetadata.glyphsWithAnchors[notehead]);
+var getAnchor = _.memoize((notehead: string) => SMuFL.bravuraMetadata.glyphsWithAnchors[notehead]);
 
 function getFontOffset(notehead?: string, directionMult?: number) {
     "use strict";

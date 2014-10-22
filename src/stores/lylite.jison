@@ -7,17 +7,17 @@
      * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
      */
     var _ = require("lodash");
-    var util = require("../util/renderUtil.ts");
+    var util = require("../util/renderUtil");
 
-    var BarlineModel = require("./barline.ts");
-    var C = require("./contracts.ts")
-    var ClefModel = require("./clef.ts");
-    var EndMarkerModel = require("./endMarker.ts");
-    var Instruments = require("./instruments.ts");
-    var KeySignatureModel = require("./keySignature.ts");
-    var NewlineModel = require("./newline.ts");
-    var NewPageModel = require("./newpage.ts");
-    var TimeSignatureModel = require("./timeSignature.ts");
+    var BarlineModel = require("./barline");
+    var C = require("./contracts")
+    var ClefModel = require("./clef");
+    var EndMarkerModel = require("./endMarker");
+    var Instruments = require("./instruments");
+    var KeySignatureModel = require("./keySignature");
+    var NewlineModel = require("./newline");
+    var NewPageModel = require("./newpage");
+    var TimeSignatureModel = require("./timeSignature");
 
     var readingCommonTS;
     var partInstrument;
@@ -500,7 +500,7 @@ partElement
   | relativeMode                         { $$ = $1; }
   | completePitchOrChord                
         {
-            var DurationModel = require("./duration.ts");
+            var DurationModel = require("./duration");
 			if ($1.tie && $1.chord.length === 1 && $1.chord[0].pitch === "r") {
 				$1.tie = false;
 			}
@@ -705,7 +705,7 @@ accentx
   | 'articStaccato'             { $$ = 'articStaccato' }
   | 'ARTIC'                     
 		{
-            var DurationModel = require("./duration.ts");
+            var DurationModel = require("./duration");
 			$$ = DurationModel.symbolByLilypondName[$1];
 		}
   ;
