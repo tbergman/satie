@@ -2,9 +2,11 @@ var browserify = require("browserify");
 var exit = require("gulp-exit");
 var gulp = require("gulp");
 var gutil = require("gulp-util");
+var path = require("path");
 var source = require("vinyl-source-stream");
 var spawn = require("child_process").spawn;
 var streamify = require("gulp-streamify");
+var tslint = require("gulp-tslint");
 var uglify = require("gulp-uglify");
 var watchify = require("watchify");
 var concat = require("gulp-concat");
@@ -21,6 +23,8 @@ var browserifyOptsProd = {
     extensions: [".ts", ".jsx"]
 };
 
+var files = {};
+files.ts = path.join(__dirname, "src", "**", "*.ts");
 
 gulp.task("watch", function() {
     var bundler = watchify(browserify("./src/main.ts", browserifyOpts));
@@ -43,22 +47,22 @@ gulp.task("watch", function() {
 });
 
 gulp.task("cli-test-daemon", ["create-test-suite"], function() {
-    nodeTest(true);
+    buildAndRunTest(true);
 });
 
-gulp.task("cli-test-once", ["create-test-suite"], function() {
-    nodeTest(false);
+gulp.task("cli-test-once", ["lint", "create-test-suite"], function() {
+    buildAndRunTest(false);
 });
 
-gulp.task("gui-test-once", ["create-test-suite"], function() {
-    nodeTest(false, true);
+gulp.task("gui-test-once", ["lint", "create-test-suite"], function() {
+    buildAndRunTest(false, true);
 });
 
 gulp.task("gui-test-daemon", ["create-test-suite"], function() {
-    nodeTest(true, true);
+    buildAndRunTest(true, true);
 });
 
-function nodeTest(daemonize, karmalize) {
+function buildAndRunTest(daemonize, karmalize) {
     var bundler = watchify(browserify({entries: "./build/suite.js", debug: true}, browserifyOpts));
     if (daemonize) {
         bundler.on("update", retest);
@@ -105,7 +109,15 @@ gulp.task("create-test-suite", function() {
         .pipe(gulp.dest("build"));
 });
 
-gulp.task("build", function() {
+gulp.task("lint", function() {
+    return gulp.src(files.ts)
+        .pipe(tslint())
+        .pipe(tslint.report("verbose", {
+            emitError: false
+        }));
+});
+
+gulp.task("build", ["cli-test-once"], function() {
     return browserify("./src/main.ts", browserifyOptsProd).bundle()
         .on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("end", gutil.log.bind(gutil, "Built bundle"))

@@ -32,6 +32,7 @@ class LedgerLine extends ReactTS.ReactComponentBase<LedgerLine.IProps, {}> {
 }
 
 module LedgerLine {
+    "use strict";
     export var Component = ReactTS.createReactComponent(LedgerLine);
 
     export interface IProps {

@@ -19,7 +19,6 @@ import History = require("../stores/history");
 import Model = require("../stores/model");
 import Tool = require("../stores/tool");
 import renderUtil = require("../util/renderUtil");
-// import svgCssBlob = require("./svgCssBlob");
 import Rect = require("../views/_rect");
 import Group = require("../views/_group");
 import Line = require("../views/_line");

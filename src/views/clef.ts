@@ -40,6 +40,7 @@ class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
 };
 
 module Clef {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Clef);
 
     export interface IProps {

@@ -487,7 +487,6 @@ export class Context implements C.MetreContext {
                     if (!placeholders[j][0] || placeholders[j][0].priority !== thisPriority) {
                         console.warn("Sketchily adding a new placeholder to fix alignment (be worried)");
                         aligned[j] = aligned[j].concat(new PlaceholderModel({ _priority: C.Type[thisPriority] }, C.Source.Annotator));
-                        //placeholders[j][0].priority = thisPriority;
                     } else {
                         aligned[j] = aligned[j].concat(placeholders[j].splice(0, 1));
                     }

@@ -56,6 +56,7 @@ class Flag extends ReactTS.ReactComponentBase<Flag.IProps, {}> {
 }
 
 module Flag {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Flag);
 
     export interface IProps {

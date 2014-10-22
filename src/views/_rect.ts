@@ -42,6 +42,7 @@ class Rect extends ReactTS.ReactComponentBase<Rect.IProps, {}> {
 Rect.applyMixins(RenderableMixin);
 
 module Rect {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Rect);
 
     export interface IProps {

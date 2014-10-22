@@ -25,6 +25,7 @@ class NoteHead extends ReactTS.ReactComponentBase<NoteHead.IProps, {}> {
 }
 
 module NoteHead {
+    "use strict";
     export var Component = ReactTS.createReactComponent(NoteHead);
 
     export interface IProps {

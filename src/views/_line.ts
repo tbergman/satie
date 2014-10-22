@@ -54,6 +54,7 @@ class Line extends ReactTS.ReactComponentBase<Line.IProps, {}> {
 Line.applyMixins(RenderableMixin);
 
 module Line {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Line);
 
     export interface IProps {

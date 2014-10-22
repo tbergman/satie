@@ -95,6 +95,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
 }
 
 module NoteMarking {
+    "use strict";
     export var Component = ReactTS.createReactComponent(NoteMarking);
 
     export interface IProps {

@@ -46,7 +46,7 @@ class Model {
     }
 
     modelDidLoad(body: Array<Model>, idx: number) {
-
+        // Pass
     }
 
     /**

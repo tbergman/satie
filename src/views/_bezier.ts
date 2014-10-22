@@ -46,6 +46,7 @@ class Bezier extends ReactTS.ReactComponentBase<Bezier.IProps, {}> {
 Bezier.applyMixins(RenderableMixin);
 
 module Bezier {
+    "use strict";
     export interface IProps {
         fill: string;
         fontSizeFactor: number;

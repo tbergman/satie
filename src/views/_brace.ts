@@ -42,6 +42,7 @@ class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
 }
 
 module Brace {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Brace);
 
     export interface IProps {

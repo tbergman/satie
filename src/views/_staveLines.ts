@@ -32,6 +32,7 @@ class StaveLines extends ReactTS.ReactComponentBase<StaveLines.IProps, {}> {
 }
 
 module StaveLines {
+    "use strict";
     export var Component = ReactTS.createReactComponent(StaveLines);
 
     export interface IProps {

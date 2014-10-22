@@ -20,6 +20,7 @@ class Accidental extends ReactTS.ReactComponentBase<Accidental.IProps, {}> {
 }
 
 module Accidental {
+    "use strict";
     export interface IProps {
         accidental: string;
         fontSize: number;

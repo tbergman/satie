@@ -84,6 +84,7 @@ var flats: { [key: string]: Array<number> } = {
 };
 
 module KeySignature {
+    "use strict";
     export var Component = ReactTS.createReactComponent(KeySignature);
 
     export interface IProps {

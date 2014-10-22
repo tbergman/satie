@@ -31,6 +31,7 @@ class NewlineView extends ReactTS.ReactComponentBase<NewlineView.IProps, {}> {
 
 
 module NewlineView {
+    "use strict";
     export var Component = ReactTS.createReactComponent(NewlineView);
 
     export interface IProps {

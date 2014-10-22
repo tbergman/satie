@@ -61,6 +61,7 @@ class Dot extends ReactTS.ReactComponentBase<Dot.IProps, {}> {
 Dot.applyMixins(RenderableMixin);
 
 module Dot {
+    "use strict";
     export var Component = ReactTS.createReactComponent(Dot);
 
     export interface IProps {

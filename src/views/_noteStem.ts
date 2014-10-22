@@ -53,6 +53,7 @@ class NoteStem extends ReactTS.ReactComponentBase<NoteStem.IProps, {}> {
 NoteStem.applyMixins(PureRenderMixin);
 
 module NoteStem {
+    "use strict";
     export var Component = ReactTS.createReactComponent(NoteStem);
 
     export interface IProps {

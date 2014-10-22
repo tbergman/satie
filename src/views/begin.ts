@@ -30,6 +30,7 @@ class BeginView extends ReactTS.ReactComponentBase<BeginView.IProps, {}> {
 };
 
 module BeginView {
+    "use strict";
     export var Component = ReactTS.createReactComponent(BeginView);
 
     export interface IProps {
