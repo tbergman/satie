@@ -1470,11 +1470,4 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     };
 }
 
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require TSEE since we extend it. This line forces the require()
-// line to not be optimized out.
-TSEE.length;
-/* tslint:enable */
-
 export = SongEditorStore;
