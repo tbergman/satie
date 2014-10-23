@@ -7,9 +7,9 @@
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 
-class Molasses extends ReactTS.ReactComponentBase<Molasses.IProps, {}> {
+class Molasses extends TypedReact.Component<Molasses.IProps, {}> {
     render() {
         return React.DOM.svg(
             {
@@ -32,7 +32,7 @@ class Molasses extends ReactTS.ReactComponentBase<Molasses.IProps, {}> {
 module Molasses {
     "use strict";
     export interface IProps {
-        children?: Array<React.ReactComponent<any, any>>;
+        children?: Array<React.ReactElement<any, any>>;
         /**
          * A unit such as "in" should be included.
          */
@@ -52,7 +52,7 @@ module Molasses {
         width: string;
     }
 
-    export var Component = ReactTS.createReactComponent(Molasses);
+    export var Component = TypedReact.createClass(React.createClass, Molasses);
 }
 
 export = Molasses;

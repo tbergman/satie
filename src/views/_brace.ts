@@ -2,7 +2,8 @@
  * Renders a piano bracket or other kind of brace.
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import renderUtil = require("../util/renderUtil");
 
 import Line = require("./_line");
@@ -10,7 +11,7 @@ import Glyph = require("./_glyph");
 import Group = require("./_group");
 import SMuFL = require("../util/SMuFL");
 
-class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
+class Brace extends TypedReact.Component<Brace.IProps, {}> {
     render() {
         var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
@@ -43,7 +44,7 @@ class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
 
 module Brace {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Brace);
+    export var Component = TypedReact.createClass(React.createClass, Brace);
 
     export interface IProps {
         x: number;

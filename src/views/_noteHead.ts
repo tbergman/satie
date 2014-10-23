@@ -1,12 +1,17 @@
 /**
  * Renders a note head.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import Glyph = require("./_glyph");
 
-class NoteHead extends ReactTS.ReactComponentBase<NoteHead.IProps, {}> {
+class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
     render() {
         return Glyph.Component({
             x: this.props.x,
@@ -26,7 +31,7 @@ class NoteHead extends ReactTS.ReactComponentBase<NoteHead.IProps, {}> {
 
 module NoteHead {
     "use strict";
-    export var Component = ReactTS.createReactComponent(NoteHead);
+    export var Component = TypedReact.createClass(React.createClass, NoteHead);
 
     export interface IProps {
         fontSize: number;

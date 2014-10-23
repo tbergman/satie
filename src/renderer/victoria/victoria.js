@@ -14,11 +14,11 @@ var DOMPropertyOperations = require("react/lib/DOMPropertyOperations");
 var ReactBrowserComponentMixin = require("react/lib/ReactBrowserComponentMixin");
 var ReactComponent = require("react/lib/ReactComponent");
 var ReactDOMComponent = require("react/lib/ReactDOMComponent");
-var ReactDescriptor = require("react/lib/ReactDescriptor");
+var ReactLegacyElement = require("react/lib/ReactLegacyElement");
+var ReactElement = require("react/lib/ReactElement");
 var ReactMultiChild = require("react/lib/ReactMultiChild");
-var mixInto = require("react/lib/mixInto");
-var merge = require("react/lib/merge");
 
+var assign = require("react/lib/Object.assign");
 var RiactUpdateTransaction = require("../../util/riactUpdateTransaction.js");
 var SMuFL = require("../../util/SMuFL");
 var bezierFS = require("./bezier.fs");
@@ -70,24 +70,6 @@ function proxyStaticMethods(target, source) {
   }
 }
 
-var ReactLegacyDescriptorFactory = {};
-
-ReactLegacyDescriptorFactory.wrapFactory = function(factory) {
-  invariant(
-    ReactDescriptor.isValidFactory(factory),
-    'This is suppose to accept a descriptor factory'
-  );
-  var legacyDescriptorFactory = function(/*config, children*/) {
-    // This factory should not be called when the new JSX transform is in place.
-    // TODO: Warning - Use JSX instead of direct function calls.
-    return factory.apply(this, arguments);
-  };
-  proxyStaticMethods(legacyDescriptorFactory, factory.type);
-  legacyDescriptorFactory.isReactLegacyFactory = true;
-  legacyDescriptorFactory.type = factory.type;
-  return legacyDescriptorFactory;
-};
-
 /**********************
  * STUFF              *
  **********************/
@@ -96,20 +78,20 @@ global.requestAnimationFrame = global.requestAnimationFrame || global.mozRequest
     global.webkitRequestAnimationFrame || global.msRequestAnimationFrame;
 
 function createComponent(name) {
-    var VictoriaComponent = function(descriptor) {
-        this.construct(descriptor);
+    var VictoriaComponent = function(props) {
+        // This constructor and it's argument is currently used by mocks.
     };
     VictoriaComponent.displayName = name;
     for (var i = 1, l = arguments.length; i < l; i++) {
-        mixInto(VictoriaComponent, arguments[i]);
+        assign(VictoriaComponent.prototype, arguments[i]);
     }
 
-    var ConvenienceConstructor = ReactDescriptor.createFactory(VictoriaComponent);
+    var ConvenienceConstructor = ReactElement.createFactory(VictoriaComponent);
     
-    return ReactLegacyDescriptorFactory.wrapFactory(ConvenienceConstructor);
+    return ReactLegacyElement.wrapFactory(ConvenienceConstructor);
 }
 
-var ContainerMixin = merge(ReactMultiChild.Mixin, {
+var ContainerMixin = assign({}, ReactMultiChild.Mixin, {
     /**
      * Creates a child component.
      *

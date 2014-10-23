@@ -5,7 +5,7 @@
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 
 import C = require("../stores/contracts");
@@ -21,7 +21,7 @@ import getFontOffset = require("./_getFontOffset");
  * Calculates a way to render a beam given two endpoints.
  * See also BeamGroup and BeamGroupModel.
  */
-class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
+class Beam extends TypedReact.Component<Beam.IProps, {}> {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
         if (this.props.beams === C.BeamCount.Variable) {
@@ -117,14 +117,14 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
      * Offset because the note-head has a non-zero width.
      */
     getLineXOffset() {
-        return this.direction * -this.props.stemWidth / 2;
+        return this.direction() * -this.props.stemWidth / 2;
     }
 
     /**
      *  1 if the notes go up,
      * -1 if the notes go down.
      */
-    get direction() {
+    direction() {
         return this.props.direction;
     }
 
@@ -151,9 +151,9 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
         // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction*this.getFontOffset("noteheadBlack")[1]/4 -
+            this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line1 - 3)/4 +
-            this.direction*idx*0.22 +
+            this.direction()*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
@@ -162,9 +162,9 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
         // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction*this.getFontOffset("noteheadBlack")[1]/4 -
+            this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line2 - 3)/4 +
-            this.direction*idx*0.22 +
+            this.direction()*idx*0.22 +
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
@@ -179,7 +179,7 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
      * The note-head is NOT CENTERED at its local origin.
      */
     private _getYOffset() {
-        if (this.direction === -1) {
+        if (this.direction() === -1) {
             return 0.025;
         }
         return 0.005;
@@ -195,7 +195,7 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
             var offset = this._getX2() - this._getX1();
             var y = (this._getY1(1, this.props.beams - 1) +
                         this._getY2(1, this.props.beams - 1))/2 -
-                    (0.3 + 0.2*this.props.beams)*this.direction;
+                    (0.3 + 0.2*this.props.beams)*this.direction();
 
             // XXX: all tuplets are drawn as triplets.
             return Glyph.Component({
@@ -207,15 +207,13 @@ class Beam extends ReactTS.ReactComponentBase<Beam.IProps, {}> {
                 y: y});
         }
     }
-
-    render: () => any; // RenderableMixin
 };
 
-Beam.applyMixins(RenderableMixin);
+Beam.prototype.mixins = [RenderableMixin];
 
 module Beam {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Beam);
+    export var Component = TypedReact.createClass(React.createClass, Beam);
 
     export interface IProps {
         beams: C.BeamCount;

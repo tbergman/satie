@@ -2,7 +2,8 @@
  * Renders a rest.
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -11,7 +12,7 @@ import Glyph = require("./_glyph");
 import Group = require("./_group");
 import NoteMarking = require("./_noteMarking");
 
-class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
+class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
         var line = this.props.line;
         assert.deepEqual(line, [3]);
@@ -33,8 +34,8 @@ class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
                 fontSize: this.props.fontSize,
                 line: 3})): null,
             this.props.children && _.map(this.props.children, (element, idx) => {
-                element.props.direction = this.direction;
-                element.props.line = this.startingLine;
+                element.props.direction = this.direction();
+                element.props.line = this.startingLine();
                 element.props.x = this.props.x;
                 element.props.y = this.props.y;
                 element.props.idx = idx;
@@ -45,11 +46,11 @@ class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
         );
     }
 
-    get direction() {
+    direction() {
         return 1;
     }
 
-    get startingLine() {
+    startingLine() {
         // TODO: stub
         return 3;
     }
@@ -57,7 +58,7 @@ class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
 
 module Rest {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Rest);
+    export var Component = TypedReact.createClass(React.createClass, Rest);
 
     export interface IProps {
         children: Array<NoteMarking>;

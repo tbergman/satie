@@ -1,16 +1,20 @@
 /**
  * Renders a rectangle (can be rotated!)
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 
 import RenderableMixin = require("./_renderable");
 var Victoria = require("../renderer/victoria/victoria");
 
 var VRect = Victoria.VRect;
 
-class Rect extends ReactTS.ReactComponentBase<Rect.IProps, {}> {
+class Rect extends TypedReact.Component<Rect.IProps, {}> {
     renderSVG() {
         return React.DOM.rect({
             className: this.props.className,
@@ -35,15 +39,13 @@ class Rect extends ReactTS.ReactComponentBase<Rect.IProps, {}> {
             y1: this.props.y,
             y2: this.props.y + this.props.height});
     }
-
-    render: () => void;
 }
 
-Rect.applyMixins(RenderableMixin);
+Rect.prototype.mixins = [RenderableMixin];
 
 module Rect {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Rect);
+    export var Component = TypedReact.createClass(React.createClass, Rect);
 
     export interface IProps {
         className?: string;

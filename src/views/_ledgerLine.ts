@@ -1,13 +1,18 @@
 /**
  * Renders a ledger line at (x, y + line).
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 
-class LedgerLine extends ReactTS.ReactComponentBase<LedgerLine.IProps, {}> {
+class LedgerLine extends TypedReact.Component<LedgerLine.IProps, {}> {
     render() {
         var sw = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
         var ne = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
@@ -33,7 +38,7 @@ class LedgerLine extends ReactTS.ReactComponentBase<LedgerLine.IProps, {}> {
 
 module LedgerLine {
     "use strict";
-    export var Component = ReactTS.createReactComponent(LedgerLine);
+    export var Component = TypedReact.createClass(React.createClass, LedgerLine);
 
     export interface IProps {
         line: number;

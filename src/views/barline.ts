@@ -1,9 +1,14 @@
 /**
- * Renderes a full-stave-height barline at (x,y).
+ * Renders a full-stave-height barline at (x,y).
  * Does not do any interesting calculations.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import C = require("../stores/contracts");
 import BarlineModel = require("../stores/barline");
@@ -13,7 +18,7 @@ import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 import hash = require("../util/hash");
 
-class Barline extends ReactTS.ReactComponentBase<Barline.IProps, {}> {
+class Barline extends TypedReact.Component<Barline.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
@@ -93,7 +98,7 @@ class Barline extends ReactTS.ReactComponentBase<Barline.IProps, {}> {
 
 module Barline {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Barline);
+    export var Component = TypedReact.createClass(React.createClass, Barline);
 
     export interface IProps {
         key: number;

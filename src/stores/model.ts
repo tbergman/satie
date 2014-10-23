@@ -225,7 +225,7 @@ class Model {
     static fromJSON(json: any, existingObjects?: { [key: string]: Model } ): Model {
         var spec: any;
         if (typeof json === "string" || json instanceof String) {
-            spec = JSON.parse(json);
+            spec = JSON.parse(<string> json);
         } else {
             spec = json;
         }

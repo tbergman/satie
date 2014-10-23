@@ -1,10 +1,14 @@
 /**
  * Most musical elements are rendered as glyphs. Exceptions include
  * slurs, ties, dots in dotted notes, ledger lines, and stave lines.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 
 import RenderableMixin = require("./_renderable");
 import SMuFL = require("../util/SMuFL");
@@ -17,7 +21,7 @@ if (typeof window !== "undefined") {
     require("./_glyph.less");
 }
 
-class Glyph extends ReactTS.ReactComponentBase<Glyph.IProps, {}> {
+class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
     renderSVG() {
         var px = this.props.fontSize ?
                 this.props.x*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
@@ -27,7 +31,7 @@ class Glyph extends ReactTS.ReactComponentBase<Glyph.IProps, {}> {
                 this.props.y*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
                 <any>(this.props.y + "em");
 
-        var text: React.ReactComponent<any, any> = React.DOM.text({
+        var text: React.ReactElement<any, any> = React.DOM.text({
                 x: px,
                 y: py,
                 fill: this.props.fill,
@@ -81,15 +85,13 @@ class Glyph extends ReactTS.ReactComponentBase<Glyph.IProps, {}> {
             this.props.fill !== nextProps.fill ||
             this.props.glyphName !== nextProps.glyphName;
     }
-
-    render: () => void;
 }
 
-Glyph.applyMixins(RenderableMixin);
+Glyph.prototype.mixins = [RenderableMixin];
 
 module Glyph {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Glyph);
+    export var Component = TypedReact.createClass(React.createClass, Glyph);
 
     export interface IProps {
         fill: string;

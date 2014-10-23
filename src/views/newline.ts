@@ -1,15 +1,20 @@
 /**
  * Appears at the very beginning of a line, except the first line.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import NewlineModel = require("../stores/newline");
 import Brace = require("./_brace");
 import Group = require("./_group");
 import StaveLines = require("./_staveLines");
 
-class NewlineView extends ReactTS.ReactComponentBase<NewlineView.IProps, {}> {
+class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
@@ -32,7 +37,7 @@ class NewlineView extends ReactTS.ReactComponentBase<NewlineView.IProps, {}> {
 
 module NewlineView {
     "use strict";
-    export var Component = ReactTS.createReactComponent(NewlineView);
+    export var Component = TypedReact.createClass(React.createClass, NewlineView);
 
     export interface IProps {
         key: number;

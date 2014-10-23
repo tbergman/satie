@@ -6,8 +6,7 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../node_modules/react-typescript-definitions/react.d.ts" />
-/// <reference path="../node_modules/react-typescript/declarations/react-typescript.d.ts" />
+/// <reference path="../node_modules/typed-react/typings/react/react.d.ts" />
 
 import React = require("react");
 
@@ -53,27 +52,24 @@ function setDebugGlobals() {
 
 function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {
     "use strict";
-    var component: React.ReactComponent<any, any>;
+    var Component: React.ReactElement<any, any>;
 
     if (session.info.state !== undefined) {
-        component = Router.Component({
+        Component = React.createElement(Router.Component, {
             dispatcher: dispatcher,
-            session: session
-        });
+            session: session});
     } else {
-        component = FiveOhFive.Component({
+        Component = React.createElement(FiveOhFive.Component, {
             dispatcher: null,
-            sessionInfo: session.info
-        });
+            sessionInfo: session.info});
     }
 
     try {
-        React.renderComponent(component, document.body);
+        React.render(Component, document.body);
     } catch(err) {
-        React.renderComponent(FiveOhFive.Component({
+        React.render(React.createElement(FiveOhFive.Component, {
             dispatcher: null,
-            sessionInfo: session.info
-        }), document.body);
+            sessionInfo: session.info}), document.body);
         throw err;
     }
 };

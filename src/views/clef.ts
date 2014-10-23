@@ -1,29 +1,34 @@
 /**
  * Responsible for the rendering of a full-sized clef.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import ClefModel = require("../stores/clef");
 import Glyph = require("./_glyph");
 
-class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
+class Clef extends TypedReact.Component<Clef.IProps, {}> {
     render() {
         var spec = this.props.spec;
         return Glyph.Component({
             x: spec.x - (spec.isChange ? 0.2 : 0),
-            y: spec.y - (this.line - 3)/4,
+            y: spec.y - (this.line() - 3)/4,
             fill: spec.color,
             fontSize: this.props.fontSize,
             glyphName: this.sign + (spec.isChange ? "Change" : "")});
     }
 
-    get sign() {
+    sign() {
         var clef = this.props.spec.clefName;
         return this.clefToSign[clef] || clef;
     }
 
-    get line(): number {
+    line(): number {
         return ClefModel.clefToLine[this.props.spec.clefName];
     }
 
@@ -41,7 +46,7 @@ class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
 
 module Clef {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Clef);
+    export var Component = TypedReact.createClass(React.createClass, Clef);
 
     export interface IProps {
         key: number;

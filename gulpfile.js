@@ -50,7 +50,7 @@ var files = {
     mainLocal: "./.partialBuild/main.js"
 };
 
-gulp.task("watch", ["build-debug", "chores"], function() {
+gulp.task("watch", ["build-debug"], function() {
     var nginx = spawn("nginx", ["-c", "./nginx.conf", "-p", "./nginx"], {cwd: process.cwd()});
     nginx.stderr.on("data", function(data) {
         console.log(data.toString());

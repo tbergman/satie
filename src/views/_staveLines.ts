@@ -1,15 +1,20 @@
 /**
  * Renders the (usually 5) lines that make up a stave.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 
 import Group = require("./_group");
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 
-class StaveLines extends ReactTS.ReactComponentBase<StaveLines.IProps, {}> {
+class StaveLines extends TypedReact.Component<StaveLines.IProps, {}> {
     render() {
         return Group(null,
             _.times(5, i => Line.Component({
@@ -33,7 +38,7 @@ class StaveLines extends ReactTS.ReactComponentBase<StaveLines.IProps, {}> {
 
 module StaveLines {
     "use strict";
-    export var Component = ReactTS.createReactComponent(StaveLines);
+    export var Component = TypedReact.createClass(React.createClass, StaveLines);
 
     export interface IProps {
         width: number;

@@ -4,7 +4,6 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -117,7 +116,7 @@ class BeamGroupModel extends Model {
     /**
      * Renders the beam
      */
-    generate(fontSize: number): Array<ReactTS.ReactComponentBase<any, any>> {
+    generate(fontSize: number): Array<React.ReactElement<any, any>> {
         return <any> _.map(this.beam, b => b.render(fontSize));
     }
 

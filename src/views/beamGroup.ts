@@ -4,7 +4,8 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 import assert = require("assert");
 import renderUtil = require("../util/renderUtil");
@@ -18,7 +19,7 @@ import Note = require("./_note");
  * React component which draws notes and a beam given a collection
  * of notes that can be beamed.
  */
-class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
+class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var children = spec.generate(this.props.fontSize);
@@ -114,7 +115,7 @@ class BeamGroup extends ReactTS.ReactComponentBase<BeamGroup.IProps, {}> {
         });
 
         return Group(null,
-            [<React.ReactComponent<any,any>> Beam.Component({
+            [<React.ReactElement<any,any>> Beam.Component({
                 beams: (spec.beams) || 1,
                 variableBeams: spec.variableBeams,
                 variableX: spec.variableBeams ? Xs : null,
@@ -145,7 +146,7 @@ var getExtremeLine = Note.getExtremeLine;
 
 module BeamGroup {
     "use strict";
-    export var Component = ReactTS.createReactComponent(BeamGroup);
+    export var Component = TypedReact.createClass(React.createClass, BeamGroup);
 
     export interface IProps {
         key: number;

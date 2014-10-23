@@ -3,11 +3,12 @@
  * Position adjustments of accidentals should be taken care of by DurationModel.
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import Glyph = require("./_glyph");
 
-class Accidental extends ReactTS.ReactComponentBase<Accidental.IProps, {}> {
+class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
     render() {
         return Glyph.Component({
             x: this.props.x,
@@ -31,7 +32,7 @@ module Accidental {
         y: number;
     }
 
-    export var Component = ReactTS.createReactComponent(Accidental);
+    export var Component = TypedReact.createClass(React.createClass, Accidental);
 }
 
 export = Accidental;

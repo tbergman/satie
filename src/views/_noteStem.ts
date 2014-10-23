@@ -1,8 +1,13 @@
 /**
  * Renders a stem based on a height decided in Note.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Line = require("./_line");
@@ -11,31 +16,31 @@ import getFontOffset = require("./_getFontOffset");
 
 var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;
 
-class NoteStem extends ReactTS.ReactComponentBase<NoteStem.IProps, {}> {
+class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset();
         return Line.Component({
-            x1: this.props.x + fontOffset[0]/4 + this.lineXOffset,
-            x2: this.props.x + fontOffset[0]/4 + this.lineXOffset,
+            x1: this.props.x + fontOffset[0]/4 + this.lineXOffset(),
+            x2: this.props.x + fontOffset[0]/4 + this.lineXOffset(),
             y1: this.props.y - fontOffset[1]/4 - (this.props.line - 3)/4,
             y2: this.props.y -
                 (this.props.line - 3)/4 -
                 fontOffset[1]/4 -
-                this.direction*this.height/4,
+                this.direction()*this.height()/4,
             stroke: this.props.stroke,
             strokeWidth: stemThickness});
     }
 
-    get height() {
+    height() {
         return this.props.height;
     }
 
-    get direction() {
+    direction() {
         return this.props.direction;
     }
 
-    get lineXOffset() {
-        return this.direction * - stemThickness/2;
+    lineXOffset() {
+        return this.direction() * - stemThickness/2;
     }
 
     getFontOffset = getFontOffset;
@@ -50,11 +55,11 @@ class NoteStem extends ReactTS.ReactComponentBase<NoteStem.IProps, {}> {
     }
 }
 
-NoteStem.applyMixins(PureRenderMixin);
+NoteStem.prototype.mixins = [PureRenderMixin];
 
 module NoteStem {
     "use strict";
-    export var Component = ReactTS.createReactComponent(NoteStem);
+    export var Component = TypedReact.createClass(React.createClass, NoteStem);
 
     export interface IProps {
         height: number;

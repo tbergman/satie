@@ -1,38 +1,43 @@
 /**
  * Renders annotations like staccato, or accents.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 
 import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
+class NoteMarking extends TypedReact.Component<NoteMarking.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
-        var o2 = SMuFL.bravuraBBoxes[this.glyphName].bBoxSW;
-        var s2 = SMuFL.bravuraBBoxes[this.glyphName].bBoxNE;
+        var o2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxSW;
+        var s2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxNE;
         return Glyph.Component({
-            x: this.props.x + this.xOffset + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
-            y: this.props.y - this.yOffset,
+            x: this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
+            y: this.props.y - this.yOffset(),
             fontSize: this.props.fontSize,
             fill: "#000000",
             staveHeight: this.props.fontSize,
-            glyphName: this.glyphName});
+            glyphName: this.glyphName()});
     }
 
-    get directionString() {
+    directionString() {
         if (SMuFL.bravuraBBoxes[this.props.marking]) {
             return "";
-        } else if (this.direction === 1) {
+        } else if (this.direction() === 1) {
             return "Below";
-        } else if (this.direction === -1) {
+        } else if (this.direction() === -1) {
             return "Above";
         }
     }
-    get shouldBeAboveStaff() {
+    shouldBeAboveStaff() {
         var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
             if (this.props.marking.indexOf(above[i]) === 0) {
@@ -41,7 +46,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
         }
         return false;
     }
-    get shouldBeBelowStaff() {
+    shouldBeBelowStaff() {
         var below = ["dynamic"];
         for (var i = 0; i < below.length; ++i) {
             if (this.props.marking.indexOf(below[i]) === 0) {
@@ -50,17 +55,17 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
         }
         return false;
     }
-    get glyphName() {
+    glyphName() {
         return this.props.marking + this.directionString;
     }
-    get direction() {
+    direction() {
         if (this.shouldBeAboveStaff) {
             return -1;
         }
         return this.props.direction;
     }
     getFontOffset = getFontOffset;
-    get xOffset() {
+    xOffset() {
         if (this.props.marking.indexOf("caesura") === 0) {
             return -3/8; // TODO -- move to DurationModel and fix
         } else if (this.props.marking.indexOf("breathMarkComma") === 0) {
@@ -68,7 +73,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
         }
         return 0;
     }
-    get yOffset() {
+    yOffset() {
 		var m: number;
         if (this.shouldBeAboveStaff) {
 			m = (6.0 + this.props.idx - 3)/4;
@@ -84,7 +89,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
             return m;
         }
 
-        if (this.direction === 1) {
+        if (this.direction() === 1) {
             return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
 			//                               ^^^^^ Prevents markings from begin on lines
         }
@@ -96,7 +101,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
 
 module NoteMarking {
     "use strict";
-    export var Component = ReactTS.createReactComponent(NoteMarking);
+    export var Component = TypedReact.createClass(React.createClass, NoteMarking);
 
     export interface IProps {
         direction: number; // -1 or 1

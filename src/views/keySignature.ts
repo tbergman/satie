@@ -6,14 +6,15 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 
 import Accidental = require("./_accidental");
 import Group = require("./_group");
 import KeySignatureModel = require("../stores/keySignature");
 
-class KeySignature extends ReactTS.ReactComponentBase<KeySignature.IProps, {}> {
+class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
@@ -85,7 +86,7 @@ var flats: { [key: string]: Array<number> } = {
 
 module KeySignature {
     "use strict";
-    export var Component = ReactTS.createReactComponent(KeySignature);
+    export var Component = TypedReact.createClass(React.createClass, KeySignature);
 
     export interface IProps {
         key: number;

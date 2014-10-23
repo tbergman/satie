@@ -4,14 +4,14 @@
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 
 import RenderableMixin = require("./_renderable");
 var Victoria = require("../renderer/victoria/victoria");
 
 var VBezier = Victoria.VBezier;
 
-class Bezier extends ReactTS.ReactComponentBase<Bezier.IProps, {}> {
+class Bezier extends TypedReact.Component<Bezier.IProps, {}> {
     renderSVG() {
         var f = this.props.fontSizeFactor;
         return React.DOM.path({
@@ -37,13 +37,11 @@ class Bezier extends ReactTS.ReactComponentBase<Bezier.IProps, {}> {
             fill = "#000000";
         }
 
-        return this.transferPropsTo(VBezier(null));
+        return VBezier(this.props);
     }
-
-    render: () => void;
 }
 
-Bezier.applyMixins(RenderableMixin);
+Bezier.prototype.mixins = [RenderableMixin];
 
 module Bezier {
     "use strict";
@@ -56,7 +54,7 @@ module Bezier {
         y1: number; y2: number; y3: number; y4: number; y5: number; y6: number;
     }
 
-    export var Component = ReactTS.createReactComponent(Bezier);
+    export var Component = TypedReact.createClass(React.createClass, Bezier);
 }
 
 export = Bezier;

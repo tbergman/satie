@@ -14,13 +14,13 @@
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-jsx": "0.11.0",
         "node-lessify": "0.0.4",
-        "react": "0.11.2",
+        "react": "0.12.0-rc1",
         "react-bootstrap": "~0.12.0",
         "react-draggable": "0.2.1",
         "react-router-component": "0.22.0",
         "react-tools": "0.11.2",
-        "react-typescript": "git://github.com/jnetterf/react-typescript",
-        "statics": "0.1.0"
+        "statics": "0.1.0",
+        "typed-react": "git://github.com/jnetterf/typed-react"
     },
     "devDependencies": {
         "browserify": "6.1.0",

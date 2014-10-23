@@ -5,7 +5,7 @@
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -42,7 +42,7 @@ var html = React.DOM;
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
  */
-class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Renderer.IRendererState> {
+class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IRendererState> {
     render() {
         if (PROFILER_ENABLED) {
             console.time("render");
@@ -214,7 +214,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
             );});
 
-        var ret: Object; // React component
+        var ret: React.ReactElement<any, any>; // React component
         var currY = this.props.marginTop;
         if (!this.props.raw) {
             ret = html.div({ className: "workspace", onScroll: this.handleScroll, style: { top: "" + this.props.top } },
@@ -236,7 +236,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                 }.bind(this))
             );
         } else {
-            ret = rawPages[0];
+            ret = <any> rawPages[0]; // TRFIX
         }
 
         if (this.props.store) {
@@ -759,7 +759,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
 module Renderer {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Renderer);
+    export var Component = TypedReact.createClass(React.createClass, Renderer);
 
     export interface IRendererProps {
         context?: Annotator.Context;
@@ -799,7 +799,7 @@ module Renderer {
  *         return props.generate();
  *     }
  */
-class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
+class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
     render() {
         if (this.shouldClear) {
             assert(this.dirty);
@@ -856,7 +856,7 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
         return false;
     }
 
-    get onScreen(): boolean {
+    onScreen(): boolean {
         var domNode: SVGGElement = <any> this.getDOMNode();
         var bBox = domNode.getBBox();
         var svg = domNode.ownerSVGElement;
@@ -880,7 +880,7 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
     shouldClear: boolean = false;
 };
 
-var LineContainerComponent = ReactTS.createReactComponent(LineContainer);
+var LineContainerComponent = TypedReact.createClass(React.createClass, LineContainer);
 
 var _selection: Array<Model> = null;
 

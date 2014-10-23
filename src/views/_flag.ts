@@ -1,16 +1,21 @@
 /**
- * Responsible for rendering the "flag" on unbeamed notes shorter than quarter notes.
+ * Responsible for rendering the "flag" on un-beamed notes shorter than quarter notes.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import assert = require("assert");
 
 import Glyph = require("./_glyph");
 import getFontOffset = require("./_getFontOffset");
 
-class Flag extends ReactTS.ReactComponentBase<Flag.IProps, {}> {
+class Flag extends TypedReact.Component<Flag.IProps, {}> {
     render() {
-        var fontOffset = this.getFontOffset(this.glyphName);
+        var fontOffset = this.getFontOffset(this.glyphName());
         var noteOffset = this.getFontOffset();
         return Glyph.Component({
             x: this.props.x +
@@ -21,25 +26,25 @@ class Flag extends ReactTS.ReactComponentBase<Flag.IProps, {}> {
             y: this.props.y -
                 (this.props.line - 3)/4 -
                 noteOffset[1]/4 -
-                this.direction*this.props.stemHeight/4,
+                this.direction()*this.props.stemHeight/4,
             fill: this.props.stroke,
             fontSize: this.props.fontSize,
             glyphName: this.glyphName});
     }
 
-    get directionString() {
-        if (this.direction === 1) {
+    directionString() {
+        if (this.direction() === 1) {
             return "Up";
-        } else if (this.direction === -1) {
+        } else if (this.direction() === -1) {
             return "Down";
         }
 
         assert(false, "Invalid direction");
     }
-    get direction() {
+    direction() {
         return this.props.direction;
     }
-    get glyphName() {
+    glyphName() {
         return this.props.flag + this.directionString;
     }
 
@@ -57,7 +62,7 @@ class Flag extends ReactTS.ReactComponentBase<Flag.IProps, {}> {
 
 module Flag {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Flag);
+    export var Component = TypedReact.createClass(React.createClass, Flag);
 
     export interface IProps {
         direction: number; // -1 or 1

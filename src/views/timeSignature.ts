@@ -1,15 +1,20 @@
 /**
  * Renders a simple, compound, or common time signature.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 
 import Glyph = require("./_glyph");
 import Group = require("./_group");
 import TimeSignatureModel = require("../stores/timeSignature");
 
-class TimeSignature extends ReactTS.ReactComponentBase<TimeSignature.IProps, {}> {
+class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var ts = spec.displayTimeSignature;
@@ -86,7 +91,7 @@ function TimeSignatureNumber(props: TimeSignature.ITSProps, children: number) {
 
 module TimeSignature {
     "use strict";
-    export var Component = ReactTS.createReactComponent(TimeSignature);
+    export var Component = TypedReact.createClass(React.createClass, TimeSignature);
 
     export interface IProps {
         key: number;

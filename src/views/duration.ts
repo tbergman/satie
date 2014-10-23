@@ -22,7 +22,7 @@ var html = React.DOM;
  * rewritten so we can enjoy the full performance benefits
  * of components here.
  */
-export function Component(props: IProps) {
+export function Component(props: IProps): React.ReactElement<any, any> {
     "use strict";
     var spec = props.spec;
     assert(spec instanceof DurationModel);

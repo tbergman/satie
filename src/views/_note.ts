@@ -3,9 +3,14 @@
  * Either rendered by DurationModel or BeamGroup. Does not render beams.
  *
  * The stem height is calculated in this file.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import ReactTS = require("react-typescript");
+import React = require("react");
+import TypedReact = require("../typedReact");
 import _ = require("lodash");
 import assert = require("assert");
 
@@ -18,9 +23,9 @@ import NoteHead = require("./_noteHead");
 import NoteMarking = require("./_noteMarking");
 import NoteStem = require("./_noteStem");
 
-class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
+class Note extends TypedReact.Component<Note.IProps, {}> {
     render() {
-        var direction = this.direction;
+        var direction = this.direction();
         var lines = this.getLines();
         var linesObj: { [key: string]: boolean } = {};
         var linesOffset: { [key: string]: number } = {};
@@ -51,7 +56,7 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
         return Group(null,
             _.map(lines, (line: number, idx: number) => [
                 // XXX(profile) make more efficient
-                <React.ReactComponent<any, any>> NoteHead.Component({
+                <React.ReactElement<any, any>> NoteHead.Component({
                     key: idx + "l",
                     x: this.props.x + (linesOffset[line] || 0),
                     y: this.props.y,
@@ -84,21 +89,21 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
                 y: this.props.y,
                 line: this.getStartingLine(),
                 stroke: this.props.secondaryStroke,
-                stemHeight: this.getStemHeight() - this.direction/4,
+                stemHeight: this.getStemHeight() - this.direction()/4,
                 stemWidth: 0.035,
                 flag: this.props.flag,
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead,
                 direction: direction})]).concat(
-            this.props.children && _.map(this.props.children, (element: NoteMarking, idx: number) => {
-                element.props.direction = direction;
-                element.props.line = this.getStartingLine();
-                element.props.x = this.props.x;
-                element.props.y = this.props.y;
-                element.props.idx = idx;
-                element.props.notehead = this.props.notehead;
-                element.props.fontSize = this.props.fontSize;
-                return element;
+            this.props.children && _.map(this.props.children, (component: React.ReactComponentElement<NoteMarking.IProps>, idx: number) => {
+                component.props.direction = direction;
+                component.props.line = this.getStartingLine();
+                component.props.x = this.props.x;
+                component.props.y = this.props.y;
+                component.props.idx = idx;
+                component.props.notehead = this.props.notehead;
+                component.props.fontSize = this.props.fontSize;
+                return component;
             })).concat(
             this.accidentals()).concat(
             this.ledgerLines()).concat( // XXX(profile) make more efficient
@@ -118,7 +123,7 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
         };
     }
 
-    get direction(): number {
+    direction(): number {
         if (this.props.direction) {
             return this.props.direction;
         }
@@ -146,10 +151,10 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
         return _.reduce(this.getLines(), (a: number, b: number) => Math.max(a, b), -99999);
     }
     getStartingLine() {
-        return this.direction === 1 ? this.getLowestLine() : this.getHighestLine();
+        return this.direction() === 1 ? this.getLowestLine() : this.getHighestLine();
     }
     getHeightDeterminingLine() {
-        return this.direction === 1 ? this.getHighestLine() : this.getLowestLine();
+        return this.direction() === 1 ? this.getHighestLine() : this.getLowestLine();
     }
     getStemHeight() {
         if (this.props.stemHeight) {
@@ -163,7 +168,7 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
         var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
 
         var start = this.getHeightDeterminingLine();
-        var idealExtreme = start + this.direction*idealStemHeight;
+        var idealExtreme = start + this.direction()*idealStemHeight;
 
         if (idealExtreme >= 6.5) {
             return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 6.5));
@@ -182,7 +187,7 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
         if (!this.isOnLedger()) { // check is here to force isOnLedgerLine to be accurate
             return false;
         }
-        var ret: Array<React.ReactComponent<any, any>> = [];
+        var ret: Array<React.ReactElement<any, any>> = [];
         var lowest = this.getLowestLine();
         var highest = this.getHighestLine();
         if (lowest < 0.5) {
@@ -298,12 +303,12 @@ module Note {
         }
     };
 
-    export var Component = ReactTS.createReactComponent(Note);
+    export var Component = TypedReact.createClass(React.createClass, Note);
 
     export interface IProps {
         accidentals?: any;
         accStrokes?: any;
-        children?: Array<NoteMarking>;
+        children?: Array<React.ReactComponentElement<NoteMarking.IProps>>;
         direction?: number;
         dotted?: number;
         idx?: number;

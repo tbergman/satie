@@ -1,16 +1,20 @@
 /**
  * Renders a straight line.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import React = require("react");
-import ReactTS = require("react-typescript");
+import TypedReact = require("../typedReact");
 
 import RenderableMixin = require("./_renderable");
 var Victoria = require("../renderer/victoria/victoria");
 
 var VRect = Victoria.VRect;
 
-class Line extends ReactTS.ReactComponentBase<Line.IProps, {}> {
+class Line extends TypedReact.Component<Line.IProps, {}> {
     renderSVG() {
         return React.DOM.line({
             className: this.props.className,
@@ -47,15 +51,13 @@ class Line extends ReactTS.ReactComponentBase<Line.IProps, {}> {
             y1: this.props.y1 - yFactor*this.props.strokeWidth/2,
             y2: this.props.y2 + yFactor*this.props.strokeWidth/2});
     }
-
-    render: () => void;
 }
 
-Line.applyMixins(RenderableMixin);
+Line.prototype.mixins = [RenderableMixin];
 
 module Line {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Line);
+    export var Component = TypedReact.createClass(React.createClass, Line);
 
     export interface IProps {
         className?: string;
