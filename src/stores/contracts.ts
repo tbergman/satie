@@ -922,7 +922,9 @@ export interface IUser {
     identity: {
         id: string;
         displayName: string;
-    }
+    };
+
+    whitelisted: boolean;
 };
 
 /**
