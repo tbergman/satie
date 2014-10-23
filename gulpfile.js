@@ -168,9 +168,9 @@ gulp.task("typescript", function() {
     return ts.js.pipe(gulp.dest(dirs.build));
 });
 
-gulp.task("create-test-suite", function() {
+gulp.task("create-test-suite", ["typescript"], function() {
     // TODO: Remove es5-shim when we upgrade to PhantomJS 2.
-    return gulp.src(["node_modules/es5-shim/es5-shim.js", "src/**/test/*.ts"])
+    return gulp.src(["node_modules/es5-shim/es5-shim.js", ".partialBuild/**/test/*.js"])
         .pipe(generateSuite({addPrefix: "../test"}))
         .pipe(concat("suite.js"))
         .pipe(gulp.dest("build"));
