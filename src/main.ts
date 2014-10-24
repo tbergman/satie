@@ -19,10 +19,6 @@ import SessionStore = require("./stores/session");
 
 var ReactPerf = require("react/lib/ReactDefaultPerf");
 
-if (typeof window !== void 0) {
-    require("./webapp.less");
-}
-
 /**
  * The webapp entry point.
  */
