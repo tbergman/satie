@@ -22,6 +22,7 @@ import renderUtil = require("../util/renderUtil");
 import Rect = require("../views/_rect");
 import Group = require("../views/_group");
 import Line = require("../views/_line");
+import RipienoFooter = require("../landing/ripienoFooter");
 import SelectionRect = require("./selectionRect");
 
 var isBrowser = typeof window !== "undefined";
@@ -233,7 +234,8 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                         rawPage);
                     currY += 40 + this.props.height;
                     return page;
-                }.bind(this))
+                }.bind(this)),
+                this.props.showFooter ? RipienoFooter.Component({y: currY + 100}) : null
             );
         } else {
             ret = rawPages[0];
@@ -768,12 +770,14 @@ module Renderer {
         marginTop?: number;
         pageSize?: C.IPageSize;
         raw?: boolean;
+        sessionInfo?: C.ISession;
         staveHeight?: number;
         staves?: Array<C.IStave>;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
         selection?: Array<Model>;
+        showFooter?: boolean;
         height?: number;
         history?: History.History;
         paper?: C.Paper;
