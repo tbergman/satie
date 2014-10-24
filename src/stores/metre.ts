@@ -328,13 +328,12 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     }
 
     var needsReplacement = false;
-    var needsReplacementVerified = false;
     var prevCount: number;
 
     var prevInBeam = true;
 
     var foundNote = false;
-    var tuplet: C.ITuplet = null;
+    var tuplet: C.ITuplet;
 
     for (var i = idx; body[i] && !body[i].endMarker; ++i) {
         if (body[i].type === C.Type.BeamGroup) {
@@ -342,15 +341,8 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
                 needsReplacement = true;
             }
         } else if (body[i].isNote) {
-            if (foundNote) {
-                if (!!tuplet !== !!body[i].note.tuplet) {
-                    if (needsReplacement && !needsReplacementVerified) {
-                        needsReplacement = false;
-                    } else {
-                        needsReplacementVerified = true;
-                    }
-                    break;
-                }
+            if (!!tuplet !== !!body[i].note.tuplet && foundNote) {
+                break;
             }
             foundNote = true;
             tuplet = body[i].note.tuplet;

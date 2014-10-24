@@ -190,18 +190,19 @@ export class Context implements C.MetreContext {
     /**
      * Returns a BeamGroup, if one follows. Otherwise, returns null.
      */
-    beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
+    beamFollows(idx?: number): Array<{ inBeam: boolean; tuplet: C.ITuplet; }> {
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
         var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
-            var beamed: Array<{ inBeam: boolean }> = [];
+            var beamed: Array<{ inBeam: boolean; tuplet: C.ITuplet; }> = [];
             for (var i = 0; i < this._staves.length; ++i) {
                 if (this._staves[i].body &&
                     this._staves[i].body[idx + 1].type === C.Type.BeamGroup) {
-                    beamed = beamed.concat((<any>this._staves[i].body[idx + 1]).beam);
+                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._staves[i].body[idx + 1]).beam;
+                    beamed = beamed.concat(<any>newBeam);
                 }
             }
             return beamed;
@@ -341,16 +342,6 @@ export class Context implements C.MetreContext {
         }
         replaceWith = replaceWith || [];
         this._assertAligned();
-
-        var replaceFrom = 0;
-        if (splicePolicy === SplicePolicy.MatchedOnly) {
-            for (var i = this.idx + count + 1;
-                    i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
-                    this.body[i].placeholder && this.body[i].priority === C.Type.Duration; ++i) {
-                ++replaceFrom;
-            }
-            count += replaceFrom;
-        }
 
         if (splicePolicy === SplicePolicy.Masked) {
             var end = start + count - replaceWith.length;

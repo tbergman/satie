@@ -135,7 +135,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
                 var isInPast = j <= ctx.idx;
                 ctx.removeFollowingBeam(j - 1, isInPast);
-                // This is kind of cross, but hey.
+                // This is kind of gross, but hey.
                 ctx.idx = j;
             }
 
@@ -214,6 +214,25 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
     perfectlyBeamed(ctx: Annotator.Context) {
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
+
+        // Check to make sure the replacement isn't the same as the current.
+        var prevBeamMaybe = ctx.prev(m => m.type === C.Type.BeamGroup || m.type === C.Type.Barline);
+        if (rebeamable && prevBeamMaybe && prevBeamMaybe.type === C.Type.BeamGroup) {
+            var thisBeam = prevBeamMaybe.beam;
+            if (thisBeam.length === rebeamable.length) {
+                var isValid = true;
+                for (var i = 0; i < thisBeam.length; ++i) {
+                    if (thisBeam[i] !== rebeamable[i]) {
+                        isValid = false;
+                        break;
+                    }
+                }
+                if (isValid) {
+                    return true;
+                }
+            }
+        }
+
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
         }
