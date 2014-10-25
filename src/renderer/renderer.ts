@@ -235,7 +235,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                     currY += 40 + this.props.height;
                     return page;
                 }.bind(this)),
-                this.props.showFooter ? RipienoFooter.Component({y: currY + 100}) : null
+                this.props.showFooter ? RipienoFooter.Component({y: currY + 100, dispatcher: this.props.dispatcher}) : null
             );
         } else {
             ret = rawPages[0];
