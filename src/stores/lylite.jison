@@ -322,16 +322,20 @@ parts
 		}
   | parts musicExpr                   
 		{
-			$2.instrument = partInstrument;
 			resetPartState();
-			$$ = $1.concat({body: $2});
+			$$ = $1.concat({
+				body: $2,
+				instrument: partInstrument
+			});
 			$$.isScale = $1.isScale;
 		}
   | parts 'NEW' 'NEW_STAFF' musicExpr 
 		{
-			$4.instrument = partInstrument;
 			resetPartState();
-			$$ = $1.concat({body: $4});
+			$$ = $1.concat({
+				body: $4,
+				instrument: partInstrument
+			});
 			$$.isScale = $1.isScale;
 		}
   | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
@@ -383,7 +387,7 @@ pianoStaff
             $$ = $3;
             _.each($$, function(s, idx) {
                 if (idx + 1 !== $$.length) {
-                    s.pianoStaff = true;
+                    s.pianoSystemContinues = true;
                 }
             }.bind(this));
         }

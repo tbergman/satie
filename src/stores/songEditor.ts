@@ -211,12 +211,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (!debugMode) {
                     if (inPianoStaff) {
                         lyliteArr.push("{");
-                    } else if (stave.pianoStaff) {
+                    } else if (stave.pianoSystemContinues) {
                         lyliteArr.push("\\new PianoStaff << {\n");
                     } else {
                         lyliteArr.push("\\new Staff {\n");
                     }
-                    lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.body.instrument.lilypond + "\"");
+                    lyliteArr.push("\\set Staff.midiInstrument = #\"" + stave.instrument.lilypond + "\"");
                 }
 
                 var body = stave.body;
@@ -248,7 +248,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 } else {
                     lyliteArr.push("}\n");
                 }
-                if (stave.pianoStaff) {
+                if (stave.pianoSystemContinues) {
                     inPianoStaff = true;
                 } else if (inPianoStaff && !debugMode) {
                     lyliteArr.push(">>");
@@ -431,7 +431,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             for (var i = 0; i < staves.length; ++i) {
                 var body = staves[i].body;
                 if (body) {
-                    body.instrument = Instruments.List[0];
+                    if (!staves[i].instrument) {
+                        staves[i].instrument = Instruments.List[0];
+                    }
+
                     for (var j = 0; j < body.length; ++j) {
                         body[j] = Model.fromJSON(body[j]);
                     }
@@ -482,7 +485,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
         _.each(this.staves, (stave: C.IStave) => {
             if (stave.body) {
-                var instrument: C.IInstrument = stave.body.instrument;
+                var instrument: C.IInstrument = stave.instrument;
                 this.ensureSoundfontLoaded(instrument.soundfont, /*avoidEvent*/ true);
             }
         });
@@ -908,7 +911,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.ensureSoundfontLoaded(instrument.soundfont);
 
         this.emit(HISTORY_EVENT);
-        stave.body.instrument = instrument;
+        stave.instrument = instrument;
         this.emit(CHANGE_EVENT);
     }
 

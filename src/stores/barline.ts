@@ -124,7 +124,7 @@ class BarlineModel extends Model {
         ctx.barKeys.push(this.key);
 
         // Set information from context that the view needs
-        if (ctx.currStave.pianoStaff) {
+        if (ctx.currStave.pianoSystemContinues) {
             this.onPianoStaff = true;
         };
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
@@ -132,8 +132,8 @@ class BarlineModel extends Model {
         ++ctx.bar;
         ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
 
-        this.height = this.onPianoStaff ? 1.15 : 2/4;
-        this.yOffset = this.onPianoStaff ? (2/4 - 1.15): 0;
+        this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 2/4;
+        this.yOffset = this.onPianoStaff ? (2/4 - (ctx.staveSeperation/2)): 0;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
 
         if (!ctx.disableRecordings) {

@@ -14,7 +14,7 @@ class BeginView extends ReactTS.ReactComponentBase<BeginView.IProps, {}> {
         var spec = this.props.spec;
 
         return Group(null,
-            spec.pianoStaff && Brace.Component({
+            spec.pianoSystemContinues && Brace.Component({
                 idx: 1,
                 x: spec.x,
                 fontSize: this.props.fontSize,

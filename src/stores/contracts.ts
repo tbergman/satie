@@ -111,7 +111,6 @@ export enum BeamCount {
 }
 
 export interface IBody extends Array<Model> {
-    instrument?: IInstrument;
 }
 
 /**
@@ -826,15 +825,35 @@ export enum Source {
  * A composite of all possible stave parts.
  */
 export interface IStave {
+    //////////////////////////////////////////////
+    // The following can be set if body is true //
+    //////////////////////////////////////////////
+
     /**
      * If the stave is a part, the Models that compose the part.
      */
     body?: IBody;
 
     /**
-     * If the stave is a part, whether the IStave is part of a piano stave.
+     * For playback
      */
-    pianoStaff?: boolean;
+    instrument?: IInstrument;
+
+    /**
+     * Whether the next part is in the same system
+     */
+    pianoSystemContinues?: boolean;
+
+    staveSeperation?: number;
+
+    ////////////////////////////////////////////////////
+    // The following should all be merged into header //
+    ////////////////////////////////////////////////////
+
+    /**
+     * Printed information about the piece.
+     */
+    header?: IHeader;
 
     /**
      * The height of the stave, in "em".
@@ -852,11 +871,6 @@ export interface IStave {
      * See also pageSize.
      */
     paper?: Paper;
-
-    /**
-     * Printed information about the piece.
-     */
-    header?: IHeader;
 };
 
 /**

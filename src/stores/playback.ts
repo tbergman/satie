@@ -210,7 +210,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            var soundfont = body.instrument.soundfont;
+            var soundfont = this._songEditor.staves[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 

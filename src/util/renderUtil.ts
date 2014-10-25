@@ -597,6 +597,6 @@ export function getHeaderHeight(header: any) {
     return height;
 }
 
-export var staveSeperation = 2.24;
+export var staveSeperation = 3.24;
 
 export var useGL: boolean = false;

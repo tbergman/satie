@@ -15,18 +15,20 @@ class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
         var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
 
-        var s = 3.31;
+        var height = (this.props.y2 - this.props.y) + 1;
+        var mid = (this.props.y2 + this.props.y) / 2;
+        var s = height;
         return Group(null,
             [Glyph.Component({transform: "scale(" + s + "," + s + ")" +
                     "translate(" + -FONT_SIZE_FACTOR*
                         this.props.fontSize*this.props.x*(1-1/s) + "," +
                     -(1-1/s)*FONT_SIZE_FACTOR*this.props.fontSize*
-                        (this.props.y + this.props.y2)/2 + ")",
+                        mid + ")",
                 fill: "#000000",
                 fontSize: this.props.fontSize,
                 key: 0,
                 x: this.props.x - 1/8,
-                y: (this.props.y + this.props.y2)/2 + 2/4,
+                y: mid + 2/4,
                 glyphName: "brace"}),
             Line.Component({
                 stroke: "black",
@@ -35,8 +37,8 @@ class Brace extends ReactTS.ReactComponentBase<Brace.IProps, {}> {
                 key: 1,
                 x1: this.props.x,
                 x2: this.props.x,
-                y1: this.props.y + (1.63 - 2/4) - 3.27/2,
-                y2: this.props.y + (1.63 - 2/4) + 3.27/2})]
+                y1: mid - height/2,
+                y2: mid + height/2})]
         );
     }
 }

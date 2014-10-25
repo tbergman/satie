@@ -58,8 +58,8 @@ class NewlineModel extends Model {
         }
 
         // Copy information from the context that the view needs.
-        this.lineSpacing = ctx.lineSpacing + renderUtil.staveSeperation*(visibleStaveCount - 1);
-        this.pianoStaff = ctx.currStave.pianoStaff;
+        this.lineSpacing = ctx.lineSpacing + ctx.staveSeperation;
+        this.pianoSystemContinues = ctx.currStave.pianoSystemContinues;
         this.braceY = this.y;
         this.braceY2 = this.y + renderUtil.staveSeperation;
         this.pageSize = ctx.pageSize;
@@ -344,7 +344,7 @@ class NewlineModel extends Model {
     braceY2: number;
     lineSpacing: number;
     pageSize: C.IPageSize;
-    pianoStaff: boolean;
+    pianoSystemContinues: boolean;
     width: number;
 }
 

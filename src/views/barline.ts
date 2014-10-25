@@ -57,6 +57,7 @@ class Barline extends ReactTS.ReactComponentBase<Barline.IProps, {}> {
                     width: 400})]
             );
         }
+
         return Line.Component({
             x1: spec.x,
             x2: spec.x,

@@ -126,6 +126,10 @@ export class Context implements C.MetreContext {
         return this.body[this.idx];
     }
 
+    get staveSeperation() {
+        return this.currStave.staveSeperation || renderUtil.staveSeperation;
+    }
+
     /**
      * Returns the next element in the current stave, subject to certain options.
      * By default, this function skips over beams.
@@ -360,8 +364,6 @@ export class Context implements C.MetreContext {
             var startPriority = this.body[start].priority;
         } else {
             assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
-            console.log(this._staves);
-            assert(false);
         }
 
         for (var i = 0; i < this._staves.length; ++i) {
@@ -1064,14 +1066,18 @@ class PrivIterator {
                 this._assertOffsetsOK();
                 return C.IterationStatus.RetryCurrent; // Don't go to next!
             }
-            this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
+
+            this._parent.y = origSnapshot.y;
+            for (var j = 0; j < i; ++j) {
+                this._parent.y += this._components[i].staveSeperation;
+            }
 
             this._assertOffsetsOK();
 
+            // The most important line:
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
 
             this._assertOffsetsOK();
-            ///
 
             if (verbose) {
                 console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type],
@@ -1549,6 +1555,10 @@ class PrivIteratorComponent {
 
     get len() {
         return this._body.length;
+    }
+
+    get staveSeperation() {
+        return this._stave.staveSeperation || renderUtil.staveSeperation;
     }
 
     private _aheadOfSchedule(ctx: Context): boolean {

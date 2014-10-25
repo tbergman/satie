@@ -35,7 +35,7 @@ class BeginModel extends Model {
         ctx.barKeys = [];
 
         // Copy information from the context needed for the view
-        this.pianoStaff = ctx.currStave.pianoStaff;
+        this.pianoSystemContinues = ctx.currStave.pianoSystemContinues;
         this.stave = ctx.currStave;
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
@@ -45,7 +45,7 @@ class BeginModel extends Model {
             this.noMargin = false;
         }
         this.braceY = this.y;
-        this.braceY2 = this.y + renderUtil.staveSeperation;
+        this.braceY2 = this.y + ctx.staveSeperation;
         this.pageSize = ctx.pageSize;
 
         return C.IterationStatus.Success;
@@ -71,7 +71,7 @@ class BeginModel extends Model {
         });
     }
 
-    pianoStaff: boolean;
+    pianoSystemContinues: boolean;
     stave: C.IStave;
     noMargin : boolean;
     braceY : number;
