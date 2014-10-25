@@ -435,7 +435,9 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
         if (tsName.indexOf("/4") !== -1) {
             // Rhythmic figures that are not part of a repeated pattern may be best beamed into separate beats,
             // so that they are not mistaken for triplets nor for groups of three quavers in compound time.
-            while ((first.ctxData.beat % 1) !== 0 && Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
+            // (Note doesn't solve the root issue)
+            while (((first.ctxData.beat % 1) !== 0 || (last.ctxData.beat % 1) === 0) &&
+                Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
                 replaceWith.pop();
                 last = replaceWith[replaceWith.length - 1];
             }
