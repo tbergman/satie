@@ -178,7 +178,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // Set which accidentals are displayed, and then update the accidentals currently
         // active in the bar.
-        this.displayedAccidentals = this.getAccidentals(ctx);
+        this.displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
         }
@@ -201,9 +201,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
-            if (!isNaN(pitches[i].accTemporary) && pitches[i].accTemporary !== null) {
-                continue;
-            }
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
             }
@@ -301,7 +298,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     getWidth(ctx: Annotator.Context) {
-        return 0.67 + (this.annotatedExtraWidth || 0);
+        return 0.47 + (this.annotatedExtraWidth || 0);
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
@@ -793,7 +790,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get accStrokes() {
         return _.map(this.chord, (c, idx) =>
-            !isNaN(c.accTemporary) && c.accTemporary !== null || this.accToDelete === idx ? "#A5A5A5" : "#000000");
+            (c.displayAcc !== null && c.displayAcc !== undefined || this.accToDelete === idx) ? "#A5A5A5" : "#000000");
     }
 
     get annotatedExtraWidth() {
@@ -1156,12 +1153,15 @@ class DurationModel extends Model implements C.IPitchDuration {
         b: 3
     };
 
-    private getAccidentals(ctx: Annotator.Context) {
+    private getDisplayedAccidentals(ctx: Annotator.Context) {
+        return this.getAccidentals(ctx, true);
+    }
+    private getAccidentals(ctx: Annotator.Context, display?: boolean) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
-            var actual = pitch.acc;
+            var actual = (display ? pitch.displayAcc : null) || pitch.acc;
             assert(actual !== undefined);
             var target = ctx.accidentals[pitch.pitch] || null;
 

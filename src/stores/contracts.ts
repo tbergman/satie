@@ -628,7 +628,7 @@ export class Paper {
  */
 export interface IPitch {
     acc: number;
-    accTemporary?: number;
+    displayAcc?: number;
     isRest?: boolean; // read only
     /**
      * Note: In the case of a chord, the average line.

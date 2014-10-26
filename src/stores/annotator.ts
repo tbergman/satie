@@ -1217,7 +1217,7 @@ class PrivIterator {
             case C.IterationStatus.RetryBeam:
                 this._parent.loc.beat = this._parent.startOfBeamBeat;
                 this._rewind(C.Type.BeamGroup);
-                this._parent.x = this._componentWithType(C.Type.BeamGroup).x;
+                this._parent.x = this._componentWithPriority(C.Type.BeamGroup).x;
                 break;
             case C.IterationStatus.RetryCurrent:
             case C.IterationStatus.RetryCurrentNoOptimizations:
@@ -1263,9 +1263,9 @@ class PrivIterator {
         }
     }
 
-    private _componentWithType(type: C.Type): Model {
+    private _componentWithPriority(type: C.Type): Model {
         for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].curr.type === type) {
+            if (this._components[i].curr.priority === type) {
                 return this._components[i].curr;
             }
         }
