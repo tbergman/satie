@@ -139,7 +139,7 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
                     currNoteEndBeat < patternEndBeat &&
                     nextNoteEndBeat <= patternEndBeat + 0.0000001) {
                 if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
-                    return C.IterationStatus.RetryCurrent;
+                    return C.IterationStatus.RetryLine; // Should be bar
                 }
             }
             patternStartBeat = patternEndBeat;
@@ -477,6 +477,7 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
 }
 
 export function correctRoundingErrors(mctx: C.MetreContext): void {
+    "use strict";
     // Correct rounding errors
     var huge = 10000000;
     var rounded = Math.round(mctx.beat * huge) / huge;

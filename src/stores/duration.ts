@@ -62,7 +62,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.isWholebar = this._beats === ctx.timeSignature.beats;
 
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
-        if (ctx.isBeam || !this.inBeam || true) {
+        if (ctx.isBeam || !this.inBeam) {
             if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
                 // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
                 // start at beat 0.
@@ -301,7 +301,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     getWidth(ctx: Annotator.Context) {
-        return 0.47 + (this.annotatedExtraWidth || 0);
+        return 0.57 + (this.annotatedExtraWidth || 0);
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
