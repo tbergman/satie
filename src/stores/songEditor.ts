@@ -789,6 +789,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     "PUT /local/tool/preview" = this["PUT /local/tool/action"];
 
     "PUT /local/visualCursor"(action: C.IFluxAction) {
+        if (action.resource === "togglePlay") {
+            return;
+        }
         // Simply move cursor
         if (action.postData.bar) {
             this._visualCursorIs(action.postData);

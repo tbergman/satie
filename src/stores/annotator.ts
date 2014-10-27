@@ -35,11 +35,13 @@ export class Context implements C.MetreContext {
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
 
-        if (layout.snapshot) {
-            _cpysnapshot(this, layout.snapshot);
-        } else {
-            _fillLayoutDefaults(layout);
-            _cpylayout(this, layout);
+        if (layout) {
+            if (layout.snapshot) {
+                _cpysnapshot(this, layout.snapshot);
+            } else {
+                _fillLayoutDefaults(layout);
+                _cpylayout(this, layout);
+            }
         }
     }
 
