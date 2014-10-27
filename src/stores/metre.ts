@@ -390,7 +390,7 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
             tuplet = body[i].note.tuplet;
             prevCount = body[i].note.count || prevCount;
 
-            if (body[i].note.isRest || !body[i].note.hasFlagOrBeam || body[i].note.temporary) {
+            if (!body[i].note.hasFlagOrBeam || body[i].note.temporary) {
                 break;
             }
 
@@ -474,6 +474,15 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
     "use strict";
     var tsName = getTSString(ctx.timeSignature);
     return wholeNotePatterns[tsName];
+}
+
+export function correctRoundingErrors(mctx: C.MetreContext): void {
+    // Correct rounding errors
+    var huge = 10000000;
+    var rounded = Math.round(mctx.beat * huge) / huge;
+    if (Math.abs(rounded - mctx.beat) < 0.00000001) {
+        mctx.beat = Math.round(mctx.beat * 10000) / 10000;
+    }
 }
 
 var _512   = C.makeDuration({ count: 512 });

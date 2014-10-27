@@ -41,6 +41,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(this._beats !== null);
         mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.timeSignature.beats);
         mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
+
+        Metre.correctRoundingErrors(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.Success;
@@ -163,10 +165,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
+            Metre.correctRoundingErrors(ctx);
         }
 
         if (!ctx.isBeam && this.inBeam) {
-            this.x = Math.max(this.x, ctx.x);
+            // this.x = Math.max(this.x, ctx.x);
             ctx.x = this.x + this.getWidth(ctx);
             this._handleTie(ctx);
             return C.IterationStatus.Success;
@@ -876,7 +879,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get hasFlagOrBeam() {
-        return DurationModel.countToIsBeamable[this.count];
+        return !!this.tuplet || !this.isRest && DurationModel.countToIsBeamable[this.count];
     }
 
     get isMultibar() {

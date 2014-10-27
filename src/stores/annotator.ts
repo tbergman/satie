@@ -431,9 +431,10 @@ export class Context implements C.MetreContext {
             while(this.body[clot + 1] && this.body[clot + 1].priority > C.Type.Barline) {
                 ++clot;
             }
-            assert(clot >= start);
-            while(this.body[start - 1] && this.body[start - 1].priority > C.Type.Barline) {
-                --start;
+            if (clot >= start) {
+                while (this.body[start - 1] && this.body[start - 1].priority > C.Type.Barline) {
+                    --start;
+                }
             }
             this._realign(start, clot);
             this._assertAligned();
