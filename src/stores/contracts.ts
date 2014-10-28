@@ -516,6 +516,33 @@ export class MetreContext {
     }
 }
 
+export enum RectifyXPolicy {
+    Invalid = 0,
+    Max,
+    Min
+}
+
+export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
+RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Begin] = RectifyXPolicy.Min;
+RectifyXPolicyFor[Type.Clef] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.KeySignature] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.TimeSignature] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
+
+RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
+
 /**
  * Information about the current mouse position, such as from Renderer.
  */
@@ -645,7 +672,6 @@ export interface IPitch {
  * DurationModels implement PitchDurations.
  */
 export interface IPitchDuration extends IDuration {
-    containsAccidental?(ctx: any, previewMode?: PreviewMode): boolean;
     chord?: Array<IPitch>;
     isRest?: boolean;
     tie?: boolean;
@@ -1041,5 +1067,7 @@ export function addDefaults(staves: IStave[]) {
         });
     }
 }
+
+export var InvalidAccidental = 9001;
 
 global.C = module.exports; // For debugging

@@ -103,7 +103,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (status !== C.IterationStatus.Success) { return status; }
             }
 
-            // All notes, chords, and rests throughout a line must have the same spacing.
+            // All notes, chords, and rests throughout a line on a given stave must have the same scale.
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
@@ -183,7 +183,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         // active in the bar.
         this.displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
-            ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
+            // Set the octave specific accidental
+            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch + this.chord[i].octave] = this.chord[i].acc;
+            // If needed, invalidate the default accidental
+            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch]||null) !== this.chord[i].acc) {
+                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch] = C.InvalidAccidental;
+            }
         }
 
         ctx.x += this.getWidth(ctx);
@@ -200,21 +205,29 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.tie = this.tie;
     }
 
-    containsAccidental(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
+    containsAccidentalAfterBarline(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
             }
+            // Make sure there's no ambiguity from the previous note 
+            var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+            if (prevNote) {
+                if (_hasConflict(prevNote.note.chord, pitches[i].pitch, nonAccidentals[pitches[i].pitch]||null)) {
+                    return true;
+                }
+            }
         }
+
         return false;
     }
     perfectlyBeamed(ctx: Annotator.Context) {
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
 
-        // Check to make sure the replacement isn't the same as the current.
-        var prevBeamMaybe = ctx.prev(m => m.type === C.Type.BeamGroup || m.type === C.Type.Barline);
+        // Sanity check to make sure the replacement isn't the same as the current.
+        var prevBeamMaybe = ctx.prev(m => m.type === C.Type.BeamGroup || m.type === C.Type.Barline, 0 /* no offset, look from current */);
         if (rebeamable && prevBeamMaybe && prevBeamMaybe.type === C.Type.BeamGroup) {
             var thisBeam = prevBeamMaybe.beam;
             if (thisBeam.length === rebeamable.length) {
@@ -1120,13 +1133,15 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(ctx.clef, "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
-        var acc = ctx.accidentals[pitch] || null;
+        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.clef]) / 3.5);
+        var acc = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
+            ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
 
         return {
             pitch: DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5],
-            octave: Math.floor((line - DurationModel.clefOffsets[ctx.clef])/3.5),
-            acc: acc
+            octave: octave,
+            acc: acc === C.InvalidAccidental ? null : acc
         };
     };
 
@@ -1166,19 +1181,56 @@ class DurationModel extends Model implements C.IPitchDuration {
             var pitch: C.IPitch = chord[i];
             var actual = (display ? pitch.displayAcc : null) || pitch.acc;
             assert(actual !== undefined);
-            var target = ctx.accidentals[pitch.pitch] || null;
+            var generalTarget = ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch] || null;
+            var target = ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave] || null;
+            if (!target && generalTarget !== C.InvalidAccidental) {
+                target = generalTarget;
+            }
 
             if (actual === target) {
-                result[i] = NaN; // no accidental
-                continue;
+                // We don't need to show an accidental if all of these conditions are met:
+
+                // 1. The note has the same accidental on other octave (if the note is on other octaves)
+                var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
+
+                // 2. The note has the same accidental on all other stave (in the same bar, in the past)
+                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
+                    if (ctx.accidentalsByStave[j] && generalTarget !== ((ctx.accidentalsByStave[j][pitch.pitch] || null))) {
+                        noConflicts = false;
+                    }
+                }
+
+                // 3. The note has the same accidental on other stave with the same note(right now!)
+                var concurrentNotes = ctx.findVertical(c => c.isNote);
+                for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
+                    var otherChord = concurrentNotes[j].note.chord;
+                    noConflicts = noConflicts && !_hasConflict(otherChord, pitch.pitch, target);
+                }
+
+                // 4. Ambiguity could not be caused by being directly after a barline
+                var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
+                if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
+                    var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+                    if (prevNote) {
+                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.pitch, target);
+                    }
+                }
+
+                if (noConflicts) {
+                    result[i] = NaN; // no accidental
+                    continue;
+                } else {
+                    // XXX: Otherwise, the note should be in parentheses
+                }
             }
 
             if (!actual) {
-                ctx.accidentals[pitch.pitch] = undefined;
+                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch] = undefined;
                 result[i] = 0; // natural
                 continue;
             }
 
+            assert(actual !== C.InvalidAccidental, "Accidental is invalid");
             result[i] = actual;
         }
         return result;
@@ -1285,6 +1337,16 @@ class DurationModel extends Model implements C.IPitchDuration {
     set beats(n: number) {
         assert(false);
     }
+}
+
+function _hasConflict(otherChord: Array<C.IPitch>, pitch: string, target: number) {
+    "use strict";
+    for (var k = 0; k < otherChord.length; ++k) {
+        if (otherChord[k].pitch === pitch && otherChord[k].acc !== target) {
+            return true;
+        }
+    }
+    return false;
 }
 
 var getBeats = Metre.getBeats;

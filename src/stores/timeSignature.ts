@@ -11,6 +11,7 @@ import _ = require("lodash");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import ClefModel = require("./clef");
+import DurationModelType = require("./duration"); // Potentially cyclic. For types only.
 import KeySignatureModel = require("./keySignature");
 
 class TimeSignatureModel extends Model implements C.ITimeSignature {
@@ -30,7 +31,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
 
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, n => n.note.containsAccidental(ctx))) {
+            if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 1.5;
             } else {

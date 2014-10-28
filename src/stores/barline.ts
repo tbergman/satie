@@ -109,8 +109,11 @@ class BarlineModel extends Model {
         // Barlines followed by accidentals have additional padding. We check all
         // staves for following accidentals.
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
-        if (ctx.next().isNote) {
-            this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.note.containsAccidental(ctx)) ? 1 : 0);
+        var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
+        var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
+        if (nextNonPlaceholder.isNote) {
+            this.annotatedAccidentalSpacing = 0.2 * (_.any(intersectingNotes,
+                n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
         }
@@ -130,7 +133,7 @@ class BarlineModel extends Model {
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
+        ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
 
         this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 2/4;
         this.yOffset = this.onPianoStaff ? (2/4 - (ctx.staveSeperation/2)): 0;

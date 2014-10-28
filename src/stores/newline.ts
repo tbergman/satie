@@ -71,7 +71,7 @@ class NewlineModel extends Model {
             // (Note: This is shady.)
             ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
         } else if (global.console) {
-            console.warn("Not updating prevClefByStave because clef is not set. This is shady.");
+            console.warn("Not updating prevClefByStave because clef is not set. Be afraid.");
         }
         if (ctx.keySignature) {
             ctx.prevKeySignature = ctx.keySignature;
@@ -95,7 +95,7 @@ class NewlineModel extends Model {
 
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
-                accidentals: null,
+                accidentalsByStave: JSON.parse(JSON.stringify(ctx.accidentalsByStave)),
                 bar: null,
                 barKeys: null,
                 barlineX: null,
@@ -107,12 +107,13 @@ class NewlineModel extends Model {
                 pageStarts: null,
                 prevClefByStave: {},
                 prevKeySignature: null,
+                staveIdx: ctx.currStaveIdx,
                 x: null,
                 y: null
             };
         }
 
-        ctx.lines[ctx.line].accidentals = {};
+        ctx.lines[ctx.line].accidentalsByStave = [];
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
         ctx.lines[ctx.line].barKeys = JSON.parse(JSON.stringify(ctx.barKeys));

@@ -87,7 +87,7 @@ export class Context implements C.MetreContext {
             assert(this.prevClefByStave);
         }
         return {
-            accidentals: this.accidentals,
+            accidentalsByStave: JSON.parse(JSON.stringify(this.accidentalsByStave)),
             bar: this.loc.bar,
             barKeys: this.barKeys,
             barlineX: this.barlineX,
@@ -99,6 +99,7 @@ export class Context implements C.MetreContext {
             pageStarts: this.pageStarts,
             prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevKeySignature: this.prevKeySignature,
+            staveIdx: this.currStaveIdx,
             x: this.x,
             y: this.y
         };
@@ -235,11 +236,11 @@ export class Context implements C.MetreContext {
      * If a condition is given, searches backwards starting at the CURRENT
      * item. Otherwise, returns the item directly before the current item.
      */
-    prev(condition?: (m: Model) => boolean) {
+    prev(condition?: (m: Model) => boolean, offset?: number) {
         if (!condition) {
             return this.body[this.idx - 1];
         } else {
-            for (var i = this.idx; i >= 0; --i) {
+            for (var i = this.idx - (isNaN(offset) ? 1 : offset); i >= 0; --i) {
                 if (condition(this.body[i])) {
                     return this.body[i];
                 }
@@ -641,7 +642,7 @@ export class Context implements C.MetreContext {
      * The default accidental for all notes. Reset to the key signature on each barline
      * @scope line
      */
-    accidentals: C.IAccidentals = {};
+    accidentalsByStave: Array<C.IAccidentals> = [];
 
     /**
      * The positions of all the barlines in the current line.
@@ -947,12 +948,13 @@ export interface ILayoutOpts {
 
 /**
  * A subset of a Context that is used as a snapshot so that modifying a line
- * does not involve a trace from the start of the document.
+ * does not involve a trace from the start of the document. Some of these properties
+ * are stave-specific.
  * 
  * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
 export interface ILineSnapshot {
-    accidentals: C.IAccidentals;
+    accidentalsByStave: Array<C.IAccidentals>;
     bar: number;
     barKeys: Array<string>;
     barlineX: Array<number>;
@@ -964,6 +966,7 @@ export interface ILineSnapshot {
     pageStarts: Array<number>;
     prevClefByStave: { [key: number]: string };
     prevKeySignature: C.IKeySignature;
+    staveIdx: number;
     x: number;
     y: number;
 }
@@ -1139,9 +1142,11 @@ class PrivIterator {
         ctx.pageLines = componentSnapshots[0].pageLines;
         ctx.pageStarts = componentSnapshots[0].pageStarts;
         ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
+        var mergePolicy = C.RectifyXPolicyFor[ctx.curr.priority];
+        assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x = componentSnapshots[0].x;
         for (var i = 1; i < componentSnapshots.length; ++i) {
-            ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
+            ctx.x = (mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min)(ctx.x, componentSnapshots[i].x);
         }
         var otherContexts = ctx.findVertical(c => true);
 
@@ -1160,8 +1165,11 @@ class PrivIterator {
             ctx.y = componentSnapshots[0].y;
         }
 
-        // XXX: stave-specific
-        ctx.accidentals = componentSnapshots[0].accidentals;
+        ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
+        for (var i = 1; i < componentSnapshots.length; ++i) {
+            var staveIdx = componentSnapshots[i].staveIdx;
+            ctx.accidentalsByStave[staveIdx] = componentSnapshots[i].accidentalsByStave[staveIdx];
+        }
         // Note: also tracked per-staff. See also __globalBeat__
         ctx.beat = _.min(componentSnapshots, "beat").beat;
         for (var i = 0; i < this._components.length; ++i) {
@@ -1651,7 +1659,7 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
         ctx.clef = line.clef;
     }
 
-    if (line.accidentals !== null) { ctx.accidentals = line.accidentals; }
+    if (line.accidentalsByStave !== null) { ctx.accidentalsByStave = line.accidentalsByStave; }
     if (line.bar !== null) { ctx.bar = line.bar; }
     if (line.barlineX !== null) { ctx.barlineX = line.barlineX; }
     if (line.barKeys !== null) { ctx.barKeys = line.barKeys; }
