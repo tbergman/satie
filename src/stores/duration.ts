@@ -1177,9 +1177,13 @@ class DurationModel extends Model implements C.IPitchDuration {
     private getAccidentals(ctx: Annotator.Context, display?: boolean) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
-        var __or = function(first: number, second: number) {
-            return first === null || first === undefined || first !== first ? second : first;
-        }
+        var __or = function (first: number, second: number, third?: number) {
+            if (third === undefined) {
+                third = null;
+            }
+            var a = first === null || first === undefined || first !== first ? second : first;
+            return a == null || a === undefined || a !== a ? third : a;
+        };
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
             var actual = __or(display ? pitch.displayAcc : null, pitch.acc);
@@ -1191,6 +1195,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             if (actual === target) {
+                debugger;
                 // We don't need to show an accidental if all of these conditions are met:
 
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
@@ -1198,7 +1203,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
                 // 2. The note has the same accidental on all other stave (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && generalTarget !== __or(ctx.accidentalsByStave[j][pitch.pitch], null)) {
+                    if (ctx.accidentalsByStave[j] && target !== __or(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
+                            ctx.accidentalsByStave[j][pitch.pitch], target)) {
                         noConflicts = false;
                     }
                 }
