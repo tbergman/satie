@@ -1177,12 +1177,15 @@ class DurationModel extends Model implements C.IPitchDuration {
     private getAccidentals(ctx: Annotator.Context, display?: boolean) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
+        var __or = function(first: number, second: number) {
+            return first === null || first === undefined || first !== first ? second : first;
+        }
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
-            var actual = (display ? pitch.displayAcc : null) || pitch.acc;
+            var actual = __or(display ? pitch.displayAcc : null, pitch.acc);
             assert(actual !== undefined);
-            var generalTarget = ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch] || null;
-            var target = ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave] || null;
+            var generalTarget = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch], null);
+            var target = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave], null);
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
@@ -1195,7 +1198,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
                 // 2. The note has the same accidental on all other stave (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && generalTarget !== ((ctx.accidentalsByStave[j][pitch.pitch] || null))) {
+                    if (ctx.accidentalsByStave[j] && generalTarget !== __or(ctx.accidentalsByStave[j][pitch.pitch], null)) {
                         noConflicts = false;
                     }
                 }
