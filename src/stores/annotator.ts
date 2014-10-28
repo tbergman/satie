@@ -128,8 +128,9 @@ export class Context implements C.MetreContext {
         return this.body[this.idx];
     }
 
-    get staveSeperation() {
-        return this.currStave.staveSeperation || renderUtil.staveSeperation;
+    get staveSeperation(): number {
+        var bodies = _.filter(this._staves, s => !!s.body).length;
+        return (bodies - 1) * (this.currStave.staveSeperation || renderUtil.staveSeperation);
     }
 
     /**
