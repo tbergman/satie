@@ -13,8 +13,6 @@ class NewlineView extends ReactTS.ReactComponentBase<NewlineView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
-        console.log(spec, spec.braceY + spec.lineSpacing);
-
         return Group(null,
             spec.pianoSystemContinues && Brace.Component({
                 idx: 1,
