@@ -276,6 +276,8 @@ class Model {
         assert(false, "Setting priority is not implemented for this type.");
     }
 
+    beam: Array<C.IPitchDuration>;
+
     static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
 }
 

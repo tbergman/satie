@@ -12,6 +12,7 @@ import assert = require("assert");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import ClefModel = require("./clef");
+import DurationModelType = require("./duration"); // Potentially cyclic. For types only.
 
 var isPitch = (k: C.IPitch, name: string, acc?: number) =>
     k.pitch === name && (k.acc || 0) === (acc || 0);
@@ -32,9 +33,9 @@ class KeySignatureModel extends Model {
         this.clef = ctx.clef;
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
         ctx.keySignature = this.keySignature;
-        ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
+        ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, n => n.note.containsAccidental(ctx))) {
+            if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 2.5;
             } else {
@@ -173,16 +174,7 @@ class KeySignatureModel extends Model {
     };
 
     static getAccidentals = (keySignature: C.IKeySignature) => {
-        var ret: C.IAccidentals = {
-            // This would increase speed:
-//            "a": null,
-//            "b": null,
-//            "c": null,
-//            "d": null,
-//            "e": null,
-//            "f": null,
-//            "g": null
-        };
+        var ret: C.IAccidentals = { };
 
         var flats = KeySignatureModel.getFlatCount(keySignature);
         if (flats) {
@@ -221,12 +213,5 @@ class KeySignatureModel extends Model {
     pitch: C.IPitch;
 
 }
-
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require Model since we extend it. This line forces the require()
-// line to not be optimized out.
-Model.length;
-/* tslint:enable */
 
 export = KeySignatureModel;

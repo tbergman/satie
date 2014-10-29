@@ -41,6 +41,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(this._beats !== null);
         mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.timeSignature.beats);
         mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
+
+        Metre.correctRoundingErrors(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.Success;
@@ -97,13 +99,11 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
 
                 // Check rhythmic spelling
-                if (!this.inBeam) {
-                    status = Metre.rythmicSpellcheck(ctx);
-                    if (status !== C.IterationStatus.Success) { return status; }
-                }
+                status = Metre.rhythmicSpellcheck(ctx);
+                if (status !== C.IterationStatus.Success) { return status; }
             }
 
-            // All notes, chords, and rests throughout a line must have the same spacing.
+            // All notes, chords, and rests throughout a line on a given stave must have the same scale.
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
@@ -135,7 +135,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
                 var isInPast = j <= ctx.idx;
                 ctx.removeFollowingBeam(j - 1, isInPast);
-                // This is kind of cross, but hey.
+                // This is kind of gross, but hey.
                 ctx.idx = j;
             }
 
@@ -165,10 +165,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
+            Metre.correctRoundingErrors(ctx);
         }
 
         if (!ctx.isBeam && this.inBeam) {
-            this.x = Math.max(this.x, ctx.x);
+            // this.x = Math.max(this.x, ctx.x);
             ctx.x = this.x + this.getWidth(ctx);
             this._handleTie(ctx);
             return C.IterationStatus.Success;
@@ -180,9 +181,14 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // Set which accidentals are displayed, and then update the accidentals currently
         // active in the bar.
-        this.displayedAccidentals = this.getAccidentals(ctx);
+        this.displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
-            ctx.accidentals[this.chord[i].pitch] = this.chord[i].acc;
+            // Set the octave specific accidental
+            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch + this.chord[i].octave] = this.chord[i].acc;
+            // If needed, invalidate the default accidental
+            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch]||null) !== this.chord[i].acc) {
+                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch] = C.InvalidAccidental;
+            }
         }
 
         ctx.x += this.getWidth(ctx);
@@ -199,21 +205,45 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.tie = this.tie;
     }
 
-    containsAccidental(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
+    containsAccidentalAfterBarline(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
         var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
-            if (!isNaN(pitches[i].accTemporary) && pitches[i].accTemporary !== null) {
-                continue;
-            }
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
                 return true;
             }
+            // Make sure there's no ambiguity from the previous note 
+            var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+            if (prevNote) {
+                if (_hasConflict(prevNote.note.chord, pitches[i].pitch, nonAccidentals[pitches[i].pitch]||null)) {
+                    return true;
+                }
+            }
         }
+
         return false;
     }
     perfectlyBeamed(ctx: Annotator.Context) {
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
+
+        // Sanity check to make sure the replacement isn't the same as the current.
+        var prevBeamMaybe = ctx.prev(m => m.type === C.Type.BeamGroup || m.type === C.Type.Barline, 0 /* no offset, look from current */);
+        if (rebeamable && prevBeamMaybe && prevBeamMaybe.type === C.Type.BeamGroup) {
+            var thisBeam = prevBeamMaybe.beam;
+            if (thisBeam.length === rebeamable.length) {
+                var isValid = true;
+                for (var i = 0; i < thisBeam.length; ++i) {
+                    if (thisBeam[i] !== rebeamable[i]) {
+                        isValid = false;
+                        break;
+                    }
+                }
+                if (isValid) {
+                    return true;
+                }
+            }
+        }
+
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
         }
@@ -284,7 +314,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     getWidth(ctx: Annotator.Context) {
-        return 0.67 + (this.annotatedExtraWidth || 0);
+        return 0.57 + (this.annotatedExtraWidth || 0);
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
@@ -776,7 +806,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     get accStrokes() {
         return _.map(this.chord, (c, idx) =>
-            !isNaN(c.accTemporary) && c.accTemporary !== null || this.accToDelete === idx ? "#A5A5A5" : "#000000");
+            (c.displayAcc !== null && c.displayAcc !== undefined || this.accToDelete === idx) ? "#A5A5A5" : "#000000");
     }
 
     get annotatedExtraWidth() {
@@ -862,7 +892,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get hasFlagOrBeam() {
-        return DurationModel.countToIsBeamable[this.count];
+        return !!this.tuplet || !this.isRest && DurationModel.countToIsBeamable[this.count];
     }
 
     get isMultibar() {
@@ -927,7 +957,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     set tuplet(t: C.ITuplet) {
         this._tuplet = t;
-        this._displayTuplet = t;
+        this._displayTuplet = null;
     }
 
     get displayTuplet() {
@@ -1103,13 +1133,15 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(ctx.clef, "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
-        var acc = ctx.accidentals[pitch] || null;
+        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.clef]) / 3.5);
+        var acc = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
+            ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
 
         return {
             pitch: DurationModel.offsetToPitch[((
                 line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5],
-            octave: Math.floor((line - DurationModel.clefOffsets[ctx.clef])/3.5),
-            acc: acc
+            octave: octave,
+            acc: acc === C.InvalidAccidental ? null : acc
         };
     };
 
@@ -1139,26 +1171,74 @@ class DurationModel extends Model implements C.IPitchDuration {
         b: 3
     };
 
-    private getAccidentals(ctx: Annotator.Context) {
+    private getDisplayedAccidentals(ctx: Annotator.Context) {
+        return this.getAccidentals(ctx, true);
+    }
+    private getAccidentals(ctx: Annotator.Context, display?: boolean) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
+        var __or = function (first: number, second: number, third?: number) {
+            if (third === undefined) {
+                third = null;
+            }
+            var a = first === null || first === undefined || first !== first ? second : first;
+            return a == null || a === undefined || a !== a ? third : a;
+        };
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
-            var actual = pitch.acc;
+            var actual = __or(display ? pitch.displayAcc : null, pitch.acc);
             assert(actual !== undefined);
-            var target = ctx.accidentals[pitch.pitch] || null;
+            var generalTarget = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch], null);
+            var target = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave], null);
+            if (!target && generalTarget !== C.InvalidAccidental) {
+                target = generalTarget;
+            }
 
             if (actual === target) {
-                result[i] = NaN; // no accidental
-                continue;
+                // We don't need to show an accidental if all of these conditions are met:
+
+                // 1. The note has the same accidental on other octave (if the note is on other octaves)
+                var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
+
+                // 2. The note has the same accidental on all other stave (in the same bar, in the past)
+                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
+                    if (ctx.accidentalsByStave[j] && target !== __or(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
+                            ctx.accidentalsByStave[j][pitch.pitch], target)) {
+                        noConflicts = false;
+                    }
+                }
+
+                // 3. The note has the same accidental on other stave with the same note(right now!)
+                var concurrentNotes = ctx.findVertical(c => c.isNote);
+                for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
+                    var otherChord = concurrentNotes[j].note.chord;
+                    noConflicts = noConflicts && !_hasConflict(otherChord, pitch.pitch, target);
+                }
+
+                // 4. Ambiguity could not be caused by being directly after a barline
+                var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
+                if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
+                    var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+                    if (prevNote) {
+                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.pitch, target);
+                    }
+                }
+
+                if (noConflicts) {
+                    result[i] = NaN; // no accidental
+                    continue;
+                } else {
+                    // XXX: Otherwise, the note should be in parentheses
+                }
             }
 
             if (!actual) {
-                ctx.accidentals[pitch.pitch] = undefined;
+                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch] = undefined;
                 result[i] = 0; // natural
                 continue;
             }
 
+            assert(actual !== C.InvalidAccidental, "Accidental is invalid");
             result[i] = actual;
         }
         return result;
@@ -1267,6 +1347,16 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 }
 
+function _hasConflict(otherChord: Array<C.IPitch>, pitch: string, target: number) {
+    "use strict";
+    for (var k = 0; k < otherChord.length; ++k) {
+        if (otherChord[k].pitch === pitch && otherChord[k].acc !== target) {
+            return true;
+        }
+    }
+    return false;
+}
+
 var getBeats = Metre.getBeats;
 
 enum Flags {
@@ -1284,12 +1374,5 @@ function sanitizePitch(pitch: C.IPitch): C.IPitch {
         pitch: pitch.pitch
     };
 }
-
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require Model since we extend it. This line forces the require()
-// line to not be optimized out.
-Model.length;
-/* tslint:enable */
 
 export = DurationModel;

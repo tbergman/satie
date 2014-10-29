@@ -19,7 +19,7 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
         var spec = this.props.spec;
 
         return Group(null,
-            spec.pianoStaff && Brace.Component({
+            spec.pianoSystemContinues && Brace.Component({
                 idx: 1,
                 x: spec.begin,
                 fontSize: this.props.fontSize,

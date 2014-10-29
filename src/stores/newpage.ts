@@ -58,11 +58,4 @@ class NewPageModel extends Model {
     }
 }
 
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require Model since we extend it. This line forces the require()
-// line to not be optimized out.
-Model.length;
-/* tslint:enable */
-
 export = NewPageModel;

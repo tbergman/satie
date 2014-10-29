@@ -37,16 +37,13 @@ import Model = require("./model");
  * 
  * @prop context: Give timeSignature, and current index.
  */
-export function rythmicSpellcheck(ctx: Annotator.Context) {
+export function rhythmicSpellcheck(ctx: Annotator.Context) {
     "use strict";
+
+    var DurationModel: typeof DurationModelType = require("./duration");
 
     // Only durations can be spell-checked.
     if (!ctx.curr.isNote) {
-        return C.IterationStatus.Success;
-    }
-
-    // User-created durations cannot be spell-checked.
-    if (ctx.curr.source === C.Source.User) {
         return C.IterationStatus.Success;
     }
 
@@ -67,10 +64,50 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
     var nextIdx = ctx.nextIdx(c => c.type === C.Type.Duration || c.priority === C.Type.Barline);
     var nextObj = ctx.body[nextIdx];
 
-    var nextNote = nextIdx < ctx.body.length && // There needs to be a model...
+    var nextNote = nextObj && nextObj.isNote ? nextObj.note : null;
+
+    var nextEquivNote = nextIdx < ctx.body.length && // There needs to be a model...
+        currNote && nextNote &&
+        !currNote.tuplet && !nextNote.tuplet &&
         (currNote.isRest && nextObj.isRest || // which is either a rest, or is...
                 nextObj.isNote && currNote.tie ? // ... tied to the current note
             nextObj.note : null);
+
+    //////////////////////////////////////////////////////////////////////
+    // Checks that should be done even if the annotation status is User //
+    //////////////////////////////////////////////////////////////////////
+
+    // Check 0: Make sure tuplet groups don't end part of the way through
+    if (currNote.tuplet && (!nextNote || !nextNote.tuplet)) {
+        var base = 1;
+        var partial = 0;
+        for (var i = ctx.idx; ctx.body[i] && ctx.body[i].type !== C.Type.Barline && isTupletIfNote(ctx.body[i]); --i) {
+            if (ctx.body[i].isNote) {
+                partial = (partial + ctx.body[i].getBeats(ctx)) % base;
+            }
+        }
+
+        if (partial) {
+            // subtract does not yet support tuplets yet, so...
+            var toRestoreUntuplet = (base - partial) * currNote.tuplet.den / currNote.tuplet.num;
+            var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.beat).map(m => new DurationModel(m, C.Source.Annotator));
+            for (var i = 0; i < toAdd.length; ++i) {
+                toAdd[i].tuplet = JSON.parse(JSON.stringify(currNote.tuplet));
+                toAdd[i].isRest = true;
+            }
+            ctx.splice(ctx.idx + 1, 0, toAdd, Annotator.SplicePolicy.Masked);
+            return C.IterationStatus.RetryLine;
+        }
+    }
+
+    // User-created durations cannot be spell-checked.
+    if (ctx.curr.source === C.Source.User) {
+        return C.IterationStatus.Success;
+    }
+
+    /////////////////////////////////////////////////////////////////////////
+    // Checks that should be done only if the annotation status isn't User //
+    /////////////////////////////////////////////////////////////////////////
 
     // Check 1: Separate durations that cross a boundary and only partially fill that boundary.
     var excessBeats = 0;
@@ -92,7 +129,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
 
     // Check 2: Join rests and tied notes that don't cross a boundary.
     // XXX: Right now this only considers combinations of two notes.
-    if (nextNote) {
+    if (nextEquivNote) {
         var nextNoteEndBeat = currNoteStartBeat + nextNote.getBeats(ctx);
         patternStartBeat = 0;
 
@@ -102,7 +139,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
                     currNoteEndBeat < patternEndBeat &&
                     nextNoteEndBeat <= patternEndBeat + 0.0000001) {
                 if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
-                    return C.IterationStatus.RetryCurrent;
+                    return C.IterationStatus.RetryLine; // Should be bar
                 }
             }
             patternStartBeat = patternEndBeat;
@@ -111,7 +148,7 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
 
     // Check 3: Join rests and tied notes that fully cover multiple boundaries.
     // XXX: Right now this only covers combinations of two notes.
-    if (nextNote) {
+    if (nextEquivNote) {
         var nextNoteEndBeat = currNoteStartBeat + nextNote.getBeats(ctx);
         patternStartBeat = 0;
 
@@ -141,6 +178,11 @@ export function rythmicSpellcheck(ctx: Annotator.Context) {
 
     return C.IterationStatus.Success;
 };
+
+function isTupletIfNote(model: Model): boolean {
+    "use strict";
+    return !model.isNote || !!model.note.tuplet;
+}
 
 /**
  * Convenience function which tries to merge two notes.
@@ -328,13 +370,12 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     }
 
     var needsReplacement = false;
-    var needsReplacementVerified = false;
     var prevCount: number;
 
     var prevInBeam = true;
 
     var foundNote = false;
-    var tuplet: C.ITuplet = null;
+    var tuplet: C.ITuplet;
 
     for (var i = idx; body[i] && !body[i].endMarker; ++i) {
         if (body[i].type === C.Type.BeamGroup) {
@@ -342,21 +383,14 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
                 needsReplacement = true;
             }
         } else if (body[i].isNote) {
-            if (foundNote) {
-                if (!!tuplet !== !!body[i].note.tuplet) {
-                    if (needsReplacement && !needsReplacementVerified) {
-                        needsReplacement = false;
-                    } else {
-                        needsReplacementVerified = true;
-                    }
-                    break;
-                }
+            if (!!tuplet !== !!body[i].note.tuplet && foundNote) {
+                break;
             }
             foundNote = true;
             tuplet = body[i].note.tuplet;
             prevCount = body[i].note.count || prevCount;
 
-            if (body[i].note.isRest || !body[i].note.hasFlagOrBeam || body[i].note.temporary) {
+            if (!body[i].note.hasFlagOrBeam || body[i].note.temporary) {
                 break;
             }
 
@@ -401,7 +435,9 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
         if (tsName.indexOf("/4") !== -1) {
             // Rhythmic figures that are not part of a repeated pattern may be best beamed into separate beats,
             // so that they are not mistaken for triplets nor for groups of three quavers in compound time.
-            while ((first.ctxData.beat % 1) !== 0 && Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
+            // (Note doesn't solve the root issue)
+            while (((first.ctxData.beat % 1) !== 0 || (last.ctxData.beat % 1) === 0) &&
+                Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
                 replaceWith.pop();
                 last = replaceWith[replaceWith.length - 1];
             }
@@ -438,6 +474,16 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
     "use strict";
     var tsName = getTSString(ctx.timeSignature);
     return wholeNotePatterns[tsName];
+}
+
+export function correctRoundingErrors(mctx: C.MetreContext): void {
+    "use strict";
+    // Correct rounding errors
+    var huge = 10000000;
+    var rounded = Math.round(mctx.beat * huge) / huge;
+    if (Math.abs(rounded - mctx.beat) < 0.00000001) {
+        mctx.beat = Math.round(mctx.beat * 10000) / 10000;
+    }
 }
 
 var _512   = C.makeDuration({ count: 512 });

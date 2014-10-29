@@ -22,6 +22,7 @@ import renderUtil = require("../util/renderUtil");
 import Rect = require("../views/_rect");
 import Group = require("../views/_group");
 import Line = require("../views/_line");
+import RipienoFooter = require("../landing/ripienoFooter");
 import SelectionRect = require("./selectionRect");
 
 var isBrowser = typeof window !== "undefined";
@@ -89,8 +90,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
 
-        var vcHeight = 1.2 + (isPianoStaff ? 1.2 : 0);
-
+        var vcHeight = 1.2 + ctx.staveSeperation / 2;
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return RenderEngine(
                 {
@@ -204,10 +204,10 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                         Line.Component({
                             x1: this.state.visualCursor.annotatedObj.x - 0.2,
                             x2: this.state.visualCursor.annotatedObj.x - 0.2,
-                            y1: this.state.visualCursor.annotatedObj.y - renderUtil.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? 1.15 : 0) - vcHeight,
-                            y2: this.state.visualCursor.annotatedObj.y - renderUtil.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? 1.15 : 0) + vcHeight,
+                            y1: this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) - vcHeight,
+                            y2: this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) + vcHeight,
                             stroke: "#008CFF",
                             strokeWidth: 0.05})
                     )
@@ -233,7 +233,8 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                         rawPage);
                     currY += 40 + this.props.height;
                     return page;
-                }.bind(this))
+                }.bind(this)),
+                this.props.showFooter ? RipienoFooter.Component({y: currY + 100, dispatcher: this.props.dispatcher}) : null
             );
         } else {
             ret = <any> rawPages[0]; // TRFIX
@@ -280,11 +281,12 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
         var foundObj: Model = null;
         var foundIdx: number;
         var ctxData: { beat: number; bar: number };
+        var ctx = this.getCtx();
         var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var ctx = this.getCtx();
 
-            dynY = ctx.lines[info.musicLine].y + renderUtil.staveSeperation * info.visualIdx;
+            dynY = ctx.lines[info.musicLine].y + ctx.staveSeperation * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
             var body = this.props.staves[info.staveIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
@@ -385,7 +387,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
             ++visualIdx;
 
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y + visualIdx*renderUtil.staveSeperation - my) < 1.01) {
+                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSeperation - my) < 1.01) {
                     return {
                         musicLine: i,
                         staveIdx: h,
@@ -768,12 +770,14 @@ module Renderer {
         marginTop?: number;
         pageSize?: C.IPageSize;
         raw?: boolean;
+        sessionInfo?: C.ISession;
         staveHeight?: number;
         staves?: Array<C.IStave>;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
         selection?: Array<Model>;
+        showFooter?: boolean;
         height?: number;
         history?: History.History;
         paper?: C.Paper;

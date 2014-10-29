@@ -142,13 +142,13 @@ gulp.task("chores", ["typescript"], function() {
 
     return stream;
 
-    function run_cmd(cmd, args, callBack ) {
+    function run_cmd(cmd, args, callback ) {
         var spawn = require('child_process').spawn;
         var child = spawn(cmd, args);
         var resp = "";
 
         child.stdout.on('data', function (buffer) { resp += buffer.toString() });
-        child.stdout.on('end', function() { callBack (resp) });
+        child.stdout.on('end', function() { callback && callback(resp) });
     }
 });
 
@@ -168,9 +168,9 @@ gulp.task("typescript", function() {
     return ts.js.pipe(gulp.dest(dirs.build));
 });
 
-gulp.task("create-test-suite", function() {
+gulp.task("create-test-suite", ["typescript"], function() {
     // TODO: Remove es5-shim when we upgrade to PhantomJS 2.
-    return gulp.src(["node_modules/es5-shim/es5-shim.js", "src/**/test/*.ts"])
+    return gulp.src(["node_modules/es5-shim/es5-shim.js", ".partialBuild/**/test/*.js"])
         .pipe(generateSuite({addPrefix: "../test"}))
         .pipe(concat("suite.js"))
         .pipe(gulp.dest("build"));

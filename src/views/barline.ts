@@ -62,6 +62,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     width: 400})]
             );
         }
+
         return Line.Component({
             x1: spec.x,
             x2: spec.x,

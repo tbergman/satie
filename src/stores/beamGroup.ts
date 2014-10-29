@@ -16,7 +16,7 @@ import DurationModel = require("./duration");
 import KeySignatureModel = require("./keySignature");
 import TimeSignatureModel = require("./timeSignature");
 
-/*/
+/**
  * Model for a beam. Notes that make up a beam are not children of a beam.
  * Rather, they show up directly following a beam. This is somewhat fragile, but
  * makes things like duration spell-checking a bit simpler. Beamed DurationModels
@@ -165,6 +165,7 @@ class BeamGroupModel extends Model {
         var idx = ctx.idx - offset;
         var spliceMode = replaceMode ? Annotator.SplicePolicy.Masked : Annotator.SplicePolicy.MatchedOnly;
         ctx.splice(idx, offset, [model], spliceMode);
+        model.tuplet = model.beam[0].tuplet;
         return C.IterationStatus.RetryFromEntry;
     };
 
@@ -229,12 +230,5 @@ class BeamGroupModel extends Model {
      */
     beamCount: number;
 }
-
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require Model since we extend it. This line forces the require()
-// line to not be optimized out.
-Model.length;
-/* tslint:enable */
 
 export = BeamGroupModel;

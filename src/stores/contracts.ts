@@ -111,7 +111,6 @@ export enum BeamCount {
 }
 
 export interface IBody extends Array<Model> {
-    instrument?: IInstrument;
 }
 
 /**
@@ -494,6 +493,15 @@ export var MINOR = "\\minor";
 
 export var MAX_NUM = 1000000000;
 
+export interface IMarking {
+    glyph: string;
+    noDirection: boolean;
+    x: number;
+    y: number;
+    scale: number;
+    style: any;
+};
+
 /**
  * Used for the metre annotation pass.
  */
@@ -629,7 +637,7 @@ export class Paper {
  */
 export interface IPitch {
     acc: number;
-    accTemporary?: number;
+    displayAcc?: number;
     isRest?: boolean; // read only
     /**
      * Note: In the case of a chord, the average line.
@@ -646,7 +654,6 @@ export interface IPitch {
  * DurationModels implement PitchDurations.
  */
 export interface IPitchDuration extends IDuration {
-    containsAccidental?(ctx: any, previewMode?: PreviewMode): boolean;
     chord?: Array<IPitch>;
     isRest?: boolean;
     tie?: boolean;
@@ -682,6 +689,33 @@ export interface IPointerData {
     line?: number;
     ctxData?: IVisualCursor;
 };
+
+export enum RectifyXPolicy {
+    Invalid = 0,
+    Max,
+    Min
+}
+
+export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
+RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Begin] = RectifyXPolicy.Min;
+RectifyXPolicyFor[Type.Clef] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.KeySignature] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.TimeSignature] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
+
+RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
 
 /**
  * A session, directly from the server.
@@ -826,15 +860,35 @@ export enum Source {
  * A composite of all possible stave parts.
  */
 export interface IStave {
+    //////////////////////////////////////////////
+    // The following can be set if body is true //
+    //////////////////////////////////////////////
+
     /**
      * If the stave is a part, the Models that compose the part.
      */
     body?: IBody;
 
     /**
-     * If the stave is a part, whether the IStave is part of a piano stave.
+     * For playback
      */
-    pianoStaff?: boolean;
+    instrument?: IInstrument;
+
+    /**
+     * Whether the next part is in the same system
+     */
+    pianoSystemContinues?: boolean;
+
+    staveSeperation?: number;
+
+    ////////////////////////////////////////////////////
+    // The following should all be merged into header //
+    ////////////////////////////////////////////////////
+
+    /**
+     * Printed information about the piece.
+     */
+    header?: IHeader;
 
     /**
      * The height of the stave, in "em".
@@ -852,11 +906,6 @@ export interface IStave {
      * See also pageSize.
      */
     paper?: Paper;
-
-    /**
-     * Printed information about the piece.
-     */
-    header?: IHeader;
 };
 
 /**
@@ -922,7 +971,9 @@ export interface IUser {
     identity: {
         id: string;
         displayName: string;
-    }
+    };
+
+    whitelisted: boolean;
 };
 
 /**
@@ -1025,5 +1076,7 @@ export function addDefaults(staves: IStave[]) {
         });
     }
 }
+
+export var InvalidAccidental = 9001;
 
 global.C = module.exports; // For debugging

@@ -210,7 +210,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            var soundfont = body.instrument.soundfont;
+            var soundfont = this._songEditor.staves[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
@@ -389,12 +389,5 @@ function hit(note: any, velocity?: number, duration?: any) {
         }
     }
 };
-
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require TSEE since we extend it. This line forces the require()
-// line to not be optimized out.
-TSEE.length;
-/* tslint:enable */
 
 export = PlaybackStore;

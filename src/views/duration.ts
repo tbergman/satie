@@ -30,7 +30,7 @@ export function Component(props: IProps): React.ReactElement<any, any> {
     var markings = _.map(spec.displayMarkings || [], (m, idx) =>
         NoteMarking.Component({
             idx: 1,
-            direction: this.props.direction,
+            direction: props.direction,
             fontSize: props.fontSize,
             marking: m,
             key: idx,
@@ -102,4 +102,5 @@ export interface IProps {
     key: number;
     spec: DurationModel;
     fontSize: number;
+    direction: number;
 }

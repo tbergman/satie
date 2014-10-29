@@ -109,8 +109,11 @@ class BarlineModel extends Model {
         // Barlines followed by accidentals have additional padding. We check all
         // staves for following accidentals.
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
-        if (ctx.next().isNote) {
-            this.annotatedAccidentalSpacing = 0.2*(_.any(intersectingNotes, n => n.note.containsAccidental(ctx)) ? 1 : 0);
+        var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
+        var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
+        if (nextNonPlaceholder.isNote) {
+            this.annotatedAccidentalSpacing = 0.2 * (_.any(intersectingNotes,
+                n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
         }
@@ -124,16 +127,16 @@ class BarlineModel extends Model {
         ctx.barKeys.push(this.key);
 
         // Set information from context that the view needs
-        if (ctx.currStave.pianoStaff) {
+        if (ctx.currStave.pianoSystemContinues) {
             this.onPianoStaff = true;
         };
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
+        ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
 
-        this.height = this.onPianoStaff ? 1.15 : 2/4;
-        this.yOffset = this.onPianoStaff ? (2/4 - 1.15): 0;
+        this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 2/4;
+        this.yOffset = this.onPianoStaff ? (2/4 - (ctx.staveSeperation/2)): 0;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
 
         if (!ctx.disableRecordings) {
@@ -262,12 +265,5 @@ class BarlineModel extends Model {
     _revision: string = BarlineModel._sessionId + "-0";
     yOffset: number;
 }
-
-/* tslint:disable */
-// TS is overly aggressive about optimizing out require() statements.
-// We require Model since we extend it. This line forces the require()
-// line to not be optimized out.
-Model.length;
-/* tslint:enable */
 
 export = BarlineModel;

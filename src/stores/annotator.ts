@@ -35,11 +35,13 @@ export class Context implements C.MetreContext {
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
 
-        if (layout.snapshot) {
-            _cpysnapshot(this, layout.snapshot);
-        } else {
-            _fillLayoutDefaults(layout);
-            _cpylayout(this, layout);
+        if (layout) {
+            if (layout.snapshot) {
+                _cpysnapshot(this, layout.snapshot);
+            } else {
+                _fillLayoutDefaults(layout);
+                _cpylayout(this, layout);
+            }
         }
     }
 
@@ -85,7 +87,7 @@ export class Context implements C.MetreContext {
             assert(this.prevClefByStave);
         }
         return {
-            accidentals: this.accidentals,
+            accidentalsByStave: JSON.parse(JSON.stringify(this.accidentalsByStave)),
             bar: this.loc.bar,
             barKeys: this.barKeys,
             barlineX: this.barlineX,
@@ -97,6 +99,7 @@ export class Context implements C.MetreContext {
             pageStarts: this.pageStarts,
             prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevKeySignature: this.prevKeySignature,
+            staveIdx: this.currStaveIdx,
             x: this.x,
             y: this.y
         };
@@ -124,6 +127,11 @@ export class Context implements C.MetreContext {
      */
     get curr(): Model {
         return this.body[this.idx];
+    }
+
+    get staveSeperation(): number {
+        var bodies = _.filter(this._staves, s => !!s.body).length;
+        return (bodies - 1) * (this.currStave.staveSeperation || renderUtil.staveSeperation);
     }
 
     /**
@@ -190,18 +198,19 @@ export class Context implements C.MetreContext {
     /**
      * Returns a BeamGroup, if one follows. Otherwise, returns null.
      */
-    beamFollows(idx?: number): Array<{ inBeam: boolean; }> {
+    beamFollows(idx?: number): Array<{ inBeam: boolean; tuplet: C.ITuplet; }> {
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
         var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
-            var beamed: Array<{ inBeam: boolean }> = [];
+            var beamed: Array<{ inBeam: boolean; tuplet: C.ITuplet; }> = [];
             for (var i = 0; i < this._staves.length; ++i) {
                 if (this._staves[i].body &&
                     this._staves[i].body[idx + 1].type === C.Type.BeamGroup) {
-                    beamed = beamed.concat((<any>this._staves[i].body[idx + 1]).beam);
+                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._staves[i].body[idx + 1]).beam;
+                    beamed = beamed.concat(<any>newBeam);
                 }
             }
             return beamed;
@@ -227,11 +236,11 @@ export class Context implements C.MetreContext {
      * If a condition is given, searches backwards starting at the CURRENT
      * item. Otherwise, returns the item directly before the current item.
      */
-    prev(condition?: (m: Model) => boolean) {
+    prev(condition?: (m: Model) => boolean, offset?: number) {
         if (!condition) {
             return this.body[this.idx - 1];
         } else {
-            for (var i = this.idx; i >= 0; --i) {
+            for (var i = this.idx - (isNaN(offset) ? 1 : offset); i >= 0; --i) {
                 if (condition(this.body[i])) {
                     return this.body[i];
                 }
@@ -342,16 +351,6 @@ export class Context implements C.MetreContext {
         replaceWith = replaceWith || [];
         this._assertAligned();
 
-        var replaceFrom = 0;
-        if (splicePolicy === SplicePolicy.MatchedOnly) {
-            for (var i = this.idx + count + 1;
-                    i < this.body.length && replaceWith && replaceFrom < replaceWith.length &&
-                    this.body[i].placeholder && this.body[i].priority === C.Type.Duration; ++i) {
-                ++replaceFrom;
-            }
-            count += replaceFrom;
-        }
-
         if (splicePolicy === SplicePolicy.Masked) {
             var end = start + count - replaceWith.length;
             for (var i = end - 1; i >= start; --i) {
@@ -369,8 +368,6 @@ export class Context implements C.MetreContext {
             var startPriority = this.body[start].priority;
         } else {
             assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
-            console.log(this._staves);
-            assert(false);
         }
 
         for (var i = 0; i < this._staves.length; ++i) {
@@ -438,9 +435,10 @@ export class Context implements C.MetreContext {
             while(this.body[clot + 1] && this.body[clot + 1].priority > C.Type.Barline) {
                 ++clot;
             }
-            assert(clot >= start);
-            while(this.body[start - 1] && this.body[start - 1].priority > C.Type.Barline) {
-                --start;
+            if (clot >= start) {
+                while (this.body[start - 1] && this.body[start - 1].priority > C.Type.Barline) {
+                    --start;
+                }
             }
             this._realign(start, clot);
             this._assertAligned();
@@ -644,7 +642,7 @@ export class Context implements C.MetreContext {
      * The default accidental for all notes. Reset to the key signature on each barline
      * @scope line
      */
-    accidentals: C.IAccidentals = {};
+    accidentalsByStave: Array<C.IAccidentals> = [];
 
     /**
      * The positions of all the barlines in the current line.
@@ -950,12 +948,13 @@ export interface ILayoutOpts {
 
 /**
  * A subset of a Context that is used as a snapshot so that modifying a line
- * does not involve a trace from the start of the document.
+ * does not involve a trace from the start of the document. Some of these properties
+ * are stave-specific.
  * 
  * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
 export interface ILineSnapshot {
-    accidentals: C.IAccidentals;
+    accidentalsByStave: Array<C.IAccidentals>;
     bar: number;
     barKeys: Array<string>;
     barlineX: Array<number>;
@@ -967,6 +966,7 @@ export interface ILineSnapshot {
     pageStarts: Array<number>;
     prevClefByStave: { [key: number]: string };
     prevKeySignature: C.IKeySignature;
+    staveIdx: number;
     x: number;
     y: number;
 }
@@ -1073,14 +1073,18 @@ class PrivIterator {
                 this._assertOffsetsOK();
                 return C.IterationStatus.RetryCurrent; // Don't go to next!
             }
-            this._parent.y = origSnapshot.y + renderUtil.staveSeperation * i;
+
+            this._parent.y = origSnapshot.y;
+            for (var j = 0; j < i; ++j) {
+                this._parent.y += this._components[i].staveSeperation;
+            }
 
             this._assertOffsetsOK();
 
+            // The most important line:
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
 
             this._assertOffsetsOK();
-            ///
 
             if (verbose) {
                 console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type],
@@ -1138,9 +1142,11 @@ class PrivIterator {
         ctx.pageLines = componentSnapshots[0].pageLines;
         ctx.pageStarts = componentSnapshots[0].pageStarts;
         ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
+        var mergePolicy = C.RectifyXPolicyFor[ctx.curr.priority];
+        assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x = componentSnapshots[0].x;
         for (var i = 1; i < componentSnapshots.length; ++i) {
-            ctx.x = Math.min(ctx.x, componentSnapshots[i].x);
+            ctx.x = (mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min)(ctx.x, componentSnapshots[i].x);
         }
         var otherContexts = ctx.findVertical(c => true);
 
@@ -1159,8 +1165,11 @@ class PrivIterator {
             ctx.y = componentSnapshots[0].y;
         }
 
-        // XXX: stave-specific
-        ctx.accidentals = componentSnapshots[0].accidentals;
+        ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
+        for (var i = 1; i < componentSnapshots.length; ++i) {
+            var staveIdx = componentSnapshots[i].staveIdx;
+            ctx.accidentalsByStave[staveIdx] = componentSnapshots[i].accidentalsByStave[staveIdx];
+        }
         // Note: also tracked per-staff. See also __globalBeat__
         ctx.beat = _.min(componentSnapshots, "beat").beat;
         for (var i = 0; i < this._components.length; ++i) {
@@ -1220,7 +1229,7 @@ class PrivIterator {
             case C.IterationStatus.RetryBeam:
                 this._parent.loc.beat = this._parent.startOfBeamBeat;
                 this._rewind(C.Type.BeamGroup);
-                this._parent.x = this._componentWithType(C.Type.BeamGroup).x;
+                this._parent.x = this._componentWithPriority(C.Type.BeamGroup).x;
                 break;
             case C.IterationStatus.RetryCurrent:
             case C.IterationStatus.RetryCurrentNoOptimizations:
@@ -1266,9 +1275,9 @@ class PrivIterator {
         }
     }
 
-    private _componentWithType(type: C.Type): Model {
+    private _componentWithPriority(type: C.Type): Model {
         for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].curr.type === type) {
+            if (this._components[i].curr.priority === type) {
                 return this._components[i].curr;
             }
         }
@@ -1560,6 +1569,10 @@ class PrivIteratorComponent {
         return this._body.length;
     }
 
+    get staveSeperation() {
+        return this._stave.staveSeperation || renderUtil.staveSeperation;
+    }
+
     private _aheadOfSchedule(ctx: Context): boolean {
         if (ctx.curr.type !== C.Type.Duration) {
             return false;
@@ -1646,7 +1659,7 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
         ctx.clef = line.clef;
     }
 
-    if (line.accidentals !== null) { ctx.accidentals = line.accidentals; }
+    if (line.accidentalsByStave !== null) { ctx.accidentalsByStave = line.accidentalsByStave; }
     if (line.bar !== null) { ctx.bar = line.bar; }
     if (line.barlineX !== null) { ctx.barlineX = line.barlineX; }
     if (line.barKeys !== null) { ctx.barKeys = line.barKeys; }

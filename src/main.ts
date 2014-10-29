@@ -29,6 +29,9 @@ var ReactPerf = require("react/lib/ReactDefaultPerf");
     var dispatcher = new Dispatcher;
     var session = new SessionStore(dispatcher);
     dispatcher.GET("/api/v0/user/session", null, render.bind(null, dispatcher, session));
+
+    global.Dispatcher = dispatcher; // for debugging
+    global.SessionStore = session; // for debugging
 }());
 
 function initTouchIfNeeded() {
