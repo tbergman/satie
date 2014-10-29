@@ -29,7 +29,7 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
                 this.direction()*this.props.stemHeight/4,
             fill: this.props.stroke,
             fontSize: this.props.fontSize,
-            glyphName: this.glyphName});
+            glyphName: this.glyphName()});
     }
 
     directionString() {

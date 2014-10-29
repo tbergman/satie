@@ -20,9 +20,9 @@ function getFontOffset(notehead?: string, directionMult?: number) {
     if (!anchors) {
         return [0, 0];
     }
-    if (this.direction*dm === 1) {
+    if (this.direction()*dm === 1) {
         return anchors.stemUpSE || anchors.stemUpNW;
-    } else if (this.direction*dm === -1) {
+    } else if (this.direction()*dm === -1) {
         return anchors.stemDownNW || anchors.stemDownSW;
     }
     assert(false, "Invalid direction");

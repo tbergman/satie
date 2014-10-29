@@ -131,6 +131,7 @@ declare module React {
         isMounted(): boolean;
         setProps(nextProps: P, callback?: () => void): void;
         replaceProps(nextProps: P, callback?: () => void): void;
+        mixins: Array<any>;
     }
 
     export interface Constructable {

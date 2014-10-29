@@ -20,7 +20,7 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
             y: spec.y - (this.line() - 3)/4,
             fill: spec.color,
             fontSize: this.props.fontSize,
-            glyphName: this.sign + (spec.isChange ? "Change" : "")});
+            glyphName: this.sign() + (spec.isChange ? "Change" : "")});
     }
 
     sign() {

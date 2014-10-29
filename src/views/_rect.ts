@@ -45,8 +45,6 @@ Rect.prototype.mixins = [RenderableMixin];
 
 module Rect {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Rect);
-
     export interface IProps {
         className?: string;
         fill: string;
@@ -57,6 +55,8 @@ module Rect {
         x: number;
         y: number;
     }
+
+    export var Component = TypedReact.createClass(React.createClass, Rect);
 }
 
 export = Rect;

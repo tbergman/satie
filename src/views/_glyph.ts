@@ -91,6 +91,7 @@ Glyph.prototype.mixins = [RenderableMixin];
 
 module Glyph {
     "use strict";
+
     export var Component = TypedReact.createClass(React.createClass, Glyph);
 
     export interface IProps {
