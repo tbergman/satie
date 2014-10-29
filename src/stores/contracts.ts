@@ -493,6 +493,15 @@ export var MINOR = "\\minor";
 
 export var MAX_NUM = 1000000000;
 
+export interface IMarking {
+    glyph: string;
+    noDirection: boolean;
+    x: number;
+    y: number;
+    scale: number;
+    style: any;
+};
+
 /**
  * Used for the metre annotation pass.
  */
@@ -515,33 +524,6 @@ export class MetreContext {
         }
     }
 }
-
-export enum RectifyXPolicy {
-    Invalid = 0,
-    Max,
-    Min
-}
-
-export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
-RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Begin] = RectifyXPolicy.Min;
-RectifyXPolicyFor[Type.Clef] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.KeySignature] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.TimeSignature] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
-
-RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
-
-RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
-
-RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
 
 /**
  * Information about the current mouse position, such as from Renderer.
@@ -707,6 +689,33 @@ export interface IPointerData {
     line?: number;
     ctxData?: IVisualCursor;
 };
+
+export enum RectifyXPolicy {
+    Invalid = 0,
+    Max,
+    Min
+}
+
+export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
+RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Begin] = RectifyXPolicy.Min;
+RectifyXPolicyFor[Type.Clef] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.KeySignature] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.TimeSignature] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
+
+RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
+RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
+
+RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
+
+RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
 
 /**
  * A session, directly from the server.

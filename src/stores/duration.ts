@@ -1195,7 +1195,6 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             if (actual === target) {
-                debugger;
                 // We don't need to show an accidental if all of these conditions are met:
 
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
