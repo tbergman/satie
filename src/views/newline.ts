@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import NewlineModel = require("../stores/newline");
 import Brace = require("./_brace");

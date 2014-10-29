@@ -8,7 +8,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import RenderableMixin = require("./_renderable");
 import SMuFL = require("../util/SMuFL");

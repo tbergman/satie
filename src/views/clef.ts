@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import ClefModel = require("../stores/clef");
 import Glyph = require("./_glyph");

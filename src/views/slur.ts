@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import Bezier = require("./_bezier");
 import Note = require("./_note");

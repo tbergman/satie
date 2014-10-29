@@ -6,7 +6,8 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../node_modules/typed-react/typings/react/react.d.ts" />
+/// <reference path="../node_modules/typed-react/dist/typed-react.d.ts" />
+/// <reference path="../references/react.d.ts" />
 
 import React = require("react");
 

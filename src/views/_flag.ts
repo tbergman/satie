@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 import assert = require("assert");
 
 import Glyph = require("./_glyph");

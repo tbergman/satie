@@ -3,7 +3,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 import renderUtil = require("../util/renderUtil");
 
 import Line = require("./_line");

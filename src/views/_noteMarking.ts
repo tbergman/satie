@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
@@ -17,15 +17,15 @@ class NoteMarking extends TypedReact.Component<NoteMarking.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
-        var o2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxSW;
-        var s2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxNE;
+        var o2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxSW;
+        var s2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxNE;
         return Glyph.Component({
             x: this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
             y: this.props.y - this.yOffset(),
             fontSize: this.props.fontSize,
             fill: this.getGlyphIsTemporary() ? "#A5A5A5" : "#000000",
             staveHeight: this.props.fontSize,
-            glyphName: this.glyphName(),
+            glyphName: this.getGlyphName(),
             glyphIsTemporary: this.getGlyphIsTemporary()
         });
     }

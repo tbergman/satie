@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");

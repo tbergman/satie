@@ -8,7 +8,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import C = require("../stores/contracts");
 import BarlineModel = require("../stores/barline");

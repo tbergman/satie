@@ -7,7 +7,7 @@
  */
 
 import React = require("react");
-import TypedReact = require("../typedReact");
+import TypedReact = require("typed-react");
 
 import BeginModel = require("../stores/begin");
 import Brace = require("./_brace");
