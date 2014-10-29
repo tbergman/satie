@@ -29,7 +29,7 @@ class MarkingsStore extends TSEE {
                 marking.style = JSON.stringify(marking.style);
                 for (var i = 0; i < this._model.length; ++i) {
                     if (this._model[i].glyph === marking.glyph) {
-                        return;
+                        return true;
                     }
                 }
                 if (this._model.length === 22) {

@@ -1,5 +1,9 @@
 /**
- * Renders annotations like staccato, or accents.
+ * @file Renders annotations like staccato, or accents.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import ReactTS = require("react-typescript");
@@ -18,13 +22,15 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
             x: this.props.x + this.xOffset + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
             y: this.props.y - this.yOffset,
             fontSize: this.props.fontSize,
-            fill: "#000000",
+            fill: this.getGlyphIsTemporary() ? "#A5A5A5" : "#000000",
             staveHeight: this.props.fontSize,
-            glyphName: this.glyphName});
+            glyphName: this.glyphName,
+            glyphIsTemporary: this.getGlyphIsTemporary()
+        });
     }
 
     get directionString() {
-        if (SMuFL.bravuraBBoxes[this.props.marking]) {
+        if (SMuFL.bravuraBBoxes[this.getMarkingName()]) {
             return "";
         } else if (this.direction === 1) {
             return "Below";
@@ -35,7 +41,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     get shouldBeAboveStaff() {
         var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
-            if (this.props.marking.indexOf(above[i]) === 0) {
+            if (this.getMarkingName().indexOf(above[i]) === 0) {
                 return true;
             }
         }
@@ -44,14 +50,21 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     get shouldBeBelowStaff() {
         var below = ["dynamic"];
         for (var i = 0; i < below.length; ++i) {
-            if (this.props.marking.indexOf(below[i]) === 0) {
+            if (this.getMarkingName().indexOf(below[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
+    getGlyphIsTemporary() {
+        return this.props.marking.substr(0, 2) === "__";
+    }
     get glyphName() {
-        return this.props.marking + this.directionString;
+        return this.getMarkingName() + this.directionString;
+    }
+    getMarkingName() {
+        var isTmp = this.getGlyphIsTemporary();
+        return isTmp ? this.props.marking.substring(2) : this.props.marking;
     }
     get direction() {
         if (this.shouldBeAboveStaff) {
