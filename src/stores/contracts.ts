@@ -282,13 +282,13 @@ export interface IFluxAction {
     query: string;
 
     /**
-     * For PUT and POST requests, the unstringified JSON postData.
+     * For PUT and POST requests, the non-stringified JSON postData.
      */
     postData: any;
 };
 
 /**
- * A header is a child of staves, and includes the title and other basic
+ * A header is a child of parts, and includes the title and other basic
  * information.
  */
 export interface IHeader {
@@ -698,7 +698,7 @@ export enum PreviewMode {
 }
 
 export interface IPointerData {
-    staveIdx: number;
+    partIdx: number;
     visualIdx: number;
     obj: Model;
     musicLine: number;
@@ -832,7 +832,7 @@ export interface ISongEditor {
     selection: Array<Model>;
     socialModalVisible: boolean;
     staveHeight: number;
-    staves: Array<IStave>;
+    parts: Array<IStave>;
     src: string;
     testly: string;
     tool: any;
@@ -874,7 +874,7 @@ export enum Source {
 }
 
 /**
- * A composite of all possible stave parts.
+ * Properties that make up a part
  */
 export interface IStave {
     //////////////////////////////////////////////
@@ -882,7 +882,7 @@ export interface IStave {
     //////////////////////////////////////////////
 
     /**
-     * If the stave is a part, the Models that compose the part.
+     * The Models that compose the part.
      */
     body?: IBody;
 
@@ -898,9 +898,9 @@ export interface IStave {
 
     staveSeperation?: number;
 
-    ////////////////////////////////////////////////////
-    // The following should all be merged into header //
-    ////////////////////////////////////////////////////
+    //////////////////////////////////////////////
+    // The following should moved out of IStave //
+    //////////////////////////////////////////////
 
     /**
      * Printed information about the piece.
@@ -1016,7 +1016,7 @@ export interface IVisualCursor extends ILocation {
     annotatedPage?: number;
 
     /**
-     * The stave, counting from 0, not counting staves without a body, where
+     * The part, counting from 0, not counting parts without a body, where
      * annotatedObj is.
      */
     annotatedStave?: number;
@@ -1058,9 +1058,9 @@ export function midiNote(p: IPitch) {
  * 
  * Used for document creation, importing, ...
  */
-export function addDefaults(staves: IStave[]) {
+export function addDefaults(parts: IStave[]) {
     "use strict";
-    var header = _.find(staves, function (s) { return s.header; }).header;
+    var header = _.find(parts, function (s) { return s.header; }).header;
     if (!header.staveHeight) {
         header.staveHeight = renderUtil.defaultStaveHeight();
     }

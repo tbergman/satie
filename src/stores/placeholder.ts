@@ -25,9 +25,9 @@ import assert = require("assert");
 /**
  * Models with the same index in each staff have the same starting location and
  * priority (which is, except for placeholders, equal to type). Whenever a model
- * of a certain type and location exists in one stave but not another, a PlaceholderModel
- * is added to the stave without such a type. The priority of a PlaceholderModel
- * is equal to the type in the other stave.
+ * of a certain type and location exists in one part but not another, a PlaceholderModel
+ * is added to the part without such a type. The priority of a PlaceholderModel
+ * is equal to the type in the other part.
  */
 class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {

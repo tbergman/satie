@@ -26,7 +26,7 @@ class BeginModel extends Model {
         this.width = ctx.maxX - ctx.x;
 
         /*
-         * Padding between beginning of stave and the clef.
+         * Padding between beginning of part and the clef.
          * This value should also be changed in BeginModel.
          */
         ctx.x += 0.2;
@@ -35,7 +35,7 @@ class BeginModel extends Model {
 
         // Copy information from the context needed for the view
         this.pianoSystemContinues = ctx.currStave.pianoSystemContinues;
-        this.stave = ctx.currStave;
+        this.part = ctx.currStave;
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
@@ -71,7 +71,7 @@ class BeginModel extends Model {
     }
 
     pianoSystemContinues: boolean;
-    stave: C.IStave;
+    part: C.IStave;
     noMargin : boolean;
     braceY : number;
     braceY2: number;

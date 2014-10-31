@@ -103,7 +103,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (status !== C.IterationStatus.Success) { return status; }
             }
 
-            // All notes, chords, and rests throughout a line on a given stave must have the same scale.
+            // All notes, chords, and rests throughout a line on a given part must have the same scale.
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
@@ -1200,7 +1200,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
 
-                // 2. The note has the same accidental on all other stave (in the same bar, in the past)
+                // 2. The note has the same accidental on all other part (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
                     if (ctx.accidentalsByStave[j] && target !== __or(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
                             ctx.accidentalsByStave[j][pitch.pitch], target)) {
@@ -1208,7 +1208,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 }
 
-                // 3. The note has the same accidental on other stave with the same note(right now!)
+                // 3. The note has the same accidental on other part with the same note(right now!)
                 var concurrentNotes = ctx.findVertical(c => c.isNote);
                 for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
                     var otherChord = concurrentNotes[j].note.chord;

@@ -199,8 +199,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         var foundLegacyStart = false;
         var startTime = PlaybackStore.USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < this._songEditor.staves.length; ++h) {
-            var body: C.IBody = this._songEditor.staves[h].body;
+        for (var h = 0; h < this._songEditor.parts.length; ++h) {
+            var body: C.IBody = this._songEditor.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -210,11 +210,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            var soundfont = this._songEditor.staves[h].instrument.soundfont;
+            var soundfont = this._songEditor.parts[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(this._songEditor.staves, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
+            var ctx = new Annotator.Context(this._songEditor.parts, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {

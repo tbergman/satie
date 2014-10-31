@@ -51,15 +51,15 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
         var fontSize = NaN;
         var y = 0;
-        var staves = this.props.staves;
+        var parts = this.props.parts;
         var bodyLength = 0;
 
-        for (var i = 0; i < staves.length; ++i) {
-            if (staves[i].body) {
-                bodyLength = staves[i].body.length;
+        for (var i = 0; i < parts.length; ++i) {
+            if (parts[i].body) {
+                bodyLength = parts[i].body.length;
             }
-            if (staves[i].header) {
-                fontSize = staves[i].header.staveHeight;
+            if (parts[i].header) {
+                fontSize = parts[i].header.staveHeight;
             }
         }
 
@@ -86,7 +86,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
         // XXX: Currently we only support single and double staffs.
         // isPianoStaff is set to true when there is at least 2 staffs.
-        var isPianoStaff = _.reduce(staves, function (memo: number, s: C.IStave) {
+        var isPianoStaff = _.reduce(parts, function (memo: number, s: C.IStave) {
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
 
@@ -100,20 +100,20 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                     onMouseLeave: this.handleMouseLeave,
                     onMouseMove: this.handleMouseMove,
                     page: page,
-                    staves: staves,
+                    parts: parts,
                     width: this.props.raw ? mInchW/10000 + "in" : "100%",
                     height: this.props.raw ? mInchH/10000 + "in" : "100%",
                     widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
                     viewbox: viewbox
                 },
-                /* Using staves is an anti-pattern. Ideally, we would have a getModels()
+                /* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */
-                _.map(staves, (stave: C.IStave, idx: number) => {
-                    if (stave.header) {
+                _.map(parts, (part: C.IStave, idx: number) => {
+                    if (part.header) {
                         if (page.from) {
                             return null;
                         }
-                        y += renderUtil.getHeaderHeight(stave.header);
+                        y += renderUtil.getHeaderHeight(part.header);
                         return !useGL && Header({
                             fontSize: fontSize,
                             middle: renderUtil.mm(this.props.pageSize.width/2 +
@@ -122,10 +122,10 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                             right: renderUtil.mm(this.props.pageSize.width -
                                 this.props.paper.rightMargin, fontSize * 0.75),
                             key: "HEADER",
-                            model: stave.header});
-                    } else if (stave.body) {
+                            model: part.header});
+                    } else if (part.body) {
                         return Group({key: idx, style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
-                            _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
+                            _.reduce(part.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
                                 if (obj.type === C.Type.NewLine) {
                                     memo.push([]);
                                 }
@@ -135,7 +135,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                             function (s: Array<Model>, lidx: number) {
 
                                 return LineContainerComponent({
-                                        staves: this.props.staves,
+                                        parts: this.props.parts,
                                         isCurrent: this.state.visualCursor.annotatedLine ===
                                             lidx + pageLines[page.idx],
                                         store: this.props.store,
@@ -288,7 +288,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
             dynY = ctx.lines[info.musicLine].y + ctx.staveSeperation * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
-            var body = this.props.staves[info.staveIdx].body;
+            var body = this.props.parts[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
                     j < body.length && body[info.musicLine].type !== C.Type.NewPage; ++j) {
                 var item = body[j];
@@ -305,7 +305,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                         foundObj = item;
                         break;
                     } else if (dynX < item.x ||
-                            (j === body.length - 1 && info.staveIdx === this.props.staves.filter(s => !!s.body).length - 1)) {
+                            (j === body.length - 1 && info.partIdx === this.props.parts.filter(s => !!s.body).length - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
@@ -316,7 +316,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                             mouse: mouse,
                             line: dynLine,
                             idx: j,
-                            staveIdx: info.staveIdx,
+                            partIdx: info.partIdx,
                             musicLine: info.musicLine,
                             ctxData: item.ctxData,
                             visualIdx: info.visualIdx,
@@ -365,7 +365,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
             mouse: mouse,
             musicLine: info && info.musicLine,
             obj: foundObj,
-            staveIdx: info && info.staveIdx,
+            partIdx: info && info.partIdx,
             visualIdx: info ? info.visualIdx : null
         };
 
@@ -376,11 +376,11 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    private _getStaveInfoForY(my: number, page: number): { musicLine: number; staveIdx: number; visualIdx: number } {
+    private _getStaveInfoForY(my: number, page: number): { musicLine: number; partIdx: number; visualIdx: number } {
         var ctx = this.getCtx();
         var visualIdx = -1;
-        for (var h = 0; h < this.props.staves.length; ++h) {
-            var body = this.props.staves[h].body;
+        for (var h = 0; h < this.props.parts.length; ++h) {
+            var body = this.props.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -390,7 +390,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                 if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSeperation - my) < 1.01) {
                     return {
                         musicLine: i,
-                        staveIdx: h,
+                        partIdx: h,
                         visualIdx: visualIdx
                     };
                 }
@@ -403,8 +403,8 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
         var ret: Array<Model> = [];
 
         var ctx = this.getCtx();
-        for (var h = 0; h < this.props.staves.length; ++h) {
-            var body = this.props.staves[h].body;
+        for (var h = 0; h < this.props.parts.length; ++h) {
+            var body = this.props.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -772,7 +772,7 @@ module Renderer {
         raw?: boolean;
         sessionInfo?: C.ISession;
         staveHeight?: number;
-        staves?: Array<C.IStave>;
+        parts?: Array<C.IStave>;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
@@ -818,7 +818,7 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty ||
-                nextProps.staves !== this.props.staves;
+                nextProps.parts !== this.props.parts;
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
@@ -838,7 +838,7 @@ class LineContainer extends ReactTS.ReactComponentBase<ILineProps, ILineState> {
         if (songDirty || heightChanged || lineDirty || this.dirty) {
             // Throttle updating, unless we're on the active line, or if we're
             // completely replacing the song.
-            if (this.props.isCurrent || this.props.staves !== nextProps.staves) {
+            if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
                 this.dirty = false;
                 return true;
             } else {
@@ -894,7 +894,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     staveHeight: number;
-    staves: Array<C.IStave>;
+    parts: Array<C.IStave>;
     store: C.ISongEditor;
 }
 
@@ -909,7 +909,7 @@ module Renderer {
 }
 
 var _pointerData: C.IPointerData = {
-    staveIdx: null,
+    partIdx: null,
     obj: null,
     musicLine: null,
     idx: null,

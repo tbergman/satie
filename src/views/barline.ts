@@ -1,6 +1,10 @@
 /**
- * Renderes a full-stave-height barline at (x,y).
+ * Renders a full-stave-height barline at (x,y).
  * Does not do any interesting calculations.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import ReactTS = require("react-typescript");

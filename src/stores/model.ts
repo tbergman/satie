@@ -19,13 +19,13 @@ import _ = require("lodash");
  * In particular, classes which extend Model provide three two functions:
  *   - annotateImpl: adds any missing information (default values) not provided
  *      by the parser, adds any missing elements (e.g., clefs, time signatures,
- *      line breaks) to stave.body
+ *      line breaks) to part.body
  *   - render: returns the instance of a React component which renders the
  *      component. Does not accept anything. Any processing should be done in
  *      annotateImpl.
  * 
  * To see the kind of information held by Models, in your web browser's
- * console, look at 'SongEditorStore.staves()[...].body'. Every item is a Model.
+ * console, look at 'SongEditorStore.parts()[...].body'. Every item is a Model.
  */
 class Model {
     annotate(ctx: Annotator.Context): C.IterationStatus {
@@ -130,17 +130,17 @@ class Model {
     };
 
     /**
-     * Given an array of staves, remove all annotated objects
+     * Given an array of parts, remove all annotated objects
      * created through a Model.
      */
-    static removeAnnotations = (staves: Array<C.IStave>) => {
-        for (var i = 0; i < staves.length; ++i) {
-            for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
-                var item = staves[i].body[j];
+    static removeAnnotations = (parts: Array<C.IStave>) => {
+        for (var i = 0; i < parts.length; ++i) {
+            for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
+                var item = parts[i].body[j];
                 if (item.source === C.Source.Annotator && !item.placeholder) {
-                    for (var k = 0; k < staves.length; ++k) {
-                        if (staves[k].body) {
-                            staves[k].body.splice(j, 1);
+                    for (var k = 0; k < parts.length; ++k) {
+                        if (parts[k].body) {
+                            parts[k].body.splice(j, 1);
                         }
                     }
                     --j;

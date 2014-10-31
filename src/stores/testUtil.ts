@@ -35,8 +35,8 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
             }
             var opts = {
                 indent: 15,
-                staves: parsed,
-                staveIdx: 0
+                parts: parsed,
+                partIdx: 0
             };
             context = new Annotator.Context(parsed, opts, songEditor, Annotator.AssertionPolicy.NoAssertions);
             context.annotate({ bar: 1, beat: 0 }, null, null, true);

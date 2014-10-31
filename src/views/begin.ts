@@ -1,5 +1,9 @@
 /**
  * Appears at the very beginning of a stave.
+ * 
+ * @copyright (C) Joshua Netterfield. Proprietary and confidential.
+ * Unauthorized copying of this file, via any medium is strictly prohibited.
+ * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
 import ReactTS = require("react-typescript");
