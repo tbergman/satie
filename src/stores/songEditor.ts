@@ -199,13 +199,44 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     private _ly(debugMode: boolean) {
-        var parts = this._parts;
-        return SongEditorStore.ly(debugMode, parts);
+        return SongEditorStore.ly(debugMode, this.parts, this.header);
     }
-    static ly(debugMode: boolean, parts: Array<C.IStave>) {
+    static ly(debugMode: boolean, parts: Array<C.IPart>, header: C.IHeader) {
         var lyliteArr: Array<string> = [];
         var unresolved: Array<(obj: Model) => boolean> = [];
         var inPianoStaff = false;
+
+        if (!debugMode) {
+            assert(header);
+            lyliteArr.push("#(set-global-staff-size " +
+                header.staveHeight * renderUtil.ptPerMM + ")\n");
+            if (!header.pageSize.lilypondName) {
+                alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
+                return;
+            }
+            lyliteArr.push("#(set-default-paper-size \"" +
+                header.pageSize.lilypondName + "\")\n");
+            lyliteArr.push("\\paper {");
+            if (header.paper.leftMargin) {
+                lyliteArr.push("left-margin=" + header.paper.leftMargin);
+            }
+            if (header.paper.rightMargin) {
+                lyliteArr.push("right-margin=" + header.paper.rightMargin);
+            }
+            lyliteArr.push("}\n");
+
+            lyliteArr.push("\\header {");
+            if (header.title) {
+                // XXX: XSS
+                lyliteArr.push("title=\"" + header.title + "\"");
+            }
+            if (header.composer) {
+                // XXX: XSS
+                lyliteArr.push("composer=\"" + header.composer + "\"");
+            }
+            lyliteArr.push("}\n");
+        }
+
         _.each(parts, (part, sidx) => {
             if (part.body) {
                 if (!debugMode) {
@@ -254,34 +285,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     lyliteArr.push(">>");
                     inPianoStaff = false;
                 }
-            } else if (part.header && !debugMode) {
-                lyliteArr.push("#(set-global-staff-size " +
-                    part.header.staveHeight*renderUtil.ptPerMM + ")\n");
-                if (!part.header.pageSize.lilypondName) {
-                    alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
-                    return;
-                }
-                lyliteArr.push("#(set-default-paper-size \"" +
-                    part.header.pageSize.lilypondName + "\")\n");
-                lyliteArr.push("\\paper {");
-                if (part.header.paper.leftMargin) {
-                    lyliteArr.push("left-margin=" + part.header.paper.leftMargin);
-                }
-                if (part.header.paper.rightMargin) {
-                    lyliteArr.push("right-margin=" + part.header.paper.rightMargin);
-                }
-                lyliteArr.push("}\n");
-
-                lyliteArr.push("\\header {");
-                if (part.header.title) {
-                    // XXX: XSS
-                    lyliteArr.push("title=\"" + part.header.title + "\"");
-                }
-                if (part.header.composer) {
-                    // XXX: XSS
-                    lyliteArr.push("composer=\"" + part.header.composer + "\"");
-                }
-                lyliteArr.push("}\n");
             }
         });
         var lyliteStr = lyliteArr.join(" ");
@@ -294,9 +297,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     get metadataModalVisible() {
         return this._metadataModalVisible; }
     get pageSize() {
-        return this._pageSize; }
+        return this.header ? this.header.pageSize : null; }
     get paper() {
-        return this._paper; }
+        return this.header ? this.header.paper : null; }
     get partModalStave() {
         return this._partModalStave; }
     get selection() {
@@ -304,11 +307,17 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     get socialModalVisible() {
         return this._socialModalVisible; }
     get staveHeight() {
-        return this._staveHeight; }
+        return this.header ? this.header.staveHeight : null; }
     get parts() {
         return this._parts; }
+    get header() {
+        return this._header; }
     get src() {
-        return JSON.stringify(this._parts); }
+        return "RIPMUS0," + JSON.stringify({
+            parts: this._parts,
+            header: this._header
+        });
+    }
     get tool() {
         return this._tool; }
     get visualCursor() {
@@ -318,7 +327,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     // STAVE MUTATORS // 
     ////////////////////
 
-    ctxFromSnapshot(pointerData: C.IPointerData, parts: Array<C.IStave>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
+    ctxFromSnapshot(pointerData: C.IPointerData, parts: Array<C.IPart>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
         var i: number;
 
         if (!pointerData) {
@@ -420,16 +429,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     // STATICS // 
     /////////////
 
-    static parse(src: string): Array<C.IStave> {
-        var parts: Array<C.IStave> = null;
-        if (src.length && src[0] === "[") {
+    static parse(src: string): { parts: Array<C.IPart>; header: C.IHeader; } {
+        var song: { header: C.IHeader; parts: Array<C.IPart>; } = null;
+        if (src.length && src.substr(0, 8) === "RIPMUS0,") {
             // Ripieno native
-            parts = JSON.parse(src);
-            for (var i = 0; i < parts.length; ++i) {
-                var body = parts[i].body;
+            song = JSON.parse(src.substring(8));
+            for (var i = 0; i < song.parts.length; ++i) {
+                var body = song.parts[i].body;
                 if (body) {
-                    if (!parts[i].instrument) {
-                        parts[i].instrument = Instruments.List[0];
+                    if (!song.parts[i].instrument) {
+                        song.parts[i].instrument = Instruments.List[0];
                     }
 
                     for (var j = 0; j < body.length; ++j) {
@@ -439,16 +448,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         body[j].modelDidLoad(body, j);
                     }
                 }
-                if (parts[i].header) {
-                    parts[i].header.composerHovered = parts[i].header.titleHovered = false;
-                    parts[i].header.paper = new C.Paper(parts[i].header.paper);
+                if (song.header) {
+                    song.header.composerHovered = song.header.titleHovered = false;
+                    song.header.paper = new C.Paper(song.header.paper);
                 }
             }
         } else {
             // Lilypond!
-            parts = lylite.parse(src);
+            song = lylite.parse(src);
         }
-        return parts;
+        return song;
     }
 
     static PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
@@ -478,7 +487,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this.emit(ANNOTATE_EVENT);
         }
 
-        _.each(this.parts, (part: C.IStave) => {
+        _.each(this.parts, (part: C.IPart) => {
             if (part.body) {
                 var instrument: C.IInstrument = part.instrument;
                 this.ensureSoundfontLoaded(instrument.soundfont, /*avoidEvent*/ true);
@@ -621,33 +630,33 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "PUT /local/song/hmargin/increase"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        if (this._paper.leftMargin < 50) {
-            this._paper.leftMargin += 1;
-            this._paper.rightMargin += 1;
+        if (this.header.paper.leftMargin < 50) {
+            this.header.paper.leftMargin += 1;
+            this.header.paper.rightMargin += 1;
         }
         this._everythingIsDirty();
     }
 
     "PUT /local/song/hmargin/decrease"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        if (this._paper.leftMargin > -1) { // so it can go to -1
-            this._paper.leftMargin -= 1;
-            this._paper.rightMargin -= 1;
+        if (this.header.paper.leftMargin > -1) { // so it can go to -1
+            this.header.paper.leftMargin -= 1;
+            this.header.paper.rightMargin -= 1;
         }
         this._everythingIsDirty();
     }
 
     "PUT /local/song/indent/increase"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        if (this._paper.indent < 50) {
-            this._paper.indent += 1;
+        if (this.header.paper.indent < 50) {
+            this.header.paper.indent += 1;
         }
         this._everythingIsDirty();
     }
 
     "PUT /local/song/indent/decrease"(action: C.IFluxAction) {
-        if (this._paper.indent > -1) { // so it can go to -1
-            this._paper.indent -= 1;
+        if (this.header.paper.indent > -1) { // so it can go to -1
+            this.header.paper.indent -= 1;
         }
         this._everythingIsDirty();
     }
@@ -664,10 +673,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "PUT /local/song/pageSize"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        this._pageSize = action.postData;
+        this.header.pageSize = action.postData;
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._parts, s => s.header).header.pageSize = this._pageSize;
+        this.header.pageSize = this.header.pageSize;
         Model.removeAnnotations(this._parts);
         this._annotate(null, null, null, null, null, false); // XXX: collaboration
         this.emit(CHANGE_EVENT);
@@ -702,32 +711,32 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "PUT /local/staveHeight/increase"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        var h = Math.round(this._staveHeight * 100) / 100;
+        var h = Math.round(this.header.staveHeight * 100) / 100;
 
         for (var i = renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
             if (renderUtil.rastalToHeight[i] > h) {
-                this._staveHeight = renderUtil.rastalToHeight[i];
+                this.header.staveHeight = renderUtil.rastalToHeight[i];
                 break;
             }
         }
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._parts, s => s.header).header.staveHeight = this._staveHeight;
+        this.header.staveHeight = this.header.staveHeight;
         this._everythingIsDirty();
     }
 
     "PUT /local/staveHeight/decrease"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
-        var h = Math.round(this._staveHeight * 100) / 100;
+        var h = Math.round(this.header.staveHeight * 100) / 100;
         for (var i = 0; i < renderUtil.rastalToHeight.length; ++i) {
             if (renderUtil.rastalToHeight[i] < h) {
-                this._staveHeight = renderUtil.rastalToHeight[i];
+                this.header.staveHeight = renderUtil.rastalToHeight[i];
                 break;
             }
         }
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._parts, s => s.header).header.staveHeight = this._staveHeight;
+        this.header.staveHeight = this.header.staveHeight;
         this._everythingIsDirty();
     }
 
@@ -904,7 +913,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "PUT /local/instrument"(action: C.IFluxAction) {
         var instrument: C.IInstrument = action.postData.instrument;
-        var part: C.IStave = action.postData.part;
+        var part: C.IPart = action.postData.part;
 
         this.ensureSoundfontLoaded(instrument.soundfont);
 
@@ -940,7 +949,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _annotate(
             pointerData: C.IPointerData,
             toolFn: (obj: Model, ctx: Annotator.Context) => C.IterationStatus,
-            parts: Array<C.IStave>,
+            parts: Array<C.IPart>,
             pageSize: C.IPageSize,
             profile: boolean,
             disableRecording: boolean,
@@ -975,10 +984,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             top: y,
             fontSize: this.staveHeight,
             isFirstLine: true,
-            pageSize: pageSize || this._pageSize,
-            leftMargin: this._paper.leftMargin,
-            rightMargin: this._paper.rightMargin,
-            indent: this._paper.indent
+            pageSize: pageSize || this.header.pageSize,
+            leftMargin: this.header.paper.leftMargin,
+            rightMargin: this.header.paper.rightMargin,
+            indent: this.header.paper.indent
         };
 
         if (godAction) {
@@ -997,12 +1006,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             assert(Object.keys(context.prevClefByStave).length >= 1, "Previous clefs were not stored");
         }
 
-        var y = 0;
-        for (var i = 0; i < parts.length; ++i) {
-            if (parts[i].header) {
-                y += renderUtil.getHeaderHeight(parts[i].header);
-            }
-        }
+        var y = renderUtil.getHeaderHeight(this.header);
 
         // Annotate the part.
         var location = {
@@ -1066,10 +1070,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this._peerRelay = null;
         }
         this._parts = null;
-        this._staveHeight = null;
         this._prevActiveSong = null;
-        this._pageSize = null;
-        this._paper = null;
+        this._header = null;
         this._tool = null;
         this._selection = null;
         this._visualCursorIs({
@@ -1205,13 +1207,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             console.time("Parse source");
         }
 
-        this._parts = SongEditorStore.parse(src);
-        C.addDefaults(this._parts);
+        var song = SongEditorStore.parse(src);
+        this._header = song.header;
+        this._parts = song.parts;
 
-        var header = _.find(this._parts, s => s.header).header;
-        this._staveHeight = header.staveHeight;
-        this._pageSize = header.pageSize;
-        this._paper = header.paper;
+        C.addDefaults(this.header);
+        this.header.staveHeight = this.header.staveHeight;
+        this.header.pageSize = this.header.pageSize;
+        this.header.paper = this.header.paper;
 
         for (var i = 0; i < this._parts.length; ++i) {
             if (this._parts[i].body) {
@@ -1448,9 +1451,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _exportModalVisible: boolean = false;
 	private _linesToUpdate: { [key: string]: boolean } = {};
     private _metadataModalVisible: boolean = false;
-	private _pageSize: C.IPageSize = null;
-	private _paper: C.Paper = null;
-    private _partModalStave: C.IStave = null;
+    private _partModalStave: C.IPart = null;
     private _peerRelay: WebSocket = null;
 	private _prevActiveSong: C.ISong = null;
     private _relayHistory: string = "";
@@ -1459,8 +1460,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _session: C.ISessionStore;
 	private _snapshots: { [key: string]: any } = {};
     private _socialModalVisible: boolean = false;
-	private _staveHeight: number = null;
-	private _parts: Array<C.IStave>;
+	private _parts: Array<C.IPart>;
+	private _header: C.IHeader;
 	private _tool: Tool = null;
     private _visualCursor: C.IVisualCursor = {
         bar: 1,

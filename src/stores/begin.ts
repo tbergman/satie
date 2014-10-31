@@ -71,7 +71,7 @@ class BeginModel extends Model {
     }
 
     pianoSystemContinues: boolean;
-    part: C.IStave;
+    part: C.IPart;
     noMargin : boolean;
     braceY : number;
     braceY2: number;

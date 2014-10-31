@@ -30,7 +30,7 @@ import renderUtil = require("../util/renderUtil");
  *     after the change is made, the parts are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(parts: Array<C.IStave>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
+    constructor(parts: Array<C.IPart>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
         this._parts = parts;
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
@@ -571,7 +571,7 @@ export class Context implements C.MetreContext {
      * The current part.
      * @scope temporary
      */
-    currStave: C.IStave;
+    currStave: C.IPart;
 
     /**
      * For marking part lines dirty, for example.
@@ -828,7 +828,7 @@ export class Context implements C.MetreContext {
         };
     }
 
-    private _semiJustify(parts: Array<C.IStave>) {
+    private _semiJustify(parts: Array<C.IPart>) {
         var NewlineModel: typeof NewlineModelType = require("./newline");
         var bodies: Array<C.IBody> = [];
         for (var i = 0; i < parts.length; ++i) {
@@ -894,7 +894,7 @@ export class Context implements C.MetreContext {
      * The parts to be annotated.
      * @scope private
      */
-    _parts: Array<C.IStave>;
+    _parts: Array<C.IPart>;
 
     /**
      * @scope private
@@ -993,7 +993,7 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
     lines: Array<ILineSnapshot>;
 }
 
-export function recordMetreData(parts: Array<C.IStave>) {
+export function recordMetreData(parts: Array<C.IPart>) {
     "use strict";
 
     var anyChange = false;
@@ -1029,7 +1029,7 @@ export function recordMetreData(parts: Array<C.IStave>) {
  * Internal. Iterates over a set of bodies in parts and annotates them. Owned by an Annotator.
  */
 class PrivIterator {
-    constructor(parent: Context, from: C.ILocation, parts: Array<C.IStave>,
+    constructor(parent: Context, from: C.ILocation, parts: Array<C.IPart>,
             mutation: ICustomAction, cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._parent = parent;
         this._parts = parts;
@@ -1392,7 +1392,7 @@ class PrivIterator {
     private _cursor: C.IVisualCursor;
     private _from: C.ILocation;
     private _parent: Context;
-    private _parts: Array<C.IStave>;
+    private _parts: Array<C.IPart>;
     private _assertionPolicy: AssertionPolicy;
 }
 
@@ -1405,7 +1405,7 @@ class PrivIterator {
  * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
  */
 class PrivIteratorComponent {
-    constructor(from: C.ILocation, part: C.IStave, idx: number, visibleIdx: number, mutation: ICustomAction,
+    constructor(from: C.ILocation, part: C.IPart, idx: number, visibleIdx: number, mutation: ICustomAction,
             cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._part = part;
         this._body = part.body;
@@ -1642,7 +1642,7 @@ class PrivIteratorComponent {
     private _mutation: ICustomAction;
     private _sidx: number;
     private _visibleSidx: number;
-    private _part: C.IStave;
+    private _part: C.IPart;
 }
 
 

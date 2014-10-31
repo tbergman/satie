@@ -311,7 +311,17 @@
 %%
 
 root
-  : parts EOF                          { return $1; }
+  : parts EOF
+		{
+			// It's easier for us to treat "header" as a stave during parsing.
+			// But, for everything else, it works best separately.
+			var header = $1[0].header;
+			$1.splice(0, 1);
+			return {
+				header: header,
+				parts: $1
+			};
+		}
   ;
 
 parts

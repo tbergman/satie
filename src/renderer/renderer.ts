@@ -50,16 +50,13 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
         }
 
         var fontSize = NaN;
-        var y = 0;
         var parts = this.props.parts;
         var bodyLength = 0;
 
+        fontSize = this.props.header.staveHeight;
         for (var i = 0; i < parts.length; ++i) {
             if (parts[i].body) {
                 bodyLength = parts[i].body.length;
-            }
-            if (parts[i].header) {
-                fontSize = parts[i].header.staveHeight;
             }
         }
 
@@ -86,7 +83,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
         // XXX: Currently we only support single and double staffs.
         // isPianoStaff is set to true when there is at least 2 staffs.
-        var isPianoStaff = _.reduce(parts, function (memo: number, s: C.IStave) {
+        var isPianoStaff = _.reduce(parts, function (memo: number, s: C.IPart) {
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
 
@@ -106,83 +103,75 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                     widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
                     viewbox: viewbox
                 },
+                !page.from && !useGL && Header({
+                    fontSize: fontSize,
+                    middle: renderUtil.mm(this.props.pageSize.width/2 +
+                        this.props.paper.rightMargin -
+                        this.props.paper.leftMargin, fontSize),
+                    right: renderUtil.mm(this.props.pageSize.width -
+                        this.props.paper.rightMargin, fontSize * 0.75),
+                    key: "HEADER",
+                    model: this.props.header}),
                 /* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */
-                _.map(parts, (part: C.IStave, idx: number) => {
-                    if (part.header) {
-                        if (page.from) {
-                            return null;
-                        }
-                        y += renderUtil.getHeaderHeight(part.header);
-                        return !useGL && Header({
-                            fontSize: fontSize,
-                            middle: renderUtil.mm(this.props.pageSize.width/2 +
-                                this.props.paper.rightMargin -
-                                this.props.paper.leftMargin, fontSize),
-                            right: renderUtil.mm(this.props.pageSize.width -
-                                this.props.paper.rightMargin, fontSize * 0.75),
-                            key: "HEADER",
-                            model: part.header});
-                    } else if (part.body) {
-                        return Group({key: idx, style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
-                            _.reduce(part.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
-                                if (obj.type === C.Type.NewLine) {
-                                    memo.push([]);
-                                }
-                                memo[memo.length - 1].push(obj);
-                                return memo;
-                            }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
+                _.map(parts, (part: C.IPart, idx: number) => {
+                    assert(part.body);
+                    return Group({ key: idx, style: { fontSize: fontSize * Renderer.FONT_SIZE_FACTOR + "px" } },
+                        _.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
+                            if (obj.type === C.Type.NewLine) {
+                                memo.push([]);
+                            }
+                            memo[memo.length - 1].push(obj);
+                            return memo;
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
                             function (s: Array<Model>, lidx: number) {
 
                                 return LineContainerComponent({
-                                        parts: this.props.parts,
-                                        isCurrent: this.state.visualCursor.annotatedLine ===
-                                            lidx + pageLines[page.idx],
-                                        store: this.props.store,
-                                        staveHeight: this.props.staveHeight,
-                                        h: idx,
-                                        generate: function () {
-                                            var components = new Array(s.length * 2);
-                                            var h = 0;
-                                            // I think selected items currently HAVE to
-                                            // be consecutive, but this could change.
-                                            var selIdx = -1;
-                                            var selProps: any = null;
-                                            for (var i = 0; i < s.length; ++i) {
-                                                if (s[i].selected && s[i].type !== C.Type.NewLine &&
-                                                        s[i].type !== C.Type.EndMarker) {
-                                                    if (selIdx === -1) {
-                                                        selIdx = h++;
-                                                        selProps = {
-                                                            key: "selectionrect-" + Math.random(),
-                                                            x: s[i].x,
-                                                            y: s[i].y - 1 / 2,
-                                                            height: 1,
-                                                            fill: "#75A1D0",
-                                                            opacity: 0.33
-                                                        };
-                                                    }
-                                                }
-                                                if (selIdx !== -1 &&
-                                                        (!s[i].selected || i + 1 === s.length)) {
-                                                    selProps.width = Math.abs(s[i].x - selProps.x);
-                                                    components[selIdx] = Rect.Component(selProps);
-                                                    selIdx = -1;
-                                                }
-                                                if (s[i].visible()) {
-                                                    components[h++] = s[i].render(fontSize);
+                                    parts: this.props.parts,
+                                    isCurrent: this.state.visualCursor.annotatedLine ===
+                                    lidx + pageLines[page.idx],
+                                    store: this.props.store,
+                                    staveHeight: this.props.staveHeight,
+                                    h: idx,
+                                    generate: function () {
+                                        var components = new Array(s.length * 2);
+                                        var h = 0;
+                                        // I think selected items currently HAVE to
+                                        // be consecutive, but this could change.
+                                        var selIdx = -1;
+                                        var selProps: any = null;
+                                        for (var i = 0; i < s.length; ++i) {
+                                            if (s[i].selected && s[i].type !== C.Type.NewLine &&
+                                                s[i].type !== C.Type.EndMarker) {
+                                                if (selIdx === -1) {
+                                                    selIdx = h++;
+                                                    selProps = {
+                                                        key: "selectionrect-" + Math.random(),
+                                                        x: s[i].x,
+                                                        y: s[i].y - 1 / 2,
+                                                        height: 1,
+                                                        fill: "#75A1D0",
+                                                        opacity: 0.33
+                                                    };
                                                 }
                                             }
-                                            components.length = h;
-                                            return components;
-                                        },
-                                        idx: lidx + pageLines[page.idx], key: lidx
-                                    });
-                                }.bind(this))
+                                            if (selIdx !== -1 &&
+                                                (!s[i].selected || i + 1 === s.length)) {
+                                                selProps.width = Math.abs(s[i].x - selProps.x);
+                                                components[selIdx] = Rect.Component(selProps);
+                                                selIdx = -1;
+                                            }
+                                            if (s[i].visible()) {
+                                                components[h++] = s[i].render(fontSize);
+                                            }
+                                        }
+                                        components.length = h;
+                                        return components;
+                                    },
+                                    idx: lidx + pageLines[page.idx], key: lidx
+                                });
+                            }.bind(this))
                         );
-                    } else {
-                        return null;
-                    }
                 }),
                 this.props.tool && this.props.tool.render(
                     this.getCtx(),
@@ -772,7 +761,8 @@ module Renderer {
         raw?: boolean;
         sessionInfo?: C.ISession;
         staveHeight?: number;
-        parts?: Array<C.IStave>;
+        header: C.IHeader;
+        parts?: Array<C.IPart>;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
@@ -894,7 +884,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     staveHeight: number;
-    parts: Array<C.IStave>;
+    parts: Array<C.IPart>;
     store: C.ISongEditor;
 }
 

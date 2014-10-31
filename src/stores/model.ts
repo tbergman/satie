@@ -133,7 +133,7 @@ class Model {
      * Given an array of parts, remove all annotated objects
      * created through a Model.
      */
-    static removeAnnotations = (parts: Array<C.IStave>) => {
+    static removeAnnotations = (parts: Array<C.IPart>) => {
         for (var i = 0; i < parts.length; ++i) {
             for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
                 var item = parts[i].body[j];

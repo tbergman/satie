@@ -20,30 +20,30 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
     "use strict";
 
     describe(desc, function() {
-        var parsed: Array<C.IStave>;
+        var parts: Array<C.IPart>;
         var context: Annotator.Context;
         var dispatcher = new Dispatcher;
         var session = new SessionStore(dispatcher);
         var songEditor = new SongEditorStore(dispatcher, session);
         it("should parse", function () {
-            parsed = lylite.parse(ly);
-            assert(parsed, "Did it parse?");
+            var song = lylite.parse(ly);
+            assert(song.parts && song.header, "Did it parse?");
         });
         it("should be annotatable", function () {
-            if (!parsed) {
+            if (!parts) {
                 return;
             }
             var opts = {
                 indent: 15,
-                parts: parsed,
+                parts: parts,
                 partIdx: 0
             };
-            context = new Annotator.Context(parsed, opts, songEditor, Annotator.AssertionPolicy.NoAssertions);
+            context = new Annotator.Context(parts, opts, songEditor, Annotator.AssertionPolicy.NoAssertions);
             context.annotate({ bar: 1, beat: 0 }, null, null, true);
         });
         _.each(tests, test => it(
             test[0],
-            () => parsed && test[1](parsed, context)));
+            () => parts && test[1](parts, context)));
     });
 }
 

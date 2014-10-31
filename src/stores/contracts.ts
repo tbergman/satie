@@ -11,7 +11,6 @@
 /// <reference path="../../references/lodash.d.ts" />
 /// <reference path="../../references/node.d.ts" />
 
-import _ = require("lodash");
 import assert = require("assert");
 
 import Model = require("./model");
@@ -596,6 +595,32 @@ export interface IPageSize {
 };
 
 /**
+ * Properties that make up a part
+ */
+export interface IPart {
+    //////////////////////////////////////////////
+    // The following can be set if body is true //
+    //////////////////////////////////////////////
+
+    /**
+     * The Models that compose the part.
+     */
+    body?: IBody;
+
+    /**
+     * For playback
+     */
+    instrument?: IInstrument;
+
+    /**
+     * Whether the next part is in the same system
+     */
+    pianoSystemContinues?: boolean;
+
+    staveSeperation?: number;
+};
+
+/**
  * Margin settings and such. See also Paper.
  */
 export class Paper {
@@ -828,11 +853,12 @@ export interface ISongEditor {
     midiOutHint: (out: Array<number>) => void;
     pageSize: IPageSize;
     paper: Paper;
-    partModalStave: IStave;
+    partModalStave: IPart;
     selection: Array<Model>;
     socialModalVisible: boolean;
     staveHeight: number;
-    parts: Array<IStave>;
+    header: IHeader;
+    parts: Array<IPart>;
     src: string;
     testly: string;
     tool: any;
@@ -872,41 +898,6 @@ export enum Source {
      */
     UserProposed
 }
-
-/**
- * Properties that make up a part
- */
-export interface IStave {
-    //////////////////////////////////////////////
-    // The following can be set if body is true //
-    //////////////////////////////////////////////
-
-    /**
-     * The Models that compose the part.
-     */
-    body?: IBody;
-
-    /**
-     * For playback
-     */
-    instrument?: IInstrument;
-
-    /**
-     * Whether the next part is in the same system
-     */
-    pianoSystemContinues?: boolean;
-
-    staveSeperation?: number;
-
-    //////////////////////////////////////////////
-    // The following should moved out of IStave //
-    //////////////////////////////////////////////
-
-    /**
-     * Printed information about the piece.
-     */
-    header?: IHeader;
-};
 
 /**
  * The subclass of a Model. Also doubles as a priority.
@@ -1058,9 +1049,8 @@ export function midiNote(p: IPitch) {
  * 
  * Used for document creation, importing, ...
  */
-export function addDefaults(parts: IStave[]) {
+export function addDefaults(header: IHeader) {
     "use strict";
-    var header = _.find(parts, function (s) { return s.header; }).header;
     if (!header.staveHeight) {
         header.staveHeight = renderUtil.defaultStaveHeight();
     }
