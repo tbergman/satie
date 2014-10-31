@@ -472,11 +472,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         var activeSong = this._session.activeSong;
         if (USING_LEGACY_AUDIO) {
             _.defer(() => {
-                this._dispatcher.POST("/api/v0/synth", {
-                    data: this.dragonAudio,
-                    cb: "" + ++PlaybackStore.latestID,
-                    forExport: true
-                });
+                 this._dispatcher.POST("/api/v0/synth", {
+                     data: this.dragonAudio,
+                     cb: "" + ++PlaybackStore.latestID,
+                     forExport: false
+                 });
             });
         }
         if (activeSong !== this._prevActiveSong) {
@@ -1042,6 +1042,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         if (SongEditorStore.PROFILER_ENABLED) {
             console.timeEnd("annotate");
         }
+
+        if (!disableRecording) {
+            // For legacy audio, invalidate the current mp3.
+            this.legacyAudioID = -1;
+        }
     }
 
     private _broadcastPatch(diff: Array<string>, origBars: Array<string>, newBars: Array<string>) {
@@ -1473,6 +1478,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         annotatedLine: <number> null,
         annotatedPage: <number> null
     };
+    legacyAudioID: number = -1;
 }
 
 export = SongEditorStore;

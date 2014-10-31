@@ -863,6 +863,7 @@ export interface ISongEditor {
     testly: string;
     tool: any;
     visualCursor: IVisualCursor;
+    legacyAudioID: number;
 
     dangerouslyHidePreview: (action: IFluxAction) => void;
     dangerouslyMarkRenderDone: () => void;
