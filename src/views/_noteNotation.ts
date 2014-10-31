@@ -12,7 +12,7 @@ import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
+class NoteNotation extends ReactTS.ReactComponentBase<NoteNotation.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
@@ -30,7 +30,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     }
 
     get directionString() {
-        if (SMuFL.bravuraBBoxes[this.getMarkingName()]) {
+        if (SMuFL.bravuraBBoxes[this.getNotationName()]) {
             return "";
         } else if (this.direction === 1) {
             return "Below";
@@ -41,7 +41,7 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     get shouldBeAboveStaff() {
         var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
-            if (this.getMarkingName().indexOf(above[i]) === 0) {
+            if (this.getNotationName().indexOf(above[i]) === 0) {
                 return true;
             }
         }
@@ -50,21 +50,21 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     get shouldBeBelowStaff() {
         var below = ["dynamic"];
         for (var i = 0; i < below.length; ++i) {
-            if (this.getMarkingName().indexOf(below[i]) === 0) {
+            if (this.getNotationName().indexOf(below[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
     getGlyphIsTemporary() {
-        return this.props.marking.substr(0, 2) === "__";
+        return this.props.notation.substr(0, 2) === "__";
     }
     get glyphName() {
-        return this.getMarkingName() + this.directionString;
+        return this.getNotationName() + this.directionString;
     }
-    getMarkingName() {
+    getNotationName() {
         var isTmp = this.getGlyphIsTemporary();
-        return isTmp ? this.props.marking.substring(2) : this.props.marking;
+        return isTmp ? this.props.notation.substring(2) : this.props.notation;
     }
     get direction() {
         if (this.shouldBeAboveStaff) {
@@ -74,9 +74,9 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
     }
     getFontOffset = getFontOffset;
     get xOffset() {
-        if (this.props.marking.indexOf("caesura") === 0) {
+        if (this.props.notation.indexOf("caesura") === 0) {
             return -3/8; // TODO -- move to DurationModel and fix
-        } else if (this.props.marking.indexOf("breathMarkComma") === 0) {
+        } else if (this.props.notation.indexOf("breathMarkComma") === 0) {
             return 3/8; // TODO -- move to DurationModel and fix
         }
         return 0;
@@ -99,28 +99,28 @@ class NoteMarking extends ReactTS.ReactComponentBase<NoteMarking.IProps, {}> {
 
         if (this.direction === 1) {
             return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
-			//                               ^^^^^ Prevents markings from begin on lines
+			//                               ^^^^^ Prevents notations from begin on lines
         }
 
         return (this.props.line + 1.2 + (this.props.line % 1  && this.props.line + 1.2 < 5 ? 0.4 : 0) + this.props.idx - 3)/4;
-		//                               ^^^^^ Prevents markings from begin on lines
+		//                               ^^^^^ Prevents notations from begin on lines
     }
 }
 
-module NoteMarking {
+module NoteNotation {
     "use strict";
-    export var Component = ReactTS.createReactComponent(NoteMarking);
+    export var Component = ReactTS.createReactComponent(NoteNotation);
 
     export interface IProps {
         direction: number; // -1 or 1
         fontSize: number;
         idx: number;
         line: number;
-        marking: string;
+        notation: string;
         notehead: string;
         x: number;
         y: number;
     }
 }
 
-export = NoteMarking;
+export = NoteNotation;

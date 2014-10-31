@@ -254,27 +254,24 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     lyliteArr.push(">>");
                     inPianoStaff = false;
                 }
-            } else if (stave.staveHeight && !debugMode) {
+            } else if (stave.header && !debugMode) {
                 lyliteArr.push("#(set-global-staff-size " +
-                    stave.staveHeight*renderUtil.ptPerMM + ")\n");
-            } else if (stave.pageSize && !debugMode) {
-                if (!stave.pageSize.lilypondName) {
+                    stave.header.staveHeight*renderUtil.ptPerMM + ")\n");
+                if (!stave.header.pageSize.lilypondName) {
                     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
                     return;
                 }
                 lyliteArr.push("#(set-default-paper-size \"" +
-                    stave.pageSize.lilypondName + "\")\n");
-            } else if (stave.paper && !debugMode) {
+                    stave.header.pageSize.lilypondName + "\")\n");
                 lyliteArr.push("\\paper {");
-                if (stave.paper.leftMargin) {
-                    lyliteArr.push("left-margin=" + stave.paper.leftMargin);
+                if (stave.header.paper.leftMargin) {
+                    lyliteArr.push("left-margin=" + stave.header.paper.leftMargin);
                 }
-                if (stave.paper.rightMargin) {
-                    lyliteArr.push("right-margin=" + stave.paper.rightMargin);
+                if (stave.header.paper.rightMargin) {
+                    lyliteArr.push("right-margin=" + stave.header.paper.rightMargin);
                 }
                 lyliteArr.push("}\n");
 
-            } else if (stave.header && !debugMode) {
                 lyliteArr.push("\\header {");
                 if (stave.header.title) {
                     // XXX: XSS
@@ -444,9 +441,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 }
                 if (staves[i].header) {
                     staves[i].header.composerHovered = staves[i].header.titleHovered = false;
-                }
-                if (staves[i].paper) {
-                    staves[i].paper = new C.Paper(staves[i].paper);
+                    staves[i].header.paper = new C.Paper(staves[i].header.paper);
                 }
             }
         } else {
@@ -672,7 +667,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._pageSize = action.postData;
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._staves, s => s.pageSize).pageSize = this._pageSize;
+        _.find(this._staves, s => s.header).header.pageSize = this._pageSize;
         Model.removeAnnotations(this._staves);
         this._annotate(null, null, null, null, null, false); // XXX: collaboration
         this.emit(CHANGE_EVENT);
@@ -717,7 +712,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._staves, s => s.staveHeight).staveHeight = this._staveHeight;
+        _.find(this._staves, s => s.header).header.staveHeight = this._staveHeight;
         this._everythingIsDirty();
     }
 
@@ -732,7 +727,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
-        _.find(this._staves, s => s.staveHeight).staveHeight = this._staveHeight;
+        _.find(this._staves, s => s.header).header.staveHeight = this._staveHeight;
         this._everythingIsDirty();
     }
 
@@ -1213,9 +1208,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._staves = SongEditorStore.parse(src);
         C.addDefaults(this._staves);
 
-        this._staveHeight = _.find(this._staves, s => s.staveHeight).staveHeight;
-        this._pageSize = _.find(this._staves, s => s.pageSize).pageSize;
-        this._paper = _.find(this._staves, s => s.paper).paper;
+        var header = _.find(this._staves, s => s.header).header;
+        this._staveHeight = header.staveHeight;
+        this._pageSize = header.pageSize;
+        this._paper = header.paper;
 
         for (var i = 0; i < this._staves.length; ++i) {
             if (this._staves[i].body) {

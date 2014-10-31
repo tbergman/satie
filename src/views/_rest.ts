@@ -9,7 +9,7 @@ import assert = require("assert");
 import Dot = require("./_dot");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
-import NoteMarking = require("./_noteMarking");
+import NoteNotation = require("./_noteNotation");
 
 class Rest extends ReactTS.ReactComponentBase<Rest.IProps, {}> {
     render() {
@@ -60,7 +60,7 @@ module Rest {
     export var Component = ReactTS.createReactComponent(Rest);
 
     export interface IProps {
-        children: Array<NoteMarking>;
+        children: Array<NoteNotation>;
         dotted: number;
         fontSize: number;
         line: Array<number>;

@@ -15,7 +15,7 @@ import Flag = require("./_flag");
 import Group = require("./_group");
 import LedgerLine = require("./_ledgerLine");
 import NoteHead = require("./_noteHead");
-import NoteMarking = require("./_noteMarking");
+import NoteNotation = require("./_noteNotation");
 import NoteStem = require("./_noteStem");
 
 class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
@@ -90,7 +90,7 @@ class Note extends ReactTS.ReactComponentBase<Note.IProps, {}> {
                 fontSize: this.props.fontSize,
                 notehead: this.props.notehead,
                 direction: direction})]).concat(
-            this.props.children && _.map(this.props.children, (element: NoteMarking, idx: number) => {
+            this.props.children && _.map(this.props.children, (element: NoteNotation, idx: number) => {
                 element.props.direction = direction;
                 element.props.line = this.getStartingLine();
                 element.props.x = this.props.x;
@@ -303,7 +303,7 @@ module Note {
     export interface IProps {
         accidentals?: any;
         accStrokes?: any;
-        children?: Array<NoteMarking>;
+        children?: Array<NoteNotation>;
         direction?: number;
         dotted?: number;
         idx?: number;

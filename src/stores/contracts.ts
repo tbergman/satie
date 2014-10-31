@@ -306,6 +306,23 @@ export interface IHeader {
      * it is being hovered.
      */
     composerHovered?: boolean;
+
+    /**
+     * The height of the stave, in "em".
+     */
+    staveHeight?: number;
+
+    /**
+     * The physical (printout) size of the page.
+     */
+    pageSize?: IPageSize;
+
+    /**
+     * Margin settings and such.
+     * 
+     * See also pageSize.
+     */
+    paper?: Paper;
 }
 
 /**
@@ -493,7 +510,7 @@ export var MINOR = "\\minor";
 
 export var MAX_NUM = 1000000000;
 
-export interface IMarking {
+export interface INotation {
     glyph: string;
     noDirection: boolean;
     x: number;
@@ -889,23 +906,6 @@ export interface IStave {
      * Printed information about the piece.
      */
     header?: IHeader;
-
-    /**
-     * The height of the stave, in "em".
-     */
-    staveHeight?: number;
-
-    /**
-     * The physical (printout) size of the page.
-     */
-    pageSize?: IPageSize;
-
-    /**
-     * Margin settings and such.
-     * 
-     * See also pageSize.
-     */
-    paper?: Paper;
 };
 
 /**
@@ -1060,19 +1060,18 @@ export function midiNote(p: IPitch) {
  */
 export function addDefaults(staves: IStave[]) {
     "use strict";
-    if (!_.any(staves, function(s) { return s.staveHeight; })) {
-        staves.splice(0, 0, {staveHeight: renderUtil.defaultStaveHeight()});
+    var header = _.find(staves, function (s) { return s.header; }).header;
+    if (!header.staveHeight) {
+        header.staveHeight = renderUtil.defaultStaveHeight();
     }
-    if (!_.any(staves, function(s) { return s.pageSize; })) {
-        staves.splice(0, 0, {pageSize: renderUtil.defaultPageSize()});
+    if (!header.pageSize) {
+        header.pageSize = renderUtil.defaultPageSize();
     }
-    if (!_.any(staves, function(s) { return s.paper; })) {
-        staves.splice(0, 0, {
-            paper: new Paper({
-                "left-margin": renderUtil.defaultMargins.left,
-                "right-margin": renderUtil.defaultMargins.right,
-                indent: renderUtil.defaultIndent
-            })
+    if (!header.paper) {
+        header.paper = new Paper({
+            "left-margin": renderUtil.defaultMargins.left,
+            "right-margin": renderUtil.defaultMargins.right,
+            indent: renderUtil.defaultIndent
         });
     }
 }
