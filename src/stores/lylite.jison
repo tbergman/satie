@@ -41,7 +41,7 @@
 		} else if ($2.header) {
 			_.extend(header, $2.header);
 			return $1;
-		} else if ($2.staveHeight || $2.pageSize || $2.paper || $2.composer || $2.title) {
+		} else if ($2.staveHeight || $2.pageSize || ("leftMargin" in $2) || $2.composer || $2.title) {
 			_.extend(header, $2);
 			return $1;
 		} else {

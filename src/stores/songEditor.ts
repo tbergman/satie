@@ -448,14 +448,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         body[j].modelDidLoad(body, j);
                     }
                 }
-                if (song.header) {
-                    song.header.composerHovered = song.header.titleHovered = false;
-                    song.header.paper = new C.Paper(song.header.paper);
-                }
             }
         } else {
             // Lilypond!
             song = lylite.parse(src);
+        }
+        if (song.header) {
+            song.header.composerHovered = song.header.titleHovered = false;
+            if (song.header.paper) {
+                song.header.paper = new C.Paper(song.header.paper);
+            }
         }
         return song;
     }
