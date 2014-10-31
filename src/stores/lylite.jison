@@ -146,7 +146,6 @@
 "}"                   return 'RBRACE'
 
 "\clef"               return 'SET_CLEF'
-"z_RIPIENO_HACK_INVISIBLE\clef"           return 'SET_CLEF'
 "alto"                return 'CLEF'
 "tenor"               return 'CLEF'
 "bass"                return 'CLEF'
@@ -475,9 +474,6 @@ partElement
   : 'SET_CLEF' 'clef'
         { 
             $$ = new ClefModel({clef: $2});
-            if ($1 === "z_RIPIENO_HACK_INVISIBLE\\clef") {
-                $$.isVisible = false;
-            }
         }
   | 'SET_CLEF' 'STRING'
         {

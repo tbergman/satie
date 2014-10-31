@@ -22,9 +22,12 @@ class ClefModel extends Model {
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must not be redundant.
-        if (!this.clefIsNotRedundant(ctx)) {
-            return ctx.eraseCurrent();
+        if (this.clefIsRedundant(ctx)) {
+            return ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
         }
+
+        // A clef must not be replaced before another note
+        // var next = ctx.next(m => m.isNote || m.isRest
 
         // Songs begin with BeginModels.
         if (ctx.idx === 0) {
@@ -39,7 +42,9 @@ class ClefModel extends Model {
 
         // Copy information from the context that the view needs.
         this.isChange = !!ctx.clef;
-        this.clefName = ctx.clef = (this.clef === "detect") ? ctx.prevClefByStave[ctx.currStaveIdx] : this.clef;
+        this.displayedClefName = (this.clef === "detect" && this.displayedClef === this.clef) ?
+            ctx.prevClefByStave[ctx.currStaveIdx] : this.displayedClef;
+        ctx.clef = this.clef === "detect" ? ctx.prevClefByStave[ctx.currStaveIdx] : this.clef;
         var next = ctx.next();
         if (next.isNote) {
             var note: C.IPitch = <any> next;
@@ -53,11 +58,11 @@ class ClefModel extends Model {
             this._annotatedSpacing = 1.25;
         }
         if (this.isChange) {
-            ctx.x += -0.01 + this._annotatedSpacing / 4;
+            ctx.x += -0.21 + this._annotatedSpacing / 4;
         } else {
             ctx.x += 0.6 + this._annotatedSpacing/4;
         }
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        this.color = this.displayedClef !== this.clef ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;
     }
     visible(): boolean {
@@ -69,15 +74,8 @@ class ClefModel extends Model {
         }
         lylite.push("\\clef " + this.clef + "\n");
     }
-    clefIsNotRedundant(ctx: Annotator.Context): boolean {
-        // XXX HACK {
-        if (false === this.isVisible) {
-            return true;
-        }
-        // }
-        return this.temporary ||
-            ctx.clef !== this.clef ||
-            this.clef === "detect";
+    clefIsRedundant(ctx: Annotator.Context): boolean {
+        return ctx.clef === this.clef && this.clef !== "detect";
     }
 
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
@@ -168,22 +166,30 @@ class ClefModel extends Model {
         return C.Type.Clef;
     }
 
+    get displayedClef() {
+        return this._displayedClef || this.clef;
+    }
+
+    set displayedClef(clef: string) {
+        this._displayedClef = clef;
+    }
+
     toJSON(): {} {
         return _.extend(super.toJSON(), {
             clef: this.clef,
-            clefName: this.clefName,
+            displayedClefName: this.displayedClefName,
             visible: this.visible
         });
     }
 
     _annotatedSpacing: number;
     clef: string;
-    clefName: string;
+    displayedClefName: string;
     color: string;
     isChange: boolean;
     isVisible: boolean;
     selected: boolean;
-    temporary: boolean;
+    private _displayedClef: string;
 }
 
 export = ClefModel;

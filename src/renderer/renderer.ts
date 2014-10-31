@@ -58,8 +58,8 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
             if (staves[i].body) {
                 bodyLength = staves[i].body.length;
             }
-            if (staves[i].staveHeight) {
-                fontSize = staves[i].staveHeight;
+            if (staves[i].header) {
+                fontSize = staves[i].header.staveHeight;
             }
         }
 

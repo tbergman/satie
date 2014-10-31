@@ -5,26 +5,51 @@
 import ReactTS = require("react-typescript");
 
 import ClefModel = require("../stores/clef");
+import ClefToolType = require("../stores/clefTool"); // Potentially recursive. For types only.
 import Glyph = require("./_glyph");
+import Group = require("./_group");
 
 class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
     render() {
         var spec = this.props.spec;
-        return Glyph.Component({
-            x: spec.x - (spec.isChange ? 0.2 : 0),
+        var x = spec.x - (spec.isChange ? 0.2 : 0);
+        var clef = Glyph.Component({
+            x: x,
             y: spec.y - (this.line - 3)/4,
+            opacity: this.props.opacity,
             fill: spec.color,
             fontSize: this.props.fontSize,
             glyphName: this.sign + (spec.isChange ? "Change" : "")});
+        var ClefTool: typeof ClefToolType = require("../stores/clefTool");
+        if (this.isLocked && global.SongEditor.tool instanceof ClefTool) {
+            return Group(null,
+                Glyph.Component({
+                    x: x + 0.65,
+                    y: spec.y - 0.88,
+                    opacity: 0.2,
+                    fill: "#000000",
+                    scale: 0.5,
+                    fontSize: this.props.fontSize,
+                    glyphName: "fa-lock",
+                    code: "\uF023" /*fa-lock*/
+                }),
+                clef);
+        } else {
+            return clef;
+        }
+    }
+
+    get isLocked() {
+        return this.props.spec.clef !== "detect";
     }
 
     get sign() {
-        var clef = this.props.spec.clefName;
+        var clef = this.props.spec.displayedClefName;
         return this.clefToSign[clef] || clef;
     }
 
     get line(): number {
-        return ClefModel.clefToLine[this.props.spec.clefName];
+        return ClefModel.clefToLine[this.props.spec.displayedClefName];
     }
 
     clefToSign: { [key: string]: string } = {
@@ -47,6 +72,7 @@ module Clef {
         key: number;
         spec: ClefModel;
         fontSize: number;
+        opacity?: number;
     }
 }
 

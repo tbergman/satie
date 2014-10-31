@@ -253,8 +253,8 @@ export class Context implements C.MetreContext {
      * Removes the current item.
      * @mutator
      */
-    eraseCurrent(): C.IterationStatus {
-        this.splice(this.idx, 1);
+    eraseCurrent(splicePolicy = SplicePolicy.Masked): C.IterationStatus {
+        this.splice(this.idx, 1, null, splicePolicy);
         return C.IterationStatus.RetryCurrent;
     }
 
