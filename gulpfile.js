@@ -51,7 +51,7 @@ var files = {
 };
 
 gulp.task("watch", ["build-debug", "chores"], function() {
-    var nginx = spawn("nginx", ["-c", "./nginx.conf", "-p", "./nginx"], {cwd: process.cwd()});
+    var nginx = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
     nginx.stderr.on("data", function(data) {
         console.log(data.toString());
     });
