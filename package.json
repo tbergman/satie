@@ -61,7 +61,7 @@
         "cli-test-daemon": "gulp cli-test-daemon",
         "gui-test-once": "gulp gui-test-once",
         "gui-test-daemon": "gulp gui-test-daemon",
-        "chores-prod": "cat ./build/chore-server.js | node"
+        "chores-prod": "NODE_ENV=production gulp build-chores && cat ./build/chore-server.js | node"
     },
     "author": "Josh Netterfield",
     "license": "(C) Josh Netterfield 2014. All rights reserved.",
