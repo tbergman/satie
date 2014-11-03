@@ -177,7 +177,7 @@ export class Context implements C.MetreContext {
 
     /**
      * Search all parts for elements of type 'type' on the same beat
-     *
+     * 
      * @param idx?: Index to search from.
      */
     intersects(type: C.Type, idx: number = this.idx) {

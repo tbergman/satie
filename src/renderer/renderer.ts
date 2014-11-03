@@ -609,115 +609,138 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
     }
 
     setupBrowserListeners() {
+        document.addEventListener("keydown", this._handleKeyDown);
+        document.addEventListener("keypress", this._handleKeyPress);
+    }
+
+    clearBrowserListeners() {
+        document.removeEventListener("keydown", this._handleKeyDown);
+        document.removeEventListener("keypress", this._handleKeyPress);;
+    }
+
+    private _handleKeyDown(event: KeyboardEvent) {
+        var NoteTool = require("../stores/noteTool");
+
+        if (document.activeElement.tagName === "INPUT" ||
+                this.props.store.metadataModalVisible) {
+            return;
+        }
+        var keyCode = event.keyCode || event.charCode || 0;
+        switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
+            case 32: // space
+                event.preventDefault(); // don't navigate backwards
+                this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
+                break;
+            case 27: // escape
+                this.props.dispatcher.PUT("/local/tool", null);
+                break;
+            case 8: // backspace
+            case 46: // DELETE
+                event.preventDefault(); // don't navigate backwards
+                if (_selection) {
+                    this.props.dispatcher.DELETE("/local/selection/contents");
+                } else if (!this.props.tool) {
+                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                }
+                if (this.props.tool) {
+                    this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
+                }
+                break;
+            case 37: // left arrow
+                event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
+                break;
+            case 39: // right arrow
+                event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
+                break;
+            case 38: // up arrow
+                if (this.props.tool instanceof NoteTool) {
+                    event.preventDefault(); // scroll by mouse only
+                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
+                }
+                break;
+            case 40: // down arrow
+                if (this.props.tool instanceof NoteTool) {
+                    event.preventDefault(); // scroll by mouse only
+                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
+                }
+                break;
+            case 90: // 'z'
+                event.preventDefault(); // we control all undo behavior
+                if (event.ctrlKey || event.metaKey) {
+                    if (event.shiftKey) {
+                        this.props.history.redo();
+                    } else {
+                        this.props.history.undo();
+                    }
+                }
+                break;
+        }
+    }
+
+    private _handleKeyPress = _.throttle((event: KeyboardEvent) => {
         var AccidentalTool = require("../stores/accidentalTool");
         var DotTool = require("../stores/dotTool");
         var NoteTool = require("../stores/noteTool");
         var RestTool = require("../stores/restTool");
         var TieTool = require("../stores/tieTool");
 
-        // Handle keys that aren't letters or numbers, and keys with modifiers
-        document.onkeydown = (event: KeyboardEvent) => {
-            if (document.activeElement.tagName === "INPUT" ||
-                    this.props.store.metadataModalVisible) {
-                return;
+        var keyCode = event.keyCode || event.charCode || 0;
+
+        var key = String.fromCharCode(keyCode);
+        if (event.ctrlKey || event.metaKey) {
+            // Rudely prevent tab switches on Chrome/Firefox on Windows (+Linux?)
+            event.stopPropagation();
+            event.preventDefault();
+
+            switch (key) {
+                case "1": this.props.setRibbonTabFn(1); break;
+                case "2": this.props.setRibbonTabFn(2); break;
+                case "3": this.props.setRibbonTabFn(4); break;
+                case "4": this.props.setRibbonTabFn(3); break;
+                case "5": this.props.setRibbonTabFn(5); break;
             }
-            var keyCode = event.keyCode || event.charCode || 0;
-            switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
-                case 32: // space
-                    event.preventDefault(); // don't navigate backwards
-                    this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
-                    break;
-                case 27: // escape
-                    this.props.dispatcher.PUT("/local/tool", null);
-                    break;
-                case 8: // backspace
-                case 46: // DELETE
-                    event.preventDefault(); // don't navigate backwards
-                    if (_selection) {
-                        this.props.dispatcher.DELETE("/local/selection/contents");
-                    } else if (!this.props.tool) {
-                        this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
-                    }
-                    if (this.props.tool) {
-                        this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
-                    }
-                    break;
-                case 37: // left arrow
-                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
-                    break;
-                case 39: // right arrow
-                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
-                    break;
-                case 38: // up arrow
-                    if (this.props.tool instanceof NoteTool) {
-                        event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
-                    }
-                    break;
-                case 40: // down arrow
-                    if (this.props.tool instanceof NoteTool) {
-                        event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
-                    }
-                    break;
-                case 90: // 'z'
-                    event.preventDefault(); // we control all undo behavior
-                    if (event.ctrlKey || event.metaKey) {
-                        if (event.shiftKey) {
-                            this.props.history.redo();
-                        } else {
-                            this.props.history.undo();
-                        }
-                    }
-                    break;
-            }
+            return;
+        }
+
+        // Tools don't apply here.
+        if (document.activeElement.tagName === "INPUT" ||
+            this.props.store.metadataModalVisible) {
+            return;
+        }
+
+        // Tools
+        var keyToTool: { [key: string]: () => Tool } = {
+            "1": function () { return new NoteTool("noteWhole"); },
+            "2": function () { return new NoteTool("noteHalfUp"); },
+            "3": function () { return new NoteTool("noteQuarterUp"); },
+            "4": function () { return new NoteTool("note8thUp"); },
+            "5": function () { return new NoteTool("note16thUp"); },
+            "6": function () { return new NoteTool("note32ndUp"); },
+            "7": function () { return new NoteTool("note64thUp"); },
+            "~": function () { return new TieTool(); },
+            "=": function () { return new AccidentalTool(1); },
+            "-": function () { return new AccidentalTool(-1); },
+            "0": function () { return new AccidentalTool(0); }
         };
-
-        // Handle letters or numbers
-        document.onkeypress = _.throttle((event: KeyboardEvent) => {
-            if (document.activeElement.tagName === "INPUT" ||
-                    this.props.store.metadataModalVisible) {
-                return;
+        if (!this.props.tool) {
+            if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
+                key.charCodeAt(0) <= "g".charCodeAt(0)) {
+                this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+            } else if (key === "r") {
+                this.props.dispatcher.PUT("/local/tool", new RestTool());
+            } else if (key === ".") {
+                this.props.dispatcher.PUT("/local/tool", new DotTool());
             }
-            var keyCode = event.keyCode || event.charCode || 0;
-
-            var key = String.fromCharCode(keyCode);
-
-            // Tools
-            var keyToTool: { [key: string]: () => Tool } = {
-                "1": function () { return new NoteTool("noteWhole"); },
-                "2": function()  {return new NoteTool("noteHalfUp");},
-                "3": function()  {return new NoteTool("noteQuarterUp");},
-                "4": function()  {return new NoteTool("note8thUp");},
-                "5": function()  {return new NoteTool("note16thUp");},
-                "6": function()  {return new NoteTool("note32ndUp");},
-                "7": function()  {return new NoteTool("note64thUp");},
-                "~": function()  {return new TieTool();},
-                "=": function()  {return new AccidentalTool(1);},
-                "-": function()  {return new AccidentalTool(-1);},
-                "0": function()  {return new AccidentalTool(0);}
-            };
-            if (!this.props.tool) {
-                if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
-                    key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
-                } else if (key === "r") {
-                    this.props.dispatcher.PUT("/local/tool", new RestTool());
-                } else if (key === ".") {
-                    this.props.dispatcher.PUT("/local/tool", new DotTool());
-                }
-            }
-            var toolFn = keyToTool[key];
-            if (toolFn) {
-                this.props.dispatcher.PUT("/local/tool", toolFn());
-            } else if (this.props.tool) {
-                this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
-            }
-        }, 70);
-
-    }
+        }
+        var toolFn = keyToTool[key];
+        if (toolFn) {
+            this.props.dispatcher.PUT("/local/tool", toolFn());
+        } else if (this.props.tool) {
+            this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
+        }
+    }, 70);
 
     componentWillUnmount() {
         if (isBrowser) {
@@ -726,11 +749,6 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
         if (this.props.store) {
             this.props.store.removeAnnotationListener(this.update);
         }
-    }
-
-    clearBrowserListeners() {
-        document.onkeypress = null;
-        document.onkeydown = null;
     }
 
     update() {
@@ -771,6 +789,7 @@ module Renderer {
         height?: number;
         history?: History.History;
         paper?: C.Paper;
+        setRibbonTabFn: (tab: number) => void;
     }
 
     export interface IRendererState {

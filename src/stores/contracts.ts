@@ -145,11 +145,11 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    DELETE: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    PATCH: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    PUT: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    POST: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    GET: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    DELETE: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    PATCH: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    PUT: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    POST: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
 
     _events: string;
 }
@@ -284,6 +284,8 @@ export interface IFluxAction {
      * For PUT and POST requests, the non-stringified JSON postData.
      */
     postData: any;
+
+    nested?: boolean;
 };
 
 /**
