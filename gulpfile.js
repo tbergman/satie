@@ -62,13 +62,13 @@ gulp.task("watch", ["build-debug", "chores"], function() {
 var __sharedBrowserify = null;
 function getSharedBrowserify() {
     if (!__sharedBrowserify) {
-        __sharedBrowserify = watchify(browserify(browserifyOpts.debug));
+        __sharedBrowserify = watchify(browserify(browserifyOpts.debug))
+            .add(files.mainLocal);
     }
     return __sharedBrowserify;
 }
 gulp.task("build-debug", ["typescript"], function() {
     return getSharedBrowserify()
-        .add(files.mainLocal)
         .bundle()
         .on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("end", gutil.log.bind(gutil, "Built bundle"))
