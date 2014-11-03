@@ -939,8 +939,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         if (this._peerRelay) {
             assert(false, "Why?");
         }
-        this._peerRelay = new WebSocket("ws://" + window.location.host +
-            "/api/v0/song/_" + id + "/peerRelay");
+        this._peerRelay = new WebSocket((window.location.protocol === "https:" ? "wss://" : "ws://") +
+            window.location.host + "/api/v0/song/_" + id + "/peerRelay");
         this._peerRelay.onmessage = this._handleRelayMessage.bind(this);
         // TODO : this._peerRelay.{onerror | onopen | onclose}
     }
