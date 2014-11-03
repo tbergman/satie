@@ -41,15 +41,15 @@ class Dispatcher implements C.IDispatcher {
     }
 
 	DELETE(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "DELETE", p, cb); }
+	    return this._dispatch(url, "DELETE", p, cb, nested); }
 	GET(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "GET", p, cb); }
+	    return this._dispatch(url, "GET", p, cb, nested); }
     PATCH(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
-        return this._dispatch(url, "PATCH", p, cb); }
+        return this._dispatch(url, "PATCH", p, cb, nested); }
 	POST(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "POST", p, cb); }
+	    return this._dispatch(url, "POST", p, cb, nested); }
 	PUT(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "PUT", p, cb); }
+	    return this._dispatch(url, "PUT", p, cb, nested); }
 
     _dispatch(url: string, verb: string, postData: any, cb?: () => void, nested: boolean = false) : Promise<void> {
 	    assert(verb, "Verb must be defined");

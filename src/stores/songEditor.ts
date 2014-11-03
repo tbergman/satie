@@ -830,8 +830,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             if (!this._parts[h].body) {
                 continue;
             }
-            // XXX: It's likely the developer will need to adjust this logic
-            // for multiple staffs.
             for (var i = 0; i < this._parts[h].body.length; ++i) {
                 if (this._parts[h].body[i] === this._visualCursor.annotatedObj) {
                     prevObj = this._parts[h].body[i - 1];
@@ -840,6 +838,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         prevObj = this._parts[h].body[i - 2];
                     }
                 }
+            }
+            if (!prevObj) {
+                continue;
             }
             if (action.postData === "dot") {
                 var DotTool = require("./dotTool");
