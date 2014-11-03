@@ -30,6 +30,8 @@ import SlurModel = require("./slur");
 import SlurView = require("../views/slur");
 import TimeSignatureModel = require("./timeSignature");
 import TimeSignatureView = require("../views/timeSignature");
+import WedgeModel = require("./wedge");
+import WedgeView = require("../views/wedge");
 
 var registered = false;
 
@@ -49,6 +51,7 @@ export function ensureRegistered() {
     registerType(C.Type.Placeholder, PlaceholderModel, null);
     registerType(C.Type.Slur, SlurModel, SlurView.Component);
     registerType(C.Type.TimeSignature, TimeSignatureModel, TimeSignatureView.Component);
+    registerType(C.Type.Wedge, WedgeModel, WedgeView.Component);
 
     function registerType(type: C.Type, model: any, view: C.IViewComponent) {
         Model.constructorsByType[C.Type[type]] = function (spec: any) { return new model(spec); };

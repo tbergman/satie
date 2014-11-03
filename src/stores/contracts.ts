@@ -752,6 +752,7 @@ RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
 
 RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
 RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
+RectifyXPolicyFor[Type.Wedge] = RectifyXPolicy.Min;
 
 RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
 
@@ -915,8 +916,11 @@ export enum Type {
 
     Barline,
 
+    START_OF_MODIFIERS,
     Slur,
     BeamGroup,
+    Wedge,
+    END_OF_MODIFIERS,
 
     Duration,
 

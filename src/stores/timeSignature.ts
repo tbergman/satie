@@ -29,7 +29,7 @@ class TimeSignatureModel extends Model implements C.ITimeSignature {
         if (!ctx.keySignature) { status = KeySignatureModel.createKeySignature(ctx); }
         if (status !== C.IterationStatus.Success) { return status; }
 
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.

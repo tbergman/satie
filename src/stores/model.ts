@@ -276,6 +276,10 @@ class Model {
         assert(false, "Setting priority is not implemented for this type.");
     }
 
+    get isModifier() {
+        return this.priority > C.Type.START_OF_MODIFIERS && this.priority < C.Type.END_OF_MODIFIERS;
+    }
+
     beam: Array<C.IPitchDuration>;
 
     static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};

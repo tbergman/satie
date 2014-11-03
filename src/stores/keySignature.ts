@@ -31,7 +31,7 @@ class KeySignatureModel extends Model {
 
         // Copy information from the context that the view needs.
         this.clef = ctx.clef;
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.keySignature = this.keySignature;
         ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
         if (intersectingNotes.length) {

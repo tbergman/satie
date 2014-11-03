@@ -140,39 +140,19 @@ export class Context implements C.MetreContext {
      * 
      * @param condition: Function that returns false if model should be skipped.
      * @param skip: Start looking at Models <skip> after current. 1 if unspecified.
-     * @param allowBeams: True if beams should not be skipped. False by default.
+     * @param allowModifiers: True if beams and other modifiers should be eligible. False by default.
      */
-    next(condition?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower!
+    next(condition?: (model: Model) => boolean, skip?: number, allowModifiers?: boolean) {
+        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower in Chrome 39!
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
+                (this.body[this.idx + i].isModifier && !allowModifiers) ||
                 (condition && !condition(this.body[this.idx + i])))) {
             ++i;
         }
         return this.body[this.idx + i];
-    }
-
-    /**
-     * Search all parts for the next elements of type 'type' at the current location
-     * 
-     * @param direct if true, only return objects directly after the current object.
-     */
-    intersects(type: C.Type, direct?: boolean) {
-        var intersects: Array<Model> = [];
-        for (var i = 0; i < this._parts.length; ++i) {
-            var body = this._parts[i].body;
-            if (!body) { continue; }
-            for (var j = this.idx + 1; j < body.length; ++j) {
-                if (body[j].type === type) { intersects.push(body[j]); }
-
-                if (body[j].priority === C.Type.Duration) { break; }
-                if (direct) { break; }
-            }
-        }
-        return intersects;
     }
 
     /**
@@ -181,18 +161,44 @@ export class Context implements C.MetreContext {
      * 
      * @param condition: Function that returns false if model should be skipped.
      * @param skip: Start looking at Models <skip> after current. 1 if unspecified.
-     * @param allowBeams: True if beams should not be skipped. False by default.
+     * @param allowModifiers: True if beams and other modifiers should be eligible. False by default.
      */
-    nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowBeams?: boolean) {
+    nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowModifiers?: boolean) {
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
+                (this.body[this.idx + i].isModifier && !allowModifiers) ||
                 (cond && !cond(this.body[this.idx + i], this.idx + i)))) {
             ++i;
         }
         return this.idx + i;
+    }
+
+    /**
+     * Search all parts for elements of type 'type' on the same beat
+     *
+     * @param idx?: Index to search from.
+     */
+    intersects(type: C.Type, idx: number = this.idx) {
+        var intersects: Array<Model> = [];
+        for (var i = 0; i < this._parts.length; ++i) {
+            var body = this._parts[i].body;
+            if (!body) { continue; }
+            // Before
+            for (var j = idx - 1; j >= 0; --j) {
+                if (body[j].type === type) { intersects.push(body[j]); }
+                if (body[j].priority === C.Type.Duration) { break; }
+            }
+            // Current
+            if (body[idx].type === type) { intersects.push(body[idx]); }
+            // After
+            for (var j = idx + 1; j < body.length; ++j) {
+                if (body[j].type === type) { intersects.push(body[j]); }
+                if (body[j].priority === C.Type.Duration) { break; }
+            }
+        }
+        return intersects;
     }
 
     /**
@@ -233,7 +239,7 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * If a condition is given, searches backwards starting at the CURRENT
+     * If a condition is given, searches backwards starting at the previous
      * item. Otherwise, returns the item directly before the current item.
      */
     prev(condition?: (m: Model) => boolean, offset?: number) {
