@@ -188,7 +188,11 @@ class Dispatcher implements C.IDispatcher {
         return Promise.Promise
             .all(this._promises)
             .then(this._clearPromises)
-            ["catch"]((err) => { // For support with IE 6.
+            .catch((err) => {
+                if (err instanceof C.DispatcherRedirect) {
+                    var redirect: C.DispatcherRedirect = err;
+                    this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
+                }
                 this._inAction = null;
                 console.warn("Exception occurred in promise", err);
                 console.log(err.stack);

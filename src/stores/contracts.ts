@@ -166,6 +166,7 @@ export class DispatcherRedirect {
 
     newUrl: string;
     verb: string;
+    postData: any;
 }
 
 /**
