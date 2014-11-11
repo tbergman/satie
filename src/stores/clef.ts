@@ -21,14 +21,23 @@ class ClefModel extends Model.StateChangeModel {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        // A clef must not be redundant.
-        if (this.clefIsRedundant(ctx)) {
-            return ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
-        }
-
         // Songs begin with BeginModels.
         if (ctx.idx === 0) {
             return BeginModel.createBegin(ctx);
+        }
+
+        // A clef must not be redundant.
+        if (this.clefIsRedundant(ctx)) {
+            ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
+            return C.IterationStatus.RetryLine; // BUG: Caching
+        }
+
+        // There must be at least one note or rest between clefs.
+        for (var i = ctx.idx + 1; ctx.body[i] && !ctx.body[i].isNote; ++i) {
+            if (ctx.body[i].type === C.Type.Clef) {
+                this.clef = (<ClefModel>ctx.body[i]).clef;
+                break;
+            }
         }
 
         // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
