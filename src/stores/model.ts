@@ -88,7 +88,7 @@ class Model {
         assert(false, "Not implemented");
     }
 
-    visible() {
+    visible(): boolean {
         return true;
     }
 
@@ -297,6 +297,39 @@ enum Flags {
 function _sessionId(): string {
     "use strict";
     return (Math.random().toString(16) + "000000000").substr(2, 8);
+}
+
+module Model {
+    "use strict";
+
+    /**
+     * Types that do not support adjacent models of the same type.
+     */
+    export class StateChangeModel extends Model {
+        annotate(ctx: Annotator.Context) {
+            if (ctx.next(null, 1, true).priority === this.type) {
+                // Find real versions of every part, if possible.
+                var here = ctx.findVertical(null, this.idx);
+                var next = ctx.findVertical(null, this.idx + 1);
+                var combined = new Array(here.length);
+                for (var i = 0; i < combined.length; ++i) {
+                    if (!next[i].placeholder) {
+                        combined[i] = next[i];
+                    } else {
+                        combined[i] = here[i];
+                    }
+                }
+                for (var i = 0; i < ctx._parts.length; ++i) {
+                    ctx._parts[i].body.splice(ctx.idx, 1);
+                    ctx._parts[i].body[ctx.idx] = combined[i];
+                }
+                return this.retryStatus;
+            }
+
+            return super.annotate(ctx);
+        }
+        retryStatus = C.IterationStatus.RetryCurrent;
+    }
 }
 
 export = Model;

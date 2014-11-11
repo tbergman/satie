@@ -402,13 +402,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     dangerouslySetVisualCursor: (visualCursor: C.IVisualCursor) => void = this._visualCursorIs.bind(this);
 
     /**
-     * Goes forwards or backwards by a step.
-     * To be called by the Annotator.
-     * @param spec {step: 1 | -1}
-     */
-    dangerouslyStepCursor: (spec: any) => boolean = this._stepCursor.bind(this);
-
-    /**
      * Should not be any different than going through dispatcher,
      * but skips checks and routing to save time and attain 60 Hz.
      */
@@ -452,6 +445,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         } else {
             // Lilypond!
             song = lylite.parse(src);
+            Annotator.Context.insertPlaceholders(song.parts);
         }
         if (song.header) {
             song.header.composerHovered = song.header.titleHovered = false;
@@ -805,7 +799,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this._stepCursor({
                 step: action.postData.step,
                 loopThroughEnd: action.postData.loopThroughEnd,
-                skipThroughBars: action.postData.skipThroughBars
+                skipDurationlessContent: action.postData.skipDurationlessContent
             });
         }
         this._annotate(null, null, null, null, null, true);
@@ -901,7 +895,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                     this._annotate(null, null, null, null, null, false);
                     this._stepCursor({
                         step: -1,
-                        skipThroughBars: false
+                        skipDurationlessContent: false
                     });
                     this._annotate(null, null, null, null, null, false);
                 }
@@ -1245,104 +1239,63 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    private _stepCursor(spec: any) {
+    private _stepCursor(spec: SongEditorStore.StepCursorSpec) {
         if (!this._visualCursor || !this._visualCursor.annotatedObj) {
             return;
         }
-        var obj = this._visualCursor.annotatedObj;
-        var throughNewline = false;
-        for (var h = 0; h < this._parts.length; ++h) {
-            if (!this._parts[h].body) {
-                continue;
+        var sign = spec.step > 0 ? 1 : -1;
+        var steps = spec.step;
+        var idx = this._visualCursor.annotatedObj.idx;
+        var parts = this._parts;
+        var iterations = 0;
+
+        while(steps && parts[0].body[idx += sign]) {
+            var priority = parts[0].body[idx].priority;
+            var visible = false;
+            for (var i = 0; !visible && i < parts.length; ++i) {
+                visible = visible || !!parts[i].body[idx].visible;
             }
-            for (var i = 0; i < this._parts[h].body.length; ++i) {
-                if (this._parts[h].body[i] === obj) {
-                    if ((!this._parts[h].body[i + 1] ||
-                            this._parts[h].body[i + 1].type !== C.Type.Barline ||
-                            this._parts[h].body[i + 1].barline === C.Barline.Double) &&
-                            spec.loopThroughEnd) {
-                        this._visualCursorIs({
-                            beat: 0,
-                            bar: 1
-                        });
-                        break;
-                    }
-                    var cd = this._parts[h].body[i].ctxData;
-                    var throughBar = false;
-                    while (this._parts[h].body[i += spec.step]) {
-                        if (!this._parts[h].body[i]) {
-                            break;
-                        }
-                        if (this._parts[h].body[i].type === C.Type.Barline) {
-                            throughBar = true;
-                        }
-                        if (this._parts[h].body[i].type === C.Type.NewLine) {
-                            // TODO: we don't need to update all the lines
-                            throughNewline = true;
-                            this.dangerouslyMarkRendererDirty();
-                        }
-                        if (this._visualCursor.endMarker &&
-                            spec.step === 1) {
-                            var last = this._parts[h].body[this._parts[h].body.length - 1];
-                            assert(last.endMarker);
-                            if (last.ctxData.bar !== this._visualCursor.bar) {
-                                this._visualCursorIs({
-                                    beat: 0,
-                                    bar: this._visualCursor.bar + 1
-                                });
-                            }
-                            break;
-                        } else if (cd.bar !== this._parts[h].body[i].ctxData.bar ||
-                            cd.beat !== this._parts[h].body[i].ctxData.beat) {
 
-                            if (this._parts[h].body[i] && spec.step === -1 &&
-                                    this._parts[h].body[i].ctxData.bar > 1 &&
-                                    this._parts[h].body[i].ctxData.beat === 0 && spec.skipThroughBars) {
-                                var tbar = this._parts[h].body[i].ctxData.bar;
-                                while (this._parts[h].body[i].ctxData.bar === tbar) {
-                                    if (this._parts[h].body[i].type === C.Type.NewLine) {
-                                        // TODO: we don't need to update all the lines
-                                        throughNewline = true;
-                                        this.dangerouslyMarkRendererDirty();
-                                    }
-                                    --i;
-                                }
-                                this._visualCursorIs({
-                                    bar: this._parts[h].body[i].ctxData.bar,
-                                    beat: this._parts[h].body[i].ctxData.beat,
-                                    endMarker: true });
-                                break;
-                            }
-
-                            if (spec.skipThroughBars) {
-                                while (this._parts[h].body[i + 1] &&
-                                        (this._parts[h].body[i].endMarker ||
-                                        this._parts[h].body[i].type === C.Type.Barline)) {
-                                    i += spec.step;
-                                }
-                            }
-                            this._visualCursorIs(
-                                this._parts[h].body[i].ctxData);
-
-                            // If we're walking through a bar, make up for that.
-                            if (throughBar) {
-                                if (spec.step < 0) {
-                                    this._visualCursor.endMarker = true;
-                                } else {
-                                    this._visualCursor.beat = 0;
-                                    this._visualCursor.bar++;
-                                }
-                            }
-                            break;
-                        }
-                    }
-                    break;
+            if (!visible) {
+                // Nothing to do.
+            } else if (priority === C.Type.Duration) {
+                steps -= sign;
+            } else if (!spec.skipDurationlessContent) {
+                // Skip to the end of the duration-less content!
+                while (parts[0].body[idx] && parts[0].body[idx].priority !== C.Type.Duration) {
+                    idx += sign;
+                    ++iterations;
                 }
+                if (iterations && !parts[0].body[idx]) {
+                    idx -= sign;
+                }
+                break;
             }
+            ++iterations;
         }
 
-        return throughNewline;
-        // Does not emit
+        var obj = parts[0].body[idx];
+        if (!obj) {
+            if (sign === 1 && spec.loopThroughEnd) {
+                debugger;
+                this._visualCursor = {
+                    bar: 0, beat: 0, endMarker: false, annotatedObj: parts[0].body[0], annotatedLine: 0, annotatedPage: 0
+                }
+                this._stepCursor({step: 1});
+            }
+            return;
+        }
+        for (var i = 1; obj.placeholder && i < parts.length; ++i) {
+            obj = parts[i].body[idx];
+        }
+        this._visualCursor = {
+            bar: obj.ctxData.bar,
+            beat: obj.ctxData.beat,
+            endMarker: obj.priority <= C.Type.EndMarker,
+            annotatedObj: obj,
+            annotatedLine: 0,
+            annotatedPage: 0
+        }
     }
 
     private _throttledAutosave = _.throttle(() => {
@@ -1480,6 +1433,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         annotatedPage: <number> null
     };
     legacyAudioID: number = -1;
+}
+
+module SongEditorStore {
+    export interface StepCursorSpec {
+        step: number;
+        loopThroughEnd?: boolean;
+        skipDurationlessContent?: boolean;
+    }
 }
 
 export = SongEditorStore;

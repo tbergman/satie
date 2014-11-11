@@ -875,7 +875,6 @@ export interface ISongEditor {
     dangerouslyMarkRendererLineClean: (action: IFluxAction) => void;
     dangerouslyMarkRendererLineDirty: (line: number) => void;
     dangerouslySetVisualCursor: (visualCursor: IVisualCursor) => void;
-    dangerouslyStepCursor: (spec: any) => boolean;
     dangerouslyShowPreview: (action: IFluxAction) => void;
     dangerouslyTakeSnapshot: (ctx: Annotator.Context) => void;
     ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void;

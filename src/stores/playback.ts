@@ -193,7 +193,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         if (aobj && aobj.endMarker) {
             this._dispatcher.PUT("/local/visualCursor", {
                 step: 1,
-                skipThroughBars: true,
+                skipDurationlessContent: true,
                 loopThroughEnd: true
             });
         }
@@ -288,7 +288,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                 _.defer(() => {
                     this._dispatcher.PUT("/local/visualCursor", {
                         step: 1,
-                        skipThroughBars: true
+                        skipDurationlessContent: true,
+                        loopThroughEnd: true
                     });
                 });
             }, delay*1000 - 10);

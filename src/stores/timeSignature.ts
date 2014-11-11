@@ -14,7 +14,7 @@ import ClefModel = require("./clef");
 import DurationModelType = require("./duration"); // Potentially cyclic. For types only.
 import KeySignatureModel = require("./keySignature");
 
-class TimeSignatureModel extends Model implements C.ITimeSignature {
+class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignature {
     recordMetreDataImpl(mctx: C.MetreContext) {
         mctx.timeSignature = this.timeSignature;
         this.ctxData = new C.MetreContext(mctx);

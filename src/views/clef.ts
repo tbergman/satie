@@ -28,8 +28,8 @@ class Clef extends ReactTS.ReactComponentBase<Clef.IProps, {}> {
         if (this.isLocked && global.SongEditor.tool instanceof ClefTool) {
             return Group(null,
                 Glyph.Component({
-                    x: x + 0.65,
-                    y: spec.y - 0.88,
+                    x: x + 0.25,
+                    y: spec.y - 0.98,
                     opacity: 0.2,
                     fill: "#000000",
                     scale: 0.5,

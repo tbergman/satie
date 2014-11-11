@@ -16,7 +16,7 @@ import C = require("./contracts");
 
 import _ = require("lodash");
 
-class ClefModel extends Model {
+class ClefModel extends Model.StateChangeModel {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
@@ -26,22 +26,32 @@ class ClefModel extends Model {
             return ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
         }
 
-        // A clef must not be replaced before another note
-        // var next = ctx.next(m => m.isNote || m.isRest
-
         // Songs begin with BeginModels.
         if (ctx.idx === 0) {
             return BeginModel.createBegin(ctx);
         }
 
-        // Barlines should be before clefs when either is possible.
-        if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
-            var BarlineModel: typeof BarlineModelType = require("./barline");
-            return BarlineModel.createBarline(ctx, C.Barline.Standard);
+        // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
+        this.isChange = !!ctx.clef;
+        if (this.isChange) {
+            var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
+            if (barCandidate && barCandidate.type === C.Type.Barline) {
+                ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
+                //ctx.eraseCurrent(Annotator.SplicePolicy.Subtractive);
+                for (var i = 0; i < ctx._parts.length; ++i) {
+                    ctx._parts[i].body.splice(ctx.idx, 1);
+                }
+                return C.IterationStatus.RetryLine;
+            }
+        } else {
+            // Otherwise, barlines should be before clefs when either is possible.
+            if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
+                var BarlineModel: typeof BarlineModelType = require("./barline");
+                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+            }
         }
 
         // Copy information from the context that the view needs.
-        this.isChange = !!ctx.clef;
         this.displayedClefName = (this.clef === "detect" && this.displayedClef === this.clef) ?
             ctx.prevClefByStave[ctx.currStaveIdx] : this.displayedClef;
         ctx.clef = this.clef === "detect" ? ctx.prevClefByStave[ctx.currStaveIdx] : this.clef;
@@ -58,7 +68,7 @@ class ClefModel extends Model {
             this._annotatedSpacing = 1.25;
         }
         if (this.isChange) {
-            ctx.x += -0.21 + this._annotatedSpacing / 4;
+            ctx.x += 0.21 + this._annotatedSpacing / 4;
         } else {
             ctx.x += 0.6 + this._annotatedSpacing/4;
         }
@@ -189,6 +199,7 @@ class ClefModel extends Model {
     isChange: boolean;
     isVisible: boolean;
     selected: boolean;
+    retryStatus = C.IterationStatus.RetryLine;
     private _displayedClef: string;
 }
 

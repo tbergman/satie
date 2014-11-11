@@ -393,7 +393,8 @@ export class Context implements C.MetreContext {
                     var ffidx = start + replaceWith.length;
                     var offset = 0;
                     for (var j = 0; j < replaceWith.length; ++j) {
-                        if (vidx + j < Math.max(ffidx, fidx) &&
+                        if (splicePolicy !== SplicePolicy.Subtractive &&
+                                vidx + j < Math.max(ffidx, fidx) &&
                                 part.body[vidx + j] &&
                                 part.body[vidx + j].priority === replaceWith[j].priority) {
                             if (vidx + j >= fidx) {
@@ -448,6 +449,29 @@ export class Context implements C.MetreContext {
             }
             this._realign(start, clot);
             this._assertAligned();
+        }
+    }
+
+    static insertPlaceholders(parts: Array<C.IPart>) {
+        var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
+        function length() {
+            var l = 0;
+            for (var i = 0; i < parts.length; ++i) {
+                l = Math.max(parts[i].body.length, l);
+            }
+            return l;
+        }
+
+        for (var i = 0; i < length(); ++i) {
+            var bestPri = C.Type.Unknown;
+            for (var j = 0; j < parts.length; ++j) {
+                bestPri = Math.min(parts[j].body[i].priority, bestPri);
+            }
+            for (var j = 0; j < parts.length; ++j) {
+                if (parts[j].body[i].priority !== bestPri) {
+                    parts[j].body.splice(i, 0, new PlaceholderModel({ _priority: C.Type[bestPri] }, C.Source.Annotator));
+                }
+            }
         }
     }
 
@@ -910,8 +934,8 @@ export class Context implements C.MetreContext {
 
 export enum SplicePolicy {
     /**
-     * Remove models from non-current parts, unless they line up with the new part.
-     * This is the default policy.
+     * Remove models from non-current parts, unless they have the same type as an element
+     * in the new part. This is the default policy.
      */
     MatchedOnly = 1,
     /**
@@ -928,7 +952,11 @@ export enum SplicePolicy {
      * Like MatchedOnly, but shorten durations in other parts when replacing them.
      * This is used for changing the time signature.
      */
-    ShortenOtherParts = 4
+    ShortenOtherParts = 4,
+    /**
+     * Remove models from non-current parts.
+     */
+    Subtractive = 5
 }
 
 export enum AssertionPolicy {
@@ -1073,7 +1101,7 @@ class PrivIterator {
         var filtered = false;
 
         for (var i = 0; i < this._components.length; ++i) {
-            this._ensureAllOrNoneAtEnd();
+            this._ensureCurrPrioritiesMatch();
             if (this.atEnd) {
                 // All parts are now at the end.
                 this._assertOffsetsOK();
@@ -1239,7 +1267,7 @@ class PrivIterator {
                 break;
             case C.IterationStatus.RetryCurrent:
             case C.IterationStatus.RetryCurrentNoOptimizations:
-                this._ensureAllOrNoneAtEnd();
+                this._ensureCurrPrioritiesMatch();
                 break;
             default:
                 assert(false, "Invalid status");
@@ -1339,7 +1367,7 @@ class PrivIterator {
         this._assertOffsetsOK();
 
         for (var j = 0; j < this._components.length; ++j) {
-            this._components[j].trySeek(nextLoc, nextPriority);
+            this._components[j].trySeek(nextPriority);
         }
         this._assertOffsetsOK();
 
@@ -1349,7 +1377,7 @@ class PrivIterator {
         //    required.
     }
 
-    private _ensureAllOrNoneAtEnd() {
+    private _ensureCurrPrioritiesMatch() {
         var pri = C.Type.Unknown;
         _.every(this._components, c => {
             if (c.curr) {
@@ -1513,7 +1541,7 @@ class PrivIteratorComponent {
         }
     }
 
-    trySeek(loc: C.Location, priority: number) {
+    trySeek(priority: number) {
         this.ensurePriorityIs(priority);
         ++this._idx;
         assert(this.nextPriority === C.MAX_NUM || this.curr);
