@@ -8,6 +8,7 @@ import React = require("react");
 import ReactTS = require("react-typescript");
 import _ = require("lodash");
 import assert = require("assert");
+var DisqusThread = require("react-disqus-thread");
 
 import Molasses = require("./molasses");
 var Victoria = require("./victoria/victoria");
@@ -223,7 +224,25 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
                     currY += 40 + this.props.height;
                     return page;
                 }.bind(this)),
-                this.props.showFooter ? RipienoFooter.Component({y: currY + 100, dispatcher: this.props.dispatcher}) : null
+                this.props.comments && this.props.header.title && React.DOM.div({
+                        className: "commentBox", style: {
+                            width: this.props.width + "px",
+                            marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
+                            marginTop: currY + 13 + "px" } },
+                    DisqusThread({
+                        shortname: (global.document &&
+                            document.location.hostname === "ripieno.io" ||
+                                document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev",
+                        identifier: "usermedia-" + this.props.songId,
+                        title: this.props.header.title,
+                        categoryId: null,
+                        url: "ripieno.io/songs/" + this.props.songId
+                    })),
+                this.props.showFooter ? RipienoFooter.Component({
+                    marginTop: 123,
+                    dispatcher: this.props.dispatcher,
+                    noShadow: this.props.comments
+                }) : null
             );
         } else {
             ret = rawPages[0];
@@ -252,7 +271,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
     componentDidMount() {
         if (isBrowser && this.props.dispatcher) {
-            this.setupBrowserListeners();
+            this.attachToBrowser();
         }
         if (this.props.store) {
             this.props.store.addAnnotationListener(this.update);
@@ -608,14 +627,22 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
             (this.props.store && this.props.store.finalCtx);
     }
 
-    setupBrowserListeners() {
+    private _oldTitle: string;
+
+    attachToBrowser() {
         document.addEventListener("keydown", this._handleKeyDown);
         document.addEventListener("keypress", this._handleKeyPress);
+        this._oldTitle = document.title;
+        document.title = this.props.header.title;
     }
 
-    clearBrowserListeners() {
+    detachFromBrowser() {
         document.removeEventListener("keydown", this._handleKeyDown);
         document.removeEventListener("keypress", this._handleKeyPress);;
+        if (global.DISQUS) {
+            global.DISQUS.reset();
+        }
+        document.title = this._oldTitle;
     }
 
     private _handleKeyDown(event: KeyboardEvent) {
@@ -744,7 +771,7 @@ class Renderer extends ReactTS.ReactComponentBase<Renderer.IRendererProps, Rende
 
     componentWillUnmount() {
         if (isBrowser) {
-            this.clearBrowserListeners();
+            this.detachFromBrowser();
         }
         if (this.props.store) {
             this.props.store.removeAnnotationListener(this.update);
@@ -771,6 +798,7 @@ module Renderer {
     export var Component = ReactTS.createReactComponent(Renderer);
 
     export interface IRendererProps {
+        comments?: boolean;
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
         dispatcher?: C.IDispatcher;
@@ -781,10 +809,12 @@ module Renderer {
         staveHeight?: number;
         header: C.IHeader;
         parts?: Array<C.IPart>;
+        songId?: string;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
         selection?: Array<Model>;
+        width?: number;
         showFooter?: boolean;
         height?: number;
         history?: History.History;

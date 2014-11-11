@@ -46,7 +46,6 @@ class ClefModel extends Model.StateChangeModel {
             var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
             if (barCandidate && barCandidate.type === C.Type.Barline) {
                 ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
-                //ctx.eraseCurrent(Annotator.SplicePolicy.Subtractive);
                 for (var i = 0; i < ctx._parts.length; ++i) {
                     ctx._parts[i].body.splice(ctx.idx, 1);
                 }
