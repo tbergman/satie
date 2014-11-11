@@ -1,6 +1,6 @@
 {
     "name": "ripieno-webapp",
-    "version": "0.0.2",
+    "version": "0.0.2-1",
     "description": "A synchronized online, desktop, and mobile music notation app.",
     "main": "./src/main.ts",
     "dependencies": {
@@ -13,9 +13,9 @@
         "lodash": "2.4.1",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-jsx": "0.11.0",
-        "node-lessify": "0.0.4",
+        "node-lessify": "0.0.5",
         "react": "0.11.2",
-        "react-bootstrap": "~0.12.0",
+        "react-bootstrap": "git://github.com/react-bootstrap/react-bootstrap-npm#v0.12.0",
         "react-disqus-thread": "git://github.com/jnetterf/react-disqus-thread",
         "react-draggable": "0.3.0",
         "react-router-component": "0.22.0",
