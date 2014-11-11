@@ -457,7 +457,9 @@ export class Context implements C.MetreContext {
         function length() {
             var l = 0;
             for (var i = 0; i < parts.length; ++i) {
-                l = Math.max(parts[i].body.length, l);
+                if (parts[i].body) {
+                    l = Math.max(parts[i].body.length, l);
+                }
             }
             return l;
         }
@@ -465,10 +467,12 @@ export class Context implements C.MetreContext {
         for (var i = 0; i < length(); ++i) {
             var bestPri = C.Type.Unknown;
             for (var j = 0; j < parts.length; ++j) {
-                bestPri = Math.min(parts[j].body[i].priority, bestPri);
+                if (parts[j].body && parts[j].body[i]) {
+                    bestPri = Math.min(parts[j].body[i].priority, bestPri);
+                }
             }
             for (var j = 0; j < parts.length; ++j) {
-                if (parts[j].body[i].priority !== bestPri) {
+                if (parts[j].body && (!parts[j].body[i] || parts[j].body[i].priority !== bestPri)) {
                     parts[j].body.splice(i, 0, new PlaceholderModel({ _priority: C.Type[bestPri] }, C.Source.Annotator));
                 }
             }

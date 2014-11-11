@@ -1239,7 +1239,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    private _stepCursor(spec: SongEditorStore.StepCursorSpec) {
+    private _stepCursor(spec: SongEditorStore.IStepCursorSpec) {
         if (!this._visualCursor || !this._visualCursor.annotatedObj) {
             return;
         }
@@ -1277,10 +1277,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         var obj = parts[0].body[idx];
         if (!obj) {
             if (sign === 1 && spec.loopThroughEnd) {
-                debugger;
                 this._visualCursor = {
                     bar: 0, beat: 0, endMarker: false, annotatedObj: parts[0].body[0], annotatedLine: 0, annotatedPage: 0
-                }
+                };
                 this._stepCursor({step: 1});
             }
             return;
@@ -1295,7 +1294,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             annotatedObj: obj,
             annotatedLine: 0,
             annotatedPage: 0
-        }
+        };
     }
 
     private _throttledAutosave = _.throttle(() => {
@@ -1436,7 +1435,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 }
 
 module SongEditorStore {
-    export interface StepCursorSpec {
+    "use strict";
+    export interface IStepCursorSpec {
         step: number;
         loopThroughEnd?: boolean;
         skipDurationlessContent?: boolean;

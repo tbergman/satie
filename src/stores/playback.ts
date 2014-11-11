@@ -140,7 +140,6 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             } else {
                 audio5js.pending = play;
             }
-            var shouldPlay = isNaN(this._songEditor.legacyAudioID); // hack which means pending
             this._songEditor.legacyAudioID = PlaybackStore.latestID;
         }
         this.emit(CHANGE_EVENT);
