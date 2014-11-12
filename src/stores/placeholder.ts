@@ -116,12 +116,11 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.KeySignature:
-                if (!ctx.keySignature) {
-                    assert(ctx.prevKeySignature, "Undefined prevKeySignature!!");
-                    ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
-                    ctx.body[ctx.idx].source = this.source;
-                    return C.IterationStatus.RetryCurrent;
-                }
+                var ks = (<KeySignatureModel>realItems[0]).keySignature;
+                assert(ks, "Undefined prevKeySignature!!");
+                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }));
+                ctx.body[ctx.idx].source = this.source;
+                return C.IterationStatus.RetryCurrent;
                 break;
             case C.Type.NewLine:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
