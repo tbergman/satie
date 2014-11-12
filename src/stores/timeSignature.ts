@@ -29,6 +29,13 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
         if (!ctx.keySignature) { status = KeySignatureModel.createKeySignature(ctx); }
         if (status !== C.IterationStatus.Success) { return status; }
 
+        // Time signatures must not be redundant
+        if (ctx.timeSignature && TimeSignatureModel.isEqual(this.timeSignature, ctx.timeSignature)) {
+            debugger;
+            ctx.eraseCurrent();
+            return C.IterationStatus.RetryCurrent;
+        }
+
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
@@ -114,6 +121,10 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
                 commonRepresentation: this._timeSignature.commonRepresentation
             }
         });
+    }
+
+    static isEqual(ts1: C.ITimeSignature, ts2: C.ITimeSignature) {
+        return (!!ts1 === !!ts2) && (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType && ts1.commonRepresentation === ts2.commonRepresentation);
     }
 
     _annotatedSpacing: number;

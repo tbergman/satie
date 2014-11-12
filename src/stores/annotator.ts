@@ -1349,6 +1349,7 @@ class PrivIterator {
 
     private _rollbackLine(i: number) {
         this._parent.line = i;
+        this._parent.timeSignature = null;
         _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.START_OF_LINE);
         for (var j = 0; j < this._components.length; ++j) {
             this._components[j].resetLine();
