@@ -59,17 +59,6 @@ class PlaceholderModel extends Model {
         }
 
         var realItems = ctx.findVertical(obj => obj.type !== C.Type.Placeholder);
-        if (ctx.nextActualType === realItems[0].type && realItems[0].isNote) {
-            var changed = false;
-            while (ctx.body[ctx.idx].type === C.Type.Placeholder && realItems[0].ctxData &&
-                    (new C.Location(realItems[0].ctxData)).eq(loc)) {
-                changed = true;
-                ctx.splice(ctx.idx, 1, null, Annotator.SplicePolicy.Masked);
-            }
-            if (changed) {
-                return C.IterationStatus.RetryCurrent;
-            }
-        }
 
         // Remove extraneous placeholders that may have been caused by the above operation.
         while (ctx.next() && !ctx.findVertical(obj => obj.type !== C.Type.Placeholder, ctx.idx + 1).length) {

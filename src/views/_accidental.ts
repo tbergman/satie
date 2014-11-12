@@ -13,6 +13,7 @@ class Accidental extends ReactTS.ReactComponentBase<Accidental.IProps, {}> {
             x: this.props.x,
             y: this.props.y - (this.props.line - 3)/4,
             fill: this.props.stroke,
+            opacity: this.props.opacity,
             fontSize: this.props.fontSize,
             glyphName: this.props.accidental,
 			"selection-info": "accidental-" + this.props.idx});
@@ -24,6 +25,7 @@ module Accidental {
     export interface IProps {
         accidental: string;
         fontSize: number;
+        opacity?: number;
         idx?: number;
         line: number;
         stroke?: string;
