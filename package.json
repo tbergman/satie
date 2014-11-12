@@ -1,6 +1,6 @@
 {
     "name": "ripieno-webapp",
-    "version": "0.0.2-1",
+    "version": "0.0.2-2",
     "description": "A synchronized online, desktop, and mobile music notation app.",
     "main": "./src/main.ts",
     "dependencies": {
