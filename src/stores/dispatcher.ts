@@ -175,8 +175,10 @@ class Dispatcher implements C.IDispatcher {
         }
 
         if (this._inAction && !action.nested) {
-            assert(false, "Queuing an action (" + action.description +
-                ") during an action (" + this._inAction + ") is a violation of Flux");
+            // In practice, this is causing more problems than it is solving.  Maybe it should just check that
+            // an action can not be queued by another action?
+            // assert(false, "Queuing an action (" + action.description +
+            //    ") during an action (" + this._inAction + ") is a violation of Flux");
         }
 
         _.each(this._callbacks, callback => {
