@@ -25,9 +25,9 @@ import assert = require("assert");
 /**
  * Models with the same index in each staff have the same starting location and
  * priority (which is, except for placeholders, equal to type). Whenever a model
- * of a certain type and location exists in one stave but not another, a PlaceholderModel
- * is added to the stave without such a type. The priority of a PlaceholderModel
- * is equal to the type in the other stave.
+ * of a certain type and location exists in one part but not another, a PlaceholderModel
+ * is added to the part without such a type. The priority of a PlaceholderModel
+ * is equal to the type in the other part.
  */
 class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
@@ -59,17 +59,6 @@ class PlaceholderModel extends Model {
         }
 
         var realItems = ctx.findVertical(obj => obj.type !== C.Type.Placeholder);
-        if (ctx.nextActualType === realItems[0].type && realItems[0].isNote) {
-            var changed = false;
-            while (ctx.body[ctx.idx].type === C.Type.Placeholder && realItems[0].ctxData &&
-                    (new C.Location(realItems[0].ctxData)).eq(loc)) {
-                changed = true;
-                ctx.splice(ctx.idx, 1, null, Annotator.SplicePolicy.Masked);
-            }
-            if (changed) {
-                return C.IterationStatus.RetryCurrent;
-            }
-        }
 
         // Remove extraneous placeholders that may have been caused by the above operation.
         while (ctx.next() && !ctx.findVertical(obj => obj.type !== C.Type.Placeholder, ctx.idx + 1).length) {
@@ -127,12 +116,11 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.KeySignature:
-                if (!ctx.keySignature) {
-                    assert(ctx.prevKeySignature, "Undefined prevKeySignature!!");
-                    ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ctx.prevKeySignature }));
-                    ctx.body[ctx.idx].source = this.source;
-                    return C.IterationStatus.RetryCurrent;
-                }
+                var ks = (<KeySignatureModel>realItems[0]).keySignature;
+                assert(ks, "Undefined prevKeySignature!!");
+                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }));
+                ctx.body[ctx.idx].source = this.source;
+                return C.IterationStatus.RetryCurrent;
                 break;
             case C.Type.NewLine:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}));

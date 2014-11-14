@@ -11,7 +11,6 @@
 /// <reference path="../../references/lodash.d.ts" />
 /// <reference path="../../references/node.d.ts" />
 
-import _ = require("lodash");
 import assert = require("assert");
 
 import Model = require("./model");
@@ -146,11 +145,11 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    DELETE: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    PATCH: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    PUT: (url: string, p?: any, cb?: () => void) => Promise<void>;
-    POST: (url: string, p?: any, cb?: () => void) => Promise<void>;
+    GET: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    DELETE: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    PATCH: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    PUT: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    POST: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
 
     _events: string;
 }
@@ -167,6 +166,7 @@ export class DispatcherRedirect {
 
     newUrl: string;
     verb: string;
+    postData: any;
 }
 
 /**
@@ -282,18 +282,20 @@ export interface IFluxAction {
     query: string;
 
     /**
-     * For PUT and POST requests, the unstringified JSON postData.
+     * For PUT and POST requests, the non-stringified JSON postData.
      */
     postData: any;
+
+    nested?: boolean;
 };
 
 /**
- * A header is a child of staves, and includes the title and other basic
+ * A header is a child of parts, and includes the title and other basic
  * information.
  */
 export interface IHeader {
-    title: string;
     composer: string;
+    title: string;
 
     /**
      * True if the title should be rendered as a link, usually because
@@ -306,6 +308,23 @@ export interface IHeader {
      * it is being hovered.
      */
     composerHovered?: boolean;
+
+    /**
+     * The height of the stave, in "em".
+     */
+    staveHeight?: number;
+
+    /**
+     * The physical (printout) size of the page.
+     */
+    pageSize?: IPageSize;
+
+    /**
+     * Margin settings and such.
+     * 
+     * See also pageSize.
+     */
+    paper?: Paper;
 }
 
 /**
@@ -493,7 +512,7 @@ export var MINOR = "\\minor";
 
 export var MAX_NUM = 1000000000;
 
-export interface IMarking {
+export interface INotation {
     glyph: string;
     noDirection: boolean;
     x: number;
@@ -576,6 +595,32 @@ export interface IPageSize {
      * With in `this.unit`
      */
     width: number;
+};
+
+/**
+ * Properties that make up a part
+ */
+export interface IPart {
+    //////////////////////////////////////////////
+    // The following can be set if body is true //
+    //////////////////////////////////////////////
+
+    /**
+     * The Models that compose the part.
+     */
+    body?: IBody;
+
+    /**
+     * For playback
+     */
+    instrument?: IInstrument;
+
+    /**
+     * Whether the next part is in the same system
+     */
+    pianoSystemContinues?: boolean;
+
+    staveSeperation?: number;
 };
 
 /**
@@ -681,7 +726,7 @@ export enum PreviewMode {
 }
 
 export interface IPointerData {
-    staveIdx: number;
+    partIdx: number;
     visualIdx: number;
     obj: Model;
     musicLine: number;
@@ -710,6 +755,7 @@ RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
 
 RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
 RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
+RectifyXPolicyFor[Type.Wedge] = RectifyXPolicy.Min;
 
 RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
 
@@ -811,15 +857,17 @@ export interface ISongEditor {
     midiOutHint: (out: Array<number>) => void;
     pageSize: IPageSize;
     paper: Paper;
-    partModalStave: IStave;
+    partModalStave: IPart;
     selection: Array<Model>;
     socialModalVisible: boolean;
     staveHeight: number;
-    staves: Array<IStave>;
+    header: IHeader;
+    parts: Array<IPart>;
     src: string;
     testly: string;
     tool: any;
     visualCursor: IVisualCursor;
+    legacyAudioID: number;
 
     dangerouslyHidePreview: (action: IFluxAction) => void;
     dangerouslyMarkRenderDone: () => void;
@@ -827,7 +875,6 @@ export interface ISongEditor {
     dangerouslyMarkRendererLineClean: (action: IFluxAction) => void;
     dangerouslyMarkRendererLineDirty: (line: number) => void;
     dangerouslySetVisualCursor: (visualCursor: IVisualCursor) => void;
-    dangerouslyStepCursor: (spec: any) => boolean;
     dangerouslyShowPreview: (action: IFluxAction) => void;
     dangerouslyTakeSnapshot: (ctx: Annotator.Context) => void;
     ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void;
@@ -857,58 +904,6 @@ export enum Source {
 }
 
 /**
- * A composite of all possible stave parts.
- */
-export interface IStave {
-    //////////////////////////////////////////////
-    // The following can be set if body is true //
-    //////////////////////////////////////////////
-
-    /**
-     * If the stave is a part, the Models that compose the part.
-     */
-    body?: IBody;
-
-    /**
-     * For playback
-     */
-    instrument?: IInstrument;
-
-    /**
-     * Whether the next part is in the same system
-     */
-    pianoSystemContinues?: boolean;
-
-    staveSeperation?: number;
-
-    ////////////////////////////////////////////////////
-    // The following should all be merged into header //
-    ////////////////////////////////////////////////////
-
-    /**
-     * Printed information about the piece.
-     */
-    header?: IHeader;
-
-    /**
-     * The height of the stave, in "em".
-     */
-    staveHeight?: number;
-
-    /**
-     * The physical (printout) size of the page.
-     */
-    pageSize?: IPageSize;
-
-    /**
-     * Margin settings and such.
-     * 
-     * See also pageSize.
-     */
-    paper?: Paper;
-};
-
-/**
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
@@ -923,8 +918,11 @@ export enum Type {
 
     Barline,
 
+    START_OF_MODIFIERS,
     Slur,
     BeamGroup,
+    Wedge,
+    END_OF_MODIFIERS,
 
     Duration,
 
@@ -1016,7 +1014,7 @@ export interface IVisualCursor extends ILocation {
     annotatedPage?: number;
 
     /**
-     * The stave, counting from 0, not counting staves without a body, where
+     * The part, counting from 0, not counting parts without a body, where
      * annotatedObj is.
      */
     annotatedStave?: number;
@@ -1058,21 +1056,19 @@ export function midiNote(p: IPitch) {
  * 
  * Used for document creation, importing, ...
  */
-export function addDefaults(staves: IStave[]) {
+export function addDefaults(header: IHeader) {
     "use strict";
-    if (!_.any(staves, function(s) { return s.staveHeight; })) {
-        staves.splice(0, 0, {staveHeight: renderUtil.defaultStaveHeight()});
+    if (!header.staveHeight) {
+        header.staveHeight = renderUtil.defaultStaveHeight();
     }
-    if (!_.any(staves, function(s) { return s.pageSize; })) {
-        staves.splice(0, 0, {pageSize: renderUtil.defaultPageSize()});
+    if (!header.pageSize) {
+        header.pageSize = renderUtil.defaultPageSize();
     }
-    if (!_.any(staves, function(s) { return s.paper; })) {
-        staves.splice(0, 0, {
-            paper: new Paper({
-                "left-margin": renderUtil.defaultMargins.left,
-                "right-margin": renderUtil.defaultMargins.right,
-                indent: renderUtil.defaultIndent
-            })
+    if (!header.paper) {
+        header.paper = new Paper({
+            "left-margin": renderUtil.defaultMargins.left,
+            "right-margin": renderUtil.defaultMargins.right,
+            indent: renderUtil.defaultIndent
         });
     }
 }

@@ -18,7 +18,7 @@ import assert = require("assert");
 /**
  * A manual or automatic hint that a new line should be created. This file
  * modifies the context on each new line. It's also used to render the staff and
- * piano stave for everything but the first line of each page. See also begin.ts.
+ * piano part for everything but the first line of each page. See also begin.ts.
  */
 class NewlineModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
@@ -36,8 +36,8 @@ class NewlineModel extends Model {
         // errors.
         if (ctx.maxX - ctx.x > 0.001) {
             this._justify(ctx);
-            for (var i = 0; i < ctx._staves.length; ++i) {
-                var body = ctx._staves[i].body;
+            for (var i = 0; i < ctx._parts.length; ++i) {
+                var body = ctx._parts[i].body;
                 if (!body) { continue; }
                 if (body !== ctx.body) {
                     var len = Math.min(ctx.body.length, body.length);
@@ -51,8 +51,8 @@ class NewlineModel extends Model {
         }
 
         var visibleStaveCount = 0;
-        for (var i = 0; i < ctx._staves.length; ++i) {
-            if (ctx._staves[i].body) {
+        for (var i = 0; i < ctx._parts.length; ++i) {
+            if (ctx._parts[i].body) {
                 ++visibleStaveCount;
             }
         }
@@ -67,7 +67,7 @@ class NewlineModel extends Model {
         ctx.x = ctx.initialX;
         ctx.y += ctx.lineSpacing;
         if (ctx.clef) {
-            // This is guarded in case another stave called a RETRY_CURRENT.
+            // This is guarded in case another part called a RETRY_CURRENT.
             // (Note: This is shady.)
             ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
         } else if (global.console) {
@@ -84,7 +84,7 @@ class NewlineModel extends Model {
         this.width = ctx.maxX - ctx.x;
 
         /*
-         * 0.2 is the padding between beginning of stave and the clef.
+         * 0.2 is the padding between beginning of part and the clef.
          * This value should also be changed in BeginModel.
          */
         ctx.x += 0.2;
@@ -107,7 +107,7 @@ class NewlineModel extends Model {
                 pageStarts: null,
                 prevClefByStave: {},
                 prevKeySignature: null,
-                staveIdx: ctx.currStaveIdx,
+                partIdx: ctx.currStaveIdx,
                 x: null,
                 y: null
             };
@@ -272,7 +272,7 @@ class NewlineModel extends Model {
         var fullJustify = false;
         var i: number;
 
-        if ((<any>ctx._staves).isScale) {
+        if ((<any>ctx._parts).isScale) {
             // XXX: HACK!!!
             fullJustify = true;
         }

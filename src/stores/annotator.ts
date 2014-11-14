@@ -17,21 +17,21 @@ import renderUtil = require("../util/renderUtil");
 /**
  * Annotator has two goals:
  * 
- *  1) Put a set of staves into a state where they can be rendered. For example, Annotator would
+ *  1) Put a set of parts into a state where they can be rendered. For example, Annotator would
  *     set the position of all items, insert barlines/rests, and add the appropriate accidentals.
  *     When a song is loaded from source (e.g., MusicXML, lilypond), it cannot out of the box be
- *     displayed. Calling (new Annotator(staves)).annotate() is all that is necessary to make it
+ *     displayed. Calling (new Annotator(parts)).annotate() is all that is necessary to make it
  *     renderable.
  * 
- *  2) Wrap all mutations to the staves. For example, the NoteTool will use an annotator to add
+ *  2) Wrap all mutations to the parts. For example, the NoteTool will use an annotator to add
  *     a note, or change a rest into a note. In this case, Annotator.annotate should be called
  *     with all parameters. It is worth noting that Annotator does NOT specify what the change is.
- *     Instead, it just ensures that all the appropriate changes are made to the staves so that
- *     after the change is made, the staves are in a valid and renderable state.
+ *     Instead, it just ensures that all the appropriate changes are made to the parts so that
+ *     after the change is made, the parts are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(staves: Array<C.IStave>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
-        this._staves = staves;
+    constructor(parts: Array<C.IPart>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
+        this._parts = parts;
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
 
@@ -46,11 +46,11 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * After the function exits, any part of the Annotator's staves after 'from' can be rendered.
+     * After the function exits, any part of the Annotator's parts after 'from' can be rendered.
      * The default value of 'from' is the beginning of the song.
      * 
-     * If 'mutation' is set, then the staves will be modified according to what is specified in
-     * 'mutation'. The mutation must be after 'from'. All modifications to staves must go through
+     * If 'mutation' is set, then the parts will be modified according to what is specified in
+     * 'mutation'. The mutation must be after 'from'. All modifications to parts must go through
      * Annotator.annotate.
      */
     annotate(from: C.ILocation, mutation: ICustomAction,
@@ -60,7 +60,7 @@ export class Context implements C.MetreContext {
         var error: Error = null;
         var result: C.IAnnotationResult;
         assert(from.bar !== 0);
-        assert(this._staves, "Staves must be set!");
+        assert(this._parts, "Staves must be set!");
 
         try {
             result = this._annotateImpl(from, mutation, cursor, disableRecording);
@@ -99,7 +99,7 @@ export class Context implements C.MetreContext {
             pageStarts: this.pageStarts,
             prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevKeySignature: this.prevKeySignature,
-            staveIdx: this.currStaveIdx,
+            partIdx: this.currStaveIdx,
             x: this.x,
             y: this.y
         };
@@ -130,25 +130,25 @@ export class Context implements C.MetreContext {
     }
 
     get staveSeperation(): number {
-        var bodies = _.filter(this._staves, s => !!s.body).length;
+        var bodies = _.filter(this._parts, s => !!s.body).length;
         return (bodies - 1) * (this.currStave.staveSeperation || renderUtil.staveSeperation);
     }
 
     /**
-     * Returns the next element in the current stave, subject to certain options.
+     * Returns the next element in the current part, subject to certain options.
      * By default, this function skips over beams.
      * 
      * @param condition: Function that returns false if model should be skipped.
      * @param skip: Start looking at Models <skip> after current. 1 if unspecified.
-     * @param allowBeams: True if beams should not be skipped. False by default.
+     * @param allowModifiers: True if beams and other modifiers should be eligible. False by default.
      */
-    next(condition?: (model: Model) => boolean, skip?: number, allowBeams?: boolean) {
-        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower!
+    next(condition?: (model: Model) => boolean, skip?: number, allowModifiers?: boolean) {
+        // Don't ask me why, but doing this.body[nextIdx...] is 10x slower in Chrome 39!
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
+                (this.body[this.idx + i].isModifier && !allowModifiers) ||
                 (condition && !condition(this.body[this.idx + i])))) {
             ++i;
         }
@@ -156,43 +156,49 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * Search all staves for the next elements of type 'type' at the current location
-     * 
-     * @param direct if true, only return objects directly after the current object.
-     */
-    intersects(type: C.Type, direct?: boolean) {
-        var intersects: Array<Model> = [];
-        for (var i = 0; i < this._staves.length; ++i) {
-            var body = this._staves[i].body;
-            if (!body) { continue; }
-            for (var j = this.idx + 1; j < body.length; ++j) {
-                if (body[j].type === type) { intersects.push(body[j]); }
-
-                if (body[j].priority === C.Type.Duration) { break; }
-                if (direct) { break; }
-            }
-        }
-        return intersects;
-    }
-
-    /**
-     * Returns the index of the next element in the current stave, subject to certain options.
+     * Returns the index of the next element in the current part, subject to certain options.
      * By default, this function skips over beams.
      * 
      * @param condition: Function that returns false if model should be skipped.
      * @param skip: Start looking at Models <skip> after current. 1 if unspecified.
-     * @param allowBeams: True if beams should not be skipped. False by default.
+     * @param allowModifiers: True if beams and other modifiers should be eligible. False by default.
      */
-    nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowBeams?: boolean) {
+    nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowModifiers?: boolean) {
         var i: number;
         skip = (skip === undefined || skip === null) ? 1 : skip;
         i = skip;
         while (this.body[this.idx + i] && (
-                (this.body[this.idx + i].type === C.Type.BeamGroup && !allowBeams) ||
+                (this.body[this.idx + i].isModifier && !allowModifiers) ||
                 (cond && !cond(this.body[this.idx + i], this.idx + i)))) {
             ++i;
         }
         return this.idx + i;
+    }
+
+    /**
+     * Search all parts for elements of type 'type' on the same beat
+     * 
+     * @param idx?: Index to search from.
+     */
+    intersects(type: C.Type, idx: number = this.idx) {
+        var intersects: Array<Model> = [];
+        for (var i = 0; i < this._parts.length; ++i) {
+            var body = this._parts[i].body;
+            if (!body) { continue; }
+            // Before
+            for (var j = idx - 1; j >= 0; --j) {
+                if (body[j].type === type) { intersects.push(body[j]); }
+                if (body[j].priority === C.Type.Duration) { break; }
+            }
+            // Current
+            if (body[idx].type === type) { intersects.push(body[idx]); }
+            // After
+            for (var j = idx + 1; j < body.length; ++j) {
+                if (body[j].type === type) { intersects.push(body[j]); }
+                if (body[j].priority === C.Type.Duration) { break; }
+            }
+        }
+        return intersects;
     }
 
     /**
@@ -206,10 +212,10 @@ export class Context implements C.MetreContext {
         var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
             var beamed: Array<{ inBeam: boolean; tuplet: C.ITuplet; }> = [];
-            for (var i = 0; i < this._staves.length; ++i) {
-                if (this._staves[i].body &&
-                    this._staves[i].body[idx + 1].type === C.Type.BeamGroup) {
-                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._staves[i].body[idx + 1]).beam;
+            for (var i = 0; i < this._parts.length; ++i) {
+                if (this._parts[i].body &&
+                    this._parts[i].body[idx + 1].type === C.Type.BeamGroup) {
+                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._parts[i].body[idx + 1]).beam;
                     beamed = beamed.concat(<any>newBeam);
                 }
             }
@@ -233,7 +239,7 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * If a condition is given, searches backwards starting at the CURRENT
+     * If a condition is given, searches backwards starting at the previous
      * item. Otherwise, returns the item directly before the current item.
      */
     prev(condition?: (m: Model) => boolean, offset?: number) {
@@ -253,8 +259,8 @@ export class Context implements C.MetreContext {
      * Removes the current item.
      * @mutator
      */
-    eraseCurrent(): C.IterationStatus {
-        this.splice(this.idx, 1);
+    eraseCurrent(splicePolicy = SplicePolicy.Masked): C.IterationStatus {
+        this.splice(this.idx, 1, null, splicePolicy);
         return C.IterationStatus.RetryCurrent;
     }
 
@@ -325,11 +331,11 @@ export class Context implements C.MetreContext {
             C.IterationStatus.RetryFromEntry;
 
         var visibleIdx = -1;
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
+        for (var i = 0; i < this._parts.length; ++i) {
+            var part = this._parts[i];
+            if (part.body) {
                 ++visibleIdx;
-                stave.body.splice(index, 0, objs[visibleIdx]);
+                part.body.splice(index, 0, objs[visibleIdx]);
             }
         }
 
@@ -370,15 +376,15 @@ export class Context implements C.MetreContext {
             assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
         }
 
-        for (var i = 0; i < this._staves.length; ++i) {
-            var stave = this._staves[i];
-            if (stave.body) {
-                if (this.body === stave.body) {
+        for (var i = 0; i < this._parts.length; ++i) {
+            var part = this._parts[i];
+            if (part.body) {
+                if (this.body === part.body) {
                     if (replaceWith) {
-                        Array.prototype.splice.apply(stave.body,
+                        Array.prototype.splice.apply(part.body,
                             [start, count].concat(<any>replaceWith));
                     } else {
-                        stave.body.splice(start, count);
+                        part.body.splice(start, count);
                     }
                 } else {
                     var placeholders: Array<Model> = [];
@@ -387,15 +393,16 @@ export class Context implements C.MetreContext {
                     var ffidx = start + replaceWith.length;
                     var offset = 0;
                     for (var j = 0; j < replaceWith.length; ++j) {
-                        if (vidx + j < Math.max(ffidx, fidx) &&
-                                stave.body[vidx + j] &&
-                                stave.body[vidx + j].priority === replaceWith[j].priority) {
+                        if (splicePolicy !== SplicePolicy.Subtractive &&
+                                vidx + j < Math.max(ffidx, fidx) &&
+                                part.body[vidx + j] &&
+                                part.body[vidx + j].priority === replaceWith[j].priority) {
                             if (vidx + j >= fidx) {
                                 placeholders.push(new PlaceholderModel({
                                     _priority: C.Type[replaceWith[j].priority]
                                 }, replaceWith[j].source));
                             } else {
-                                placeholders.push(stave.body[vidx + j]);
+                                placeholders.push(part.body[vidx + j]);
                                 if (splicePolicy === SplicePolicy.ShortenOtherParts) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
@@ -417,14 +424,14 @@ export class Context implements C.MetreContext {
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
                         while (startPriority > C.Type.Barline &&
                             replaceWith[0].priority > C.Type.Barline &&
-                            stave.body[start + offset] && stave.body[start + offset].ctxData &&
-                            stave.body[start + offset].priority > C.Type.Barline &&
-                            new C.Location(stave.body[start + offset].ctxData).lt(ctxStartData)) {
+                            part.body[start + offset] && part.body[start + offset].ctxData &&
+                            part.body[start + offset].priority > C.Type.Barline &&
+                            new C.Location(part.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
 
-                    Array.prototype.splice.apply(stave.body, [start + offset, count]
+                    Array.prototype.splice.apply(part.body, [start + offset, count]
                         .concat(<any>placeholders));
                 }
             }
@@ -445,9 +452,36 @@ export class Context implements C.MetreContext {
         }
     }
 
+    static insertPlaceholders(parts: Array<C.IPart>) {
+        var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
+        function length() {
+            var l = 0;
+            for (var i = 0; i < parts.length; ++i) {
+                if (parts[i].body) {
+                    l = Math.max(parts[i].body.length, l);
+                }
+            }
+            return l;
+        }
+
+        for (var i = 0; i < length(); ++i) {
+            var bestPri = C.Type.Unknown;
+            for (var j = 0; j < parts.length; ++j) {
+                if (parts[j].body && parts[j].body[i]) {
+                    bestPri = Math.min(parts[j].body[i].priority, bestPri);
+                }
+            }
+            for (var j = 0; j < parts.length; ++j) {
+                if (parts[j].body && (!parts[j].body[i] || parts[j].body[i].priority !== bestPri)) {
+                    parts[j].body.splice(i, 0, new PlaceholderModel({ _priority: C.Type[bestPri] }, C.Source.Annotator));
+                }
+            }
+        }
+    }
+
     private _realign(start: number, end: number) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
-        var bodies = this._staves.filter(s => !!s.body).map(s => s.body);
+        var bodies = this._parts.filter(s => !!s.body).map(s => s.body);
         var cBeats = bodies.map(b => 0);
         var placeholders = bodies.map(b => <Array<Model>>[]);
         var reals = bodies.map(b => <Array<Model>>[]);
@@ -494,26 +528,26 @@ export class Context implements C.MetreContext {
 
         var firstSize = aligned[0].length;
         var j = 0;
-        for (var k = 0; k < this._staves.length; ++k) {
-            if (!this._staves[k].body) {
+        for (var k = 0; k < this._parts.length; ++k) {
+            if (!this._parts[k].body) {
                 continue;
             }
             if (this._assertionPolicy !== AssertionPolicy.NoAssertions) {
                 assert.equal(firstSize, aligned[j].length);
             }
-            Array.prototype.splice.apply(this._staves[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
+            Array.prototype.splice.apply(this._parts[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
 
             ++j;
         }
 
-        recordMetreData(this._staves);
+        recordMetreData(this._parts);
     }
 
     findVertical(where?: (obj: Model) => boolean, idx?: number) {
         if (isNaN(idx)) {
             idx = this.idx;
         }
-        return _.chain(this._staves)
+        return _.chain(this._parts)
             .filter(s => !!s.body)
             .map(s => s.body[idx])
             .filter(s => s && (!where || !!where(s)))
@@ -552,7 +586,7 @@ export class Context implements C.MetreContext {
     /**
      * @deprecated DO NOT USE
      * 
-     * The body in the current stave. Annotation is now interlaced, so if you're using body,
+     * The body in the current part. Annotation is now interlaced, so if you're using body,
      * you're likely doing something dangerous.
      * @scope temporary
      */
@@ -568,13 +602,13 @@ export class Context implements C.MetreContext {
     idx: number;
 
     /**
-     * The current stave.
+     * The current part.
      * @scope temporary
      */
-    currStave: C.IStave;
+    currStave: C.IPart;
 
     /**
-     * For marking stave lines dirty, for example.
+     * For marking part lines dirty, for example.
      * @scope temporary
      */
     currStaveIdx: number;
@@ -685,7 +719,7 @@ export class Context implements C.MetreContext {
     pageStarts: Array<number> = [0];
 
     /**
-     * The clef to add the current line in the current stave, if one is not specified.
+     * The clef to add the current line in the current part, if one is not specified.
      * @scope line
      */
     prevClefByStave: { [key: number]: string } = {};
@@ -703,13 +737,13 @@ export class Context implements C.MetreContext {
     x: number;
 
     /**
-     * The current position of the top stave (y)
+     * The current position of the top part (y)
      * @scope line
      */
     y: number;
 
     /**
-     * The ordered keys of bars. Should be the same for all staves.
+     * The ordered keys of bars. Should be the same for all parts.
      * @scope line
      */
     barKeys: Array<string>;
@@ -790,11 +824,11 @@ export class Context implements C.MetreContext {
         }
         var status: C.IterationStatus;
         var ops = 0;
-        var initialLength = _.max(this._staves, s => s.body ? s.body.length : 0).body.length || 1;
+        var initialLength = _.max(this._parts, s => s.body ? s.body.length : 0).body.length || 1;
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._staves, mutation, cursor, this._assertionPolicy);
+        for (var it = new PrivIterator(this, from, this._parts, mutation, cursor, this._assertionPolicy);
                 !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
@@ -807,7 +841,7 @@ export class Context implements C.MetreContext {
         }
 
         if (it.eofJustificationDirty) {
-            this._semiJustify(this._staves);
+            this._semiJustify(this._parts);
         }
 
         var patch = _.map(this._recordings, (model: BarlineModel) => {
@@ -828,14 +862,14 @@ export class Context implements C.MetreContext {
         };
     }
 
-    private _semiJustify(staves: Array<C.IStave>) {
+    private _semiJustify(parts: Array<C.IPart>) {
         var NewlineModel: typeof NewlineModelType = require("./newline");
         var bodies: Array<C.IBody> = [];
-        for (var i = 0; i < staves.length; ++i) {
-            if (staves[i].body) {
-                bodies.push(staves[i].body);
+        for (var i = 0; i < parts.length; ++i) {
+            if (parts[i].body) {
+                bodies.push(parts[i].body);
                 this.idx = this.body.length - 1;
-                this.body = staves[i].body;
+                this.body = parts[i].body;
                 NewlineModel.semiJustify(this);
                 this.idx = -1;
             }
@@ -860,16 +894,16 @@ export class Context implements C.MetreContext {
         if (this._assertionPolicy === AssertionPolicy.Strict) {
             var expectedLength = 0;
             var bodies: Array<C.IBody> = [];
-            for (var i = 0; i < this._staves.length; ++i) {
-                if (this._staves[i].body) {
-                    expectedLength = expectedLength || this._staves[i].body.length;
-                    assert.equal(expectedLength, this._staves[i].body.length, "All staves must be the same length");
-                    bodies.push(this._staves[i].body);
+            for (var i = 0; i < this._parts.length; ++i) {
+                if (this._parts[i].body) {
+                    expectedLength = expectedLength || this._parts[i].body.length;
+                    assert.equal(expectedLength, this._parts[i].body.length, "All parts must be the same length");
+                    bodies.push(this._parts[i].body);
                 }
             }
             for (var i = 0; i < bodies[0].length; ++i) {
                 for (var j = 1; j < bodies.length; ++j) {
-                    assert.equal(bodies[j][i].priority, bodies[0][i].priority, "All staves must be aligned");
+                    assert.equal(bodies[j][i].priority, bodies[0][i].priority, "All parts must be aligned");
                 }
             }
         }
@@ -891,10 +925,10 @@ export class Context implements C.MetreContext {
     nullEntry: boolean = false;
 
     /**
-     * The staves to be annotated.
+     * The parts to be annotated.
      * @scope private
      */
-    _staves: Array<C.IStave>;
+    _parts: Array<C.IPart>;
 
     /**
      * @scope private
@@ -904,8 +938,8 @@ export class Context implements C.MetreContext {
 
 export enum SplicePolicy {
     /**
-     * Remove models from non-current parts, unless they line up with the new part.
-     * This is the default policy.
+     * Remove models from non-current parts, unless they have the same type as an element
+     * in the new part. This is the default policy.
      */
     MatchedOnly = 1,
     /**
@@ -922,7 +956,11 @@ export enum SplicePolicy {
      * Like MatchedOnly, but shorten durations in other parts when replacing them.
      * This is used for changing the time signature.
      */
-    ShortenOtherParts = 4
+    ShortenOtherParts = 4,
+    /**
+     * Remove models from non-current parts.
+     */
+    Subtractive = 5
 }
 
 export enum AssertionPolicy {
@@ -949,7 +987,7 @@ export interface ILayoutOpts {
 /**
  * A subset of a Context that is used as a snapshot so that modifying a line
  * does not involve a trace from the start of the document. Some of these properties
- * are stave-specific.
+ * are part-specific.
  * 
  * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
@@ -966,7 +1004,7 @@ export interface ILineSnapshot {
     pageStarts: Array<number>;
     prevClefByStave: { [key: number]: string };
     prevKeySignature: C.IKeySignature;
-    staveIdx: number;
+    partIdx: number;
     x: number;
     y: number;
 }
@@ -993,14 +1031,14 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
     lines: Array<ILineSnapshot>;
 }
 
-export function recordMetreData(staves: Array<C.IStave>) {
+export function recordMetreData(parts: Array<C.IPart>) {
     "use strict";
 
     var anyChange = false;
     var i: number;
     var j: number;
-    for (i = 0; i < staves.length; ++i) {
-        var body = staves[i].body;
+    for (i = 0; i < parts.length; ++i) {
+        var body = parts[i].body;
         if (!body) { continue; }
         var mctx1 = new C.MetreContext;
         for (j = 0; j < body.length; ++j) {
@@ -1026,29 +1064,29 @@ export function recordMetreData(staves: Array<C.IStave>) {
 
 
 /**
- * Internal. Iterates over a set of bodies in staves and annotates them. Owned by an Annotator.
+ * Internal. Iterates over a set of bodies in parts and annotates them. Owned by an Annotator.
  */
 class PrivIterator {
-    constructor(parent: Context, from: C.ILocation, staves: Array<C.IStave>,
+    constructor(parent: Context, from: C.ILocation, parts: Array<C.IPart>,
             mutation: ICustomAction, cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._parent = parent;
-        this._staves = staves;
+        this._parts = parts;
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = JSON.parse(JSON.stringify(from));
         this._assertionPolicy = assertionPolicy;
         this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         var visibleSidx = -1;
-        recordMetreData(this._staves);
-        for (var i = 0; i < staves.length; ++i) {
-            if (staves[i].body) {
+        recordMetreData(this._parts);
+        for (var i = 0; i < parts.length; ++i) {
+            if (parts[i].body) {
                 ++visibleSidx;
-                var isMutable = mutation && mutation.pointerData && mutation.pointerData.staveIdx === i;
+                var isMutable = mutation && mutation.pointerData && mutation.pointerData.partIdx === i;
                 this._components.push(new PrivIteratorComponent(
                     /* starting location*/ from,
-                    /* stave */ staves[i],
-                    /* stave index */ i,
-                    /* visible stave index*/ visibleSidx,
+                    /* part */ parts[i],
+                    /* part index */ i,
+                    /* visible part index*/ visibleSidx,
                     /* custom action */ isMutable ? mutation : null,
                     /* visual cursor */ cursor,
                     this._assertionPolicy));
@@ -1067,9 +1105,9 @@ class PrivIterator {
         var filtered = false;
 
         for (var i = 0; i < this._components.length; ++i) {
-            this._ensureAllOrNoneAtEnd();
+            this._ensureCurrPrioritiesMatch();
             if (this.atEnd) {
-                // All staves are now at the end.
+                // All parts are now at the end.
                 this._assertOffsetsOK();
                 return C.IterationStatus.RetryCurrent; // Don't go to next!
             }
@@ -1150,7 +1188,7 @@ class PrivIterator {
         }
         var otherContexts = ctx.findVertical(c => true);
 
-        // HACK HACK HACK: In case models on different staves disagree about how much space is needed,
+        // HACK HACK HACK: In case models on different parts disagree about how much space is needed,
         // believe the real (not placeholder) model that reports the smallest number. This can still
         // cause some strange (overly large) spacing for Durations that do not line up.
         var minX = Infinity;
@@ -1167,8 +1205,8 @@ class PrivIterator {
 
         ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
         for (var i = 1; i < componentSnapshots.length; ++i) {
-            var staveIdx = componentSnapshots[i].staveIdx;
-            ctx.accidentalsByStave[staveIdx] = componentSnapshots[i].accidentalsByStave[staveIdx];
+            var partIdx = componentSnapshots[i].partIdx;
+            ctx.accidentalsByStave[partIdx] = componentSnapshots[i].accidentalsByStave[partIdx];
         }
         // Note: also tracked per-staff. See also __globalBeat__
         ctx.beat = _.min(componentSnapshots, "beat").beat;
@@ -1183,8 +1221,8 @@ class PrivIterator {
             // (If this changes, you're on your own)
             ctx.prevClefByStave = ctx.prevClefByStave;
             var visibleStaveIdx = -1;
-            for (var i = 0; i < ctx._staves.length; ++i) {
-                if (!ctx._staves[i].body) { continue; }
+            for (var i = 0; i < ctx._parts.length; ++i) {
+                if (!ctx._parts[i].body) { continue; }
                 ++visibleStaveIdx;
                 if (componentSnapshots[visibleStaveIdx].prevClefByStave[i]) {
                     ctx.prevClefByStave[i] = componentSnapshots[visibleStaveIdx].prevClefByStave[i];
@@ -1233,7 +1271,7 @@ class PrivIterator {
                 break;
             case C.IterationStatus.RetryCurrent:
             case C.IterationStatus.RetryCurrentNoOptimizations:
-                this._ensureAllOrNoneAtEnd();
+                this._ensureCurrPrioritiesMatch();
                 break;
             default:
                 assert(false, "Invalid status");
@@ -1242,7 +1280,7 @@ class PrivIterator {
         this._assertOffsetsOK();
 
         if (status !== C.IterationStatus.Success) {
-            recordMetreData(this._staves);
+            recordMetreData(this._parts);
         }
 
         this._assertOffsetsOK();
@@ -1311,6 +1349,7 @@ class PrivIterator {
 
     private _rollbackLine(i: number) {
         this._parent.line = i;
+        this._parent.timeSignature = null;
         _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.START_OF_LINE);
         for (var j = 0; j < this._components.length; ++j) {
             this._components[j].resetLine();
@@ -1333,7 +1372,7 @@ class PrivIterator {
         this._assertOffsetsOK();
 
         for (var j = 0; j < this._components.length; ++j) {
-            this._components[j].trySeek(nextLoc, nextPriority);
+            this._components[j].trySeek(nextPriority);
         }
         this._assertOffsetsOK();
 
@@ -1343,7 +1382,7 @@ class PrivIterator {
         //    required.
     }
 
-    private _ensureAllOrNoneAtEnd() {
+    private _ensureCurrPrioritiesMatch() {
         var pri = C.Type.Unknown;
         _.every(this._components, c => {
             if (c.curr) {
@@ -1392,7 +1431,7 @@ class PrivIterator {
     private _cursor: C.IVisualCursor;
     private _from: C.ILocation;
     private _parent: Context;
-    private _staves: Array<C.IStave>;
+    private _parts: Array<C.IPart>;
     private _assertionPolicy: AssertionPolicy;
 }
 
@@ -1405,10 +1444,10 @@ class PrivIterator {
  * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
  */
 class PrivIteratorComponent {
-    constructor(from: C.ILocation, stave: C.IStave, idx: number, visibleIdx: number, mutation: ICustomAction,
+    constructor(from: C.ILocation, part: C.IPart, idx: number, visibleIdx: number, mutation: ICustomAction,
             cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
-        this._stave = stave;
-        this._body = stave.body;
+        this._part = part;
+        this._body = part.body;
         this._sidx = idx;
         this._visibleSidx = visibleIdx;
         this._cursor = cursor;
@@ -1425,7 +1464,7 @@ class PrivIteratorComponent {
             ctx.beat = this._beat;
         }
         ctx.body = this._body;
-        ctx.currStave = this._stave;
+        ctx.currStave = this._part;
         ctx.currStaveIdx = this._sidx;
         ctx.idx = this._idx;
         ctx.clef = ctx.clef ? this._clef : "";
@@ -1507,7 +1546,7 @@ class PrivIteratorComponent {
         }
     }
 
-    trySeek(loc: C.Location, priority: number) {
+    trySeek(priority: number) {
         this.ensurePriorityIs(priority);
         ++this._idx;
         assert(this.nextPriority === C.MAX_NUM || this.curr);
@@ -1570,7 +1609,7 @@ class PrivIteratorComponent {
     }
 
     get staveSeperation() {
-        return this._stave.staveSeperation || renderUtil.staveSeperation;
+        return this._part.staveSeperation || renderUtil.staveSeperation;
     }
 
     private _aheadOfSchedule(ctx: Context): boolean {
@@ -1642,7 +1681,7 @@ class PrivIteratorComponent {
     private _mutation: ICustomAction;
     private _sidx: number;
     private _visibleSidx: number;
-    private _stave: C.IStave;
+    private _part: C.IPart;
 }
 
 

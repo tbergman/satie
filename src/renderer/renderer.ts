@@ -8,6 +8,7 @@ import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
 import assert = require("assert");
+var DisqusThread = require("react-disqus-thread");
 
 import Molasses = require("./molasses");
 var Victoria = require("./victoria/victoria");
@@ -50,16 +51,13 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
         }
 
         var fontSize = NaN;
-        var y = 0;
-        var staves = this.props.staves;
+        var parts = this.props.parts;
         var bodyLength = 0;
 
-        for (var i = 0; i < staves.length; ++i) {
-            if (staves[i].body) {
-                bodyLength = staves[i].body.length;
-            }
-            if (staves[i].staveHeight) {
-                fontSize = staves[i].staveHeight;
+        fontSize = this.props.header.staveHeight;
+        for (var i = 0; i < parts.length; ++i) {
+            if (parts[i].body) {
+                bodyLength = parts[i].body.length;
             }
         }
 
@@ -86,7 +84,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
 
         // XXX: Currently we only support single and double staffs.
         // isPianoStaff is set to true when there is at least 2 staffs.
-        var isPianoStaff = _.reduce(staves, function (memo: number, s: C.IStave) {
+        var isPianoStaff = _.reduce(parts, function (memo: number, s: C.IPart) {
             return memo + (s.body ? 1 : 0);
         }, 0) >= 2;
 
@@ -100,89 +98,81 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                     onMouseLeave: this.handleMouseLeave,
                     onMouseMove: this.handleMouseMove,
                     page: page,
-                    staves: staves,
+                    parts: parts,
                     width: this.props.raw ? mInchW/10000 + "in" : "100%",
                     height: this.props.raw ? mInchH/10000 + "in" : "100%",
                     widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
                     viewbox: viewbox
                 },
-                /* Using staves is an anti-pattern. Ideally, we would have a getModels()
+                !page.from && !useGL && Header({
+                    fontSize: fontSize,
+                    middle: renderUtil.mm(this.props.pageSize.width/2 +
+                        this.props.paper.rightMargin -
+                        this.props.paper.leftMargin, fontSize),
+                    right: renderUtil.mm(this.props.pageSize.width -
+                        this.props.paper.rightMargin, fontSize * 0.75),
+                    key: "HEADER",
+                    model: this.props.header}),
+                /* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */
-                _.map(staves, (stave: C.IStave, idx: number) => {
-                    if (stave.header) {
-                        if (page.from) {
-                            return null;
-                        }
-                        y += renderUtil.getHeaderHeight(stave.header);
-                        return !useGL && Header({
-                            fontSize: fontSize,
-                            middle: renderUtil.mm(this.props.pageSize.width/2 +
-                                this.props.paper.rightMargin -
-                                this.props.paper.leftMargin, fontSize),
-                            right: renderUtil.mm(this.props.pageSize.width -
-                                this.props.paper.rightMargin, fontSize * 0.75),
-                            key: "HEADER",
-                            model: stave.header});
-                    } else if (stave.body) {
-                        return Group({key: idx, style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
-                            _.reduce(stave.body.slice(page.from, page.to), function(memo: Array<Model>[], obj: Model)  {
-                                if (obj.type === C.Type.NewLine) {
-                                    memo.push([]);
-                                }
-                                memo[memo.length - 1].push(obj);
-                                return memo;
-                            }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
+                _.map(parts, (part: C.IPart, idx: number) => {
+                    assert(part.body);
+                    return Group({ key: idx, style: { fontSize: fontSize * Renderer.FONT_SIZE_FACTOR + "px" } },
+                        _.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
+                            if (obj.type === C.Type.NewLine) {
+                                memo.push([]);
+                            }
+                            memo[memo.length - 1].push(obj);
+                            return memo;
+                        }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
                             function (s: Array<Model>, lidx: number) {
 
                                 return LineContainerComponent({
-                                        staves: this.props.staves,
-                                        isCurrent: this.state.visualCursor.annotatedLine ===
-                                            lidx + pageLines[page.idx],
-                                        store: this.props.store,
-                                        staveHeight: this.props.staveHeight,
-                                        h: idx,
-                                        generate: function () {
-                                            var components = new Array(s.length * 2);
-                                            var h = 0;
-                                            // I think selected items currently HAVE to
-                                            // be consecutive, but this could change.
-                                            var selIdx = -1;
-                                            var selProps: any = null;
-                                            for (var i = 0; i < s.length; ++i) {
-                                                if (s[i].selected && s[i].type !== C.Type.NewLine &&
-                                                        s[i].type !== C.Type.EndMarker) {
-                                                    if (selIdx === -1) {
-                                                        selIdx = h++;
-                                                        selProps = {
-                                                            key: "selectionrect-" + Math.random(),
-                                                            x: s[i].x,
-                                                            y: s[i].y - 1 / 2,
-                                                            height: 1,
-                                                            fill: "#75A1D0",
-                                                            opacity: 0.33
-                                                        };
-                                                    }
-                                                }
-                                                if (selIdx !== -1 &&
-                                                        (!s[i].selected || i + 1 === s.length)) {
-                                                    selProps.width = Math.abs(s[i].x - selProps.x);
-                                                    components[selIdx] = Rect.Component(selProps);
-                                                    selIdx = -1;
-                                                }
-                                                if (s[i].visible()) {
-                                                    components[h++] = s[i].render(fontSize);
+                                    parts: this.props.parts,
+                                    isCurrent: this.state.visualCursor.annotatedLine ===
+                                    lidx + pageLines[page.idx],
+                                    store: this.props.store,
+                                    staveHeight: this.props.staveHeight,
+                                    h: idx,
+                                    generate: function () {
+                                        var components = new Array(s.length * 2);
+                                        var h = 0;
+                                        // I think selected items currently HAVE to
+                                        // be consecutive, but this could change.
+                                        var selIdx = -1;
+                                        var selProps: any = null;
+                                        for (var i = 0; i < s.length; ++i) {
+                                            if (s[i].selected && s[i].type !== C.Type.NewLine &&
+                                                s[i].type !== C.Type.EndMarker) {
+                                                if (selIdx === -1) {
+                                                    selIdx = h++;
+                                                    selProps = {
+                                                        key: "selectionrect-" + Math.random(),
+                                                        x: s[i].x,
+                                                        y: s[i].y - 1 / 2,
+                                                        height: 1,
+                                                        fill: "#75A1D0",
+                                                        opacity: 0.33
+                                                    };
                                                 }
                                             }
-                                            components.length = h;
-                                            return components;
-                                        },
-                                        idx: lidx + pageLines[page.idx], key: lidx
-                                    });
-                                }.bind(this))
+                                            if (selIdx !== -1 &&
+                                                (!s[i].selected || i + 1 === s.length)) {
+                                                selProps.width = Math.abs(s[i].x - selProps.x);
+                                                components[selIdx] = Rect.Component(selProps);
+                                                selIdx = -1;
+                                            }
+                                            if (s[i].visible()) {
+                                                components[h++] = s[i].render(fontSize);
+                                            }
+                                        }
+                                        components.length = h;
+                                        return components;
+                                    },
+                                    idx: lidx + pageLines[page.idx], key: lidx
+                                });
+                            }.bind(this))
                         );
-                    } else {
-                        return null;
-                    }
                 }),
                 this.props.tool && this.props.tool.render(
                     this.getCtx(),
@@ -234,7 +224,25 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                     currY += 40 + this.props.height;
                     return page;
                 }.bind(this)),
-                this.props.showFooter ? RipienoFooter.Component({y: currY + 100, dispatcher: this.props.dispatcher}) : null
+                this.props.comments && this.props.header.title && React.DOM.div({
+                        className: "commentBox", style: {
+                            width: this.props.width + "px",
+                            marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
+                            marginTop: currY + 13 + "px" } },
+                    DisqusThread({
+                        shortname: (global.document &&
+                            document.location.hostname === "ripieno.io" ||
+                                document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev",
+                        identifier: "usermedia-" + this.props.songId,
+                        title: this.props.header.title,
+                        categoryId: null,
+                        url: "ripieno.io/songs/" + this.props.songId
+                    })),
+                this.props.showFooter ? RipienoFooter.Component({
+                    marginTop: 123,
+                    dispatcher: this.props.dispatcher,
+                    noShadow: this.props.comments
+                }) : null
             );
         } else {
             ret = <any> rawPages[0]; // TRFIX
@@ -263,7 +271,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
 
     componentDidMount() {
         if (isBrowser && this.props.dispatcher) {
-            this.setupBrowserListeners();
+            this.attachToBrowser();
         }
         if (this.props.store) {
             this.props.store.addAnnotationListener(this.update);
@@ -288,7 +296,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
 
             dynY = ctx.lines[info.musicLine].y + ctx.staveSeperation * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
-            var body = this.props.staves[info.staveIdx].body;
+            var body = this.props.parts[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
                     j < body.length && body[info.musicLine].type !== C.Type.NewPage; ++j) {
                 var item = body[j];
@@ -305,7 +313,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                         foundObj = item;
                         break;
                     } else if (dynX < item.x ||
-                            (j === body.length - 1 && info.staveIdx === this.props.staves.filter(s => !!s.body).length - 1)) {
+                            (j === body.length - 1 && info.partIdx === this.props.parts.filter(s => !!s.body).length - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
@@ -316,7 +324,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                             mouse: mouse,
                             line: dynLine,
                             idx: j,
-                            staveIdx: info.staveIdx,
+                            partIdx: info.partIdx,
                             musicLine: info.musicLine,
                             ctxData: item.ctxData,
                             visualIdx: info.visualIdx,
@@ -365,7 +373,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
             mouse: mouse,
             musicLine: info && info.musicLine,
             obj: foundObj,
-            staveIdx: info && info.staveIdx,
+            partIdx: info && info.partIdx,
             visualIdx: info ? info.visualIdx : null
         };
 
@@ -376,11 +384,11 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
      * Given a y position and a page, returns a part (h) and
      * and a line (i).
      */
-    private _getStaveInfoForY(my: number, page: number): { musicLine: number; staveIdx: number; visualIdx: number } {
+    private _getStaveInfoForY(my: number, page: number): { musicLine: number; partIdx: number; visualIdx: number } {
         var ctx = this.getCtx();
         var visualIdx = -1;
-        for (var h = 0; h < this.props.staves.length; ++h) {
-            var body = this.props.staves[h].body;
+        for (var h = 0; h < this.props.parts.length; ++h) {
+            var body = this.props.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -390,7 +398,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                 if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSeperation - my) < 1.01) {
                     return {
                         musicLine: i,
-                        staveIdx: h,
+                        partIdx: h,
                         visualIdx: visualIdx
                     };
                 }
@@ -403,8 +411,8 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
         var ret: Array<Model> = [];
 
         var ctx = this.getCtx();
-        for (var h = 0; h < this.props.staves.length; ++h) {
-            var body = this.props.staves[h].body;
+        for (var h = 0; h < this.props.parts.length; ++h) {
+            var body = this.props.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -619,129 +627,155 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
             (this.props.store && this.props.store.finalCtx);
     }
 
-    setupBrowserListeners() {
+    private _oldTitle: string;
+
+    attachToBrowser() {
+        document.addEventListener("keydown", this._handleKeyDown);
+        document.addEventListener("keypress", this._handleKeyPress);
+        this._oldTitle = document.title;
+        document.title = this.props.header.title;
+    }
+
+    detachFromBrowser() {
+        document.removeEventListener("keydown", this._handleKeyDown);
+        document.removeEventListener("keypress", this._handleKeyPress);;
+        if (global.DISQUS) {
+            global.DISQUS.reset();
+        }
+        document.title = this._oldTitle;
+    }
+
+    private _handleKeyDown(event: KeyboardEvent) {
+        var NoteTool = require("../stores/noteTool");
+
+        if (document.activeElement.tagName === "INPUT" ||
+                this.props.store.metadataModalVisible) {
+            return;
+        }
+        var keyCode = event.keyCode || event.charCode || 0;
+        switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
+            case 32: // space
+                event.preventDefault(); // don't navigate backwards
+                this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
+                break;
+            case 27: // escape
+                this.props.dispatcher.PUT("/local/tool", null);
+                break;
+            case 8: // backspace
+            case 46: // DELETE
+                event.preventDefault(); // don't navigate backwards
+                if (_selection) {
+                    this.props.dispatcher.DELETE("/local/selection/contents");
+                } else if (!this.props.tool) {
+                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                }
+                if (this.props.tool) {
+                    this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
+                }
+                break;
+            case 37: // left arrow
+                event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
+                break;
+            case 39: // right arrow
+                event.preventDefault(); // don't scroll (shouldn't happen anyway!)
+                this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
+                break;
+            case 38: // up arrow
+                if (this.props.tool instanceof NoteTool) {
+                    event.preventDefault(); // scroll by mouse only
+                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
+                }
+                break;
+            case 40: // down arrow
+                if (this.props.tool instanceof NoteTool) {
+                    event.preventDefault(); // scroll by mouse only
+                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
+                }
+                break;
+            case 90: // 'z'
+                event.preventDefault(); // we control all undo behavior
+                if (event.ctrlKey || event.metaKey) {
+                    if (event.shiftKey) {
+                        this.props.history.redo();
+                    } else {
+                        this.props.history.undo();
+                    }
+                }
+                break;
+        }
+    }
+
+    private _handleKeyPress = _.throttle((event: KeyboardEvent) => {
         var AccidentalTool = require("../stores/accidentalTool");
         var DotTool = require("../stores/dotTool");
         var NoteTool = require("../stores/noteTool");
         var RestTool = require("../stores/restTool");
         var TieTool = require("../stores/tieTool");
 
-        // Handle keys that aren't letters or numbers, and keys with modifiers
-        document.onkeydown = (event: KeyboardEvent) => {
-            if (document.activeElement.tagName === "INPUT" ||
-                    this.props.store.metadataModalVisible) {
-                return;
+        var keyCode = event.keyCode || event.charCode || 0;
+
+        var key = String.fromCharCode(keyCode);
+        if (event.ctrlKey || event.metaKey) {
+            // Rudely prevent tab switches on Chrome/Firefox on Windows (+Linux?)
+            event.stopPropagation();
+            event.preventDefault();
+
+            switch (key) {
+                case "1": this.props.setRibbonTabFn(1); break;
+                case "2": this.props.setRibbonTabFn(2); break;
+                case "3": this.props.setRibbonTabFn(4); break;
+                case "4": this.props.setRibbonTabFn(3); break;
+                case "5": this.props.setRibbonTabFn(5); break;
             }
-            var keyCode = event.keyCode || event.charCode || 0;
-            switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
-                case 32: // space
-                    event.preventDefault(); // don't navigate backwards
-                    this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
-                    break;
-                case 27: // escape
-                    this.props.dispatcher.PUT("/local/tool", null);
-                    break;
-                case 8: // backspace
-                case 46: // DELETE
-                    event.preventDefault(); // don't navigate backwards
-                    if (_selection) {
-                        this.props.dispatcher.DELETE("/local/selection/contents");
-                    } else if (!this.props.tool) {
-                        this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
-                    }
-                    if (this.props.tool) {
-                        this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
-                    }
-                    break;
-                case 37: // left arrow
-                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
-                    break;
-                case 39: // right arrow
-                    event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                    this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
-                    break;
-                case 38: // up arrow
-                    if (this.props.tool instanceof NoteTool) {
-                        event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
-                    }
-                    break;
-                case 40: // down arrow
-                    if (this.props.tool instanceof NoteTool) {
-                        event.preventDefault(); // scroll by mouse only
-                        this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
-                    }
-                    break;
-                case 90: // 'z'
-                    event.preventDefault(); // we control all undo behavior
-                    if (event.ctrlKey || event.metaKey) {
-                        if (event.shiftKey) {
-                            this.props.history.redo();
-                        } else {
-                            this.props.history.undo();
-                        }
-                    }
-                    break;
-            }
+            return;
+        }
+
+        // Tools don't apply here.
+        if (document.activeElement.tagName === "INPUT" ||
+            this.props.store.metadataModalVisible) {
+            return;
+        }
+
+        // Tools
+        var keyToTool: { [key: string]: () => Tool } = {
+            "1": function () { return new NoteTool("noteWhole"); },
+            "2": function () { return new NoteTool("noteHalfUp"); },
+            "3": function () { return new NoteTool("noteQuarterUp"); },
+            "4": function () { return new NoteTool("note8thUp"); },
+            "5": function () { return new NoteTool("note16thUp"); },
+            "6": function () { return new NoteTool("note32ndUp"); },
+            "7": function () { return new NoteTool("note64thUp"); },
+            "~": function () { return new TieTool(); },
+            "=": function () { return new AccidentalTool(1); },
+            "-": function () { return new AccidentalTool(-1); },
+            "0": function () { return new AccidentalTool(0); }
         };
-
-        // Handle letters or numbers
-        document.onkeypress = _.throttle((event: KeyboardEvent) => {
-            if (document.activeElement.tagName === "INPUT" ||
-                    this.props.store.metadataModalVisible) {
-                return;
+        if (!this.props.tool) {
+            if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
+                key.charCodeAt(0) <= "g".charCodeAt(0)) {
+                this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+            } else if (key === "r") {
+                this.props.dispatcher.PUT("/local/tool", new RestTool());
+            } else if (key === ".") {
+                this.props.dispatcher.PUT("/local/tool", new DotTool());
             }
-            var keyCode = event.keyCode || event.charCode || 0;
-
-            var key = String.fromCharCode(keyCode);
-
-            // Tools
-            var keyToTool: { [key: string]: () => Tool } = {
-                "1": function () { return new NoteTool("noteWhole"); },
-                "2": function()  {return new NoteTool("noteHalfUp");},
-                "3": function()  {return new NoteTool("noteQuarterUp");},
-                "4": function()  {return new NoteTool("note8thUp");},
-                "5": function()  {return new NoteTool("note16thUp");},
-                "6": function()  {return new NoteTool("note32ndUp");},
-                "7": function()  {return new NoteTool("note64thUp");},
-                "~": function()  {return new TieTool();},
-                "=": function()  {return new AccidentalTool(1);},
-                "-": function()  {return new AccidentalTool(-1);},
-                "0": function()  {return new AccidentalTool(0);}
-            };
-            if (!this.props.tool) {
-                if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
-                    key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
-                } else if (key === "r") {
-                    this.props.dispatcher.PUT("/local/tool", new RestTool());
-                } else if (key === ".") {
-                    this.props.dispatcher.PUT("/local/tool", new DotTool());
-                }
-            }
-            var toolFn = keyToTool[key];
-            if (toolFn) {
-                this.props.dispatcher.PUT("/local/tool", toolFn());
-            } else if (this.props.tool) {
-                this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
-            }
-        }, 70);
-
-    }
+        }
+        var toolFn = keyToTool[key];
+        if (toolFn) {
+            this.props.dispatcher.PUT("/local/tool", toolFn());
+        } else if (this.props.tool) {
+            this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
+        }
+    }, 70);
 
     componentWillUnmount() {
         if (isBrowser) {
-            this.clearBrowserListeners();
+            this.detachFromBrowser();
         }
         if (this.props.store) {
             this.props.store.removeAnnotationListener(this.update);
         }
-    }
-
-    clearBrowserListeners() {
-        document.onkeypress = null;
-        document.onkeydown = null;
     }
 
     update() {
@@ -764,6 +798,7 @@ module Renderer {
     export var Component = TypedReact.createClass(React.createClass, Renderer);
 
     export interface IRendererProps {
+        comments?: boolean;
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
         dispatcher?: C.IDispatcher;
@@ -772,15 +807,19 @@ module Renderer {
         raw?: boolean;
         sessionInfo?: C.ISession;
         staveHeight?: number;
-        staves?: Array<C.IStave>;
+        header: C.IHeader;
+        parts?: Array<C.IPart>;
+        songId?: string;
         store?: C.ISongEditor;
         tool?: Tool;
         top?: number;
         selection?: Array<Model>;
+        width?: number;
         showFooter?: boolean;
         height?: number;
         history?: History.History;
         paper?: C.Paper;
+        setRibbonTabFn: (tab: number) => void;
     }
 
     export interface IRendererState {
@@ -818,7 +857,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty ||
-                nextProps.staves !== this.props.staves;
+                nextProps.parts !== this.props.parts;
         var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
@@ -838,7 +877,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         if (songDirty || heightChanged || lineDirty || this.dirty) {
             // Throttle updating, unless we're on the active line, or if we're
             // completely replacing the song.
-            if (this.props.isCurrent || this.props.staves !== nextProps.staves) {
+            if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
                 this.dirty = false;
                 return true;
             } else {
@@ -894,7 +933,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     staveHeight: number;
-    staves: Array<C.IStave>;
+    parts: Array<C.IPart>;
     store: C.ISongEditor;
 }
 
@@ -909,7 +948,7 @@ module Renderer {
 }
 
 var _pointerData: C.IPointerData = {
-    staveIdx: null,
+    partIdx: null,
     obj: null,
     musicLine: null,
     idx: null,

@@ -10,7 +10,7 @@ import assert = require("assert");
 import Dot = require("./_dot");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
-import NoteMarking = require("./_noteMarking");
+import NoteNotation = require("./_noteNotation");
 
 class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
@@ -61,7 +61,7 @@ module Rest {
     export var Component = TypedReact.createClass(React.createClass, Rest);
 
     export interface IProps {
-        children: Array<NoteMarking>;
+        children: Array<NoteNotation>;
         dotted: number;
         fontSize: number;
         line: Array<number>;

@@ -14,6 +14,7 @@ import RenderableMixin = require("./_renderable");
 import SMuFL = require("../util/SMuFL");
 var Victoria = require("../renderer/victoria/victoria");
 import renderUtil = require("../util/renderUtil");
+import assert = require("assert");
 
 var VGlyph = Victoria.VGlyph;
 
@@ -31,10 +32,28 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 this.props.y*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
                 <any>(this.props.y + "em");
 
+        if (this.props.glyphName.substr(0, 2) === "fa") {
+            assert(this.props.code);
+            return React.DOM.text({
+                x: px,
+                y: py,
+                fill: this.props.fill,
+                fillOpacity: this.props.opacity,
+                strokeOpacity: this.props.opacity,
+                transform: this.props.transform,
+                className: "fa",
+                style: { fontSize: this.props.scale ? this.props.scale + "em" : undefined }
+            }, this.props.code);
+        } else {
+            assert(!this.props.code);
+        }
+
         var text: React.ReactElement<any, any> = React.DOM.text({
                 x: px,
                 y: py,
                 fill: this.props.fill,
+                fillOpacity: this.props.opacity,
+                strokeOpacity: this.props.opacity,
                 transform: this.props.transform,
                 className: "mn_"},
             SMuFL.getGlyphCode(this.props.glyphName)
@@ -102,6 +121,9 @@ module Glyph {
         transform?: string;
         x: number;
         y: number;
+        opacity?: number;
+        code?: string;
+        scale?: number;
     }
 }
 

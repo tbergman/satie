@@ -26,6 +26,30 @@
 		readingCommonTS = true;
 		partInstrument = Instruments.byLilypondName["acoustic grand"];
 	}
+	function addPart($1, $2) {
+		resetPartState();
+		var header = _.find($1, function(s) { return s.header; }).header;
+		if ($2.length) {
+			for (var i = 0; i < $2.length; ++i) {
+				if ($2[i].header) {
+					_.extend(header, $2[i].header);
+				} else {
+					$1.push($2[i]);
+				}
+			}
+			return $1;
+		} else if ($2.header) {
+			_.extend(header, $2.header);
+			return $1;
+		} else if ($2.staveHeight || $2.pageSize || ("leftMargin" in $2) || $2.composer || $2.title) {
+			_.extend(header, $2);
+			return $1;
+		} else {
+			var $$ = $1.concat($2);
+			$$.isScale = $1.isScale;
+			return $$;
+		}
+	}
 	resetPartState();
 %}
 
@@ -146,7 +170,6 @@
 "}"                   return 'RBRACE'
 
 "\clef"               return 'SET_CLEF'
-"z_RIPIENO_HACK_INVISIBLE\clef"           return 'SET_CLEF'
 "alto"                return 'CLEF'
 "tenor"               return 'CLEF'
 "bass"                return 'CLEF'
@@ -288,14 +311,24 @@
 %%
 
 root
-  : parts EOF                          { return $1; }
+  : parts EOF
+		{
+			// It's easier for us to treat "header" as a stave during parsing.
+			// But, for everything else, it works best separately.
+			var header = $1[0].header;
+			$1.splice(0, 1);
+			return {
+				header: header,
+				parts: $1
+			};
+		}
   ;
 
 parts
   : /*empty*/
 		{
 			resetPartState();
-			$$ = [];
+			$$ = [{header: {}}];
 		}
   | parts RIPIENO_IS_SCALE
 		{
@@ -304,21 +337,15 @@ parts
 		}
   | parts globalExpr                   
 		{
-			resetPartState();
-			$$ = $1.concat($2);
-			$$.isScale = $1.isScale;
+			$$ = addPart($1, $2);
 		}
   | parts header                      
 		{
-			resetPartState();
-			$$ = $1.concat({header: $2});
-			$$.isScale = $1.isScale;
+			$$ = addPart($1, $2);
 		}
   | parts paper                       
 		{
-			resetPartState();
-			$$ = $1.concat({paper: $2});
-			$$.isScale = $1.isScale;
+			$$ = addPart($1, $2);
 		}
   | parts musicExpr                   
 		{
@@ -340,15 +367,11 @@ parts
 		}
   | parts 'NEW' 'NEW_PIANO_STAFF' pianoStaff
         {
-			resetPartState();
-            $$ = $1.concat($4);
-			$$.isScale = $1.isScale;
+			$$ = addPart($1, $4);
         }
   | parts newStaffExpr                
 		{
-			resetPartState();
-			$$ = $1.concat($2);
-			$$.isScale = $1.isScale;
+			$$ = addPart($1, $2);
 		}
   ;
 
@@ -475,9 +498,6 @@ partElement
   : 'SET_CLEF' 'clef'
         { 
             $$ = new ClefModel({clef: $2});
-            if ($1 === "z_RIPIENO_HACK_INVISIBLE\\clef") {
-                $$.isVisible = false;
-            }
         }
   | 'SET_CLEF' 'STRING'
         {
@@ -694,10 +714,10 @@ dots
   ;
 
 accents
-  : accentx                     { $$ = {markings: [$1]}; }
-  | 'articStaccatoSlur'         { $$ = {markings: ['articStaccato'], slur: true}; }
-  | accents accentx             { $$ = {markings: $1.accents.concat([$2])}; }
-  | accents 'articStaccatoSlur' { $$ = {markings: $1.accents.concat(['articStaccato']), slur: true}; }
+  : accentx                     { $$ = {notations: [$1]}; }
+  | 'articStaccatoSlur'         { $$ = {notations: ['articStaccato'], slur: true}; }
+  | accents accentx             { $$ = {notations: $1.accents.concat([$2])}; }
+  | accents 'articStaccatoSlur' { $$ = {notations: $1.accents.concat(['articStaccato']), slur: true}; }
   ;
 
 accentx

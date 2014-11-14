@@ -103,7 +103,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (status !== C.IterationStatus.Success) { return status; }
             }
 
-            // All notes, chords, and rests throughout a line on a given stave must have the same scale.
+            // All notes, chords, and rests throughout a line on a given part must have the same scale.
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
@@ -319,8 +319,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
         var i: number;
-        for (i = 0; this.markings && i < this.markings.length; ++i) {
-            switch (this.markings[i]) {
+        for (i = 0; this.notations && i < this.notations.length; ++i) {
+            switch (this.notations[i]) {
                 case "keyboardPedalPed":
                 case "keyboardPedalUp":
                 case "keyboardPedalHalf2":
@@ -350,8 +350,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (this.dots) {
             _.times(this.dots, d => str += ".");
         }
-        for (i = 0; this.markings && i < this.markings.length; ++i) {
-            switch (this.markings[i]) {
+        for (i = 0; this.notations && i < this.notations.length; ++i) {
+            switch (this.notations[i]) {
                 case "fermata":
                     if (this.isMultibar) {
                         str += "\\fermataMarkup";
@@ -374,11 +374,11 @@ class DurationModel extends Model implements C.IPitchDuration {
                     break;
 
                 default:
-                    var sym = DurationModel.lilypondSymbols[this.markings[i]];
+                    var sym = DurationModel.lilypondSymbols[this.notations[i]];
                     if (sym) {
                         str += sym;
                     } else {
-                        assert(false, "Unknown or misplaced marking");
+                        assert(false, "Unknown or misplaced notation");
                     }
             }
         }
@@ -870,12 +870,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayDots = c;
     }
 
-    get displayMarkings(): Array<string> {
-        return this._displayMarkings || this._markings;
+    get displayNotation(): Array<string> {
+        return this._displayNotation || this._notations;
     }
 
-    set displayMarkings(m: Array<string>) {
-        this._displayMarkings = m;
+    set displayNotation(m: Array<string>) {
+        this._displayNotation = m;
     }
 
     get flag() {
@@ -917,13 +917,13 @@ class DurationModel extends Model implements C.IPitchDuration {
         return true;
     }
 
-    get markings() {
-        return this._markings;
+    get notations() {
+        return this._notations;
     }
 
-    set markings(m: Array<string>) {
-        this._markings = m;
-        this._displayMarkings = null;
+    set notations(m: Array<string>) {
+        this._notations = m;
+        this._displayNotation = null;
     }
 
     get note(): C.IPitchDuration {
@@ -1200,7 +1200,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
 
-                // 2. The note has the same accidental on all other stave (in the same bar, in the past)
+                // 2. The note has the same accidental on all other part (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
                     if (ctx.accidentalsByStave[j] && target !== __or(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
                             ctx.accidentalsByStave[j][pitch.pitch], target)) {
@@ -1208,7 +1208,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 }
 
-                // 3. The note has the same accidental on other stave with the same note(right now!)
+                // 3. The note has the same accidental on other part with the same note(right now!)
                 var concurrentNotes = ctx.findVertical(c => c.isNote);
                 for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
                     var otherChord = concurrentNotes[j].note.chord;
@@ -1299,7 +1299,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return _.extend(super.toJSON(), {
             _count: this._count,
             _dots: this._dots,
-            _markings: this._markings,
+            _notations: this._notations,
             chord: _.map(this.chord, pitch => sanitizePitch(pitch))
         });
     }
@@ -1310,10 +1310,10 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _count: number;
     private _displayCount: number;
     private _displayDots: number = undefined;
-    private _displayMarkings: Array<string>;
+    private _displayNotation: Array<string>;
     private _displayTuplet: C.ITuplet;
     private _dots: number;
-    private _markings: Array<string>;
+    private _notations: Array<string>;
     private _tuplet: C.ITuplet;
     accToDelete: number;
     chord: Array<C.IPitch>;

@@ -25,6 +25,7 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
                 y: spec.y,
                 line: a.line,
                 stroke: spec.color,
+                opacity: this.props.opacity,
                 fontSize: this.props.fontSize,
                 accidental: a.accidental}))
         );
@@ -92,6 +93,7 @@ module KeySignature {
         key: number;
         spec: KeySignatureModel;
         fontSize: number;
+        opacity?: number;
     }
 }
 

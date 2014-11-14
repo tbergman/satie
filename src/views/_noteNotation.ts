@@ -13,7 +13,7 @@ import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-class NoteMarking extends TypedReact.Component<NoteMarking.IProps, {}> {
+class NoteNotation extends TypedReact.Component<NoteMarking.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
@@ -23,61 +23,61 @@ class NoteMarking extends TypedReact.Component<NoteMarking.IProps, {}> {
             x: this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
             y: this.props.y - this.yOffset(),
             fontSize: this.props.fontSize,
-            fill: this.getGlyphIsTemporary() ? "#A5A5A5" : "#000000",
+            fill: this.glyphIsTemporary ? "#A5A5A5" : "#000000",
             staveHeight: this.props.fontSize,
             glyphName: this.getGlyphName(),
-            glyphIsTemporary: this.getGlyphIsTemporary()
+            glyphIsTemporary: this.glyphIsTemporary
         });
     }
 
-    directionString() {
-        if (SMuFL.bravuraBBoxes[this.getMarkingName()]) {
+    get directionString() {
+        if (SMuFL.bravuraBBoxes[this.getNotationName()]) {
             return "";
-        } else if (this.direction() === 1) {
+        } else if (this.direction === 1) {
             return "Below";
-        } else if (this.direction() === -1) {
+        } else if (this.direction === -1) {
             return "Above";
         }
     }
-    shouldBeAboveStaff() {
+    get shouldBeAboveStaff() {
         var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
-            if (this.getMarkingName().indexOf(above[i]) === 0) {
+            if (this.getNotationName().indexOf(above[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
-    shouldBeBelowStaff() {
+    get shouldBeBelowStaff() {
         var below = ["dynamic"];
         for (var i = 0; i < below.length; ++i) {
-            if (this.getMarkingName().indexOf(below[i]) === 0) {
+            if (this.getNotationName().indexOf(below[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
-    getGlyphIsTemporary() {
-        return this.props.marking.substr(0, 2) === "__";
+    get glyphIsTemporary() {
+        return this.props.notation.substr(0, 2) === "__";
     }
-    getGlyphName() {
-        return this.getMarkingName() + this.directionString();
+    get glyphName() {
+        return this.getNotationName() + this.directionString;
     }
-    getMarkingName() {
-        var isTmp = this.getGlyphIsTemporary();
-        return isTmp ? this.props.marking.substring(2) : this.props.marking;
+    get notationName() {
+        var isTmp = this.glyphIsTemporary;
+        return isTmp ? this.props.notation.substring(2) : this.props.notation;
     }
-    direction() {
+    get direction() {
         if (this.shouldBeAboveStaff) {
             return -1;
         }
         return this.props.direction;
     }
     getFontOffset = getFontOffset;
-    xOffset() {
-        if (this.props.marking.indexOf("caesura") === 0) {
+    get xOffset() {
+        if (this.props.notation.indexOf("caesura") === 0) {
             return -3/8; // TODO -- move to DurationModel and fix
-        } else if (this.props.marking.indexOf("breathMarkComma") === 0) {
+        } else if (this.props.notation.indexOf("breathMarkComma") === 0) {
             return 3/8; // TODO -- move to DurationModel and fix
         }
         return 0;
@@ -98,30 +98,30 @@ class NoteMarking extends TypedReact.Component<NoteMarking.IProps, {}> {
             return m;
         }
 
-        if (this.direction() === 1) {
+        if (this.direction === 1) {
             return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
-			//                               ^^^^^ Prevents markings from begin on lines
+			//                               ^^^^^ Prevents notations from begin on lines
         }
 
         return (this.props.line + 1.2 + (this.props.line % 1  && this.props.line + 1.2 < 5 ? 0.4 : 0) + this.props.idx - 3)/4;
-		//                               ^^^^^ Prevents markings from begin on lines
+		//                               ^^^^^ Prevents notations from begin on lines
     }
 }
 
-module NoteMarking {
+module NoteNotation {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, NoteMarking);
+    export var Component = TypedReact.createClass(React.createClass, NoteNotation);
 
     export interface IProps {
         direction: number; // -1 or 1
         fontSize: number;
         idx: number;
         line: number;
-        marking: string;
+        notation: string;
         notehead: string;
         x: number;
         y: number;
     }
 }
 
-export = NoteMarking;
+export = NoteNotation;

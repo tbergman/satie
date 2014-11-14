@@ -107,7 +107,7 @@ class BarlineModel extends Model {
             next.type === C.Type.NewLine || next.type === C.Type.NewPage);
 
         // Barlines followed by accidentals have additional padding. We check all
-        // staves for following accidentals.
+        // parts for following accidentals.
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];

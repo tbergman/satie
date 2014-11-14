@@ -15,8 +15,8 @@ import C = require("./contracts");
 import Instruments = require("./instruments");
 import Model = require("./model");
 
-var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 var enabled = (typeof document !== "undefined");
+var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
 
 if (!global.AudioContext && global.webkitAudioContext) {
     global.AudioContext = global.webkitAudioContext;
@@ -131,6 +131,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         if (action.response.forExport) {
             window.location = <any> url;
         } else if (action.response.cb === "" + PlaybackStore.latestID) {
+            _legacyAudioReady = false;
             var play = function () {
                 audio5js.load(url);
             };
@@ -139,6 +140,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             } else {
                 audio5js.pending = play;
             }
+            this._songEditor.legacyAudioID = PlaybackStore.latestID;
         }
         this.emit(CHANGE_EVENT);
     }
@@ -190,7 +192,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         if (aobj && aobj.endMarker) {
             this._dispatcher.PUT("/local/visualCursor", {
                 step: 1,
-                skipThroughBars: true,
+                skipDurationlessContent: true,
                 loopThroughEnd: true
             });
         }
@@ -199,8 +201,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         var foundLegacyStart = false;
         var startTime = PlaybackStore.USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < this._songEditor.staves.length; ++h) {
-            var body: C.IBody = this._songEditor.staves[h].body;
+        for (var h = 0; h < this._songEditor.parts.length; ++h) {
+            var body: C.IBody = this._songEditor.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -210,11 +212,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            var soundfont = this._songEditor.staves[h].instrument.soundfont;
+            var soundfont = this._songEditor.parts[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(this._songEditor.staves, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
+            var ctx = new Annotator.Context(this._songEditor.parts, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
@@ -282,9 +284,12 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                         this.emit(CHANGE_EVENT);
                     });
                 }
-                this._dispatcher.PUT("/local/visualCursor", {
-                    step: 1,
-                    skipThroughBars: true
+                _.defer(() => {
+                    this._dispatcher.PUT("/local/visualCursor", {
+                        step: 1,
+                        skipDurationlessContent: true,
+                        loopThroughEnd: true
+                    });
                 });
             }, delay*1000 - 10);
 
@@ -304,7 +309,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
         if (!enabled || PlaybackStore.USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
-            return; // Sorry IE, you only GET a piano.
+            return; // Sorry IE, you only get a piano.
         }
 
         if (this._loadedSoundfonts[soundfont] && typeof console !== "undefined") {
@@ -357,12 +362,35 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     private _play(on: boolean) {
         this._playing = on;
         if (this._playing) {
-            this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
+            if (!this.upToDate) {
+                if (isNaN(this._songEditor.legacyAudioID)) {
+                    return;
+                }
+                this._songEditor.legacyAudioID = NaN;
+                _.defer(() => {
+                    this._playing = false;
+                    this._dispatcher.POST("/api/v0/synth",
+                        {
+                            data: this._songEditor.dragonAudio,
+                            cb: "" + ++PlaybackStore.latestID,
+                            forExport: false
+                        });
+                });
+            } else {
+                this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
+            }
         } else {
             (this._remainingActions || []).forEach(m => {
                 m();
             });
         }
+    }
+
+    /**
+     * For legacy audio.
+     */
+    get upToDate() {
+        return !USING_LEGACY_AUDIO || this._songEditor.legacyAudioID === PlaybackStore.latestID;
     }
 
     private _bpm: number = 120;

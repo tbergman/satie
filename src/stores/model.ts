@@ -19,13 +19,13 @@ import _ = require("lodash");
  * In particular, classes which extend Model provide three two functions:
  *   - annotateImpl: adds any missing information (default values) not provided
  *      by the parser, adds any missing elements (e.g., clefs, time signatures,
- *      line breaks) to stave.body
+ *      line breaks) to part.body
  *   - render: returns the instance of a React component which renders the
  *      component. Does not accept anything. Any processing should be done in
  *      annotateImpl.
  * 
  * To see the kind of information held by Models, in your web browser's
- * console, look at 'SongEditorStore.staves()[...].body'. Every item is a Model.
+ * console, look at 'SongEditorStore.parts()[...].body'. Every item is a Model.
  */
 class Model {
     annotate(ctx: Annotator.Context): C.IterationStatus {
@@ -88,7 +88,7 @@ class Model {
         assert(false, "Not implemented");
     }
 
-    visible() {
+    visible(): boolean {
         return true;
     }
 
@@ -130,17 +130,17 @@ class Model {
     };
 
     /**
-     * Given an array of staves, remove all annotated objects
+     * Given an array of parts, remove all annotated objects
      * created through a Model.
      */
-    static removeAnnotations = (staves: Array<C.IStave>) => {
-        for (var i = 0; i < staves.length; ++i) {
-            for (var j = 0; staves[i].body && j < staves[i].body.length; ++j) {
-                var item = staves[i].body[j];
+    static removeAnnotations = (parts: Array<C.IPart>) => {
+        for (var i = 0; i < parts.length; ++i) {
+            for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
+                var item = parts[i].body[j];
                 if (item.source === C.Source.Annotator && !item.placeholder) {
-                    for (var k = 0; k < staves.length; ++k) {
-                        if (staves[k].body) {
-                            staves[k].body.splice(j, 1);
+                    for (var k = 0; k < parts.length; ++k) {
+                        if (parts[k].body) {
+                            parts[k].body.splice(j, 1);
                         }
                     }
                     --j;
@@ -276,6 +276,10 @@ class Model {
         assert(false, "Setting priority is not implemented for this type.");
     }
 
+    get isModifier() {
+        return this.priority > C.Type.START_OF_MODIFIERS && this.priority < C.Type.END_OF_MODIFIERS;
+    }
+
     beam: Array<C.IPitchDuration>;
 
     static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
@@ -293,6 +297,39 @@ enum Flags {
 function _sessionId(): string {
     "use strict";
     return (Math.random().toString(16) + "000000000").substr(2, 8);
+}
+
+module Model {
+    "use strict";
+
+    /**
+     * Types that do not support adjacent models of the same type.
+     */
+    export class StateChangeModel extends Model {
+        annotate(ctx: Annotator.Context) {
+            if (ctx.next(null, 1, true).priority === this.type) {
+                // Find real versions of every part, if possible.
+                var here = ctx.findVertical(null, this.idx);
+                var next = ctx.findVertical(null, this.idx + 1);
+                var combined = new Array(here.length);
+                for (var i = 0; i < combined.length; ++i) {
+                    if (!next[i].placeholder) {
+                        combined[i] = next[i];
+                    } else {
+                        combined[i] = here[i];
+                    }
+                }
+                for (var i = 0; i < ctx._parts.length; ++i) {
+                    ctx._parts[i].body.splice(ctx.idx, 1);
+                    ctx._parts[i].body[ctx.idx] = combined[i];
+                }
+                return this.retryStatus;
+            }
+
+            return super.annotate(ctx);
+        }
+        retryStatus = C.IterationStatus.RetryCurrent;
+    }
 }
 
 export = Model;

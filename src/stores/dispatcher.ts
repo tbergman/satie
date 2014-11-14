@@ -40,18 +40,18 @@ class Dispatcher implements C.IDispatcher {
         this._callbacks = this._callbacks.filter(cb => cb !== callback);
     }
 
-	DELETE(url: string, p?: any, cb?: () => void): Promise<void> {
-	    return this._dispatch(url, "DELETE", p, cb); }
-	GET(url: string, p?: any, cb?: () => void): Promise<void> {
-	    return this._dispatch(url, "GET", p, cb); }
-    PATCH(url: string, p?: any, cb?: () => void): Promise<void> {
-        return this._dispatch(url, "PATCH", p, cb); }
-	POST(url: string, p?: any, cb?: () => void): Promise<void> {
-	    return this._dispatch(url, "POST", p, cb); }
-	PUT(url: string, p?: any, cb?: () => void): Promise<void> {
-	    return this._dispatch(url, "PUT", p, cb); }
+	DELETE(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	    return this._dispatch(url, "DELETE", p, cb, nested); }
+	GET(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	    return this._dispatch(url, "GET", p, cb, nested); }
+    PATCH(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+        return this._dispatch(url, "PATCH", p, cb, nested); }
+	POST(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	    return this._dispatch(url, "POST", p, cb, nested); }
+	PUT(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	    return this._dispatch(url, "PUT", p, cb, nested); }
 
-    _dispatch(url: string, verb: string, postData: any, cb?: () => void) : Promise<void> {
+    _dispatch(url: string, verb: string, postData: any, cb?: () => void, nested: boolean = false) : Promise<void> {
 	    assert(verb, "Verb must be defined");
 
         var pr: Promise<void>;
@@ -78,7 +78,8 @@ class Dispatcher implements C.IDispatcher {
 	                query: query,
 	                url: url,
 	                response: response,
-	                postData: null
+                    postData: null,
+                    nexted: nested
 	            });
 
 	            if (cb) {
@@ -92,7 +93,8 @@ class Dispatcher implements C.IDispatcher {
 	            response: null,
 	            status: null,
 	            query: query,
-	            postData: postData
+                postData: postData,
+                nested: nested
 	        });
 
 	        if ((verb in networkActions) && !url.indexOf("/api")) {
@@ -104,7 +106,8 @@ class Dispatcher implements C.IDispatcher {
 	                    query: query,
 	                    url: url,
 	                    response: response,
-	                    postData: null
+                        postData: null,
+                        nested: nested
 	                });
 
 	                if (cb) {
@@ -171,9 +174,11 @@ class Dispatcher implements C.IDispatcher {
                 JSON.stringify(action.postData) + "\n";
         }
 
-        if (this._inAction) { // temporary workaround
-            assert(false, "Queuing an action (" + action.description +
-                ") during an action (" + this._inAction + ") is a violation of Flux");
+        if (this._inAction && !action.nested) {
+            // In practice, this is causing more problems than it is solving.  Maybe it should just check that
+            // an action can not be queued by another action?
+            // assert(false, "Queuing an action (" + action.description +
+            //    ") during an action (" + this._inAction + ") is a violation of Flux");
         }
 
         _.each(this._callbacks, callback => {
@@ -185,7 +190,11 @@ class Dispatcher implements C.IDispatcher {
         return Promise.Promise
             .all(this._promises)
             .then(this._clearPromises)
-            ["catch"]((err) => { // For support with IE 6.
+            .catch((err) => {
+                if (err instanceof C.DispatcherRedirect) {
+                    var redirect: C.DispatcherRedirect = err;
+                    this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
+                }
                 this._inAction = null;
                 console.warn("Exception occurred in promise", err);
                 console.log(err.stack);

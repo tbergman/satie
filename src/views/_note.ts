@@ -1,7 +1,7 @@
 /**
  * Renders a note including annotations, dots, stems, ties, accidentals, and flags.
  * Either rendered by DurationModel or BeamGroup. Does not render beams.
- *
+ * 
  * The stem height is calculated in this file.
  * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
@@ -20,7 +20,7 @@ import Flag = require("./_flag");
 import Group = require("./_group");
 import LedgerLine = require("./_ledgerLine");
 import NoteHead = require("./_noteHead");
-import NoteMarking = require("./_noteMarking");
+import NoteNotation = require("./_noteNotation");
 import NoteStem = require("./_noteStem");
 
 class Note extends TypedReact.Component<Note.IProps, {}> {

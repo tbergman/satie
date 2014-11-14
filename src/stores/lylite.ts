@@ -6,7 +6,9 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-export function parse(src: string) {
+import C = require("./contracts");
+
+export function parse(src: string): { parts: Array<C.IPart>; header: C.IHeader; } {
     "use strict";
     var lylite = require("./lylite.jison");
     return lylite.parser.parse(src);

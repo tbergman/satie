@@ -10,7 +10,7 @@ import assert = require("assert");
 
 import DurationModel = require("../stores/duration");
 import Note = require("./_note");
-import NoteMarking = require("./_noteMarking");
+import NoteNotation = require("./_noteNotation");
 import Rest = require("./_rest");
 import renderUtil = require("../util/renderUtil");
 
@@ -27,12 +27,12 @@ export function Component(props: IProps): React.ReactElement<any, any> {
     var spec = props.spec;
     assert(spec instanceof DurationModel);
 
-    var markings = _.map(spec.displayMarkings || [], (m, idx) =>
-        NoteMarking.Component({
+    var notations = _.map(spec.displayNotation || [], (m, idx) =>
+        NoteNotation.Component({
             idx: 1,
             direction: props.direction,
             fontSize: props.fontSize,
-            marking: m,
+            notation: m,
             key: idx,
             line: 3,
             notehead: props.spec.notehead,
@@ -59,7 +59,7 @@ export function Component(props: IProps): React.ReactElement<any, any> {
                 stroke: spec.color,
                 x: spec.x,
                 y: spec.y},
-            markings
+            notations
         );
     }
 
@@ -83,7 +83,7 @@ export function Component(props: IProps): React.ReactElement<any, any> {
             tieTo: spec.tieTo && spec.tieTo.x,
             x: zeroOffsetMode ? 0 : spec.x,
             y: zeroOffsetMode ? 0 : spec.y},
-        markings);
+        notations);
 
     if (zeroOffsetMode) {
         return html.g({

@@ -50,8 +50,8 @@ var files = {
     mainLocal: "./.partialBuild/main.js"
 };
 
-gulp.task("watch", ["build-debug"], function() {
-    var nginx = spawn("nginx", ["-c", "./nginx.conf", "-p", "./nginx"], {cwd: process.cwd()});
+gulp.task("watch", ["build-debug", "chores"], function() {
+    var nginx = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
     nginx.stderr.on("data", function(data) {
         console.log(data.toString());
     });
@@ -62,13 +62,13 @@ gulp.task("watch", ["build-debug"], function() {
 var __sharedBrowserify = null;
 function getSharedBrowserify() {
     if (!__sharedBrowserify) {
-        __sharedBrowserify = watchify(browserify(browserifyOpts.debug));
+        __sharedBrowserify = watchify(browserify(browserifyOpts.debug))
+            .add(files.mainLocal);
     }
     return __sharedBrowserify;
 }
 gulp.task("build-debug", ["typescript"], function() {
     return getSharedBrowserify()
-        .add(files.mainLocal)
         .bundle()
         .on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("end", gutil.log.bind(gutil, "Built bundle"))
@@ -130,17 +130,17 @@ function buildAndRunTest(daemonize, karmalize) {
     return retest();
 };
 
-gulp.task("chores", ["typescript"], function() {
-    var stream = browserify("./.partialBuild/choreServer.js", browserifyOpts.chore).bundle()
+gulp.task("build-chores", ["typescript"], function() {
+    return browserify("./.partialBuild/choreServer.js", browserifyOpts.chore).bundle()
         .on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("end", gutil.log.bind(gutil, "Built bundle"))
         .pipe(source("chore-server.js"))
         .pipe(streamify(uglify()))
         .pipe(gulp.dest("./build"));
+});
 
+gulp.task("chores", ["build-chores"], function() {
     run_cmd("bash", ["-c", "cat ./build/chore-server.js | node"]);
-
-    return stream;
 
     function run_cmd(cmd, args, callback ) {
         var spawn = require('child_process').spawn;
@@ -185,7 +185,7 @@ gulp.task("lint", function() {
 });
 
 gulp.task("build", ["typescript", "cli-test-once"], function() {
-    return browserify("./.partialBuild/main.js", browserifyOptsProd.prod).bundle()
+    return browserify("./.partialBuild/main.js", browserifyOpts.prod).bundle()
         .on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("end", gutil.log.bind(gutil, "Built bundle"))
         .pipe(source("browser-bundle.js"))

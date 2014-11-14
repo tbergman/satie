@@ -20,7 +20,7 @@ var isPitch = (k: C.IPitch, name: string, acc?: number) =>
 /**
  * Represents a key signature as an array of accidentals, and a tonality (major/minor).
  */
-class KeySignatureModel extends Model {
+class KeySignatureModel extends Model.StateChangeModel {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
@@ -31,7 +31,7 @@ class KeySignatureModel extends Model {
 
         // Copy information from the context that the view needs.
         this.clef = ctx.clef;
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration, true), l => l.isNote);
+        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.keySignature = this.keySignature;
         ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
         if (intersectingNotes.length) {
