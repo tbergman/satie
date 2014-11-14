@@ -294,8 +294,8 @@ export interface IFluxAction {
  * information.
  */
 export interface IHeader {
-    title: string;
     composer: string;
+    title: string;
 
     /**
      * True if the title should be rendered as a link, usually because
