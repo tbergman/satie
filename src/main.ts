@@ -17,7 +17,7 @@ import React = require("react");
 
 import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
-import FiveOhFive = require("./landing/fiveOhFive");
+import FiveOhFive = require("./ui/fiveOhFive");
 import Router = require("./router");
 import SessionStore = require("./stores/session");
 
@@ -47,7 +47,7 @@ function initTouchIfNeeded() {
         React.initializeTouchEvents(true);
 
         // Some touch devices require "cursor: pointer" for events to be sent
-        require("./landing/touch.less");
+        require("./ui/touch.less");
     }
 }
 

@@ -54,8 +54,8 @@
     },
     "scripts": {
         "dev-server": "gulp watch",
-        "lrc-watchify": "watchify --extension .ts -v -o build/libripienoclientBridge-bundle.js -d ./src/libripienoclientBridge.js --noparse lodash",
         "build": "NODE_ENV=production gulp build",
+        "build-libripienoclient": "browserify -o .partialBuild/libripienoclientBridge-bundle.js -d .partialBuild/libripienoclientBridge.js --noparse lodash",
         "test": "gulp gui-test-once",
         "cli-test-once": "gulp cli-test-once",
         "cli-test-daemon": "gulp cli-test-daemon",

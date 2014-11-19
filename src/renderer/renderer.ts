@@ -23,7 +23,7 @@ import renderUtil = require("../util/renderUtil");
 import Rect = require("../views/_rect");
 import Group = require("../views/_group");
 import Line = require("../views/_line");
-import RipienoFooter = require("../landing/ripienoFooter");
+import RipienoFooter = require("../ui/ripienoFooter");
 import SelectionRect = require("./selectionRect");
 
 var isBrowser = typeof window !== "undefined";
