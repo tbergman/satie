@@ -12,6 +12,7 @@ import Model = require("./model");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import ClefModel = require("./clef");
+import Duration = require("../views/duration");
 import DurationModel = require("./duration");
 import KeySignatureModel = require("./keySignature");
 import TimeSignatureModel = require("./timeSignature");
@@ -116,8 +117,8 @@ class BeamGroupModel extends Model {
     /**
      * Renders the beam
      */
-    generate(fontSize: number): Array<React.ReactElement<any, any>> {
-        return <any> _.map(this.beam, b => b.render(fontSize));
+    generate(fontSize: number, options: Array<Duration.IProps>): Array<React.ReactElement<any, any>> {
+        return <any> _.map(this.beam, (b, idx) => b.render(fontSize, options[idx]));
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {

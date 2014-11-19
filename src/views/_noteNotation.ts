@@ -13,68 +13,68 @@ import Glyph = require("./_glyph");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-class NoteNotation extends TypedReact.Component<NoteMarking.IProps, {}> {
+class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
     render() {
         var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
-        var o2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxSW;
-        var s2 = SMuFL.bravuraBBoxes[this.getGlyphName()].bBoxNE;
+        var o2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxSW;
+        var s2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxNE;
         return Glyph.Component({
             x: this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
             y: this.props.y - this.yOffset(),
             fontSize: this.props.fontSize,
-            fill: this.glyphIsTemporary ? "#A5A5A5" : "#000000",
+            fill: this.glyphIsTemporary() ? "#A5A5A5" : "#000000",
             staveHeight: this.props.fontSize,
-            glyphName: this.getGlyphName(),
-            glyphIsTemporary: this.glyphIsTemporary
+            glyphName: this.glyphName(),
+            glyphIsTemporary: this.glyphIsTemporary()
         });
     }
 
-    get directionString() {
-        if (SMuFL.bravuraBBoxes[this.getNotationName()]) {
+    directionString() {
+        if (SMuFL.bravuraBBoxes[this.notationName()]) {
             return "";
-        } else if (this.direction === 1) {
+        } else if (this.direction() === 1) {
             return "Below";
-        } else if (this.direction === -1) {
+        } else if (this.direction() === -1) {
             return "Above";
         }
     }
-    get shouldBeAboveStaff() {
+    shouldBeAboveStaff() {
         var above = ["fermata", "breathMark", "caesura", "strings"];
         for (var i = 0; i < above.length; ++i) {
-            if (this.getNotationName().indexOf(above[i]) === 0) {
+            if (this.notationName().indexOf(above[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
-    get shouldBeBelowStaff() {
+    shouldBeBelowStaff() {
         var below = ["dynamic"];
         for (var i = 0; i < below.length; ++i) {
-            if (this.getNotationName().indexOf(below[i]) === 0) {
+            if (this.notationName().indexOf(below[i]) === 0) {
                 return true;
             }
         }
         return false;
     }
-    get glyphIsTemporary() {
+    glyphIsTemporary() {
         return this.props.notation.substr(0, 2) === "__";
     }
-    get glyphName() {
-        return this.getNotationName() + this.directionString;
+    glyphName() {
+        return this.notationName() + this.directionString();
     }
-    get notationName() {
-        var isTmp = this.glyphIsTemporary;
+    notationName() {
+        var isTmp = this.glyphIsTemporary();
         return isTmp ? this.props.notation.substring(2) : this.props.notation;
     }
-    get direction() {
-        if (this.shouldBeAboveStaff) {
+    direction() {
+        if (this.shouldBeAboveStaff()) {
             return -1;
         }
         return this.props.direction;
     }
     getFontOffset = getFontOffset;
-    get xOffset() {
+    xOffset() {
         if (this.props.notation.indexOf("caesura") === 0) {
             return -3/8; // TODO -- move to DurationModel and fix
         } else if (this.props.notation.indexOf("breathMarkComma") === 0) {
@@ -84,13 +84,13 @@ class NoteNotation extends TypedReact.Component<NoteMarking.IProps, {}> {
     }
     yOffset() {
 		var m: number;
-        if (this.shouldBeAboveStaff) {
+        if (this.shouldBeAboveStaff()) {
 			m = (6.0 + this.props.idx - 3)/4;
 			if (m + 1.5 <= this.props.line/4) {
 				m = (this.props.line)/4 + 1.5;
 			}
 			return m;
-        } else if (this.shouldBeBelowStaff) {
+        } else if (this.shouldBeBelowStaff()) {
             m = (-1.5 + this.props.idx - 3)/4;
             if (m + 1.5 >= this.props.line/4) {
                 m = (this.props.line)/4 - 1.5;
@@ -98,7 +98,7 @@ class NoteNotation extends TypedReact.Component<NoteMarking.IProps, {}> {
             return m;
         }
 
-        if (this.direction === 1) {
+        if (this.direction() === 1) {
             return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
 			//                               ^^^^^ Prevents notations from begin on lines
         }

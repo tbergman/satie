@@ -8,8 +8,12 @@
 
 /// <reference path="../node_modules/typed-react/dist/typed-react.d.ts" />
 /// <reference path="../references/react.d.ts" />
+/// <reference path="../references/react-bootstrap.d.ts" />
 
+import Bootstrap=require("react-bootstrap");
 import React = require("react");
+
+
 
 import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
@@ -25,7 +29,6 @@ var ReactPerf = require("react/lib/ReactDefaultPerf");
 (function main() {
     "use strict";
     initTouchIfNeeded();
-    setDebugGlobals();
 
     var dispatcher = new Dispatcher;
     var session = new SessionStore(dispatcher);
@@ -46,12 +49,6 @@ function initTouchIfNeeded() {
         // Some touch devices require "cursor: pointer" for events to be sent
         require("./landing/touch.less");
     }
-}
-
-function setDebugGlobals() {
-    "use strict";
-    global.React = React; // for Chrome DevTools extension and React typescript extension
-    global.ReactPerf = ReactPerf; // for monkeying around in the console
 }
 
 function render(dispatcher: C.IDispatcher, session: C.ISessionStore) {

@@ -10,14 +10,14 @@ import Glyph = require("./_glyph");
 
 class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
     render() {
-        return Glyph.Component({
-            x: this.props.x,
-            y: this.props.y - (this.props.line - 3)/4,
-            fill: this.props.stroke,
-            opacity: this.props.opacity,
-            fontSize: this.props.fontSize,
-            glyphName: this.props.accidental,
-			"selection-info": "accidental-" + this.props.idx});
+        return <!Glyph.Component
+            x={this.props.x}
+            y={this.props.y - (this.props.line - 3)/4}
+            fill={this.props.stroke}
+            opacity={this.props.opacity}
+            fontSize={this.props.fontSize}
+            glyphName={this.props.accidental}
+			"selection-info"={"accidental-" + this.props.idx} />
     }
 }
 

@@ -45,70 +45,73 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     }
                 }
                 if (direction === 1) {
-                    linesOffset[lines[i] + 0.5 - x] = 0.035*4*2;
+                    linesOffset[lines[i] + 0.5 - x] = 0.035 * 4 * 2;
                     linesOffset[lines[i] - x] = 0;
                 } else {
                     linesOffset[lines[i] + 0.5 - x] = 0;
-                    linesOffset[lines[i] - x] = -0.035*4*2;
+                    linesOffset[lines[i] - x] = -0.035 * 4 * 2;
                 }
             }
         }
-        return Group(null,
-            _.map(lines, (line: number, idx: number) => [
-                // XXX(profile) make more efficient
-                <React.ReactElement<any, any>> NoteHead.Component({
-                    key: idx + "l",
-                    x: this.props.x + (linesOffset[line] || 0),
-                    y: this.props.y,
-                    fontSize: this.props.fontSize,
-                    line: line,
-                    stroke: this.props.strokes[idx],
-                    notehead: this.props.notehead})].concat(
-                this.props.dotted ? _.times(this.props.dotted, idx => Dot.Component({
-                    idx: idx,
-                    key: idx + "d",
-                    stroke: this.props.strokes[0],
-                    radius: 0.06,
-                    x: this.props.x,
-                    y: this.props.y,
-                    fontSize: this.props.fontSize,
-                    line: line})): null)).concat([
-            this.props.hasStem && NoteStem.Component({
-                x: this.props.x,
-                y: this.props.y,
-                key: "stem",
-                direction: direction,
-                line: this.getStartingLine(),
-                stroke: this.props.secondaryStroke,
-                height: this.getStemHeight(),
-                fontSize: this.props.fontSize,
-                notehead: this.props.notehead}),
-            this.props.flag && Flag.Component({
-                key: "flag",
-                x: this.props.x,
-                y: this.props.y,
-                line: this.getStartingLine(),
-                stroke: this.props.secondaryStroke,
-                stemHeight: this.getStemHeight() - this.direction()/4,
-                stemWidth: 0.035,
-                flag: this.props.flag,
-                fontSize: this.props.fontSize,
-                notehead: this.props.notehead,
-                direction: direction})]).concat(
-            this.props.children && _.map(this.props.children, (component: React.ReactComponentElement<NoteMarking.IProps>, idx: number) => {
-                component.props.direction = direction;
-                component.props.line = this.getStartingLine();
-                component.props.x = this.props.x;
-                component.props.y = this.props.y;
-                component.props.idx = idx;
-                component.props.notehead = this.props.notehead;
-                component.props.fontSize = this.props.fontSize;
-                return component;
-            })).concat(
-            this.accidentals()).concat(
-            this.ledgerLines()).concat( // XXX(profile) make more efficient
-            this.tie())
-        );
+        return <!Group.Component>
+            {_.map(lines, (line: number, idx: number) => <!Group.Component key={"_" + idx}>
+                <!NoteHead.Component
+                    key="_0"
+                    x={this.props.x + (linesOffset[line] || 0)}
+                    y={this.props.y}
+                    fontSize={this.props.fontSize}
+                    line={line}
+                    stroke={this.props.strokes[idx]}
+                    notehead={this.props.notehead} />
+                {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
+                    idx={idx}
+                    key="_1"
+                    stroke={this.props.strokes[0]}
+                    radius={0.06}
+                    x={this.props.x}
+                    y={this.props.y}
+                    fontSize={this.props.fontSize}
+                    line={line} />) : null}
+                {this.props.hasStem && <!NoteStem.Component
+                    x={this.props.x}
+                    y={this.props.y}
+                    key="_2"
+                    direction={direction}
+                    line={this.getStartingLine()}
+                    stroke={this.props.secondaryStroke}
+                    height={this.getStemHeight()}
+                    fontSize={this.props.fontSize}
+                    notehead={this.props.notehead} />}
+                {this.props.flag && <!Flag.Component
+                    key="_3"
+                    x={this.props.x}
+                    y={this.props.y}
+                    line={this.getStartingLine()}
+                    stroke={this.props.secondaryStroke}
+                    stemHeight={this.getStemHeight() - this.direction() / 4}
+                    stemWidth={0.035}
+                    flag={this.props.flag}
+                    fontSize={this.props.fontSize}
+                    notehead={this.props.notehead}
+                    direction={direction} />}
+                {this.props.children && _.map(this.props.children,
+                    (component: React.ReactComponentElement<NoteNotation.IProps>, idx: number) => {
+                        component.key = "_4_" + idx;
+                        component.props.direction = direction;
+                        component.props.line = this.getStartingLine();
+                        component.props.x = this.props.x;
+                        component.props.y = this.props.y;
+                        component.props.idx = idx;
+                        component.props.notehead = this.props.notehead;
+                        component.props.fontSize = this.props.fontSize;
+                        return component;
+                    }
+                )}
+                {this.accidentals()}
+                {this.ledgerLines()}
+                {this.tie()}
+            </Group.Component>)}
+        </Group.Component>;
     }
 
     getDefaultProps(): Note.IProps {
@@ -192,21 +195,21 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         var highest = this.getHighestLine();
         if (lowest < 0.5) {
             ret = ret.concat(_.times(Math.floor(1 - lowest), idx =>
-                LedgerLine.Component({
-                    key: idx + "low",
-                    line: -idx,
-                    notehead: this.props.notehead,
-                    x: this.props.x,
-                    y: this.props.y})));
+                <!LedgerLine.Component
+                    key={idx + "low"}
+                    line={-idx}
+                    notehead={this.props.notehead}
+                    x={this.props.x}
+                    y={this.props.y} />));
         }
         if (highest > 5.5) {
             ret = ret.concat(_.times(Math.floor(highest - 5), idx =>
-                LedgerLine.Component({
-                    key: idx + "high",
-                    line: 6 + idx,
-                    notehead: this.props.notehead,
-                    x: this.props.x,
-                    y: this.props.y})));
+                <!LedgerLine.Component
+                    key={idx + "high"}
+                    line={6 + idx}
+                    notehead={this.props.notehead}
+                    x={this.props.x}
+                    y={this.props.y} />));
         }
         assert(ret.length);
         return ret;
@@ -253,15 +256,15 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     default:
                         assert(0, "Not reached");
                 }
-                return Accidental.Component({
-                    x: this.props.x - (glyphOffset || this.accidentalSpacing()),
-                    y: this.props.y,
-                    stroke: this.props.accStrokes[idx],
-                    fontSize: this.props.fontSize,
-                    line: l[idx],
-                    key: "acc_" + idx,
-                    idx: idx,
-                    accidental: glyphName});
+                return <!Accidental.Component
+                    x={this.props.x - (glyphOffset || this.accidentalSpacing())}
+                    y={this.props.y}
+                    stroke={this.props.accStrokes[idx]}
+                    fontSize={this.props.fontSize}
+                    line={l[idx]}
+                    key={"acc_" + idx}
+                    idx={idx}
+                    accidental={glyphName} />;
             } else {
                 return null;
             }
@@ -275,15 +278,16 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         }
 
         var fullWidth = this.props.tieTo - this.props.x;
-        return Tie.Component({key: "tie_0",
-            fontSize: this.props.fontSize,
-            spec: {
+        return <!Tie.Component
+            key={"tie_0"}
+            fontSize={this.props.fontSize}
+            spec={{
                 direction: -this.direction,
                 x: this.props.x + fullWidth/8 + 0.15,
                 y: this.props.y,
                 lines1: [this.getStartingLine()],
                 lines2: [this.getStartingLine()],
-                width: fullWidth*0.75}});
+                width: fullWidth*0.75}} />;
     }
 };
 
@@ -308,7 +312,7 @@ module Note {
     export interface IProps {
         accidentals?: any;
         accStrokes?: any;
-        children?: Array<React.ReactComponentElement<NoteMarking.IProps>>;
+        children?: Array<React.ReactComponentElement<NoteNotation.IProps>>;
         direction?: number;
         dotted?: number;
         idx?: number;

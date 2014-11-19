@@ -19,16 +19,16 @@ var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThicknes
 class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset();
-        return Line.Component({
-            x1: this.props.x + fontOffset[0]/4 + this.lineXOffset(),
-            x2: this.props.x + fontOffset[0]/4 + this.lineXOffset(),
-            y1: this.props.y - fontOffset[1]/4 - (this.props.line - 3)/4,
-            y2: this.props.y -
+        return <!Line.Component
+            x1={this.props.x + fontOffset[0]/4 + this.lineXOffset()}
+            x2={this.props.x + fontOffset[0]/4 + this.lineXOffset()}
+            y1={this.props.y - fontOffset[1]/4 - (this.props.line - 3)/4}
+            y2={this.props.y -
                 (this.props.line - 3)/4 -
                 fontOffset[1]/4 -
-                this.direction()*this.height()/4,
-            stroke: this.props.stroke,
-            strokeWidth: stemThickness});
+                this.direction()*this.height()/4}
+            stroke={this.props.stroke}
+            strokeWidth={stemThickness} />;
     }
 
     height() {

@@ -4,12 +4,14 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
+import React = require("react"); // For TSX in setView.
 import assert = require("assert");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
 
 import _ = require("lodash");
+var assign = require("react/lib/Object.assign");
 
 /**
  * Subclasses of Models handle the gap between the abstract representation of
@@ -92,8 +94,8 @@ class Model {
         return true;
     }
 
-    render(fontSize: number) {
-        assert(false, "Not implemented");
+    render(fontSize: number, options?: any): React.ReactComponentElement<any> {
+        throw "Not implemented";
     }
 
     get annotatedExtraWidth(): number {
@@ -120,12 +122,9 @@ class Model {
 
     // FIXME: key is now a string
     static setView = function (View: (opts: { key: number; spec: Model; fontSize: number }) => any) {
-        this.prototype.render = function (fontSize: number) {
-            return View({
-                key: this.key,
-                spec: this,
-                fontSize: fontSize
-            });
+        this.prototype.render = function (fontSize: number, options: any) {
+            var props = assign({}, options, {key: this.key, spec: this, fontSize: fontSize});
+            return <!View {...props} />;
         };
     };
 

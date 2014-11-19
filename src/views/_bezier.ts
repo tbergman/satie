@@ -41,7 +41,7 @@ class Bezier extends TypedReact.Component<Bezier.IProps, {}> {
     }
 }
 
-Bezier.prototype.mixins = [RenderableMixin];
+Bezier.prototype.render = RenderableMixin.prototype.render;
 
 module Bezier {
     "use strict";

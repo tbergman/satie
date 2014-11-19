@@ -121,7 +121,6 @@ class PlaceholderModel extends Model {
                 ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }));
                 ctx.body[ctx.idx].source = this.source;
                 return C.IterationStatus.RetryCurrent;
-                break;
             case C.Type.NewLine:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
                 ctx.body[ctx.idx].source = this.source;

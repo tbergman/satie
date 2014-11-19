@@ -32,19 +32,16 @@ var useGL = (typeof global.libripienoclient !== "undefined") ||
 
 renderUtil.useGL = useGL;
 
-var RenderEngine: (props: Molasses.IProps, ...children: any[]) => Molasses = useGL
-    ? Victoria : Molasses.Component;
+var RenderEngine: typeof Molasses.Component = useGL ? Victoria : Molasses.Component;
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
-
-var html = React.DOM;
 
 /**
  * The main home of the renderer. The renderer accepts annotated Models and
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
  */
-class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IRendererState> {
+class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     render() {
         if (PROFILER_ENABLED) {
             console.time("render");
@@ -90,51 +87,48 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
 
         var vcHeight = 1.2 + ctx.staveSeperation / 2;
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
-            return RenderEngine(
-                {
-                    onClick: this.handleMouseClick,
-                    onMouseDown: this.handleMouseDown,
-                    onMouseUp: this.handleMouseUp,
-                    onMouseLeave: this.handleMouseLeave,
-                    onMouseMove: this.handleMouseMove,
-                    page: page,
-                    parts: parts,
-                    width: this.props.raw ? mInchW/10000 + "in" : "100%",
-                    height: this.props.raw ? mInchH/10000 + "in" : "100%",
-                    widthInSpaces: renderUtil.mm(this.props.pageSize.width, fontSize),
-                    viewbox: viewbox
-                },
-                !page.from && !useGL && Header({
-                    fontSize: fontSize,
-                    middle: renderUtil.mm(this.props.pageSize.width/2 +
+            return <!RenderEngine
+                    onClick={this.handleMouseClick}
+                    onMouseDown={this.handleMouseDown}
+                    onMouseUp={this.handleMouseUp}
+                    onMouseLeave={this.handleMouseLeave}
+                    onMouseMove={this.handleMouseMove}
+                    page={page}
+                    parts={parts}
+                    width={this.props.raw ? mInchW/10000 + "in" : "100%"}
+                    height={this.props.raw ? mInchH/10000 + "in" : "100%"}
+                    widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
+                    viewbox={viewbox}>
+                {!page.from && !useGL && <!Header
+                    fontSize={fontSize}
+                    middle={renderUtil.mm(this.props.pageSize.width/2 +
                         this.props.paper.rightMargin -
-                        this.props.paper.leftMargin, fontSize),
-                    right: renderUtil.mm(this.props.pageSize.width -
-                        this.props.paper.rightMargin, fontSize * 0.75),
-                    key: "HEADER",
-                    model: this.props.header}),
-                /* Using parts is an anti-pattern. Ideally, we would have a getModels()
-                    method in SongEditorStore or something. */
-                _.map(parts, (part: C.IPart, idx: number) => {
+                        this.props.paper.leftMargin, fontSize)}
+                    right={renderUtil.mm(this.props.pageSize.width -
+                        this.props.paper.rightMargin, fontSize * 0.75)}
+                    key="HEADER"
+                    model={this.props.header} />}
+                {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
+                    method in SongEditorStore or something. */}
+                {_.map(parts, (part: C.IPart, idx: number) => {
                     assert(part.body);
-                    return Group({ key: idx, style: { fontSize: fontSize * Renderer.FONT_SIZE_FACTOR + "px" } },
-                        _.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
+                    return <!Group.Component key={idx} style={{ fontSize: fontSize * Renderer.FONT_SIZE_FACTOR + "px" }}>
+                        {_.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
                             if (obj.type === C.Type.NewLine) {
                                 memo.push([]);
                             }
                             memo[memo.length - 1].push(obj);
                             return memo;
                         }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
-                            function (s: Array<Model>, lidx: number) {
-
-                                return LineContainerComponent({
-                                    parts: this.props.parts,
-                                    isCurrent: this.state.visualCursor.annotatedLine ===
-                                    lidx + pageLines[page.idx],
-                                    store: this.props.store,
-                                    staveHeight: this.props.staveHeight,
-                                    h: idx,
-                                    generate: function () {
+                            (s: Array<Model>, lidx: number) => {
+                                return <!LineContainerComponent
+                                    parts={this.props.parts}
+                                    isCurrent={this.state.visualCursor.annotatedLine ===
+                                        lidx + pageLines[page.idx]}
+                                    store={this.props.store}
+                                    staveHeight={this.props.staveHeight}
+                                    h={idx}
+                                    generate={function () {
                                         var components = new Array(s.length * 2);
                                         var h = 0;
                                         // I think selected items currently HAVE to
@@ -159,7 +153,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                                             if (selIdx !== -1 &&
                                                 (!s[i].selected || i + 1 === s.length)) {
                                                 selProps.width = Math.abs(s[i].x - selProps.x);
-                                                components[selIdx] = Rect.Component(selProps);
+                                                components[selIdx]= <!Rect.Component {...selProps} />;
                                                 selIdx = -1;
                                             }
                                             if (s[i].visible()) {
@@ -168,82 +162,80 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
                                         }
                                         components.length = h;
                                         return components;
-                                    },
-                                    idx: lidx + pageLines[page.idx], key: lidx
-                                });
-                            }.bind(this))
-                        );
-                }),
-                this.props.tool && this.props.tool.render(
+                                    }}
+                                    idx={lidx + pageLines[page.idx]}
+                                    key={lidx} />;
+                            }
+                        )}
+                    </Group.Component>
+                })}
+                {this.props.tool && this.props.tool.render(
                     this.getCtx(),
                     this.state.mouse,
                     _pointerData,
                     fontSize,
-                    pidx),
-                this.state.selectionRect && SelectionRect.Component({
-                    fontSize: fontSize,
-                    x: Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x),
-                    y: Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y),
-                    width: Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x),
-                    height: Math.abs(this.state.selectionRect.start.y -
-                            this.state.selectionRect.end.y)}),
-
-                (pidx === this.state.visualCursor.annotatedPage) &&
-                    this.state.visualCursor && this.state.visualCursor.annotatedObj && Group({
-                            style: {fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}},
-                        Line.Component({
-                            x1: this.state.visualCursor.annotatedObj.x - 0.2,
-                            x2: this.state.visualCursor.annotatedObj.x - 0.2,
-                            y1: this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) - vcHeight,
-                            y2: this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) + vcHeight,
-                            stroke: "#008CFF",
-                            strokeWidth: 0.05})
-                    )
-
-            );});
+                    pidx)}
+                {this.state.selectionRect && <!SelectionRect.Component
+                    fontSize={fontSize}
+                    x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
+                    y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
+                    width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
+                    height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
+                {(pidx === this.state.visualCursor.annotatedPage) &&
+                    this.state.visualCursor && this.state.visualCursor.annotatedObj && <!Group.Component
+                            style={{fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}}>
+                        <!Line.Component
+                            x1={this.state.visualCursor.annotatedObj.x - 0.2}
+                            x2={this.state.visualCursor.annotatedObj.x - 0.2}
+                            y1={this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) - vcHeight}
+                            y2={this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
+                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) + vcHeight}
+                            stroke="#008CFF"
+                            strokeWidth={0.05} />
+                    </Group.Component>}
+                </RenderEngine>});
 
         var ret: React.ReactElement<any, any>; // React component
         var currY = this.props.marginTop;
         if (!this.props.raw) {
-            ret = html.div({ className: "workspace", onScroll: this.handleScroll, style: { top: "" + this.props.top } },
-                _.map(rawPages, function (rawPage: any, pidx: number) {
-                    var page = html.div({
-                        className: "page",
-                        key: "page" + pidx,
-                        style: {
-                            position: "absolute",
-                            width: this.props.width,
-                            height: this.props.height,
-                            left: "50%",
-                            marginLeft: -this.props.width/2,
-                            top: currY,
-                            marginBottom: this.props.marginBottom}},
-                        rawPage);
+            ret = <!div className="workspace" onScroll={this.handleScroll} style={{top: "" + this.props.top}}>
+                {_.map(rawPages, (rawPage: any, pidx: number) => {
+                    var page = <!div
+                            className="page"
+                            key={"page" + pidx}
+                            style={{
+                                position: "absolute",
+                                width: this.props.width,
+                                height: this.props.height,
+                                left: "50%",
+                                marginLeft: -this.props.width/2,
+                                top: currY,
+                                marginBottom: this.props.marginBottom}}>
+                        {rawPage}</div>
                     currY += 40 + this.props.height;
                     return page;
-                }.bind(this)),
-                this.props.comments && this.props.header.title && React.DOM.div({
-                        className: "commentBox", style: {
+                })}
+                {this.props.comments && this.props.header.title && <!div
+                        className="commentBox"
+                        style={{
                             width: this.props.width + "px",
                             marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
-                            marginTop: currY + 13 + "px" } },
-                    DisqusThread({
-                        shortname: (global.document &&
+                            marginTop: currY + 13 + "px" }}>
+                    <!DisqusThread
+                        shortname={(global.document &&
                             document.location.hostname === "ripieno.io" ||
-                                document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev",
-                        identifier: "usermedia-" + this.props.songId,
-                        title: this.props.header.title,
-                        categoryId: null,
-                        url: "ripieno.io/songs/" + this.props.songId
-                    })),
-                this.props.showFooter ? RipienoFooter.Component({
-                    marginTop: 123,
-                    dispatcher: this.props.dispatcher,
-                    noShadow: this.props.comments
-                }) : null
-            );
+                                document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev"}
+                        identifier={"usermedia-" + this.props.songId}
+                        title={this.props.header.title}
+                        categoryId={<any>null}
+                        url={"ripieno.io/songs/" + this.props.songId} />
+                    </div>}
+                {this.props.showFooter ? <!RipienoFooter.Component
+                    marginTop={123}
+                    dispatcher={this.props.dispatcher}
+                    noShadow={this.props.comments} /> : null}
+            </div>;
         } else {
             ret = <any> rawPages[0]; // TRFIX
         }
@@ -258,7 +250,7 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
         return ret;
     }
 
-    componentWillReceiveProps(newProps: Renderer.IRendererProps) {
+    componentWillReceiveProps(newProps: Renderer.IProps) {
         if (this.props.tool !== newProps.tool) {
             if (this.props.tool) {
                 this.props.tool.toolWillBeUnactive(this.props.store);
@@ -795,14 +787,15 @@ class Renderer extends TypedReact.Component<Renderer.IRendererProps, Renderer.IR
 
 module Renderer {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Renderer);
+    export var Component = TypedReact.createClass<Renderer.IProps, Renderer.IState>(React.createClass, Renderer);
 
-    export interface IRendererProps {
+    export interface IProps {
         comments?: boolean;
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
         dispatcher?: C.IDispatcher;
         marginTop?: number;
+        marginBottom?: number;
         pageSize?: C.IPageSize;
         raw?: boolean;
         sessionInfo?: C.ISession;
@@ -822,10 +815,31 @@ module Renderer {
         setRibbonTabFn: (tab: number) => void;
     }
 
-    export interface IRendererState {
+    export interface IState {
         selectionRect?: IRect;
         visualCursor?: C.IVisualCursor;
         mouse?: C.IMouse;
+    }
+
+    // Ratio between SVG coordinate system and 1mm.
+    export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
+
+    export interface IPosInfo {
+        x: number;
+        y: number;
+        page: number;
+        selectionInfo: any;
+    }
+
+    export interface IRect {
+        start: {
+            x: number;
+            y: number;
+        };
+        end: {
+            x: number;
+            y: number;
+        };
     }
 }
 
@@ -847,12 +861,12 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         if (this.shouldClear) {
             assert(this.dirty);
             this.shouldClear = false;
-            return Group(null, null);
+            return <!Group.Component />;
         }
         if (PROFILER_ENABLED) {
             console.log("Rendering line", this.props.idx);
         }
-        return Group(null, this.props.generate());
+        return <!Group.Component>{this.props.generate()}</Group.Component>;
     }
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
@@ -880,20 +894,18 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
             if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
                 this.dirty = false;
                 return true;
-            } else {
-                if (!this.onScreen) {
-                    if (!this.dirty) {
-                        // Render a blank thing.
-                        this.dirty = true;
-                        this.shouldClear = true;
-                        return true;
-                    } else {
-                        return false;
-                    }
+            } else if (!this.onScreen) {
+                if (!this.dirty) {
+                    // Render a blank thing.
+                    this.dirty = true;
+                    this.shouldClear = true;
+                    return true;
                 } else {
-                    this.dirty = false;
-                    _.delay(this.updateIfNeeded, 6);
+                    return false;
                 }
+            } else {
+                this.dirty = false;
+                _.delay(this.updateIfNeeded, 6);
             }
         }
         return false;
@@ -941,12 +953,6 @@ interface ILineState {
 
 }
 
-module Renderer {
-    "use strict";
-    // Ratio between SVG coordinate system and 1mm.
-    export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
-}
-
 var _pointerData: C.IPointerData = {
     partIdx: null,
     obj: null,
@@ -959,27 +965,6 @@ interface IPage {
     from: number;
     to: number;
     idx: number;
-}
-
-module Renderer {
-    "use strict";
-    export interface IPosInfo {
-        x: number;
-        y: number;
-        page: number;
-        selectionInfo: any;
-    }
-
-    export interface IRect {
-        start: {
-            x: number;
-            y: number;
-        };
-        end: {
-            x: number;
-            y: number;
-        };
-    }
 }
 
 export = Renderer;

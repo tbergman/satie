@@ -61,7 +61,7 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
     }
 }
 
-Dot.prototype.mixins = [RenderableMixin];
+Dot.prototype.render = RenderableMixin.prototype.render;
 
 module Dot {
     "use strict";

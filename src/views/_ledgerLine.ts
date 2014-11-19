@@ -17,14 +17,14 @@ class LedgerLine extends TypedReact.Component<LedgerLine.IProps, {}> {
         var sw = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
         var ne = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
         var xOffset = (ne[0] - sw[0])/4;
-        return Line.Component({
-            x1: this.props.x - 0.08,
-            x2: this.props.x + xOffset + 0.08,
-            y1: this.props.y - (this.props.line - 3)/4,
-            y2: this.props.y - (this.props.line - 3)/4,
-            victoriaXStrokeWidthFactor: 0,
-            stroke: "#000000",
-            strokeWidth: 0.055});
+        return <!Line.Component
+            x1={this.props.x - 0.08}
+            x2={this.props.x + xOffset + 0.08}
+            y1={this.props.y - (this.props.line - 3)/4}
+            y2={this.props.y - (this.props.line - 3)/4}
+            victoriaXStrokeWidthFactor={0}
+            stroke={"#000000"}
+            strokeWidth={0.055} />
             // Ledger lines should be thicker than regular lines.
     }
 

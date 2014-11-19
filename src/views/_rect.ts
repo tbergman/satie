@@ -41,7 +41,7 @@ class Rect extends TypedReact.Component<Rect.IProps, {}> {
     }
 }
 
-Rect.prototype.mixins = [RenderableMixin];
+Rect.prototype.render = RenderableMixin.prototype.render;
 
 module Rect {
     "use strict";

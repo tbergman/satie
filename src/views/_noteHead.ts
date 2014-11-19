@@ -13,12 +13,12 @@ import Glyph = require("./_glyph");
 
 class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
     render() {
-        return Glyph.Component({
-            x: this.props.x,
-            y: this.props.y - (this.props.line - 3)/4,
-            fill: this.props.stroke,
-            fontSize: this.props.fontSize,
-            glyphName: this.props.notehead});
+        return <!Glyph.Component
+            x={this.props.x}
+            y={this.props.y - (this.props.line - 3)/4}
+            fill={this.props.stroke}
+            fontSize={this.props.fontSize}
+            glyphName={this.props.notehead} />;
     }
     getDefaultProps() {
         return {

@@ -4,14 +4,14 @@
 
 import renderUtil = require("../util/renderUtil");
 
-var RenderableMixin = {
-    render: function() {
+class Renderable {
+    render() {
         if (renderUtil.useGL) {
-            return this.renderGL();
+            return (<any>this).renderGL();
         } else {
-            return this.renderSVG();
+            return (<any>this).renderSVG();
         }
     }
-};
+}
 
-export = RenderableMixin;
+export = Renderable;

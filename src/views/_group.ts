@@ -2,6 +2,7 @@
  * Renders a group with up to 6 children.
  */
 
+import TypedReact=require("typed-react");
 import React = require("react");
 
 var Victoria = require("../renderer/victoria/victoria");
@@ -9,13 +10,16 @@ import renderUtil = require("../util/renderUtil");
 
 var VG = Victoria.VG;
 
-function Group(a: any, b?: any, c?: any, d?: any, e?: any, f?: any) {
-    "use strict";
-    if (renderUtil.useGL) {
-        return VG(a, b, c, d, e, f);
-    } else {
-        return React.DOM.g(a, b, c, d, e, f);
+class Group extends TypedReact.Component<any, any> {
+    render() {
+        var x = (renderUtil.useGL ? VG : React.DOM.g).apply(null, [this.props].concat(this.props.children));
+        console.assert(x);
+        return x;
     }
+}
+
+module Group {
+    export var Component = TypedReact.createClass(React.createClass, Group);
 }
 
 export = Group;

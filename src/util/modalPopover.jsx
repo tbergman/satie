@@ -11,7 +11,7 @@ var ModalPopover = React.createClass({
         return React.DOM.div({
             className: "modalPopover zHACK",
             onClick: this.props.close},
-            this.transferPropsTo(Bootstrap.Popover(null, this.props.children))
+            React.createElement(Bootstrap.Popover, this.props, this.props.children)
         );
     }
 });

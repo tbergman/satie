@@ -21,15 +21,15 @@ import getFontOffset = require("./_getFontOffset");
  * Calculates a way to render a beam given two endpoints.
  * See also BeamGroup and BeamGroupModel.
  */
-class Beam extends TypedReact.Component<Beam.IProps, {}> {
+class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMixin {
     renderSVG() {
         var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
         if (this.props.beams === C.BeamCount.Variable) {
             var xLow = this._getX1();
             var xHi = this._getX2();
 
-            return Group(null,
-                _.map(this.props.variableBeams, (beams: number, idx: number): any => {
+            return <!Group.Component>
+                {_.map(this.props.variableBeams, (beams: number, idx: number): any => {
                     if (idx === 0) {
                         return null;
                     }
@@ -60,12 +60,12 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                             strokeWidth: 0
                         });
                     });
-                }),
-                this._tuplet()
-            );
+                })}
+                {this._tuplet()}
+            </Group.Component>;
         } else {
-            return Group(null,
-                _.times(this.props.beams, idx =>
+            return <!Group.Component>
+                {_.times(this.props.beams, idx =>
                     React.DOM.polygon({
                         key: "" + idx,
                         points: f*this._getX1() + "," + f*this._getY1(0, idx) + " " +
@@ -75,22 +75,25 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                         stroke: this.props.stroke,
                         fill: this.props.stroke,
                         strokeWidth: 0})
-                ),
-                this._tuplet()
-            );
+                )}
+                {this._tuplet()}
+            </Group.Component>;
         }
     }
 
     renderGL() {
-        return Group(null,
-            _.times(this.props.beams, idx => Victoria.VRect({
-                key: idx,
-                x1: this._getX1(), x2: this._getX2(),
-                y1: this._getY1(0, idx), y2: this._getY1(1, idx),
-                fill: this.props.stroke,
-                skewx: 0, skewY: this._getY1(1, idx) - this._getY2(1, idx)})),
-            this._tuplet()
-        );
+        return <!Group.Component>
+            {_.times(this.props.beams, idx => <!Victoria.VRect
+                key={idx}
+                x1={this._getX1()}
+                x2={this._getX2()}
+                y1={this._getY1(0, idx)}
+                y2={this._getY1(1, idx)}
+                fill={this.props.stroke}
+                skewX={0}
+                skewY={this._getY1(1, idx) - this._getY2(1, idx)} />)}
+            this._tuplet()}
+        </Group.Component>;
     }
 
     /**
@@ -209,7 +212,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
     }
 };
 
-Beam.prototype.mixins = [RenderableMixin];
+Beam.prototype.render = RenderableMixin.prototype.render;
 
 module Beam {
     "use strict";

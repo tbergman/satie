@@ -24,40 +24,40 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
             var beatType = ts.beatType;
 
             if (beats === 4 && beatType === 4) {
-                return Glyph.Component({
-                    x: spec.x,
-                    y: spec.y,
-                    fill: spec.color,
-                    fontSize: this.props.fontSize,
-                    glyphName: "timeSigCommon"});
+                return <!Glyph.Component
+                    x={spec.x}
+                    y={spec.y}
+                    fill={spec.color}
+                    fontSize={this.props.fontSize}
+                    glyphName="timeSigCommon" />
             } else if (beats === 2 && beatType === 2) {
-                return Glyph.Component({
-                    x: spec.x,
-                    y: spec.y,
-                    fill: spec.color,
-                    fontSize: this.props.fontSize,
-                    glyphName: "timeSigCutCommon"});
+                return <!Glyph.Component
+                    x={spec.x}
+                    y={spec.y}
+                    fill={spec.color}
+                    fontSize={this.props.fontSize}
+                    glyphName="timeSigCutCommon" />;
             }
             // Cannot be represented in common representation. Pass through.
         }
-        return Group(null,
-            TimeSignatureNumber({
-                    key: -5,
-                    stroke: spec.color,
-                    fontSize: this.props.fontSize,
-                    x: spec.x + this.numOffset(),
-                    y: spec.y - 1/4},
-                ts.beats
-            ),
-            TimeSignatureNumber({
-                    key: -6,
-                    stroke: spec.color,
-                    fontSize: this.props.fontSize,
-                    x: spec.x + this.denOffset(),
-                    y: spec.y + 1/4},
-                ts.beatType
-            )
-        );
+        return <!Group.Component>
+            <!TimeSignatureNumber.Component
+                    key="-5"
+                    stroke={spec.color}
+                    fontSize={this.props.fontSize}
+                    x={spec.x + this.numOffset()}
+                    y={spec.y - 1/4}>
+                {ts.beats}
+            </TimeSignatureNumber.Component>
+            <!TimeSignatureNumber.Component
+                    key="-6"
+                    stroke={spec.color}
+                    fontSize={this.props.fontSize}
+                    x={spec.x + this.denOffset()}
+                    y={spec.y + 1/4}>
+                {ts.beatType}
+            </TimeSignatureNumber.Component>
+        </Group.Component>;
     }
 
     numOffset() {
@@ -78,17 +78,6 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
     }
 };
 
-function TimeSignatureNumber(props: TimeSignature.ITSProps, children: number) {
-    "use strict";
-    return _.map((children + "").split(""), (c, i) => Glyph.Component({
-        key: "ts-" + i,
-        x: props.x + i/4,
-        y: props.y,
-        fill: props.stroke,
-        fontSize: props.fontSize,
-        glyphName: "timeSig" + c}));
-}
-
 module TimeSignature {
     "use strict";
     export var Component = TypedReact.createClass(React.createClass, TimeSignature);
@@ -98,13 +87,33 @@ module TimeSignature {
         spec: TimeSignatureModel;
         fontSize: number;
     }
+}
 
-    export interface ITSProps {
-        key: number;
+/* private */
+class TimeSignatureNumber extends TypedReact.Component<TimeSignatureNumber.IProps, {}> {
+    render() {
+        return <!Group.Component>
+            {_.map((this.props.children + "").split(""), (c, i) => <!Glyph.Component
+                key={"ts-" + i}
+                x={this.props.x + i/4}
+                y={this.props.y}
+                fill={this.props.stroke}
+                fontSize={this.props.fontSize}
+                glyphName={"timeSig" + c} />)}
+        </Group.Component>;
+    }
+}
+
+/* private */
+module TimeSignatureNumber {
+    export var Component = TypedReact.createClass(React.createClass, TimeSignatureNumber);
+    export interface IProps {
+        key: string;
         x: number;
         y: number;
         stroke: string;
         fontSize: number;
+        children?: any;
     }
 }
 

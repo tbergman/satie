@@ -32,7 +32,7 @@ class Molasses extends TypedReact.Component<Molasses.IProps, {}> {
 module Molasses {
     "use strict";
     export interface IProps {
-        children?: Array<React.ReactElement<any, any>>;
+        children?: any;
         /**
          * A unit such as "in" should be included.
          */

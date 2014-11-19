@@ -6,14 +6,15 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, November 2014
  */
 
-import ReactTS = require("react-typescript");
+import TypedReact = require("typed-react");
+import React = require("react");
 
 import WedgeModel = require("../stores/wedge");
 import Group = require("./_group");
 import Line = require("./_line");
 
-class Wedge extends ReactTS.ReactComponentBase<Wedge.IProps, {}> {
-    render(): React.ReactComponent<any, any> {
+class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
+    render() {
         var spec = this.props.spec;
         var strokeWidth = 0.04;
         var isCrec = spec.wedgeType === WedgeModel.Type.Crescendo;
@@ -32,30 +33,28 @@ class Wedge extends ReactTS.ReactComponentBase<Wedge.IProps, {}> {
             spec.y - strokeWidth / 2 + 1.2,
         ];
 
-        return Group(null,
-            Line.Component({
-                x1: spec.x,
-                x2: spec.x + 0.8,
-                y1: (isCrec ? yIn : yOut)[0],
-                y2: (isCrec ? yOut : yIn)[0],
-                stroke: "#000000",
-                strokeWidth: 0.04
-            }),
-            Line.Component({
-                x1: spec.x,
-                x2: spec.x + 0.8,
-                y1: (isCrec ? yIn : yOut)[1],
-                y2: (isCrec ? yOut : yIn)[1],
-                stroke: "#000000",
-                strokeWidth: 0.04
-            })
-        );
+        return <!Group.Component>
+            <!Line.Component
+                x1={spec.x}
+                x2={spec.x + 0.8}
+                y1={(isCrec ? yIn : yOut)[0]}
+                y2={(isCrec ? yOut : yIn)[0]}
+                stroke="#000000"
+                strokeWidth={0.04} />
+            <!Line.Component
+                x1={spec.x}
+                x2={spec.x + 0.8}
+                y1={(isCrec ? yIn : yOut)[1]}
+                y2={(isCrec ? yOut : yIn)[1]}
+                stroke="#000000"
+                strokeWidth={0.04} />
+        </Group.Component>;
     }
 }
 
 module Wedge {
     "use strict";
-    export var Component = ReactTS.createReactComponent(Wedge);
+    export var Component = TypedReact.createClass(React.createClass, Wedge);
     export interface IProps {
         fontSize: number;
         key: number;

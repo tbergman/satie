@@ -106,7 +106,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
     }
 }
 
-Glyph.prototype.mixins = [RenderableMixin];
+Glyph.prototype.render = RenderableMixin.prototype.render;
 
 module Glyph {
     "use strict";

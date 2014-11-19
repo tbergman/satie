@@ -18,17 +18,17 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
-        return Group(null,
-            _.map(this.getAccidentals(), (a, idx) => Accidental.Component({
-                key: idx, /* for React */
-                x: spec.x + idx/4,
-                y: spec.y,
-                line: a.line,
-                stroke: spec.color,
-                opacity: this.props.opacity,
-                fontSize: this.props.fontSize,
-                accidental: a.accidental}))
-        );
+        return <!Group.Component>
+            {_.map(this.getAccidentals(), (a, idx) => <!Accidental.Component
+                key={idx /* for React */}
+                x={spec.x + idx/4}
+                y={spec.y}
+                line={a.line}
+                stroke={spec.color}
+                opacity={this.props.opacity}
+                fontSize={this.props.fontSize}
+                accidental={a.accidental} />)}
+        </Group.Component>
     }
 
     /**

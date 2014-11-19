@@ -53,7 +53,7 @@ class Line extends TypedReact.Component<Line.IProps, {}> {
     }
 }
 
-Line.prototype.mixins = [RenderableMixin];
+Line.prototype.render = RenderableMixin.prototype.render;
 
 module Line {
     "use strict";

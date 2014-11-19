@@ -28,49 +28,51 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             defaults.thickBarlineThickness/4;
 
         if (spec.barline === C.Barline.Double) {
-            return Group(null,
-                [Line.Component({key: 1,
-                    x1: spec.x,
-                    x2: spec.x,
-                    y1: spec.y - spec.height - spec.yOffset,
-                    y2: spec.y + spec.height - spec.yOffset,
-                    stroke: spec.color,
-                    victoriaYStrokeWidthFactor: 0,
-                    fill: spec.color,
-                    strokeWidth: defaults.thinBarlineThickness/4}),
-                Line.Component({key: 2,
-                    x1: thickX,
-                    x2: thickX,
-                    y1: spec.y - spec.height - spec.yOffset,
-                    y2: spec.y + spec.height - spec.yOffset,
-                    victoriaYStrokeWidthFactor: 0,
-                    stroke: spec.color,
-                    fill: spec.color,
-                    strokeWidth: defaults.thickBarlineThickness/4}),
-                // HACK HACK HACK: We're drawing a white bar to
-                // cover over the empty part of the stave.
-                Rect.Component({
-                    key: 3,
-                    opacity: 1.0,
-                    x: spec.x + defaults.barlineSeparation/4 +
+            return <!Group.Component>
+                <!Line.Component
+                    key={1}
+                    x1={spec.x}
+                    x2={spec.x}
+                    y1={spec.y - spec.height - spec.yOffset}
+                    y2={spec.y + spec.height - spec.yOffset}
+                    stroke={spec.color}
+                    victoriaYStrokeWidthFactor={0}
+                    fill={spec.color}
+                    strokeWidth={defaults.thinBarlineThickness/4} />
+                <!Line.Component
+                    key={2}
+                    x1={thickX}
+                    x2={thickX}
+                    y1={spec.y - spec.height - spec.yOffset}
+                    y2={spec.y + spec.height - spec.yOffset}
+                    victoriaYStrokeWidthFactor={0}
+                    stroke={spec.color}
+                    fill={spec.color}
+                    strokeWidth={defaults.thickBarlineThickness/4} />
+                {/* HACK HACK HACK: We're drawing a white bar to
+                    cover over the empty part of the stave.*/}
+                <!Rect.Component
+                    key={3}
+                    opacity={1.0}
+                    x={spec.x + defaults.barlineSeparation/4 +
                         defaults.thickBarlineThickness/4 +
-                        defaults.thinBarlineThickness/4,
-                    y: spec.y - spec.height - 0.1 - spec.yOffset,
-                    stroke: "#FFFFFF",
-                    fill: "#FFFFFF",
-                    height: spec.height*2 + 0.2,
-                    width: 400})]
-            );
+                        defaults.thinBarlineThickness/4}
+                    y={spec.y - spec.height - 0.1 - spec.yOffset}
+                    stroke={"#FFFFFF"}
+                    fill={"#FFFFFF"}
+                    height={spec.height*2 + 0.2}
+                    width={400} />
+            </Group.Component>;
         }
 
-        return Line.Component({
-            x1: spec.x,
-            x2: spec.x,
-            y1: spec.y - spec.height - spec.yOffset,
-            y2: spec.y + spec.height - spec.yOffset,
-            stroke: spec.color,
-            fill: spec.color,
-            strokeWidth: defaults.thinBarlineThickness/4});
+        return <!Line.Component
+            x1={spec.x}
+            x2={spec.x}
+            y1={spec.y - spec.height - spec.yOffset}
+            y2={spec.y + spec.height - spec.yOffset}
+            stroke={spec.color}
+            fill={spec.color}
+            strokeWidth={defaults.thinBarlineThickness/4} />
     }
 
     /**

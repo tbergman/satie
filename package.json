@@ -1,6 +1,6 @@
 {
     "name": "ripieno-webapp",
-    "version": "0.0.3",
+    "version": "0.0.3-alpha1",
     "description": "A synchronized online, desktop, and mobile music notation app.",
     "main": "./src/main.ts",
     "dependencies": {
@@ -13,12 +13,12 @@
         "lodash": "2.4.1",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-lessify": "0.0.5",
-        "react": "0.12.0",
-        "react-bootstrap": "git://github.com/react-bootstrap/react-bootstrap",
-        "react-disqus-thread": "git://github.com/jnetterf/react-disqus-thread",
-        "react-draggable": "0.3.0",
+        "react": "0.12.1",
+        "react-bootstrap": "git://github.com/emvu/react-bootstrap-npm",
+        "react-disqus-thread": "git://github.com/jnetterf/react-disqus-thread#c1d265b2bfc75",
+        "react-draggable": "git://github.com/contra/react-draggable#de6580b3956e11",
         "react-router-component": "git://github.com/STRML/react-router-component#react-0.12",
-        "react-tools": "0.12.0",
+        "react-tools": "0.12.1",
         "statics": "0.1.0",
         "typed-react": "~2.1.2"
     },
@@ -38,6 +38,7 @@
         "gulp-uglify": "1.0.1",
         "gulp-util": "3.0.1",
         "jisonify": "git://github.com/jnetterf/jisonify.git",
+        "sleep": "1.1.8",
         "karma-chrome-launcher": "0.1.5",
         "karma-coverage": "0.2.6",
         "karma-firefox-launcher": "0.1.3",
@@ -45,7 +46,7 @@
         "karma-mocha-reporter": "0.3.1",
         "karma-notify-reporter": "0.1.1",
         "karma-phantomjs-launcher": "0.1.4",
-        "reactify": "0.14.0",
+        "reactify": "0.17.0",
         "uglify-js": "2.4.15",
         "vinyl-buffer": "1.0.0",
         "vinyl-source-stream": "1.0.0",
@@ -69,7 +70,7 @@
             ["reactify", {"es6": true}],
             "node-lessify",
             "jisonify",
-            ["browserify-shader", {"extensions": ["vs", "fs"]}]
+            "browserify-shader"
         ]
     }
 }

@@ -16,24 +16,24 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
         var line = this.props.line;
         assert.deepEqual(line, [3]);
-        return Group(null,
-            Glyph.Component({
-                key: "r",
-                x: this.props.x + this.props.spacing,
-                y: this.props.y,
-                fill: this.props.stroke,
-                fontSize: this.props.fontSize,
-                glyphName: this.props.notehead}),
-            this.props.dotted ? _.times(this.props.dotted, idx => Dot.Component({
-                idx: idx,
-                key: idx + "d",
-                radius: 0.06,
-                stroke: this.props.stroke,
-                x: this.props.x + this.props.spacing,
-                y: this.props.y,
-                fontSize: this.props.fontSize,
-                line: 3})): null,
-            this.props.children && _.map(this.props.children, (element, idx) => {
+        return <!Group.Component>
+            <!Glyph.Component
+                key="r"
+                x={this.props.x + this.props.spacing}
+                y={this.props.y}
+                fill={this.props.stroke}
+                fontSize={this.props.fontSize}
+                glyphName={this.props.notehead} />
+            {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
+                idx={idx}
+                key={idx + "d"}
+                radius={0.06}
+                stroke={this.props.stroke}
+                x={this.props.x + this.props.spacing}
+                y={this.props.y}
+                fontSize={this.props.fontSize}
+                line={3} />): null}
+            {this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = this.direction();
                 element.props.line = this.startingLine();
                 element.props.x = this.props.x;
@@ -42,8 +42,8 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 element.props.notehead = this.props.notehead;
                 element.props.fontSize = this.props.fontSize;
                 return element;
-            })
-        );
+            })}
+        </Group.Component>;
     }
 
     direction() {

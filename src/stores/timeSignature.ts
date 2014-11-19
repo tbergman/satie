@@ -31,7 +31,6 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
 
         // Time signatures must not be redundant
         if (ctx.timeSignature && TimeSignatureModel.isEqual(this.timeSignature, ctx.timeSignature)) {
-            debugger;
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
         }
@@ -124,7 +123,9 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
     }
 
     static isEqual(ts1: C.ITimeSignature, ts2: C.ITimeSignature) {
-        return (!!ts1 === !!ts2) && (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType && ts1.commonRepresentation === ts2.commonRepresentation);
+        return (!!ts1 === !!ts2) &&
+            (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType &&
+                ts1.commonRepresentation === ts2.commonRepresentation);
     }
 
     _annotatedSpacing: number;
