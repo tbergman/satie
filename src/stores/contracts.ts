@@ -443,7 +443,6 @@ export enum IterationStatus {
  * A key signature, such as a KeySignatureModel.
  */
 export interface IKeySignature {
-    acc: number;
     mode: string;
     pitch: IPitch;
 }

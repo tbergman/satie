@@ -716,9 +716,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             switch (key) {
                 case "1": this.props.setRibbonTabFn(1); break;
                 case "2": this.props.setRibbonTabFn(2); break;
-                case "3": this.props.setRibbonTabFn(4); break;
-                case "4": this.props.setRibbonTabFn(3); break;
-                case "5": this.props.setRibbonTabFn(5); break;
+                case "3": this.props.setRibbonTabFn(3); break;
+                case "4": this.props.setRibbonTabFn(4); break;
             }
             return;
         }

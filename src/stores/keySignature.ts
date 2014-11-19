@@ -57,9 +57,9 @@ class KeySignatureModel extends Model.StateChangeModel {
         }
 
         var acc = "";
-        if (this.keySignature.acc === -1) {
+        if (this.keySignature.pitch.acc === -1) {
             acc = "es";
-        } else if (this.keySignature.acc === 1) {
+        } else if (this.keySignature.pitch.acc === 1) {
             acc = "is";
         }
         lylite.push("\\key " +
