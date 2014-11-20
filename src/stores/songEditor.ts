@@ -132,6 +132,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     get autosaveModalVisible() {
         return this._autosaveModalVisible; }
+    get notationsSidebarVisible() {
+        return this._notationsSidebarVisible; }
     get changesPending() {
         return this._changesPending; }
 
@@ -521,6 +523,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this._savesInTransit--;
         }
         this.changesPending = true;
+    }
+
+    "PUT /local/sidebar/notations"(action: C.IFluxAction) {
+        this._notationsSidebarVisible = true;
+        this.emit(CHANGE_EVENT);
+    }
+
+    "DELETE /local/sidebar/notations"(action: C.IFluxAction) {
+        this._notationsSidebarVisible = false;
+        this.emit(CHANGE_EVENT);
     }
 
     "PUT /local/modal/autosave"(action: C.IFluxAction) {
@@ -1401,6 +1413,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     private _activeStaveIdx: number;
     private _allChangesSent: boolean = true;
+    private _notationsSidebarVisible: boolean = false;
     private _autosaveModalVisible: boolean = false;
     private _changesPending: boolean;
 	private _cleanupFn: Function = null;

@@ -844,6 +844,8 @@ export interface ISongEditor {
 
     destructor: () => void;
 
+    notationsSidebarVisible: boolean;
+
     autosaveModalVisible: boolean;
     changesPending: boolean;
     copyModalVisible: boolean;
