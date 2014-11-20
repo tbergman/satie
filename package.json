@@ -22,7 +22,7 @@
         "react-disqus-thread": "git://github.com/mzabriskie/react-disqus-thread#aa8a1e3995d49f63",
         "react-draggable": "git://github.com/contra/react-draggable#de6580b3956e11",
         "react-router-component": "git://github.com/STRML/react-router-component#react-0.12",
-        "react-select": "git://github.com:jnetterf/react-select",
+        "react-select": "git://github.com/jnetterf/react-select",
         "statics": "0.1.0",
         "typed-react": "2.1.2"
     },
