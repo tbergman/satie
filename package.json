@@ -20,7 +20,8 @@
         "react-router-component": "git://github.com/STRML/react-router-component#react-0.12",
         "react-tools": "0.12.1",
         "statics": "0.1.0",
-        "typed-react": "~2.1.2"
+        "typed-react": "2.1.2",
+        "react-select": "0.2.3"
     },
     "devDependencies": {
         "browserify": "6.2.0",
