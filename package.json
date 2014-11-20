@@ -34,6 +34,7 @@
         "gulp-exit": "0.0.2",
         "gulp-jasmine": "1.0.1",
         "gulp-karma": "git://github.com/jimthedev/gulp-karma.git",
+        "gulp-newer": "0.4.0",
         "gulp-mocha": "1.1.1",
         "gulp-mocha-browserify-sweet": "0.2.1",
         "gulp-streamify": "0.0.5",

@@ -145,9 +145,9 @@ declare module 'react-bootstrap' {
             onSelect?: (key?:string)=>void;
     }
     export interface PanelAttributes extends ReactBootstrapAttributes,CollapsableAttributes {
-            onSelect: (key?:string)=>void;
-            header: any;
-            footer: any;
+            onSelect?: (key?:string)=>void;
+            header?: any;
+            footer?: any;
     }
 
     export interface PagerAttributes extends React.DomAttributes

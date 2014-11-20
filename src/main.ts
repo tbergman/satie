@@ -6,7 +6,7 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../node_modules/typed-react/dist/typed-react.d.ts" />
+/// <reference path="../references/typed-react.d.ts" />
 /// <reference path="../references/react.d.ts" />
 /// <reference path="../references/react-bootstrap.d.ts" />
 
@@ -18,6 +18,7 @@ import React = require("react");
 import C = require("./stores/contracts");
 import Dispatcher = require("./stores/dispatcher");
 import FiveOhFive = require("./ui/fiveOhFive");
+
 import Router = require("./router");
 import SessionStore = require("./stores/session");
 
