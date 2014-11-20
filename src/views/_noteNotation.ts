@@ -19,15 +19,14 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
         var o2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxSW;
         var s2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxNE;
-        return Glyph.Component({
-            x: this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2,
-            y: this.props.y - this.yOffset(),
-            fontSize: this.props.fontSize,
-            fill: this.glyphIsTemporary() ? "#A5A5A5" : "#000000",
-            staveHeight: this.props.fontSize,
-            glyphName: this.glyphName(),
-            glyphIsTemporary: this.glyphIsTemporary()
-        });
+        return <!Glyph.Component
+            x={this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2}
+            y={this.props.y - this.yOffset()}
+            fontSize={this.props.fontSize}
+            fill={this.glyphIsTemporary() ? "#A5A5A5" : "#000000"}
+            staveHeight={this.props.fontSize}
+            glyphName={this.glyphName()}
+            glyphIsTemporary={this.glyphIsTemporary()} />;
     }
 
     directionString() {

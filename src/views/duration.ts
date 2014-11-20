@@ -28,18 +28,16 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         assert(spec instanceof DurationModel);
 
         var notations = _.map(spec.displayNotation || [], (m, idx) =>
-            NoteNotation.Component({
-                idx: 1,
-                direction: props.direction,
-                fontSize: props.fontSize,
-                notation: m,
-                key: idx,
-                line: 3,
-                notehead: props.spec.notehead,
-                x: NaN, // assigned later
-                y: NaN  // assigned later
-            })
-        );
+            <!NoteNotation.Component
+                idx={1}
+                direction={props.direction}
+                fontSize={props.fontSize}
+                notation={m}
+                key={idx}
+                line={3}
+                notehead={props.spec.notehead}
+                x={NaN /*assigned later :( */}
+                y={NaN /*assigned later :( */} />);
 
         /**
          * Mode to reduce unneeded renders.
