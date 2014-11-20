@@ -2,7 +2,11 @@
     "name": "ripieno-webapp",
     "version": "0.0.3-alpha1",
     "description": "A synchronized online, desktop, and mobile music notation app.",
-    "main": "./src/main.ts",
+
+    "author": "Josh Netterfield",
+    "license": "(C) Josh Netterfield 2014. All rights reserved.",
+    "private": true,
+
     "dependencies": {
         "audio5": "0.1.9",
         "body-parser": "1.9.2",
@@ -15,13 +19,12 @@
         "node-lessify": "0.0.5",
         "react": "0.12.1",
         "react-bootstrap": "git://github.com/emvu/react-bootstrap-npm",
-        "react-disqus-thread": "git://github.com/jnetterf/react-disqus-thread#c1d265b2bfc75",
+        "react-disqus-thread": "git://github.com/mzabriskie/react-disqus-thread#aa8a1e3995d49f63",
         "react-draggable": "git://github.com/contra/react-draggable#de6580b3956e11",
         "react-router-component": "git://github.com/STRML/react-router-component#react-0.12",
-        "react-tools": "0.12.1",
+        "react-select": "0.2.3",
         "statics": "0.1.0",
-        "typed-react": "2.1.2",
-        "react-select": "0.2.3"
+        "typed-react": "2.1.2"
     },
     "devDependencies": {
         "browserify": "6.2.0",
@@ -35,11 +38,10 @@
         "gulp-mocha-browserify-sweet": "0.2.1",
         "gulp-streamify": "0.0.5",
         "gulp-tslint": "1.3.1",
-        "gulp-typescript": "2.2.0",
+        "gulp-typescript": "git://github.com/jnetterf/gulp-typescript-react-jsx#fe6ced",
         "gulp-uglify": "1.0.1",
         "gulp-util": "3.0.1",
         "jisonify": "git://github.com/jnetterf/jisonify.git",
-        "sleep": "1.1.8",
         "karma-chrome-launcher": "0.1.5",
         "karma-coverage": "0.2.6",
         "karma-firefox-launcher": "0.1.3",
@@ -47,31 +49,30 @@
         "karma-mocha-reporter": "0.3.1",
         "karma-notify-reporter": "0.1.1",
         "karma-phantomjs-launcher": "0.1.4",
-        "reactify": "0.17.0",
+        "reactify": "^0.14.0",
         "uglify-js": "2.4.15",
         "vinyl-buffer": "1.0.0",
         "vinyl-source-stream": "1.0.0",
         "watchify": "2.1.0"
     },
-    "scripts": {
-        "dev-server": "gulp watch",
-        "build": "NODE_ENV=production gulp build",
-        "build-libripienoclient": "browserify -o .partialBuild/libripienoclientBridge-bundle.js -d .partialBuild/libripienoclientBridge.js --noparse lodash",
-        "test": "gulp gui-test-once",
-        "cli-test-once": "gulp cli-test-once",
-        "cli-test-daemon": "gulp cli-test-daemon",
-        "gui-test-once": "gulp gui-test-once",
-        "gui-test-daemon": "gulp gui-test-daemon",
-        "chores-prod": "NODE_ENV=production gulp build-chores && cat ./build/chore-server.js | node"
-    },
-    "author": "Josh Netterfield",
-    "license": "(C) Josh Netterfield 2014. All rights reserved.",
+
+    "main": "./src/main.ts",
     "browserify": {
         "transform": [
-            ["reactify", {"es6": true}],
             "node-lessify",
             "jisonify",
             "browserify-shader"
         ]
+    },
+    "scripts": {
+        "build-libripienoclient": "browserify -o .partialBuild/libripienoclientBridge-bundle.js -d .partialBuild/libripienoclientBridge.js --noparse lodash",
+        "build": "NODE_ENV=production gulp build",
+        "chores-prod": "NODE_ENV=production gulp build-chores && cat ./build/chore-server.js | node",
+        "cli-test-daemon": "gulp cli-test-daemon",
+        "cli-test-once": "gulp cli-test-once",
+        "dev-server": "gulp watch",
+        "gui-test-daemon": "gulp gui-test-daemon",
+        "gui-test-once": "gulp gui-test-once",
+        "test": "gulp gui-test-once"
     }
 }

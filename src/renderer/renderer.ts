@@ -8,6 +8,7 @@ import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
 import assert = require("assert");
+(<any>Object).assign = require("react/lib/Object.assign"); // For DisqusThread
 var DisqusThread = require("react-disqus-thread");
 
 import Molasses = require("./molasses");

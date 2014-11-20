@@ -55,7 +55,7 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     }
 }
 
-NoteStem.prototype.mixins = [PureRenderMixin];
+(<any>NoteStem.prototype).mixins = [PureRenderMixin];
 
 module NoteStem {
     "use strict";

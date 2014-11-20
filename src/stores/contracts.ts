@@ -717,6 +717,7 @@ export interface IPlaybackStore {
     bpm: number;
     playing: boolean;
     ready: boolean;
+    upToDate: boolean;
 }
 
 export enum PreviewMode {

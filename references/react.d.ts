@@ -105,7 +105,6 @@ declare module React {
 
     export interface Specification<P, S> extends Mixin<P, S> {
         displayName?: string;
-        mixins?: Mixin<P, S>[];
         statics?: {
             [key: string]: Function;
         };
@@ -131,7 +130,6 @@ declare module React {
         isMounted(): boolean;
         setProps(nextProps: P, callback?: () => void): void;
         replaceProps(nextProps: P, callback?: () => void): void;
-        mixins: Array<any>;
     }
 
     export interface Constructable {

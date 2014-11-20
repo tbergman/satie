@@ -160,15 +160,12 @@ var sharedTypescriptProject = typescript.createProject({
     noExternalResolve: false
 });
 
-var sleep = require("sleep");
-
 gulp.task("typescript", function() {
     var ts = gulp.src([files.ts, files.typings])
         .pipe(typescript(sharedTypescriptProject));
     ts.dts.pipe(gulp.dest(dirs.build));
     gulp.src([files.nonTsSources]).pipe(gulp.dest(dirs.build));
     var ret = ts.js.pipe(gulp.dest(dirs.build));
-    sleep.usleep(100000);
     return ret;
 });
 
