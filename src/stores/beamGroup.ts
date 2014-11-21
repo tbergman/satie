@@ -85,11 +85,18 @@ class BeamGroupModel extends Model {
                 b => Math.round(Math.log(b.count) / Math.log(2)) - 2);
         }
 
+        var cidx = this.idx;
         if (!this.beam.every(b => {
             b.x = ctx.x;
             b.y = ctx.y;
             ctx.isBeam = true;
+            while(ctx.body[cidx] !== b) {
+                ++cidx;
+            }
+            var oldIdx = ctx.idx;
+            ctx.idx = cidx;
             var ret = b.annotate(ctx);
+            ctx.idx = oldIdx;
             ctx.isBeam = undefined;
             mret = ret;
             return (mret === C.IterationStatus.Success);
