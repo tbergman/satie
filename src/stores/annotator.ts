@@ -95,6 +95,7 @@ export class Context implements C.MetreContext {
             beat: this.loc.beat,
             clef: this.clef,
             keySignature: this.keySignature,
+            timeSignature: this.timeSignature,
             line: this.line,
             pageLines: this.pageLines,
             pageStarts: this.pageStarts,
@@ -1000,6 +1001,7 @@ export interface ILineSnapshot {
     beat: number;
     clef: string;
     keySignature: C.IKeySignature;
+    timeSignature: C.ITimeSignature;
     line: number;
     pageLines: Array<number>;
     pageStarts: Array<number>;
@@ -1181,6 +1183,7 @@ class PrivIterator {
         ctx.pageLines = componentSnapshots[0].pageLines;
         ctx.pageStarts = componentSnapshots[0].pageStarts;
         ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
+        ctx.timeSignature = componentSnapshots[0].timeSignature;
         var mergePolicy = C.RectifyXPolicyFor[ctx.curr.priority];
         assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x = componentSnapshots[0].x;
@@ -1705,6 +1708,7 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     if (line.barKeys !== null) { ctx.barKeys = line.barKeys; }
     if (line.beat !== null) { ctx.beat = line.beat; }
     if (line.keySignature !== null) { ctx.keySignature = line.keySignature; }
+    if (line.timeSignature !== null) { ctx.timeSignature = line.timeSignature; }
     if (line.line !== null) { ctx.line = line.line; }
     if (line.pageLines !== null) { ctx.pageLines = line.pageLines; }
     if (line.pageStarts !== null) { ctx.pageStarts = line.pageStarts; }

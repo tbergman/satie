@@ -72,12 +72,13 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
     }
 
     static createTS = (ctx: Annotator.Context): C.IterationStatus => {
-        return ctx.insertPast(new TimeSignatureModel({
+        ctx.insertPast(new TimeSignatureModel({
             timeSignature: {
                 beats: 4,
                 beatType: 4,
                 commonRepresentation: true
             }, source: C.Source.Annotator}));
+        return C.IterationStatus.RetryLine; // Cache bug
     };
 
     get beats() {

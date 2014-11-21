@@ -102,6 +102,7 @@ class NewlineModel extends Model {
                 beat: null,
                 clef: null,
                 keySignature: null,
+                timeSignature: null,
                 line: ctx.line,
                 pageLines: null,
                 pageStarts: null,

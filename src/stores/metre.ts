@@ -442,6 +442,9 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
                 last = replaceWith[replaceWith.length - 1];
             }
         }
+        if (first.tuplet && replaceWith.length === 2) {
+            debugger;
+        }
         return replaceWith.length > 1 ? replaceWith : null;
     }
     return null;

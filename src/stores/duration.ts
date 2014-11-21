@@ -224,6 +224,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         return false;
     }
     perfectlyBeamed(ctx: Annotator.Context) {
+        if (this.tuplet) {
+            var prevNote = ctx.prev(c => c.isNote || c.endMarker);
+            if (prevNote && prevNote.isNote && prevNote.note.tuplet) {
+                return true;
+            }
+        }
         var rebeamable = Metre.rebeamable(ctx.idx, ctx);
 
         // Sanity check to make sure the replacement isn't the same as the current.
