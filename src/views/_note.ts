@@ -22,6 +22,7 @@ import LedgerLine = require("./_ledgerLine");
 import NoteHead = require("./_noteHead");
 import NoteNotation = require("./_noteNotation");
 import NoteStem = require("./_noteStem");
+import SlurType = require("./slur"); // Recursive.
 
 class Note extends TypedReact.Component<Note.IProps, {}> {
     render() {
@@ -271,18 +272,17 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         });
     }
     tie() {
-        var Tie = require("../views/slur"); // XXX: Ugly hack
-
+        var Slur: typeof SlurType = require("./slur"); // Recursive.
         if (!this.props.tieTo) {
             return null;
         }
 
         var fullWidth = this.props.tieTo - this.props.x;
-        return <!Tie.Component
+        return <!Slur.Component
             key={"tie_0"}
             fontSize={this.props.fontSize}
             spec={{
-                direction: -this.direction,
+                direction: -this.direction(),
                 x: this.props.x + fullWidth/8 + 0.15,
                 y: this.props.y,
                 lines1: [this.getStartingLine()],

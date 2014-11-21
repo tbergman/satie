@@ -1,5 +1,5 @@
 /**
- * Renders a slur
+ * Renders a slur or tie
  * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
@@ -8,6 +8,7 @@
 
 import React = require("react");
 import TypedReact = require("typed-react");
+import assert = require("assert");
 
 import Bezier = require("./_bezier");
 import Note = require("./_note");
@@ -22,45 +23,55 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
     render() {
         this.hash = this.getHash(this.props.spec);
 
-        var x2 = this.getX2();
-        var x1 = this.getX1();
-        var y2 = this.getY2(0);
-        var y1 = this.getY1(0);
-        var dir = this.direction;
+        var x2: number = this.getX2();
+        var x1: number = this.getX1();
+        var y2: number = this.getY2(0);
+        var y1: number = this.getY1(0);
+        var dir: number = this.direction();
 
-        var x2mx1 = x2 - x1;
-        var x1mx2 = -x2mx1;
-        var relw = 0.08;
-        var y1my2 = y1 - y2;
-        var absw = -dir*0.2080307/Math.max(1, (Math.abs(y1my2)));
-        if ((y1my2 > 0 ? -1 : 1)*dir() === 1) {
+        var x2mx1: number = x2 - x1;
+        var x1mx2: number = -x2mx1;
+        var relw: number = 0.08;
+        var y1my2: number = y1 - y2;
+        var absw: number = -dir*0.2080307/Math.max(1, (Math.abs(y1my2)));
+        if ((y1my2 > 0 ? -1 : 1)*dir === 1) {
             absw *= 2;
         }
 
-        return Bezier.Component({
-            x1: x2,
-            y1: y2,
+        assert(!isNaN(x2));
+        assert(!isNaN(x1));
+        assert(!isNaN(y2));
+        assert(!isNaN(y1));
+        assert(!isNaN(dir));
+        assert(!isNaN(x2mx1));
+        assert(!isNaN(x1mx2));
+        assert(!isNaN(relw));
+        assert(!isNaN(y1my2));
+        assert(!isNaN(absw));
 
-            x2: 0.28278198 / 1.23897534 * x1mx2 + x2,
-            y2: ((dir() === -1 ? y1my2 : 0) + absw) + y2,
+        return <!Bezier.Component
+            x1={x2}
+            y1={y2}
 
-            x3: 0.9561935 / 1.23897534 * x1mx2 + x2,
-            y3: ((dir() === -1 ? y1my2 : 0) + absw) + y2,
+            x2={0.28278198 / 1.23897534 * x1mx2 + x2}
+            y2={((dir === -1 ? y1my2 : 0) + absw) + y2}
 
-            x4: x1,
-            y4: y1,
+            x3={0.9561935 / 1.23897534 * x1mx2 + x2}
+            y3={((dir === -1 ? y1my2 : 0) + absw) + y2}
 
-            x5: 0.28278198 / 1.23897534 * x2mx1 + x1,
-            y5: ((dir() === -1 ? 0 : -y1my2) + absw + relw) + y1,
+            x4={x1}
+            y4={y1}
 
-            x6: 0.95619358 / 1.23897534 * x2mx1 + x1,
-            y6: ((dir() === -1 ? 0 : -y1my2) + absw + relw) + y1,
+            x5={0.28278198 / 1.23897534 * x2mx1 + x1}
+            y5={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
 
-            fontSizeFactor: this.props.fontSize * renderUtil.FONT_SIZE_FACTOR,
-            fill: "#000000",
-            strokeWidth: 0.03,
-            stroke: "#000000"
-        });
+            x6={0.95619358 / 1.23897534 * x2mx1 + x1}
+            y6={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
+
+            fontSizeFactor={this.props.fontSize * renderUtil.FONT_SIZE_FACTOR}
+            fill="#000000"
+            strokeWidth={0.03}
+            stroke="#000000" />
     }
 
     shouldComponentUpdate(nextProps: Slur.IProps) {

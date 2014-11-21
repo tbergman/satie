@@ -888,6 +888,23 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
+    private _stepBackwards() {
+        this._stepCursor({
+            step: -1,
+            skipDurationlessContent: false
+        })
+    }
+
+    private _repairCursor(currPart: number) {
+        var body = this.parts[currPart].body;
+        for (var i = this._visualCursor.annotatedObj.idx; body[i] && !body[i].endMarker; --i) {
+            if (body[i].isNote && body[i].ctxData.beat === this._visualCursor.beat) {
+                this._visualCursor.annotatedObj = body[i];
+                break;
+            }
+        }
+    }
+
     "DELETE /local/visualCursor/after"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
         // Remove the item directly before the context.
@@ -915,13 +932,31 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             if (obj) {
                 // Remove items based on a white-list.
                 if (obj.isNote) {
-                    // TODO
+                    var currPart = 0;
+                    var pointer: C.IPointerData = {
+                        partIdx: currPart,
+                        obj: obj,
+                        idx: obj.idx
+                    };
+                    this._stepBackwards();
+
+                    this._annotate(pointer, (obj: Model, ctx: Annotator.Context) => {
+                        var status = C.IterationStatus.RetryCurrent;
+                        ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
+                        if (obj.inBeam) {
+                            var idx = obj.idx - 1;
+                            while (ctx.body[idx].type !== C.Type.BeamGroup) {
+                                --idx;
+                            }
+                            status = ctx.removeFollowingBeam(idx - 1, true);
+                        }
+                        return status;
+                    }, null, null, false, false);
+                    this._repairCursor(currPart);
+                    this._annotate(null, null, null, null, null, false);
                 } else {
                     this._annotate(null, null, null, null, null, false);
-                    this._stepCursor({
-                        step: -1,
-                        skipDurationlessContent: false
-                    });
+                    this._stepBackwards();
                     this._annotate(null, null, null, null, null, false);
                 }
                 this.emit(ANNOTATE_EVENT);

@@ -727,10 +727,10 @@ export enum PreviewMode {
 
 export interface IPointerData {
     partIdx: number;
-    visualIdx: number;
     obj: Model;
-    musicLine: number;
     idx: number;
+    visualIdx?: number;
+    musicLine?: number;
     line?: number;
     ctxData?: IVisualCursor;
 };
