@@ -19,6 +19,7 @@ import History = require("./history");
 import Model = require("./model");
 import PlaybackStore = require("./playback");
 import renderUtil = require("../util/renderUtil");
+import StackableTool = require("./stackableTool");
 import Tool = require("./tool");
 
 var isBrowser = typeof window !== "undefined";
@@ -765,7 +766,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         if (this._cleanupFn) {
             this._cleanupFn();
         }
-        this._tool = action.postData;
+        if (this._tool instanceof StackableTool && action.postData instanceof StackableTool) {
+            this._tool = StackableTool.stack((<StackableTool>this._tool), action.postData);
+        } else {
+            this._tool = action.postData;
+        }
         this.emit(CHANGE_EVENT);
     }
 
