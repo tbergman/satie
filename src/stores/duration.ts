@@ -1120,7 +1120,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var ret: Array<number> = [];
         for (var i = 0; i < note.chord.length; ++i) {
             if (!options.filterTemporary || !note.chord[i].temporary) {
-                ret.push(note.chord[i].isRest ? 3 :
+                ret.push(note.isRest ? 3 :
                     DurationModel.clefOffsets[ctx.clef] +
                     (note.chord[i].octave || 0) * 3.5 +
                     DurationModel.pitchOffsets[note.chord[i].pitch]);
