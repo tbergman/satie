@@ -39,7 +39,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
                 partIdx: 0
             };
             context = new Annotator.Context(parts, opts, songEditor, Annotator.AssertionPolicy.NoAssertions);
-            context.annotate({ bar: 1, beat: 0 }, null, null, true);
+            context.annotate({ bar: 1, beat: 0 }, null, null, true, dispatcher);
         });
         _.each(tests, test => it(
             test[0],

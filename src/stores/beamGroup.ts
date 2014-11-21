@@ -4,6 +4,7 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
+import React = require("react");
 import _ = require("lodash");
 import assert = require("assert");
 

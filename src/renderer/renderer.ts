@@ -17,7 +17,6 @@ var Victoria = require("./victoria/victoria");
 import Annotator = require("../stores/annotator");
 import C = require("../stores/contracts");
 import Header = require("../views/_header");
-import History = require("../stores/history");
 import Model = require("../stores/model");
 import Tool = require("../stores/tool");
 import renderUtil = require("../util/renderUtil");
@@ -690,9 +689,9 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 event.preventDefault(); // we control all undo behavior
                 if (event.ctrlKey || event.metaKey) {
                     if (event.shiftKey) {
-                        this.props.history.redo();
+                        this.props.dispatcher.PUT("/local/song/redo");
                     } else {
-                        this.props.history.undo();
+                        this.props.dispatcher.PUT("/local/song/undo");
                     }
                 }
                 break;
@@ -810,7 +809,7 @@ module Renderer {
         width?: number;
         showFooter?: boolean;
         height?: number;
-        history?: History.History;
+        history?: History;
         paper?: C.Paper;
         setRibbonTabFn: (tab: number) => void;
     }

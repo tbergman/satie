@@ -201,13 +201,13 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
                     (0.1 + 0.2*this.props.beams)*this.direction() + 0.13;
 
             // XXX: all tuplets are drawn as triplets.
-            return Glyph.Component({
-                "selection-info": "beamTuplet",
-                fill: this.props.tupletsTemporary ? "#A5A5A5" : "#000000",
-                glyphName: "tuplet3",
-                fontSize: this.props.fontSize,
-                x: this.props.x + offset/2,
-                y: y});
+            return <!Glyph.Component
+                "selection-info"="beamTuplet"
+                fill={this.props.tupletsTemporary ? "#A5A5A5" : "#000000"}
+                glyphName="tuplet3"
+                fontSize={this.props.fontSize}
+                x={this.props.x + offset/2}
+                y={y} />;
         }
     }
 };

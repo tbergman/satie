@@ -15,6 +15,7 @@ import DurationModelType = require("./duration"); // Cyclic dependency. For type
 import Instruments = require("./instruments");
 import KeySignatureModelType = require("./keySignature"); // Cyclic dependency. For types only.
 import lylite = require("./lylite");
+import History = require("./history");
 import Model = require("./model");
 import PlaybackStore = require("./playback");
 import renderUtil = require("../util/renderUtil");
@@ -42,7 +43,7 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * [DELETE |     |        |      | PUT] /local/modal/social
  * 
  * [DELETE |     |        | POST |    ] /local/selection
- * [DELETE |              |      |    ] /local/selection/contents
+ * [DELETE |     |        |      |    ] /local/selection/contents
  * 
  * [       |     | PATCH  |      | ---] /local/song
  * [DELETE |     |        |      | PUT] /local/song/dirty*
@@ -52,7 +53,9 @@ var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
  * [       |     |        |      | PUT] /local/song/indent/increase
  * [       |     |        |      | PUT] /local/song/indent/decrease
  * [DELETE |     |        |      | PUT] /local/song/lineDirty*
- * [                      |      | PUT] /local/song/pageSize
+ * [       |     |        |      | PUT] /local/song/pageSize
+ * [       |     |        |      | PUT] /local/song/undo
+ * [       |     |        |      | PUT] /local/song/redo
  * 
  * [DELETE |     |        |      | PUT] /local/song/show
  * [       |     |        |      | PUT] /local/song/src
@@ -84,10 +87,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         global.SongEditor = this;
         this._clear();
         this._ping();
+        this._history = new History(this._dispatcher, this);
     }
 
     destructor() {
         this._dispatcher.unregister(this._handleAction);
+        this._history.destructor();
         this._clear();
         this._ping = (): void => undefined;
     }
@@ -717,6 +722,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(CHANGE_EVENT);
     }
 
+    "PUT /local/song/undo"(action: C.IFluxAction) {
+        this._history.undo();
+    }
+
+    "PUT /local/song/redo"(action: C.IFluxAction) {
+        this._history.redo();
+    }
+
     "PUT /local/staveHeight/increase"(action: C.IFluxAction) {
         this.emit(HISTORY_EVENT);
         var h = Math.round(this.header.staveHeight * 100) / 100;
@@ -1027,7 +1040,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             toolFn: toolFn,
             pointerData: pointerData
         };
-        var result = context.annotate(location, customAction, cursor, disableRecording);
+        var result = context.annotate(location, customAction, cursor, disableRecording, this._dispatcher);
 
         if (result.patch && result.patch.length) {
             this._broadcastPatch(result.patch, oldBarKeys, Collab.getBarKeys(context.body));
@@ -1421,6 +1434,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 	private _ctx: Annotator.Context = null;
 	private _dirty = false;
     private _dispatcher: C.IDispatcher;
+    private _history: History;
     private _exportModalVisible: boolean = false;
 	private _linesToUpdate: { [key: string]: boolean } = {};
     private _metadataModalVisible: boolean = false;

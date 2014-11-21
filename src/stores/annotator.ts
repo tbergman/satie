@@ -54,7 +54,7 @@ export class Context implements C.MetreContext {
      * Annotator.annotate.
      */
     annotate(from: C.ILocation, mutation: ICustomAction,
-            cursor: C.IVisualCursor, disableRecording: boolean): C.IAnnotationResult {
+            cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
         Context._ANNOTATING = true;
         var error: Error = null;
@@ -72,6 +72,7 @@ export class Context implements C.MetreContext {
         Context._ANNOTATING = false;
 
         if (error) {
+            dispatcher.PUT("/local/song/undo");
             throw error;
         }
         return result;
