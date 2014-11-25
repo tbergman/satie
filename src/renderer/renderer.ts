@@ -654,15 +654,12 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
-        if (!this.props.tool && data.ctxData) {
+        if (this.props.tool.instance(Tool.Null) && data.ctxData) {
             this.props.dispatcher.PUT("/local/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
             });
-        }
-        if (!this.props.tool) {
-            return;
         }
         try {
             var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
