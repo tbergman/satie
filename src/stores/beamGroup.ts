@@ -54,6 +54,17 @@ class BeamGroupModel extends Model {
             return TimeSignatureModel.createTS(ctx);
         }
 
+        // A beam must not cross a bar (for now)
+        var beats = 0;
+        for (var i = 0; i < this.beam.length; ++i) {
+            beats += this.beam[i].getBeats(ctx);
+        }
+        if (ctx.beat + beats > ctx.timeSignature.beats) {
+            _.each(this.beam, o => { o.inBeam = false; });
+            ctx.eraseCurrent();
+            return C.IterationStatus.RetryCurrent;
+        }
+
         // A beam must have at least two notes.
         if (this.beam.length < 2) {
             _.each(this.beam, o => { o.inBeam = false; });

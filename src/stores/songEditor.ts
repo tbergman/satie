@@ -328,6 +328,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         });
     }
     get tool() {
+        if (!this._tool) {
+            this._tool = new Tool.Null;
+        }
         return this._tool; }
     get visualCursor() {
         return this._visualCursor; }
@@ -778,6 +781,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this._cleanupFn();
         }
         if (this._tool instanceof StackableTool && action.postData instanceof StackableTool) {
+            if (StackableTool.contains(<StackableTool> this._tool, action.postData._priority)) {
+                var hasNoteTool = action.postData._priority === 0;
+                this._tool = StackableTool.unstack((<StackableTool>this._tool), action.postData._priority);
+                if (!hasNoteTool) {
+                    this.emit(CHANGE_EVENT);
+                    return;
+                }
+            }
             this._tool = StackableTool.stack((<StackableTool>this._tool), action.postData);
         } else {
             this._tool = action.postData;
@@ -904,11 +915,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    private _stepBackwards() {
+    private _stepBackwards(skip: boolean) {
         this._stepCursor({
             step: -1,
-            skipDurationlessContent: false
-        })
+            skipDurationlessContent: skip
+        });
     }
 
     private _repairCursor(currPart: number) {
@@ -954,25 +965,27 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                         obj: obj,
                         idx: obj.idx
                     };
-                    this._stepBackwards();
+                    this._stepBackwards(false);
 
                     this._annotate(pointer, (obj: Model, ctx: Annotator.Context) => {
-                        var status = C.IterationStatus.RetryCurrent;
+                        ctx.removeAdjacentBeams();
+                        ctx.removeRemainingBeamsInBar();
                         ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
                         if (obj.inBeam) {
                             var idx = obj.idx - 1;
                             while (ctx.body[idx].type !== C.Type.BeamGroup) {
                                 --idx;
                             }
-                            status = ctx.removeFollowingBeam(idx - 1, true);
+                            ctx.removeFollowingBeam(idx - 1, true);
                         }
-                        return status;
+                        this.dangerouslyMarkRendererLineDirty(ctx.line);
+                        return C.IterationStatus.RetryFromEntry;
                     }, null, null, false, false);
                     this._repairCursor(currPart);
                     this._annotate(null, null, null, null, null, false);
                 } else {
                     this._annotate(null, null, null, null, null, false);
-                    this._stepBackwards();
+                    this._stepBackwards(false);
                     this._annotate(null, null, null, null, null, false);
                 }
                 this.emit(ANNOTATE_EVENT);
@@ -1338,12 +1351,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 steps -= sign;
             } else if (!spec.skipDurationlessContent) {
                 // Skip to the end of the duration-less content!
-                while (parts[0].body[idx] && parts[0].body[idx].priority !== C.Type.Duration) {
+                while (parts[0].body[idx] && parts[0].body[idx].priority !== C.Type.Duration &&
+                        parts[0].body[idx].priority !== C.Type.EndMarker) {
                     idx += sign;
                     ++iterations;
-                }
-                if (iterations && !parts[0].body[idx]) {
-                    idx -= sign;
                 }
                 break;
             }
@@ -1399,8 +1410,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             _.each(this._selection, item => {
                 for (var i = lastIdx; i <= body.length && body[i] !== item; ++i) {
                     if (body[i].type === C.Type.KeySignature) {
-                        var KeySignatureModel: typeof KeySignatureModelType = require("./keySignature");
-                        accidentals = KeySignatureModel.getAccidentals(
+                        accidentals = C.NoteUtil.getAccidentals(
                             (<any>body[i]).keySignature); // TSFIX
                     }
                 }

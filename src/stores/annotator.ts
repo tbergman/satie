@@ -298,7 +298,7 @@ export class Context implements C.MetreContext {
     insertFuture(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
-        this.splice(index, 0, [obj], SplicePolicy.Additive);
+        this.splice(index, 0, [obj], obj.isNote ? SplicePolicy.Masked : SplicePolicy.Additive);
 
         return C.IterationStatus.Success;
     }
@@ -452,6 +452,43 @@ export class Context implements C.MetreContext {
             this._realign(start, clot);
             this._assertAligned();
         }
+    }
+
+    /**
+     * @mutator
+     */
+    removeAdjacentBeams(note?: C.IDuration): C.IterationStatus {
+        var obj = this.curr;
+        if (obj.inBeam) {
+            var i = this.idx;
+            while (i >= 0 && this.body[i].type !== C.Type.BeamGroup) {
+                --i;
+            }
+            var tuplet: C.ITuplet = (<any>this.body[i]).tuplet; // TS
+            if (tuplet && note) {
+                note.tuplet = JSON.parse(JSON.stringify(tuplet));
+            }
+            this.removeFollowingBeam(i - 1, true);
+            --this.idx;
+            return C.IterationStatus.RetryLine;
+        } else if (this.beamFollows()) {
+            this.removeFollowingBeam();
+            return C.IterationStatus.RetryCurrent;
+        }
+        return C.IterationStatus.Success;
+    }
+
+    /**
+     * @mutator
+     */
+    removeRemainingBeamsInBar(): C.IterationStatus {
+        for (var i = this.idx + 1; this.body[i].priority !== C.Type.EndMarker; ++i) {
+            if (this.body[i].priority === C.Type.BeamGroup) {
+                this.removeFollowingBeam(i - 1);
+                --i;
+            }
+        }
+        return C.IterationStatus.Success;
     }
 
     static insertPlaceholders(parts: Array<C.IPart>) {

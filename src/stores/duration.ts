@@ -1253,7 +1253,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     private _handleTie(ctx: Annotator.Context) {
         if (this.tie) {
             var nextNote = ctx.next(obj => obj.isNote);
-            if (nextNote.isRest) {
+            if (!nextNote || nextNote.isRest) {
                 this.tie = false;
                 this.tieTo = null;
             } else {
