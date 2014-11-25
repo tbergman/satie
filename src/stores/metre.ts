@@ -486,31 +486,31 @@ export function correctRoundingErrors(mctx: C.MetreContext): void {
     }
 }
 
-var _512   = C.makeDuration({ count: 512 });
-var _256   = C.makeDuration({ count: 256 });
-var _256D  = C.makeDuration({count: 256, dots: 1});
-var _128   = C.makeDuration({count: 128});
-var _128D  = C.makeDuration({count: 128, dots: 1});
-var _64    = C.makeDuration({count: 64});
-var _64D   = C.makeDuration({count: 64, dots: 1});
-var _32    = C.makeDuration({count: 32});
-var _32D   = C.makeDuration({count: 32, dots: 1});
-var _16    = C.makeDuration({count: 16});
-var _16D   = C.makeDuration({count: 16, dots: 1});
-var _16DD  = C.makeDuration({count: 16, dots: 2});
-var _8     = C.makeDuration({count: 8});
-var _8D    = C.makeDuration({count: 8, dots: 1});
-var _8DD   = C.makeDuration({count: 8, dots: 2});
-var _4     = C.makeDuration({count: 4});
-var _4D    = C.makeDuration({count: 4, dots: 1});
-var _4DD   = C.makeDuration({count: 4, dots: 2});
-var _2     = C.makeDuration({count: 2});
-var _2D    = C.makeDuration({count: 2, dots: 1});
-var _2DD   = C.makeDuration({count: 2, dots: 2}); // Warning: should be included in allNotes depending on TS
-var _1     = C.makeDuration({count: 1});
-var _1D    = C.makeDuration({count: 1, dots: 1}); // Warning: should be included in allNotes depending on TS
-var _1DD   = C.makeDuration({count: 1, dots: 2}); // Warning: should be included in allNotes depending on TS
-var _05    = C.makeDuration({ count: 1 / 2 }); // Warning: should be included in allNotes depending on TS
+var _512   = C.NoteUtil.makeDuration({ count: 512 });
+var _256   = C.NoteUtil.makeDuration({ count: 256 });
+var _256D  = C.NoteUtil.makeDuration({count: 256, dots: 1});
+var _128   = C.NoteUtil.makeDuration({count: 128});
+var _128D  = C.NoteUtil.makeDuration({count: 128, dots: 1});
+var _64    = C.NoteUtil.makeDuration({count: 64});
+var _64D   = C.NoteUtil.makeDuration({count: 64, dots: 1});
+var _32    = C.NoteUtil.makeDuration({count: 32});
+var _32D   = C.NoteUtil.makeDuration({count: 32, dots: 1});
+var _16    = C.NoteUtil.makeDuration({count: 16});
+var _16D   = C.NoteUtil.makeDuration({count: 16, dots: 1});
+var _16DD  = C.NoteUtil.makeDuration({count: 16, dots: 2});
+var _8     = C.NoteUtil.makeDuration({count: 8});
+var _8D    = C.NoteUtil.makeDuration({count: 8, dots: 1});
+var _8DD   = C.NoteUtil.makeDuration({count: 8, dots: 2});
+var _4     = C.NoteUtil.makeDuration({count: 4});
+var _4D    = C.NoteUtil.makeDuration({count: 4, dots: 1});
+var _4DD   = C.NoteUtil.makeDuration({count: 4, dots: 2});
+var _2     = C.NoteUtil.makeDuration({count: 2});
+var _2D    = C.NoteUtil.makeDuration({count: 2, dots: 1});
+var _2DD   = C.NoteUtil.makeDuration({count: 2, dots: 2}); // Warning: should be included in allNotes depending on TS
+var _1     = C.NoteUtil.makeDuration({count: 1});
+var _1D    = C.NoteUtil.makeDuration({count: 1, dots: 1}); // Warning: should be included in allNotes depending on TS
+var _1DD   = C.NoteUtil.makeDuration({count: 1, dots: 2}); // Warning: should be included in allNotes depending on TS
+var _05    = C.NoteUtil.makeDuration({ count: 1 / 2 }); // Warning: should be included in allNotes depending on TS
 
 var allNotes = [_1, _2D, _2,
     _4DD, _4D, _4, _8DD, _8D, _8, _16DD, _16D, _16, _32D,

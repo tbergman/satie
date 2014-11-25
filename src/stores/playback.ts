@@ -239,7 +239,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                     if (foundIdx && obj.isNote) {
                         beats = obj.note.getBeats(ctx);
                         if (!PlaybackStore.USING_LEGACY_AUDIO && !obj.isRest) {
-                            _.each(obj.note.chord.map(C.midiNote), midiNote => {
+                            _.each(obj.note.chord.map(C.NoteUtil.pitchToMidiNumber), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
                                 MIDI.noteOff(channel, midiNote, startTime + delay + beats*timePerBeat);

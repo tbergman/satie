@@ -206,7 +206,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     containsAccidentalAfterBarline(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
-        var nonAccidentals = KeySignatureModel.getAccidentals(ctx.keySignature);
+        var nonAccidentals = C.NoteUtil.getAccidentals(ctx.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
             if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
@@ -320,7 +320,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     getWidth(ctx: Annotator.Context) {
-        return 0.57 + (this.annotatedExtraWidth || 0);
+        return 0.57 + (this.annotatedExtraWidth || 0) + (this.displayedAccidentals ? 0.24 : 0);
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {

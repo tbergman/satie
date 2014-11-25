@@ -137,6 +137,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     get autosaveModalVisible() {
         return this._autosaveModalVisible; }
+    get midiModalTab() {
+        return this._midiModalTab; }
     get notationsSidebarVisible() {
         return this._notationsSidebarVisible; }
     get changesPending() {
@@ -177,7 +179,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 } else if (obj.isNote && !obj.isRest) {
                     var note: C.IPitchDuration = <any> obj;
                     var beats = note.getBeats(ctx);
-                    _.map(note.chord.map(C.midiNote), midiNote => {
+                    _.map(note.chord.map(C.NoteUtil.pitchToMidiNumber), midiNote => {
                         request.push(delay +
                                 " NOTE_ON " + midiNote + " 127");
                         request.push((delay + beats*timePerBeat - 0.019) +
@@ -597,6 +599,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "DELETE /local/modal/social"(action: C.IFluxAction) {
         this._socialModalVisible = false;
+        this.emit(CHANGE_EVENT);
+    }
+
+    "PUT /local/modal/midi"(action: C.IFluxAction) {
+        this._midiModalTab = <number> action.postData;
+        this.emit(CHANGE_EVENT);
+    }
+
+    "DELETE /local/modal/midi"(action: C.IFluxAction) {
+        this._midiModalTab = null;
         this.emit(CHANGE_EVENT);
     }
 
@@ -1486,9 +1498,10 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     private _session: C.ISessionStore;
 	private _snapshots: { [key: string]: any } = {};
     private _socialModalVisible: boolean = false;
+    private _midiModalTab: number = null;
 	private _parts: Array<C.IPart>;
 	private _header: C.IHeader;
-	private _tool: Tool = null;
+	private _tool: Tool = new Tool.Null;
     private _visualCursor: C.IVisualCursor = {
         bar: 1,
         beat: 0,

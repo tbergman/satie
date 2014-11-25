@@ -13,7 +13,6 @@ import Annotator = require("./annotator");
 import C = require("./contracts");
 import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
 import EndMarkerModel = require("./endMarker");
-import KeySignatureModel = require("./keySignature");
 import Metre = require("./metre");
 import TimeSignatureModel = require("./timeSignature");
 
@@ -133,7 +132,7 @@ class BarlineModel extends Model {
         ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = KeySignatureModel.getAccidentals(ctx.keySignature);
+        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.keySignature);
 
         this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 2/4;
         this.yOffset = this.onPianoStaff ? (2/4 - (ctx.staveSeperation/2)): 0;

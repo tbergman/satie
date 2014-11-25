@@ -39,6 +39,10 @@ var RenderEngine: typeof Molasses.Component = useGL ? Victoria : Molasses.Compon
 
 var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
+if (typeof window !== "undefined") {
+    require("web-midi-api/WebMIDIAPI.js"); // Inserts itself if WebMIDI isn't present.
+}
+
 /**
  * The main home of the renderer. The renderer accepts annotated Models and
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
@@ -199,10 +203,11 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     </Group.Component>}
                 </RenderEngine>});
 
-        var ret: React.ReactElement<any, any>; // React component
-        var currY = this.props.marginTop;
+        var ret: React.ReactElement<any, any>;
+        var yPtr = {y: this.props.marginTop};
         if (!this.props.raw) {
             ret = <!div className="workspace" onScroll={this.handleScroll} style={{top: "" + this.props.top}}>
+
                 {_.map(rawPages, (rawPage: any, pidx: number) => {
                     var page = <!div
                             className="page"
@@ -213,10 +218,10 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                 height: this.props.height,
                                 left: "50%",
                                 marginLeft: -this.props.width/2,
-                                top: currY,
+                                top: yPtr.y,
                                 marginBottom: this.props.marginBottom}}>
                         {rawPage}</div>
-                    currY += 40 + this.props.height;
+                    yPtr.y += 40 + this.props.height;
                     return page;
                 })}
                 {this.props.comments && this.props.header.title && <!div
@@ -224,7 +229,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                         style={{
                             width: this.props.width + "px",
                             marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
-                            marginTop: currY + 13 + "px" }}>
+                            marginTop: yPtr.y + 13 + "px" }}>
                     <!DisqusThread
                         shortname={(global.document &&
                             document.location.hostname === "ripieno.io" ||
@@ -253,6 +258,112 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         return ret;
     }
 
+    _alerts(yptr: {y: number}) {
+        var alerts: any[] = [];
+        var NoteTool = require("../stores/noteTool");
+
+        var pianostyle = {
+            height: 13,
+            marginTop: -2,
+            marginRight: 6
+        };
+
+        if (this.props.editMode &&
+                this._midiInputs.filter(mi => !localStorage["midiConnected" + mi.manufacturer + "_" + mi.name]).length) {
+            var currY = yptr.y;
+            yptr.y += 135;
+
+            alerts.push(<!div
+                className="commentBox"
+                key="midiConnected"
+                style={{
+                    fontFamily: "Overlock",
+                    fontSize: "14px",
+                    position: "absolute",
+                    width: this.props.width + "px",
+                    marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
+                    marginTop: currY + 13 + "px" }}>
+                <!div style={{float: "right"}}>
+                    <!a href="javascript:void(0);"
+                            onClick={() => {
+                                _.forEach(this._midiInputs, mi => {
+                                    localStorage["midiConnected"+mi.manufacturer+"_"+mi.name] = "dismissed";
+                                });
+                                this.forceUpdate();
+                            }}>
+                        <!i className="fa-close fa" />
+                    </a>
+                </div>
+                <!b style={{fontSize: "20px"}}><!i className="fa-check-circle fa" /> You're connected!</b> <!br /><!br />
+                You can start entering notes on<!span style={{marginRight: 8}} />
+                {_.map(this._midiInputs, (mi, idx) =>
+                    <!Bootstrap.Label bsStyle="primary" key={"" + idx} style={{marginRight: 18}} >
+                        <!img src="/res/piano.svg" style={pianostyle} />
+                        {mi.manufacturer + " " + mi.name}
+                    </Bootstrap.Label>)}
+            </div>);
+        }
+        if (this.props.editMode &&
+                this.props.tool.instance(NoteTool) &&
+                !this._midiInputs.length &&
+                !localStorage["midiEntry"]) {
+            var currY = yptr.y;
+            yptr.y += 185;
+
+            alerts.push(<!div
+                className="commentBox"
+                key="midiSetup"
+                style={{
+                    fontFamily: "Overlock",
+                    fontSize: "14px",
+                    position: "absolute",
+                    width: this.props.width + "px",
+                    marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
+                    marginTop: currY + 13 + "px" }}>
+                <!div style={{float: "right"}}>
+                    <!a href="javascript:void(0);" onClick={this._hideMidiEntry}>
+                        <!i className="fa-close fa" />
+                    </a>
+                </div>
+                <!b style={{fontSize: "20px"}}>Enter music up to 3x faster!</b> <!br /><!br />
+                <!Bootstrap.Button
+                            onClick={() => {
+                                this.props.dispatcher.PUT("/local/modal/midi", 1);
+                                this._hideMidiEntry();
+                            }}
+                            style={{width: 200}}
+                            bsStyle="danger">
+                        <!img src="/res/piano.svg" style={pianostyle} />
+                        Connect your MIDI device
+                </Bootstrap.Button>
+                <!span style={{marginLeft: 8, marginRight: 9}}>or</span>
+                <!Bootstrap.Button
+                            onClick={() => {
+                                this.props.dispatcher.PUT("/local/modal/midi", 2);
+                                this._hideMidiEntry();
+                            }}
+                            style={{width: 200}}
+                            bsStyle="default">
+                    <!i className="fa-mobile-phone fa-rotate-90 fa" style={{marginRight: 8}}/>
+                    Connect a tablet or big phone</Bootstrap.Button>
+                <!div style={{height: 10}} />
+                <!Bootstrap.Button bsStyle="link"
+                            onClick={() => {
+                                this.props.dispatcher.PUT("/local/modal/midi", 4);
+                                this._hideMidiEntry();
+                            }}>
+                    keyboard shortcuts</Bootstrap.Button>
+            </div>);
+        }
+
+        return alerts;
+    }
+
+    private _hideMidiEntry = () => {
+        localStorage["midiEntry"] = "closed";
+        this.forceUpdate();
+    }
+
     componentWillReceiveProps(newProps: Renderer.IProps) {
         if (this.props.tool !== newProps.tool) {
             if (this.props.tool) {
@@ -266,7 +377,10 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
     componentDidMount() {
         if (isBrowser && this.props.dispatcher) {
-            this.attachToBrowser();
+            this._attachToBrowser();
+        }
+        if (typeof navigator !== "undefined" && (<any>navigator).requestMIDIAccess) {
+            this._attachToMIDI();
         }
         if (this.props.store) {
             this.props.store.addAnnotationListener(this.update);
@@ -274,6 +388,79 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
         if (this.props.tool) {
             this.props.tool.toolWillBeActive(this.props.store);
+        }
+    }
+
+    componentWillUnmount() {
+        if (isBrowser) {
+            this._detachFromBrowser();
+        }
+        if (this._midiInputs.length) {
+            this._detachFromMIDI();
+        }
+        if (this.props.store) {
+            this.props.store.removeAnnotationListener(this.update);
+        }
+    }
+
+    private _midiAccess: any
+    private _midiInputs: Array<any> = [];
+
+    _attachToMIDI() {
+        (<any>navigator).requestMIDIAccess({sysex: false}).then((midiAccess: any) => {
+            this._midiAccess = midiAccess;
+            var registerInput = (input: any) => {
+                this._midiInputs.push(input);
+                input.addEventListener("midimessage", this._handleMidiEvent);
+            }
+            if (typeof midiAccess.inputs === "function") { // Legacy API
+                var inputs = midiAccess.inputs();
+                for (var i = 0; i < inputs.length; ++i) {
+                    registerInput(inputs[i]);
+                }
+            } else { // New ugly API
+                var inputs = midiAccess.inputs.values();
+                for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
+                    registerInput(input.value);
+                }
+            }
+            this.forceUpdate();
+        });
+    }
+    _detachFromMIDI() {
+        _.forEach(this._midiInputs, input => {
+            input.removeEventListener("midimessage", this._handleMidiEvent);
+        });
+        this._midiInputs = [];
+        this._midiAccess = undefined;
+    }
+
+    // Bind manually because Jazz MIDI also wants to bind, and React doesn't like that.
+    _handleMidiEvent = (ev: {data: number[]; currentTarget: any}) => {
+        switch(true) {
+            case(ev.data[0] < 128):
+                // unknown
+                break;
+            case(ev.data[0] < 144 || ev.data[0] < 160 && ev.data[2] === 0):
+                // note off
+                this.props.tool.handleMidiEvent({
+                    type: C.MidiEventType.NoteOff,
+                    channel: ev.data[0] - 144,
+                    note: ev.data[1],
+                    velocity: 0
+                }, this.props.dispatcher);
+                break;
+            case(ev.data[0] < 160):
+                // note on
+                if (this.props.tool) {
+                    this.props.tool.handleMidiEvent({
+                        type: C.MidiEventType.NoteOn,
+                        channel: ev.data[0] - 144,
+                        note: ev.data[1],
+                        velocity: ev.data[2]
+                    }, this.props.dispatcher);
+                }
+                break;
         }
     }
 
@@ -624,14 +811,14 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
     private _oldTitle: string;
 
-    attachToBrowser() {
+    _attachToBrowser() {
         document.addEventListener("keydown", this._handleKeyDown);
         document.addEventListener("keypress", this._handleKeyPress);
         this._oldTitle = document.title;
         document.title = this.props.header.title;
     }
 
-    detachFromBrowser() {
+    _detachFromBrowser() {
         document.removeEventListener("keydown", this._handleKeyDown);
         document.removeEventListener("keypress", this._handleKeyPress);;
         if (global.DISQUS) {
@@ -745,7 +932,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             "-": function () { return new AccidentalTool(-1); },
             "0": function () { return new AccidentalTool(0); }
         };
-        if (!this.props.tool) {
+        if (this.props.tool.instance(Tool.Null)) {
             if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
                 key.charCodeAt(0) <= "g".charCodeAt(0)) {
                 this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
@@ -762,15 +949,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
         }
     }, 70);
-
-    componentWillUnmount() {
-        if (isBrowser) {
-            this.detachFromBrowser();
-        }
-        if (this.props.store) {
-            this.props.store.removeAnnotationListener(this.update);
-        }
-    }
 
     update() {
         this.setState({
@@ -796,6 +974,7 @@ module Renderer {
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
         dispatcher?: C.IDispatcher;
+        editMode?: boolean;
         marginTop?: number;
         marginBottom?: number;
         pageSize?: C.IPageSize;

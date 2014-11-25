@@ -544,6 +544,18 @@ export class MetreContext {
     }
 }
 
+export interface IMidiEvent {
+    type: MidiEventType;
+    note: number;
+    channel: number;
+    velocity: number;
+}
+
+export enum MidiEventType {
+    NoteOn = 0,
+    NoteOff = 1
+}
+
 /**
  * Information about the current mouse position, such as from Renderer.
  */
@@ -850,6 +862,7 @@ export interface ISongEditor {
     autosaveModalVisible: boolean;
     changesPending: boolean;
     copyModalVisible: boolean;
+    midiModalTab: number;
     dirty: boolean;
     dragonAudio: Array<string>;
     exportModalVisible: boolean;
@@ -1023,35 +1036,235 @@ export interface IVisualCursor extends ILocation {
     annotatedStave?: number;
 };
 
-/**
- * Creates a simple realization of an IDuration
- * 
- * @param spec
- */
-export function makeDuration(spec: IDurationSpec): IDuration {
+export module NoteUtil {
     "use strict";
 
-    return {
-        count: spec.count,
-        dots: spec.dots || 0,
-        tuplet: spec.tuplet || null,
-        displayTuplet: null,
-        getBeats(ctx: MetreContext, inheritedCount?: number): number {
-            return require("./metre").getBeats(
-                this.count || inheritedCount,
-                this.dots, this.tuplet, ctx.timeSignature);
+    /**
+     * Creates a simple realization of an IDuration
+     * 
+     * @param spec
+     */
+    export function makeDuration(spec: IDurationSpec): IDuration {
+        "use strict";
+
+        return {
+            count: spec.count,
+            dots: spec.dots || 0,
+            tuplet: spec.tuplet || null,
+            displayTuplet: null,
+            getBeats(ctx: MetreContext, inheritedCount?: number): number {
+                return require("./metre").getBeats(
+                    this.count || inheritedCount,
+                    this.dots, this.tuplet, ctx.timeSignature);
+            }
+        };
+    }
+
+    /**
+     * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
+     */
+    export function pitchToMidiNumber(p: IPitch) {
+        "use strict";
+
+        var base = require("./duration").chromaticScale[p.pitch] + 48;
+        return base + (p.octave || 0)*12 + (p.acc || 0);
+    }
+
+    export var noteToVal: { [key: string]: number } = {
+        c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
+    }; // c:12
+    export var valToNote = _.invert(noteToVal);
+
+    /**
+     * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
+     */
+    export function midiNumberToPitch(n: number, ctx: Annotator.Context): IPitch {
+        "use strict";
+
+        // Notes are easiest to read and to pick when they are spelled according to the
+        // following conventions:
+        //  - Use the most familiar intervals -- perfect, minor, and major -- rather than augmented
+        //    or diminished intervals (IMPLEMENTED)
+        //  - Chromatic-scale figures use sharps to ascend, flats to descend (TODO)
+        //  - Spell stepwise figures as a scale, i.e., as adjacent pitch letters (TODO)
+        // 
+        //     -- Behind Bars by Elaine Gould, p. 85
+        var keySignature = ctx.keySignature;
+        var sharps = getSharpCount(keySignature);
+        var flats = getFlatCount(keySignature);
+
+        // Some notes are only aug or dim, never p/M/m, so we tend to give sharps to Cmaj and keys
+        // with sharps, and flats to Amin and keys with flats. (This looks backwards here -- flats
+        // have a higher number than sharps. That's because tendency is in terms of the base note!)
+        var tendency = sharps || !flats && keySignature.pitch.pitch === "c" ? 0 : 1;
+
+        var idealStepsPerInterval: {[key: number]: number} = {
+            0:  0,              // Perfect unison
+            1:  0 + tendency,   // Augmented unison or diminished second
+            2:  1,              // Perfect second
+            3:  2,              // Minor third
+            4:  2,              // Major third
+            5:  3,              // Perfect fourth
+            6:  3 + tendency,   // Tritone (Augmented fourth or dimished fifth)
+            7:  4,              // Perfect fifth
+            8:  5,              // Minor sixth (Augmented fifth is fairly common though)
+            9:  5,              // Major sixth
+            10: 6,              // Minor seventh
+            11: 6               // Major seventh
+        };
+
+        // We avoid negative modulos.
+        var halfStepsFromScaleRoot = (((n - pitchToMidiNumber(keySignature.pitch)) % 12) + 12) % 12;
+
+        var idealSteps = idealStepsPerInterval[halfStepsFromScaleRoot];
+        var notesInv: {[key: string]: number} = {
+            "c": 0,
+            "d": 1,
+            "e": 2,
+            "f": 3,
+            "g": 4,
+            "a": 5,
+            "b": 6
+        };
+        var notes = _.invert(notesInv);
+
+        var base = notes[(notesInv[keySignature.pitch.pitch] + idealSteps) % 7];
+
+        // Add accidental
+        var acc = -positiveMod(pitchToMidiNumber({octave: 0, acc: 0, pitch: base}) - n, 12) || null;
+        if (acc < -6) {
+            acc += 12;
         }
+
+        return {
+            octave: Math.floor(n/12 - 4),
+            acc: acc,
+            pitch: base
+        };
+    }
+
+    export function positiveMod(base: number, mod: number) {
+        return ((base % mod) + mod) % mod;
+    }
+
+    export function getSharpCount(keySignature: IKeySignature): number {
+        var k = keySignature.pitch;
+        if (keySignature.mode === MAJOR) {
+            if (isPitch(k, "c")) {
+                return 0;
+            } else if (isPitch(k, "g")) {
+                return 1;
+            } else if (isPitch(k, "d")) {
+                return 2;
+            } else if (isPitch(k, "a")) {
+                return 3;
+            } else if (isPitch(k, "e")) {
+                return 4;
+            } else if (isPitch(k, "b")) {
+                return 5;
+            } else if (isPitch(k, "f", 1)) {
+                return 6;
+            } else if (isPitch(k, "c", 1)) {
+                return 7;
+            } else if (isPitch(k, "g", 1)) {
+                return 7; // + fx
+            }
+        } else if (keySignature.mode === MINOR) {
+            if (isPitch(k, "a")) {
+                return 0;
+            } else if (isPitch(k, "e")) {
+                return 1;
+            } else if (isPitch(k, "b")) {
+                return 2;
+            } else if (isPitch(k, "f", 1)) {
+                return 3;
+            } else if (isPitch(k, "c", 1)) {
+                return 4;
+            } else if (isPitch(k, "g", 1)) {
+                return 5;
+            } else if (isPitch(k, "d", 1)) {
+                return 6;
+            } else if (isPitch(k, "a", 1)) {
+                return 7;
+            } else if (isPitch(k, "e", 1)) {
+                return 7; // + fx
+            }
+        } else {
+            assert(0, "Not reached");
+        }
+
+        return undefined;
     };
-}
 
-/**
- * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
- */
-export function midiNote(p: IPitch) {
-    "use strict";
+    export function getFlatCount(keySignature: IKeySignature): number {
+        var k = keySignature.pitch;
+        if (keySignature.mode === MAJOR) {
+            if (isPitch(k, "f")) {
+                return 1;
+            } else if (isPitch(k, "b", -1)) {
+                return 2;
+            } else if (isPitch(k, "e", -1)) {
+                return 3;
+            } else if (isPitch(k, "a", -1)) {
+                return 4;
+            } else if (isPitch(k, "d", -1)) {
+                return 5;
+            } else if (isPitch(k, "g", -1)) {
+                return 6;
+            } else if (isPitch(k, "c", -1)) {
+                return 7;
+            } else if (isPitch(k, "f", -1)) {
+                return 7; // + bbb
+            }
+        } else if (keySignature.mode === MINOR) {
+            if (isPitch(k, "d")) {
+                return 1;
+            } else if (isPitch(k, "g")) {
+                return 2;
+            } else if (isPitch(k, "c")) {
+                return 3;
+            } else if (isPitch(k, "f")) {
+                return 4;
+            } else if (isPitch(k, "b", -1)) {
+                return 5;
+            } else if (isPitch(k, "e", -1)) {
+                return 6;
+            } else if (isPitch(k, "a", -1)) {
+                return 7;
+            } else if (isPitch(k, "d", -1)) {
+                return 7; // + bbb
+            }
+        } else {
+            assert(0, "Not reached");
+        }
 
-    var base = require("./duration").chromaticScale[p.pitch] + 48;
-    return base + (p.octave || 0)*12 + (p.acc || 0);
+        return undefined;
+    };
+
+    export function getAccidentals(keySignature: IKeySignature) {
+        var ret: IAccidentals = { };
+
+        var flats = getFlatCount(keySignature);
+        if (flats) {
+            _.times(flats, idx => {
+                ret[flatCircle[idx]] = -1;
+            });
+            return ret;
+        }
+
+        var sharps = getSharpCount(keySignature);
+        _.times(sharps, idx => {
+            ret[sharpCircle[idx]] = 1;
+        });
+        return ret;
+    };
+
+    export var flatCircle = "beadgcf";
+    export var sharpCircle = "fcgdaeb";
+
+    export function isPitch(k: IPitch, name: string, acc?: number) {
+        return k.pitch === name && (k.acc || 0) === (acc || 0);
+    }
 }
 
 /**
