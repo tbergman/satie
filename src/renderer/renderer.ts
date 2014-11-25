@@ -680,9 +680,12 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     handleMouseDown(event: React.MouseEvent) {
         if (event.button === 0) {
             if (this.props.selection) {
-                _.each(this.props.selection, function(s: Model)  {
+                _.each(_selection, function(s: Model)  {
                     s.selected = null;
                 });
+                if (this.props.store) {
+                    this.props.store.dangerouslyMarkRendererDirty();
+                }
             }
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
@@ -750,7 +753,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             }
             return;
         }
-        if (!this.props.tool) {
+        if (this.props.tool.instance(Tool.Null)) {
             if (this.state.mouse) {
                 this.setState({
                     mouse: null
@@ -845,7 +848,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 event.preventDefault(); // don't navigate backwards
                 if (_selection) {
                     this.props.dispatcher.DELETE("/local/selection/contents");
-                } else if (!this.props.tool) {
+                } else if (this.props.tool.instance(Tool.Null)) {
                     this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
                 }
                 if (this.props.tool) {

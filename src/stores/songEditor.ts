@@ -630,7 +630,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     "DELETE /local/selection/contents" = this._eraseSelection;
 
     "PATCH /local/song"(action: C.IFluxAction) {
-        var lines = Collab.patch(action.postData, this.parts[4].body); // XXX: MULTISTAVE
+        var lines = Collab.patch(action.postData, this.parts[0].body); // XXX: MULTISTAVE
         _.each(lines, line => this.dangerouslyMarkRendererLineDirty(line));
         this._annotate(null, null, null, null, null, true);
         this.emit(ANNOTATE_EVENT);
@@ -854,7 +854,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 skipDurationlessContent: action.postData.skipDurationlessContent
             });
         }
-        this._annotate(null, null, null, null, null, true);
+        if (!this._visualCursor.annotatedObj) {
+            this._annotate(null, null, null, null, null, true);
+        }
         this.emit(ANNOTATE_EVENT);
     }
 
@@ -936,8 +938,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(HISTORY_EVENT);
         // Remove the item directly before the context.
         for (var h = 0; h < this._parts.length; ++h) {
-            // XXX: It's likely the developer will need to adjust this
-            // logic to allow for multiple staffs.
             if (!this._parts[h].body) {
                 continue;
             }
@@ -979,14 +979,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                             ctx.removeFollowingBeam(idx - 1, true);
                         }
                         this.dangerouslyMarkRendererLineDirty(ctx.line);
-                        return C.IterationStatus.RetryFromEntry;
+                        return C.IterationStatus.RetryLine;
                     }, null, null, false, false);
                     this._repairCursor(currPart);
                     this._annotate(null, null, null, null, null, false);
                 } else {
-                    this._annotate(null, null, null, null, null, false);
                     this._stepBackwards(false);
-                    this._annotate(null, null, null, null, null, false);
                 }
                 this.emit(ANNOTATE_EVENT);
             }
@@ -1338,8 +1336,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         var parts = this._parts;
         var iterations = 0;
 
-        while(steps && parts[0].body[idx += sign]) {
-            var priority = parts[0].body[idx].priority;
+        var page = this._visualCursor.annotatedPage;
+        var part = 0;
+        var line = this._visualCursor.annotatedLine;
+
+        while(steps && parts[part].body[idx += sign]) {
+            var priority = parts[part].body[idx].priority;
             var visible = false;
             for (var i = 0; !visible && i < parts.length; ++i) {
                 visible = visible || !!parts[i].body[idx].visible;
@@ -1351,8 +1353,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 steps -= sign;
             } else if (!spec.skipDurationlessContent) {
                 // Skip to the end of the duration-less content!
-                while (parts[0].body[idx] && parts[0].body[idx].priority !== C.Type.Duration &&
-                        parts[0].body[idx].priority !== C.Type.EndMarker) {
+                while (parts[part].body[idx] && parts[part].body[idx].priority !== C.Type.Duration &&
+                        parts[part].body[idx].priority !== C.Type.EndMarker) {
+                    if (parts[part].body[idx].type === C.Type.NewPage) {
+                        page += sign;
+                    }
+                    if (parts[part].body[idx].type === C.Type.NewLine) {
+                        line += sign;
+                    }
                     idx += sign;
                     ++iterations;
                 }
@@ -1361,11 +1369,17 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             ++iterations;
         }
 
-        var obj = parts[0].body[idx];
+        var obj = parts[part].body[idx];
         if (!obj) {
             if (sign === 1 && spec.loopThroughEnd) {
                 this._visualCursor = {
-                    bar: 0, beat: 0, endMarker: false, annotatedObj: parts[0].body[0], annotatedLine: 0, annotatedPage: 0
+                    bar: 0,
+                    beat: 0,
+                    endMarker: false,
+                    annotatedObj: parts[part].body[0],
+                    annotatedLine: line,
+                    annotatedPage: page,
+                    annotatedStave: part
                 };
                 this._stepCursor({step: 1});
             }
@@ -1380,7 +1394,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             endMarker: obj.priority <= C.Type.EndMarker,
             annotatedObj: obj,
             annotatedLine: 0,
-            annotatedPage: 0
+            annotatedPage: page,
+            annotatedStave: part
         };
     }
 
