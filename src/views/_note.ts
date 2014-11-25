@@ -9,6 +9,8 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
+/* tslint:disable */
+
 import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
@@ -66,7 +68,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     notehead={this.props.notehead} />
                 {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
                     idx={idx}
-                    key="_1"
+                    key={"_1_" + idx}
                     stroke={this.props.strokes[0]}
                     radius={0.06}
                     x={this.props.x}

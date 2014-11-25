@@ -13,7 +13,6 @@ import C = require("./contracts");
 import Collab = require("./collab");
 import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
 import Instruments = require("./instruments");
-import KeySignatureModelType = require("./keySignature"); // Cyclic dependency. For types only.
 import lylite = require("./lylite");
 import History = require("./history");
 import Model = require("./model");
@@ -103,19 +102,19 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     ///////////////////
 
     addChangeListener(callback: any) {
-        this.on(CHANGE_EVENT, callback); }
+        this.addListener(CHANGE_EVENT, callback); }
 
     addAnnotationListener(callback: any) {
-        this.on(ANNOTATE_EVENT, callback); }
+        this.addListener(ANNOTATE_EVENT, callback); }
 
     addHistoryListener(callback: any) {
-        this.on(HISTORY_EVENT, callback); }
+        this.addListener(HISTORY_EVENT, callback); }
 
     addClearHistoryListener(callback: any) {
-        this.on(CLEAR_HISTORY_EVENT, callback); }
+        this.addListener(CLEAR_HISTORY_EVENT, callback); }
 
     addMidiHintListener(callback: (out: Array<number>) => void) {
-        this.on(MIDI_OUT_HINT, callback); }
+        this.addListener(MIDI_OUT_HINT, callback); }
 
     removeChangeListener(callback: any) {
         this.removeListener(CHANGE_EVENT, callback); }

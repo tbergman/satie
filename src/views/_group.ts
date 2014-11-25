@@ -19,6 +19,7 @@ class Group extends TypedReact.Component<any, any> {
 }
 
 module Group {
+    "use strict";
     export var Component = TypedReact.createClass(React.createClass, Group);
 }
 

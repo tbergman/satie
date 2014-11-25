@@ -4,6 +4,8 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
+/* tslint:disable */
+
 import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");

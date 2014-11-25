@@ -3,6 +3,8 @@
  * Position adjustments of accidentals should be taken care of by DurationModel.
  */
 
+/* tslint:disable */
+
 import React = require("react");
 import TypedReact = require("typed-react");
 

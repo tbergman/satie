@@ -12,6 +12,7 @@
 /// <reference path="../../references/node.d.ts" />
 
 import assert = require("assert");
+import _ = require("lodash");
 
 import Model = require("./model");
 import Annotator = require("./annotator");

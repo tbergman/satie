@@ -49,7 +49,7 @@ var files = {
 };
 console.log(files.typings);
 
-gulp.task("watch", ["watch-prebuild", "chores"], function() {
+gulp.task("watch", ["watch-prebuild", "chores", "lint"], function() {
     var nginx = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
     nginx.stderr.on("data", function(data) {
         console.log(data.toString());
@@ -167,12 +167,17 @@ var sharedTypescriptProject = typescript.createProject({
 
 gulp.task("typescript", function() {
     var ts = gulp.src([files.ts, files.typings])
-        //.pipe(newer({ dest: dirs.build, ext: ".js"}))
         .pipe(typescript(sharedTypescriptProject)).js
         .pipe(gulp.dest(dirs.build));
     var js = gulp.src([files.nonTsSources])
         .pipe(newer(dirs.build))
         .pipe(gulp.dest(dirs.build));
+    var tsLint = gulp.src([files.ts])
+        .pipe(newer({ dest: dirs.build, ext: ".js" }))
+        .pipe(tslint())
+        .pipe(tslint.report("verbose", {
+            emitError: false
+        }));
     return ts;
 });
 
@@ -188,7 +193,7 @@ gulp.task("lint", function() {
     return gulp.src(files.ts)
         .pipe(tslint())
         .pipe(tslint.report("verbose", {
-            emitError: false
+            emitError: true
         }));
 });
 

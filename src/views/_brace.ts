@@ -2,6 +2,8 @@
  * Renders a piano bracket or other kind of brace.
  */
 
+/* tslint:disable */
+
 import React = require("react");
 import TypedReact = require("typed-react");
 import renderUtil = require("../util/renderUtil");

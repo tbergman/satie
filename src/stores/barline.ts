@@ -251,8 +251,8 @@ class BarlineModel extends Model {
         return history.reverse().join("\n") + "\n";
     }
 
-    private __history__: string = "";
-    private __lkg__: string = "";
+    __history__: string = "";
+    __lkg__: string = "";
 
     private _barline: C.Barline;
     annotatedAccidentalSpacing: number;

@@ -124,7 +124,7 @@ class Model {
     static setView = function (View: (opts: { key: number; spec: Model; fontSize: number }) => any) {
         this.prototype.render = function (fontSize: number, options: any) {
             var props = assign({}, options, {key: this.key, spec: this, fontSize: fontSize});
-            return <!View {...props} />;
+            return React.createElement(View, props);
         };
     };
 

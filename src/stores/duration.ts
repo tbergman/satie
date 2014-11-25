@@ -1183,7 +1183,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     private getAccidentals(ctx: Annotator.Context, display?: boolean) {
         var chord: Array<C.IPitch> = this.chord || <any> [this];
         var result = new Array(chord.length || 1);
-        var __or = function (first: number, second: number, third?: number) {
+        function or3(first: number, second: number, third?: number) {
             if (third === undefined) {
                 third = null;
             }
@@ -1192,10 +1192,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         };
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
-            var actual = __or(display ? pitch.displayAcc : null, pitch.acc);
+            var actual = or3(display ? pitch.displayAcc : null, pitch.acc);
             assert(actual !== undefined);
-            var generalTarget = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch], null);
-            var target = __or(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave], null);
+            var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch], null);
+            var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave], null);
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
@@ -1208,7 +1208,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
                 // 2. The note has the same accidental on all other part (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && target !== __or(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
+                    if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
                             ctx.accidentalsByStave[j][pitch.pitch], target)) {
                         noConflicts = false;
                     }

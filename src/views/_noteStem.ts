@@ -6,6 +6,8 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
+/* tslint:disable */
+
 import React = require("react");
 import TypedReact = require("typed-react");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
