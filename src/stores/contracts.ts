@@ -847,12 +847,14 @@ export interface ISongEditor {
     addChangeListener: (callback: any) => void;
     addAnnotationListener: (callback: any) => void;
     addHistoryListener: (callback: any) => void;
-    addMidiHintListener: (callback: (out: Array<number>) => void) => void;
+    addMidiOutHintListener: (callback: (out: Array<number>) => void) => void;
+    addMidiInHintListener: (data: (ev: {data: number[]; currentTarget: any}) => void) => void;
     addClearHistoryListener: (callback: any) => void;
     removeChangeListener: (callback: any) => void;
     removeAnnotationListener: (callback: any) => void;
     removeHistoryListener: (callback: any) => void;
-    removeMidiHintListener: (callback: (out: Array<number>) => void) => void;
+    removeMidiOutHintListener: (callback: (out: Array<number>) => void) => void;
+    removeMidiInHintListener: (data: (ev: {data: number[]; currentTarget: any}) => void) => void;
     removeClearHistoryListener: (callback: any) => void;
 
     destructor: () => void;

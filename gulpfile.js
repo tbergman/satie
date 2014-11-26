@@ -45,7 +45,8 @@ var files = {
     typings: path.join(dirs.typings, "*.d.ts"),
     nonTsSources: path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,vs}"),
     allSrc: path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,ts,vs}"),
-    mainLocal: "./.partialBuild/main.js"
+    mainWebapp: "./.partialBuild/main.js",
+    mainTablet: "./.partialBuild/tablet/main.js"
 };
 console.log(files.typings);
 
@@ -58,29 +59,33 @@ gulp.task("watch", ["watch-prebuild", "chores", "lint"], function() {
     gulp.watch(files.allSrc, ["typescript"]);
 });
 
-function getSharedBrowserify() {
-}
 gulp.task("watch-prebuild", ["typescript"], function() {
-    var bundler = watchify(browserify(browserifyOpts.debug))
-        .add(files.mainLocal);
+    watch(files.mainWebapp, "browser-bundle.js");
+    watch(files.mainTablet, "tablet-bundle.js");
+});
 
-    bundler.on("error", gutil.log.bind(gutil, "Browserify Error"))
+function watch(main, output) {
+    var webappBundler = watchify(browserify(browserifyOpts.debug))
+        .add(main);
+
+    webappBundler.on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("update", function () {
             var before = new Date;
-            bundlerShare(bundler);
+            bundlerShare(webappBundler);
             var after = new Date;
             console.log("Rebundled in " + (after - before) + "msec...");
         });
 
-    bundlerShare(bundler);
-});
+    bundlerShare(webappBundler);
 
-function bundlerShare(bundler) {
-    bundler
-        .bundle()
-        .pipe(source("browser-bundle.js"))
-        .pipe(gulp.dest("./build"));
+    function bundlerShare(bundler) {
+        bundler
+            .bundle()
+            .pipe(source(output))
+            .pipe(gulp.dest("./build"));
+    }
 }
+
 
 gulp.task("cli-test-daemon", ["create-test-suite"], function() {
     buildAndRunTest(true);

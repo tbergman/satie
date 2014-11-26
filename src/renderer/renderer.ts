@@ -384,6 +384,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         }
         if (this.props.store) {
             this.props.store.addAnnotationListener(this.update);
+            this.props.store.addMidiInHintListener(this._handleMidiEvent);
         }
 
         if (this.props.tool) {
@@ -400,6 +401,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         }
         if (this.props.store) {
             this.props.store.removeAnnotationListener(this.update);
+            this.props.store.removeMidiInHintListener(this._handleMidiEvent);
         }
     }
 
@@ -437,6 +439,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
     // Bind manually because Jazz MIDI also wants to bind, and React doesn't like that.
     _handleMidiEvent = (ev: {data: number[]; currentTarget: any}) => {
+        debugger;
         switch(true) {
             case(ev.data[0] < 128):
                 // unknown

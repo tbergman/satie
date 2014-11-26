@@ -27,6 +27,7 @@ var ANNOTATE_EVENT = "annotate";
 var HISTORY_EVENT = "history";
 var CLEAR_HISTORY_EVENT = "clearHistory";
 var MIDI_OUT_HINT = "midiOut";
+var MIDI_IN_HINT = "midiIn";
 
 var USING_LEGACY_AUDIO = PlaybackStore.USING_LEGACY_AUDIO;
 
@@ -113,8 +114,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     addClearHistoryListener(callback: any) {
         this.addListener(CLEAR_HISTORY_EVENT, callback); }
 
-    addMidiHintListener(callback: (out: Array<number>) => void) {
+    addMidiOutHintListener(callback: (out: Array<number>) => void) {
         this.addListener(MIDI_OUT_HINT, callback); }
+
+    addMidiInHintListener(callback: (ev: {data: number[]; currentTarget: any}) => void) {
+        this.addListener(MIDI_IN_HINT, callback); }
 
     removeChangeListener(callback: any) {
         this.removeListener(CHANGE_EVENT, callback); }
@@ -128,8 +132,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     removeClearHistoryListener(callback: any) {
         this.removeListener(CLEAR_HISTORY_EVENT, callback); }
 
-    removeMidiHintListener(callback: (out: Array<number>) => void) {
+    removeMidiOutHintListener(callback: (out: Array<number>) => void) {
         this.removeListener(MIDI_OUT_HINT, callback); }
+
+    removeMidiInHintListener(callback: (ev: {data: number[]; currentTarget: any}) => void) {
+        this.removeListener(MIDI_IN_HINT, callback); }
 
     /////////////////////////////////
     // PROPERTIES AND DERIVED DATA // 
@@ -1254,6 +1261,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
         if (parsed.newStatus) {
             this._dispatcher.PUT("/local/apiRole", parsed.newStatus);
+        } else if (parsed.midiIn) {
+            this.emit(MIDI_IN_HINT, parsed.midiIn);
         }
     }
 

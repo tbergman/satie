@@ -54,7 +54,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
         if (songEditor) {
             songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
-            songEditor.addMidiHintListener(hit);
+            songEditor.addMidiOutHintListener(hit);
         }
 
         if (PlaybackStore.USING_LEGACY_AUDIO) {
@@ -85,7 +85,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._play(false);
         this._dispatcher.unregister(this._handleAction);
         if (this._songEditor) {
-            this._songEditor.removeMidiHintListener(hit);
+            this._songEditor.removeMidiOutHintListener(hit);
         }
     }
 
