@@ -1,4 +1,4 @@
-﻿/**
+﻿/** 
  * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
  * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
@@ -14,33 +14,36 @@
 import assert = require("assert");
 import _ = require("lodash");
 
-import Model = require("./model");
 import Annotator = require("./annotator");
-import renderUtil = require("../util/renderUtil");
+import Model = require("./model");
 
-/**
+export import renderUtil = require("../util/renderUtil");
+export import MusicXML = require("./musicxml");
+export import SMuFL = require("../util/SMuFL");
+
+/** 
  * Represents the client's policy for communicating changes with each other and saving them
  * to the server.
  */
 export enum ApiRole {
-    /**
+    /** 
      * All changes are cached until the client can reconnect to the relay.
      */
     Offline = 0,
 
-    /**
+    /** 
      * In charged of accepting or rejecting changes from peers, PUTs official version to
      * the server.
      */
     Primary = 1,
 
-    /**
+    /** 
      * Sends all requests to PRIMARY peer via the relay. Does not save.
      */
     Secondary = 2
 }
 
-/**
+/** 
  * Used to hold current accidentals in a bar.
  * 
  * e.g., {"a": -2, "b": 1} means that "a" has a double flat and
@@ -50,16 +53,16 @@ export interface IAccidentals {
     [key: string]: number
 }
 
-/**
+/** 
  * Used to generate Model.intersects.
  */
 export interface IActiveIntersection {
-    /**
+    /** 
      * A model that is in the time frame being considered.
      */
     obj: Model;
 
-    /**
+    /** 
      * The beat when the Model should be removed.
      */
     expires: number;
@@ -74,7 +77,7 @@ export interface IAnnotationResult {
     patch: Array<string>;
 }
 
-/**
+/** 
  * Options to pass to Context.annotate and related annotation functions.
  * 
  * @deprecated
@@ -93,7 +96,7 @@ export enum Barline {
     Double
 }
 
-/**
+/** 
  * The stupid enumeration is the way it because I didn't know how to make a type
  * that is either a number or variable.
  */
@@ -113,7 +116,7 @@ export enum BeamCount {
 export interface IBody extends Array<Model> {
 }
 
-/**
+/** 
  * Standard clefs or sets of clefs.
  */
 export enum Clef {
@@ -126,11 +129,11 @@ export enum Clef {
     TrebleDrums,
 }
 
-/**
+/** 
  * See Facebook's documentation on Flux Dispatchers.
  */
 export interface IDispatcher {
-    /**
+    /** 
      * Register a Store's callback so that it may be invoked by an action.
      * @param {function} callback The callback to be registered.
      * @return {number} The index of the callback within the _callbacks array.
@@ -138,7 +141,7 @@ export interface IDispatcher {
     register: (callback: (payload: any) => boolean) => void;
     unregister: (callback: (payload: any) => boolean) => void;
 
-    /**
+    /** 
      * Dispatch a Flux-style event.
      * 
      * @param cb The callback should not be used for any logic that could potentially
@@ -155,7 +158,7 @@ export interface IDispatcher {
     _events: string;
 }
 
-/**
+/** 
  * An exception thrown during a dispatch event that states a different dispatch event
  * should be executed.
  */
@@ -170,36 +173,36 @@ export class DispatcherRedirect {
     postData: any;
 }
 
-/**
+/** 
  * Any data structure that holds a duration, such as a chord or a rest.
  * A simple realization of IDuration can be constructed from C.makeDuration().
  * 
  * See also IPitch and IPitchDuration.
  */
 export interface IDuration {
-    /**
+    /** 
      * The base of the note, as encoded by Lilypond.
      * 
      * A quarter note is '4', a half note is '8', ...
      */
     count: number;
 
-    /**
+    /** 
      * The number of displayed dots, or null.
      */
     dots: number;
 
-    /**
+    /** 
      * The number of dots to be displayed, if different from dots.
      */
     displayDots?: number;
 
-    /**
+    /** 
      * The tuplet to be displayed, if different from tuplet.
      */
     displayTuplet?: ITuplet;
 
-    /**
+    /** 
      * Returns the number of beats in the duration, between 0 and the
      * number of beats in the timeSignature.
      * 
@@ -212,77 +215,77 @@ export interface IDuration {
 
     temporary?: boolean;
 
-    /**
+    /** 
      * The displayed tuplet, or null.
      */
     tuplet: ITuplet;
 }
 
-/**
+/** 
  * Information needed to create a duration using C.makeDuration().
  * 
  * See IDuration and C.makeDuration().
  */
 export interface IDurationSpec {
-    /**
+    /** 
      * The base of the note, as encoded by Lilypond.
      * 
      * A quarter note is '4', a half note is '8', ...
      */
     count: number;
 
-    /**
+    /** 
      * The number of displayed dots, or null.
      */
     dots?: number;
 
-    /**
+    /** 
      * The displayed tuplet, or null.
      */
     tuplet?: ITuplet
 }
 
-/**
+/** 
  * An error to report to the user. Handled in Router.
  */
 export interface IError {
-    /**
+    /** 
      * A human-readable explanation of what went wrong.
      */
     type: string;
 
-    /**
+    /** 
      * An absolute URL (without the hostname) that explains the error.
      */
     redirectTo: string;
 };
 
-/**
+/** 
  * A request to the Ripieno server and/or internal store.
  */
 export interface IFluxAction {
-    /**
+    /** 
      * The path and verb of the resource, such as "PUT /local/selection"
      */
     description: string;
 
-    /**
+    /** 
      * The parsed JSON response from the server, if this is a server request.
      */
     response: any;
 
-    /**
+    /** 
      * For requests like "PUT /foo/bar/_qui", "qui".
      */
     resource?: string;
 
-    /**
+    /** 
      * For requests like "GET /api/v0/song?userId=blah&another=query",
      * "userId=blah&another=query"
      */
     query: string;
 
-    /**
+    /** 
      * For PUT and POST requests, the non-stringified JSON postData.
      */
     postData: any;
@@ -290,59 +293,242 @@ export interface IFluxAction {
     nested?: boolean;
 };
 
-/**
+/** 
  * A header is a child of parts, and includes the title and other basic
  * information.
  */
-export interface IHeader {
-    composer: string;
-    title: string;
+export class ScoreHeader implements MusicXML.ScoreHeader {
+    // MusicXML.ScoreHeader
+    credits: MusicXML.Credit[] = [];
 
-    /**
-     * True if the title should be rendered as a link, usually because
-     * it is being hovered.
-     */
-    titleHovered?: boolean;
+    identification: MusicXML.Identification = {
+        creators: [],
+        encodings: [],
+        miscellaneous: [],
+        relations: [],
+        rights: [],
+        sources: []
+    }
+    defaults: MusicXML.Defaults = {
+        appearance: {
+            distances: {
+                hyphen: {
+                    tenths: 120,
+                    type: "hyphen"
+                },
+                beam: {
+                    tenths: SMuFL.distances.beam * 10,
+                    type: "beam"
+                }
+            },
+            lineWidths: {
+                staff: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness * 10,
+                    "type": "staff"
+                },
+                wedge: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.hairpinThickness * 10,
+                    "type": "wedge"
+                },
+                ending: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.repeatEndingLineThickness * 10,
+                    "type": "ending"
+                },
+                heavyBarline: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.thickBarlineThickness * 10,
+                    "type": "heavy barline"
+                },
+                leger: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.legerLineThickness * 10,
+                    "type": "leger"
+                },
+                stem: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.stemThickness * 10,
+                    "type": "stem"
+                },
+                tupletBracket: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.tupletBracketThickness * 10,
+                    "type": "tuplet bracket"
+                },
+                beam: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.beamThickness * 10,
+                    "type": "beam"
+                },
+                lightBarline: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness * 10,
+                    "type": "light barline"
+                },
+                enclosure: {
+                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.textEnclosureThickness * 10,
+                    "type": "enclosure"
+                }
+            },
+            noteSizes: {
+                1: { // Grace
+                    "type": 1,
+                    "size": 60 // Not sure what 60 refers to. Our grace notes are 1.9 spaces
+                },
+                0: { // Cue
+                    "type": 0,
+                    "size": 60 // Not sure what 60 refers to. Our cue notes are 1.9 spaces.
+                }
+            },
+            otherAppearances: []
+        },
+        lyricFonts: [],
+        lyricLanguages: [],
+        musicFont: {
+            fontSize: "NOT IMPLEMENTED",
+            fontFamily: "Bravura, Maestro, engraved",
+            fontStyle: MusicXML.NormalItalic.Normal,
+            fontWeight: MusicXML.NormalBold.Normal
+        },
+        pageLayout: {
+            pageHeight: NaN,
+            pageWidth: NaN,
+            pageMargins: [
+                {
+                    bottomMargin: NaN,
+                    leftMargin: NaN,
+                    rightMargin: NaN,
+                    topMargin: NaN,
+                    type: MusicXML.OddEvenBoth.Both
+                }
+            ]
+        },
+        scaling: {
+            millimeters: NaN,
+            tenths: 40
+        },
+        staffLayouts: [],
+        systemLayout: {
+            systemDistance: 121,
+            systemDividers: null,
+            systemMargins: {
+                leftMargin: 0,
+                rightMargin: 0
+            },
+            topSystemDistance: 70
+        },
+        wordFont: {
+            fontSize: "12",
+            fontFamily: "Alegreya, Comic Sans, serif",
+            fontStyle: MusicXML.NormalItalic.Normal,
+            fontWeight: MusicXML.NormalBold.Normal
+        }
+    }
+    work: MusicXML.Work;
 
-    /**
-     * True if the composer should be rendered as a link, usually because
-     * it is being hovered.
-     */
-    composerHovered?: boolean;
+    movementTitle: string;
+    movementNumber: string;
 
-    /**
-     * The height of the stave, in "em".
-     */
-    staveHeight?: number;
+    partList: MusicXML.PartList;
 
-    /**
-     * The physical (printout) size of the page.
-     */
-    pageSize?: IPageSize;
+    // Convienience
+    constructor(spec: ScoreHeader) {
+        console.log(spec);
+        for(var key in spec) {
+            if (spec.hasOwnProperty(key) && typeof key === "string") {
+                (<any>this)[key] = (<any>spec)[key];
+            }
+        }
+    }
+    get composer() {
+        var idComposer = this.identification.creators
+            .filter(c => c.type === "composer")
+            .map(c => c.creator)
+            .join(", ");
+        if (idComposer) {
+            return idComposer;
+        }
 
-    /**
-     * Margin settings and such.
-     * 
-     * See also pageSize.
-     */
-    paper?: Paper;
+        return this.credits.filter(c => !!~c.creditTypes.indexOf("composer"))
+            .map(m => m.creditWords.map(w => w.words).join(" "))
+            .join(", ");
+    }
+    set composer(composer: string) {
+        // This is not as powerful as manually setting creators... It only supports a single composer.
+        if (!_.any(this.identification.creators, c => {
+                    var isComposer = c.type === "composer";
+                    c.creator = isComposer ? composer : c.creator;
+                    return isComposer;
+                })) {
+            this.identification.creators.push({
+                creator: composer,
+                type: "composer"
+            });
+        }
+
+        if (!_.any(this.credits, c => {
+                    if (!c.creditWords.length) {
+                        return false;
+                    }
+                    var isComposer = !!~c.creditTypes.indexOf("composer");
+                    c.creditWords[0].words = isComposer ? composer : c.creditWords[0].words;
+                    return isComposer;
+                })) {
+            this.credits.push({
+                creditImage: null,
+                creditTypes: ["composer"],
+                creditWords: [{
+                    words: composer
+                }],
+                page: 1
+            });
+        }
+    }
+
+    get title() {
+        return "";
+    }
+    set title(title: string) {
+        assert(false, "Not implemented");
+    }
 }
 
-/**
+export function getPrint(header: ScoreHeader): MusicXML.Print {
+    return {
+        blankPage: "",
+        measureLayout: null,
+        measureNumbering: {
+            relativeX: 0,
+            relativeY: 0,
+            fontSize: "small",
+            color: "#000000",
+            data: "system",
+            defaultX: null,
+            defaultY: null,
+            fontFamily: "Alegreya, serif",
+            fontStyle: MusicXML.NormalItalic.Normal,
+            fontWeight: MusicXML.NormalBold.Normal
+        },
+        newPage: false,
+        newSystem: false,
+        partAbbreviationDisplay: null,
+        pageLayout: header.defaults.pageLayout,
+        pageNumber: "",
+        partNameDisplay: null,
+        staffLayouts: header.defaults.staffLayouts,
+        staffSpacing: null,
+        systemLayout: header.defaults.systemLayout
+    };
+}
+
+/** 
  * An instrument that a piece can be in. See also instruments.ts.
  */
 export interface IInstrument {
-    /**
+    /** 
      * A human readable string representing the instrument.
      */
     name: string;
 
-    /**
+    /** 
      * A name that fits within the buttons on the "Parts" tab
      */
     shortName: string;
 
-    /**
+    /** 
      * A slug representing uniquely representing the soundfont used for the instrument.
      * The soundfont is available at /res/soundfonts/{instrument.res}-<mp3|ogg>.js.
      * 
@@ -350,17 +536,17 @@ export interface IInstrument {
      */
     soundfont: string;
 
-    /**
+    /** 
      * The standard clef or clef set for an instrument.
      */
     clef: Clef;
 
-    /**
+    /** 
      * The 0-indexed MIDI program for the instrument.
      */
     program: number;
 
-    /**
+    /** 
      * In Lilypond, instruments are set like
      *      \set Staff.midiInstrument = #"glockenspiel"
      * Names are obtained from http://lilypond.org/doc/v2.17/Documentation/notation/midi-instruments
@@ -371,36 +557,36 @@ export interface IInstrument {
 export class InvalidDurationError {
 }
 
-/**
+/** 
  * Sorted in order from least change to most change.
  */
 export enum IterationStatus {
-    /**
+    /** 
      * No further annotation is necessary. The document is correct
      * and renderable.
      */
     ExitEarly,
 
-    /**
+    /** 
      * All of the pre-conditions of the Model were met, and
      * the annotator should continue to the next item.
      */
     Success,
 
-    /**
+    /** 
      * At least one of the pre-conditions of the Model were not
      * met and an item has been inserted in place of the current
      * item.
      */
     RetryCurrent,
 
-    /**
+    /** 
      * Like RETRY_CURRENT, but explicitly state that the entire
      * remainder of the document must be re-annotated.
      */
     RetryCurrentNoOptimizations,
 
-    /**
+    /** 
      * At least one of the pre-conditions of the Model were not
      * met and the entire beam must be re-annotated.
      * 
@@ -408,39 +594,39 @@ export enum IterationStatus {
      */
     RetryBeam,
 
-    /**
+    /** 
      * The precondition is now met, but a line was removed. The index has already
      * been set to the correct previous line.
      */
     LineRemoved,
 
-    /**
+    /** 
      * At least one of the pre-conditions of the Model were not
      * met and the entire line must be re-annotated.
      */
     RetryLine,
 
-    /**
+    /** 
      * The precondition is now met, but a line was added somewhere between
      * where the previous line was an idx. The annotator should re-annotate
      * the previous two lines.
      */
     LineCreated,
 
-    /**
+    /** 
      * The precondition is now met, but the previous line was modified. For example,
      * the visual cursor has been moved to the previous line.
      */
     RetryPreviousLine,
 
-    /**
+    /** 
      * At least one of the preconditions of the Model were not
      * met and the entire document must be re-annotated.
      */
     RetryFromEntry
 };
 
-/**
+/** 
  * A key signature, such as a KeySignatureModel.
  */
 export interface IKeySignature {
@@ -449,18 +635,18 @@ export interface IKeySignature {
 }
 
 export interface ILocation {
-    /**
+    /** 
      * MSD of cursor position, counting from 1.
      */
     bar: number;
 
-    /**
+    /** 
      * LSD of cursor position. Represents the beat directly before the
      * cursor, so if it's at the beginning of bar, it is beat 0.
      */
     beat: number;
 
-    /**
+    /** 
      * True if the cursor is at the end of a bar. This information is added as
      * part of the annotation process, and is not guaranteed to exist until after
      * the annotation process.
@@ -500,12 +686,12 @@ export class Location implements ILocation {
     endMarker: boolean;
 }
 
-/**
+/** 
  * The Lilypond name for a major key.
  */
 export var MAJOR = "\\major";
 
-/**
+/** 
  * The Lilypond name for a minor key.
  */
 export var MINOR = "\\minor";
@@ -521,7 +707,7 @@ export interface INotation {
     style: any;
 };
 
-/**
+/** 
  * Used for the metre annotation pass.
  */
 export class MetreContext {
@@ -556,21 +742,21 @@ export enum MidiEventType {
     NoteOff = 1
 }
 
-/**
+/** 
  * Information about the current mouse position, such as from Renderer.
  */
 export interface IMouse {
-    /**
+    /** 
      * The location of the mouse relative to the left, in 'em's
      */
     x: number;
 
-    /**
+    /** 
      * The location of the mouse relative to the top, in 'em's.
      */
     y: number;
 
-    /**
+    /** 
      * A string identifying the currently selected object, if applicable.
      * This currently only works with the Molasses engine.
      * 
@@ -580,36 +766,7 @@ export interface IMouse {
     page: number;
 };
 
-/**
- * Represents the physical (printout) size of a page
- */
-export interface IPageSize {
-    /**
-     * Height in `this.unit`
-     */
-    height: number;
-
-    /**
-     * Not all page sizes are valid Lilypond names. If this
-     * is "null", the page size will be the default when opened with
-     * Lilypond.
-     * 
-     * TODO: Fix this compatibility issue.
-     */
-    lilypondName: string;
-
-    /**
-     * The valid units are "in" and "mm".
-     */
-    unit: string;
-
-    /**
-     * With in `this.unit`
-     */
-    width: number;
-};
-
-/**
+/** 
  * Properties that make up a part
  */
 export interface IPart {
@@ -617,17 +774,17 @@ export interface IPart {
     // The following can be set if body is true //
     //////////////////////////////////////////////
 
-    /**
+    /** 
      * The Models that compose the part.
      */
     body?: IBody;
 
-    /**
+    /** 
      * For playback
      */
     instrument?: IInstrument;
 
-    /**
+    /** 
      * Whether the next part is in the same system
      */
     pianoSystemContinues?: boolean;
@@ -635,59 +792,7 @@ export interface IPart {
     staveSeperation?: number;
 };
 
-/**
- * Margin settings and such. See also Paper.
- */
-export class Paper {
-    constructor(spec: {
-        "left-margin": number;
-        "right-margin": number;
-        indent: number;
-    }) {
-        this["left-margin"] = spec["left-margin"];
-        this["right-margin"] = spec["right-margin"];
-        this.indent = spec.indent;
-
-        // Comes from untyped jison.
-        assert(!isNaN(this.indent));
-        assert(!isNaN(this.leftMargin));
-        assert(!isNaN(this.rightMargin));
-    }
-
-    /**
-     * Left margin in mm (Lilypond's name)
-     */
-    "left-margin": number;
-
-    /**
-     * Left margin in mm.
-     */
-    get leftMargin() {
-        return this["left-margin"];
-    }
-    set leftMargin(m: number) {
-        this["left-margin"] = m;
-    }
-
-    /**
-     * Left margin in mm (Lilypond's name)
-     */
-    "right-margin": number;
-
-    /**
-     * Right margin in mm.
-     */
-    get rightMargin() {
-        return this["right-margin"];
-    }
-    set rightMargin(m: number) {
-        this["right-margin"] = m;
-    }
-
-    indent: number;
-}
-
-/**
+/** 
  * Represents zero or more concurrent pitches, such as a note, rest, or chord.
  * 
  * See also IDuration and IPitchDuration.
@@ -696,7 +801,7 @@ export interface IPitch {
     acc: number;
     displayAcc?: number;
     isRest?: boolean; // read only
-    /**
+    /** 
      * Note: In the case of a chord, the average line.
      */
     line?: number;
@@ -705,7 +810,7 @@ export interface IPitch {
     temporary?: boolean;
 };
 
-/**
+/** 
  * Represents zero or more concurrent pitches with a duration.
  * 
  * DurationModels implement PitchDurations.
@@ -776,7 +881,7 @@ RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
 
 RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
 
-/**
+/** 
  * A session, directly from the server.
  * 
  * See also "session.d".
@@ -785,7 +890,7 @@ export interface ISession {
     user: IUser;
     remoteSongsSynced: boolean;
     isLoading: boolean;
-    /**
+    /** 
      * Either LoggedIn or LoggedOut
      */
     state: string;
@@ -803,33 +908,33 @@ export interface ISessionStore {
     songs: Array<ISong>;
 }
 
-/**
+/** 
  * A song, directly from the server.
  * 
  * See also "song.d".
  */
 export interface ISong {
-    /**
+    /** 
      * MongoDB ID for the song.
      */
     _id: string;
 
-    /**
+    /** 
      * MongoDB ID for the IUser who created the song.
      */
     _owner: string;
 
-    /**
+    /** 
      * Lylite source for the song.
      */
     src: string;
 
-    /**
+    /** 
      * The title. This should always match the title at the top of the page.
      */
     title: string;
 
-    /**
+    /** 
      * The composer. Should match the composer in the header.
      */
     composer: string;
@@ -873,13 +978,10 @@ export interface ISongEditor {
     ly: string;
     metadataModalVisible: boolean;
     midiOutHint: (out: Array<number>) => void;
-    pageSize: IPageSize;
-    paper: Paper;
     partModalStave: IPart;
     selection: Array<Model>;
     socialModalVisible: boolean;
-    staveHeight: number;
-    header: IHeader;
+    header: ScoreHeader;
     parts: Array<IPart>;
     src: string;
     testly: string;
@@ -898,30 +1000,30 @@ export interface ISongEditor {
     ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void;
 };
 
-/**
+/** 
  * The original creator of an element. This is used as a HINT to Ripieno to decide whether
  * or not it is okay to modify the element.
  */
 export enum Source {
-    /**
+    /** 
      * The element was created directly from an action performed by the user. This does not
      * include annotations from such an action.
      */
     User = 0,
 
-    /**
+    /** 
      * The element was created to satisfy the annotation engine.
      */
     Annotator,
 
-    /**
+    /** 
      * The element was created from an action performed by the user, but may be split or joined
      * initially to satisfy a rhythmic spell-check. Becomes User after successful annotation.
      */
     UserProposed
 }
 
-/**
+/** 
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
@@ -949,37 +1051,37 @@ export enum Type {
     Unknown
 };
 
-/**
+/** 
  * A time signature, such as a TimeSignatureModel.
  */
 export interface ITimeSignature {
-    /**
+    /** 
      * The numerator of a time signature.
      */
     beats: number;
 
-    /**
+    /** 
      * The denominator of a time signature.
      */
     beatType: number;
 
-    /**
+    /** 
      * True if the time signature should be rendered as "common"
      * e.g., as a "C" instead of "4/4".
      */
     commonRepresentation?: boolean;
 };
 
-/**
+/** 
  * A user, directly from the server.
  */
 export interface IUser {
-    /**
+    /** 
      * Google ID
      */
     userId: string;
 
-    /**
+    /** 
      * MongoDB id
      */
     _id: string;
@@ -992,7 +1094,7 @@ export interface IUser {
     whitelisted: boolean;
 };
 
-/**
+/** 
  * Tuplet information, found in IDuration.
  * 
  * A triplet would have the following ITuplet:
@@ -1010,28 +1112,28 @@ export interface IViewComponent {
     (opts: { key: number; spec: Model; fontSize: number }): any;
 }
 
-/**
+/** 
  * The solid blue line on the page is the VisualCursor.
  */
 export interface IVisualCursor extends ILocation {
-    /**
+    /** 
      * Object directly after the cursor. This information is added as part
      * of the annotation process, and is not guaranteed to exist until after
      * the annotation process.
      */
     annotatedObj?: Model;
 
-    /**
+    /** 
      * The line, counting from 1, where annotatedObj is.
      */
     annotatedLine?: number;
 
-    /**
+    /** 
      * The page, counting from 1, where annotatedObj is.
      */
     annotatedPage?: number;
 
-    /**
+    /** 
      * The part, counting from 0, not counting parts without a body, where
      * annotatedObj is.
      */
@@ -1041,7 +1143,7 @@ export interface IVisualCursor extends ILocation {
 export module NoteUtil {
     "use strict";
 
-    /**
+    /** 
      * Creates a simple realization of an IDuration
      * 
      * @param spec
@@ -1062,7 +1164,7 @@ export module NoteUtil {
         };
     }
 
-    /**
+    /** 
      * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
      */
     export function pitchToMidiNumber(p: IPitch) {
@@ -1077,7 +1179,7 @@ export module NoteUtil {
     }; // c:12
     export var valToNote = _.invert(noteToVal);
 
-    /**
+    /** 
      * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
      */
     export function midiNumberToPitch(n: number, ctx: Annotator.Context): IPitch {
@@ -1089,7 +1191,7 @@ export module NoteUtil {
         //    or diminished intervals (IMPLEMENTED)
         //  - Chromatic-scale figures use sharps to ascend, flats to descend (TODO)
         //  - Spell stepwise figures as a scale, i.e., as adjacent pitch letters (TODO)
-        // 
+        //
         //     -- Behind Bars by Elaine Gould, p. 85
         var keySignature = ctx.keySignature;
         var sharps = getSharpCount(keySignature);
@@ -1266,28 +1368,6 @@ export module NoteUtil {
 
     export function isPitch(k: IPitch, name: string, acc?: number) {
         return k.pitch === name && (k.acc || 0) === (acc || 0);
-    }
-}
-
-/**
- * Adds default stave height, page size, and paper size.
- * 
- * Used for document creation, importing, ...
- */
-export function addDefaults(header: IHeader) {
-    "use strict";
-    if (!header.staveHeight) {
-        header.staveHeight = renderUtil.defaultStaveHeight();
-    }
-    if (!header.pageSize) {
-        header.pageSize = renderUtil.defaultPageSize();
-    }
-    if (!header.paper) {
-        header.paper = new Paper({
-            "left-margin": renderUtil.defaultMargins.left,
-            "right-margin": renderUtil.defaultMargins.right,
-            indent: renderUtil.defaultIndent
-        });
     }
 }
 

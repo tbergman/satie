@@ -158,7 +158,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
             this._getYOffset() -
             this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line1 - 3)/4 +
-            this.direction()*idx*0.22 +
+            this.direction()*idx*0.88/4 + // MXFIX
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 
@@ -169,7 +169,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
             this._getYOffset() -
             this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
             (this.props.line2 - 3)/4 +
-            this.direction()*idx*0.22 +
+            this.direction()*idx*0.88/4 + // MXFIX
             (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
     }
 

@@ -8,7 +8,7 @@
 
 import C = require("./contracts");
 
-export function parse(src: string): { parts: Array<C.IPart>; header: C.IHeader; } {
+export function parse(src: string): { parts: Array<C.IPart>; header: C.ScoreHeader; } {
     "use strict";
     var lylite = require("./lylite.jison");
     return lylite.parser.parse(src);

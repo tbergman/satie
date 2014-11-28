@@ -11,7 +11,7 @@
 
 import _ = require("lodash");
 
-export var bravuraMetadata: any = require("./bravura_metadata.json");
+export import bravuraMetadata = require("./bravura_metadata");
 export var glyphClasses = require("./classes.json");
 export var glyphNames = require("./glyphnames_diet.json");
 
@@ -25,3 +25,7 @@ export function getGlyphCode(name: string) {
     return String.fromCharCode(parseInt(
         this.glyphNames[name].substring(2), 16));
 }
+
+export var distances = {
+    beam: 0.88
+};

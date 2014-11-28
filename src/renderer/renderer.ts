@@ -58,7 +58,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var parts = this.props.parts;
         var bodyLength = 0;
 
-        fontSize = this.props.header.staveHeight;
+        //fontSize = this.props.header.staveHeight; MXFIX
         for (var i = 0; i < parts.length; ++i) {
             if (parts[i].body) {
                 bodyLength = parts[i].body.length;
@@ -81,8 +81,11 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             idx: pageCount - 1
         });
 
-        var mInchW = 85000*(this.props.pageSize.width/215.9);
-        var mInchH = 110000*(this.props.pageSize.height/279.4);
+        // MXFIX
+        // var mInchW = 85000*(this.props.pageSize.width/215.9);
+        // var mInchH = 110000*(this.props.pageSize.height/279.4);
+        var mInchW = 13;
+        var mInchH = 37;
 
         var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
 
@@ -104,16 +107,12 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     parts={parts}
                     width={this.props.raw ? mInchW/10000 + "in" : "100%"}
                     height={this.props.raw ? mInchH/10000 + "in" : "100%"}
-                    widthInSpaces={renderUtil.mm(this.props.pageSize.width, fontSize)}
+                    widthInSpaces={/*MXFIX renderUtil.mm(this.props.pageSize.width, fontSize) */1337}
                     viewbox={viewbox}>
-                {!page.from && !useGL && <!Header
+                {!page.from && !useGL && <!Header.Component
                     fontSize={fontSize}
-                    middle={renderUtil.mm(this.props.pageSize.width/2 +
-                        this.props.paper.rightMargin -
-                        this.props.paper.leftMargin, fontSize)}
-                    right={renderUtil.mm(this.props.pageSize.width -
-                        this.props.paper.rightMargin, fontSize * 0.75)}
                     key="HEADER"
+                    tool={this.props.tool}
                     model={this.props.header} />}
                 {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */}
@@ -133,7 +132,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                     isCurrent={this.state.visualCursor.annotatedLine ===
                                         lidx + pageLines[page.idx]}
                                     store={this.props.store}
-                                    staveHeight={this.props.staveHeight}
                                     h={idx}
                                     generate={function () {
                                         var components = new Array(s.length * 2);
@@ -224,7 +222,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     yPtr.y += 40 + this.props.height;
                     return page;
                 })}
-                {this.props.comments && this.props.header.title && <!div
+                {this.props.comments && this.props.header.movementTitle && <!div
                         className="commentBox"
                         style={{
                             width: this.props.width + "px",
@@ -235,7 +233,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                             document.location.hostname === "ripieno.io" ||
                                 document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev"}
                         identifier={"usermedia-" + this.props.songId}
-                        title={this.props.header.title}
+                        title={this.props.header.movementTitle}
                         categoryId={<any>null}
                         url={"ripieno.io/songs/" + this.props.songId} />
                     </div>}
@@ -626,7 +624,9 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     getPositionForMouse(event: React.MouseEvent): Renderer.IPosInfo {
         var target: Element;
         if (useGL) {
-            var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
+            // MXFIX
+            //var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
+            var widthInSpaces = 1337;
             target = <Element> event.target;
             var rect = target.getBoundingClientRect();
 
@@ -646,8 +646,10 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         svg_pt.y = event.clientY;
         var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
         return {
-            x: pt.x / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR - 0.15,
-            y: pt.y / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR,
+            // x: pt.x / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR - 0.15, MXFIX
+            // y: pt.y / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR, MXFIX
+            x: 1337,
+            y: 1337,
             page: parseInt(svg_elt.getAttribute("data-page"), 10),
             selectionInfo: target.getAttribute("data-selection-info")
         };
@@ -818,7 +820,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         document.addEventListener("keydown", this._handleKeyDown);
         document.addEventListener("keypress", this._handleKeyPress);
         this._oldTitle = document.title;
-        document.title = this.props.header.title;
+        document.title = this.props.header.movementTitle;
     }
 
     _detachFromBrowser() {
@@ -980,11 +982,9 @@ module Renderer {
         editMode?: boolean;
         marginTop?: number;
         marginBottom?: number;
-        pageSize?: C.IPageSize;
         raw?: boolean;
         sessionInfo?: C.ISession;
-        staveHeight?: number;
-        header: C.IHeader;
+        header: C.ScoreHeader;
         parts?: Array<C.IPart>;
         songId?: string;
         store?: C.ISongEditor;
@@ -995,7 +995,6 @@ module Renderer {
         showFooter?: boolean;
         height?: number;
         history?: History;
-        paper?: C.Paper;
         setRibbonTabFn: (tab: number) => void;
     }
 

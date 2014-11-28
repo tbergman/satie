@@ -62,7 +62,6 @@ class NewlineModel extends Model {
         this.pianoSystemContinues = ctx.currStave.pianoSystemContinues;
         this.braceY = this.y;
         this.braceY2 = this.y + renderUtil.staveSeperation;
-        this.pageSize = ctx.pageSize;
 
         ctx.x = ctx.initialX;
         ctx.y += ctx.lineSpacing;
@@ -345,7 +344,6 @@ class NewlineModel extends Model {
     braceY: number;
     braceY2: number;
     lineSpacing: number;
-    pageSize: C.IPageSize;
     pianoSystemContinues: boolean;
     width: number;
 }

@@ -39,7 +39,6 @@ export class Context implements C.MetreContext {
             if (layout.snapshot) {
                 _cpysnapshot(this, layout.snapshot);
             } else {
-                _fillLayoutDefaults(layout);
                 _cpylayout(this, layout);
             }
         }
@@ -114,7 +113,6 @@ export class Context implements C.MetreContext {
             lineSpacing: this.lineSpacing,
             maxX: this.maxX,
             maxY: this.maxY,
-            pageSize: this.pageSize,
             prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
             prevLine: this.lines[this.line - 1],
             partialLine: this.lines[this.line],
@@ -829,12 +827,6 @@ export class Context implements C.MetreContext {
     maxY: number;
 
     /**
-     * The physical size of a page.
-     * @scope layout
-     */
-    pageSize: C.IPageSize;
-
-    /**
      * The key signature on the previous line, if any.
      * @scope layout
      */
@@ -1013,14 +1005,9 @@ export interface ICustomAction {
 }
 
 export interface ILayoutOpts {
-    fontSize?: number;
-    indent: number;
+    print: C.MusicXML.Print;
     isFirstLine?: boolean;
-    leftMargin?: number;
-    pageSize?: C.IPageSize;
-    rightMargin?: number;
     snapshot?: ICompleteSnapshot;
-    top?: number;
 }
 
 /**
@@ -1061,7 +1048,6 @@ export interface IPartialSnapshot {
     maxX: number;
     maxY: number;
     prevClefByStave: { [key: number]: string };
-    pageSize: C.IPageSize;
     prevLine: ILineSnapshot;
     partialLine: ILineSnapshot;
     timeSignature: C.ITimeSignature;
@@ -1768,14 +1754,15 @@ enum NewlineMode {
 function _cpylayout(ctx: Context, layout: ILayoutOpts) {
     "use strict";
 
-    ctx.fontSize = layout.fontSize;
-    ctx.initialX = renderUtil.mm(layout.leftMargin, layout.fontSize);
-    ctx.maxX = renderUtil.mm(layout.pageSize.width - layout.rightMargin, layout.fontSize);
-    ctx.maxY = renderUtil.mm(layout.pageSize.height - 15, layout.fontSize);
-    ctx.pageSize = layout.pageSize;
-    ctx.x = ctx.initialX + renderUtil.mm(layout.isFirstLine ? layout.indent : 0, layout.fontSize);
-    ctx.y = renderUtil.mm(15, layout.fontSize) + layout.top;
-    ctx.lines = [ctx.captureLine()];
+    // MXFIX
+    // ctx.fontSize = layout.fontSize;
+    // ctx.initialX = renderUtil.mm(layout.leftMargin, layout.fontSize);
+    // ctx.maxX = renderUtil.mm(layout.pageSize.width - layout.rightMargin, layout.fontSize);
+    // ctx.maxY = renderUtil.mm(layout.pageSize.height - 15, layout.fontSize);
+    // ctx.pageSize = layout.pageSize;
+    // ctx.x = ctx.initialX + renderUtil.mm(layout.isFirstLine ? layout.indent : 0, layout.fontSize);
+    // ctx.y = renderUtil.mm(15, layout.fontSize) + layout.top;
+    // ctx.lines = [ctx.captureLine()];
 }
 
 function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
@@ -1796,7 +1783,6 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             case "lineSpacing": ctx.lineSpacing = layout.lineSpacing; break;
             case "maxX": ctx.maxX = layout.maxX; break;
             case "maxY": ctx.maxY = layout.maxY; break;
-            case "pageSize": ctx.pageSize = layout.pageSize; break;
             case "partialLine": break; // skipped
             case "prevClefByStave": ctx.prevClefByStave = layout.prevClefByStave;
             case "prevLine": break; // skipped
@@ -1804,21 +1790,6 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             default: assert(false, "Not reached");
         }
     });
-}
-
-function _fillLayoutDefaults(opts: ILayoutOpts) {
-    "use strict";
-
-    opts.fontSize = opts.fontSize || 7;
-    opts.pageSize = opts.pageSize || {
-        height: 297,
-        lilypondName: "a4",
-        unit: "mm",
-        width: 210
-    };
-    opts.leftMargin = opts.leftMargin || 15.25;
-    opts.rightMargin = opts.rightMargin || 15.25;
-    opts.top = opts.top || 2.75;
 }
 
 var MAX_LOCATION = new C.Location({

@@ -45,7 +45,6 @@ class BeginModel extends Model {
         }
         this.braceY = this.y;
         this.braceY2 = this.y + ctx.staveSeperation;
-        this.pageSize = ctx.pageSize;
 
         return C.IterationStatus.Success;
     }
@@ -75,7 +74,6 @@ class BeginModel extends Model {
     noMargin : boolean;
     braceY : number;
     braceY2: number;
-    pageSize: C.IPageSize;
     width: number;
 }
 
