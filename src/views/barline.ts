@@ -26,8 +26,8 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
         this.hash = this.getHash(spec);
 
-        var thickX = spec.x + defaults.barlineSeparation/4 +
-            defaults.thickBarlineThickness/4;
+        var thickX = spec.x + defaults.barlineSeparation*10 +
+            defaults.thickBarlineThickness*10;
 
         if (spec.barline === C.Barline.Double) {
             return <!Group.Component>
@@ -40,7 +40,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     stroke={spec.color}
                     victoriaYStrokeWidthFactor={0}
                     fill={spec.color}
-                    strokeWidth={defaults.thinBarlineThickness/4} />
+                    strokeWidth={defaults.thinBarlineThickness*10} />
                 <!Line.Component
                     key={2}
                     x1={thickX}
@@ -50,20 +50,20 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     victoriaYStrokeWidthFactor={0}
                     stroke={spec.color}
                     fill={spec.color}
-                    strokeWidth={defaults.thickBarlineThickness/4} />
+                    strokeWidth={defaults.thickBarlineThickness*10} />
                 {/* HACK HACK HACK: We're drawing a white bar to
                     cover over the empty part of the stave.*/}
                 <!Rect.Component
                     key={3}
                     opacity={1.0}
-                    x={spec.x + defaults.barlineSeparation/4 +
-                        defaults.thickBarlineThickness/4 +
-                        defaults.thinBarlineThickness/4}
-                    y={spec.y - spec.height - 0.1 - spec.yOffset}
+                    x={spec.x + defaults.barlineSeparation*10 +
+                        defaults.thickBarlineThickness*10 +
+                        defaults.thinBarlineThickness*10}
+                    y={spec.y - spec.height - 1 - spec.yOffset}
                     stroke={"#FFFFFF"}
                     fill={"#FFFFFF"}
-                    height={spec.height*2 + 0.2}
-                    width={400} />
+                    height={spec.height*2 + 2}
+                    width={4000} />
             </Group.Component>;
         }
 
@@ -74,7 +74,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             y2={spec.y + spec.height - spec.yOffset}
             stroke={spec.color}
             fill={spec.color}
-            strokeWidth={defaults.thinBarlineThickness/4} />
+            strokeWidth={defaults.thinBarlineThickness*10} />
     }
 
     /**

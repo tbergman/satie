@@ -10,7 +10,6 @@ import C = require("./contracts");
 import Annotator = require("./annotator");
 import NewPageModel = require("./newpage");
 import SMuFL = require("../util/SMuFL");
-import renderUtil = require("../util/renderUtil");
 
 import _ = require("lodash");
 import assert = require("assert");
@@ -26,7 +25,7 @@ class NewlineModel extends Model {
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Pages should not overflow.
-        if (ctx.y + ctx.lineSpacing > ctx.maxY) {
+        if (ctx.y + ctx.calcLineSpacing() > ctx.maxY) {
             return NewPageModel.createNewPage(ctx);
         }
 
@@ -58,13 +57,11 @@ class NewlineModel extends Model {
         }
 
         // Copy information from the context that the view needs.
-        this.lineSpacing = ctx.lineSpacing + ctx.staveSeperation;
-        this.pianoSystemContinues = ctx.currStave.pianoSystemContinues;
+        this.lineSpacing = ctx.calcLineSpacing();
         this.braceY = this.y;
-        this.braceY2 = this.y + renderUtil.staveSeperation;
+        this.braceY2 = this.y + C.renderUtil.staveSeperation;
 
-        ctx.x = ctx.initialX;
-        ctx.y += ctx.lineSpacing;
+        ctx.newline();
         if (ctx.clef) {
             // This is guarded in case another part called a RETRY_CURRENT.
             // (Note: This is shady.)
@@ -79,7 +76,7 @@ class NewlineModel extends Model {
         ctx.clef = null;
         ctx.keySignature = null;
 
-        this.begin = ctx.initialX;
+        this.x = ctx.x;
         this.width = ctx.maxX - ctx.x;
 
         /*
@@ -290,7 +287,7 @@ class NewlineModel extends Model {
                 lw = ctx.maxX - ctx.curr.x;
                 nw = lw/n;
             } else {
-                var weight = renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
+                var weight = C.renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
                 nw = (1 - weight)*nw;
                 lw = nw * n;
             }
@@ -340,11 +337,9 @@ class NewlineModel extends Model {
 
     DEBUG_line: number;
     annotatedExtraWidth: number;
-    begin: number;
     braceY: number;
     braceY2: number;
     lineSpacing: number;
-    pianoSystemContinues: boolean;
     width: number;
 }
 

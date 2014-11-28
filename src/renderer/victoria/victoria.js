@@ -1018,7 +1018,7 @@ module.exports = React.createClass({displayName: 'exports',
 
             canvas.width = Math.round(canvas.clientWidth*devicePixelRatio);
             canvas.height = Math.round(canvas.clientHeight*devicePixelRatio);
-            this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
+            this.refs.glContext.stepsInWidth = 1; // FIXME
             this.refs.glContext.fillAvailableSpace();
         } else {
             // We are using libripienoclient GL bindings.
@@ -1028,7 +1028,7 @@ module.exports = React.createClass({displayName: 'exports',
             this.latest_width = width;
             this.latest_height = height;
 
-            this.refs.glContext.stepsInWidth = this.props.widthInSpaces;
+            this.refs.glContext.stepsInWidth = 1; // FIXME
             this.refs.glContext.aspectRatio = width / height;
             globalGL.viewport(0, 0, width, height);
         }
@@ -1036,7 +1036,6 @@ module.exports = React.createClass({displayName: 'exports',
 
     componentDidUpdate: function(oldProps) {
         var shouldUpdateDimensions =
-            this.props.widthInSpaces !== oldProps.widthInSpaces ||
             globalGL && (
                     this.latest_width !== globalGL.ripieno_getWidth() ||
                     this.latest_height !== globalGL.ripieno_getHeight());

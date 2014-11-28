@@ -13,7 +13,6 @@ import TypedReact = require("typed-react");
 import RenderableMixin = require("./_renderable");
 import SMuFL = require("../util/SMuFL");
 var Victoria = require("../renderer/victoria/victoria");
-import renderUtil = require("../util/renderUtil");
 import assert = require("assert");
 
 var VGlyph = Victoria.VGlyph;
@@ -24,13 +23,9 @@ if (typeof window !== "undefined") {
 
 class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
     renderSVG() {
-        var px = this.props.fontSize ?
-                this.props.x*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
-                <any>(this.props.x + "em");
+        var px = this.props.x;
 
-        var py = this.props.fontSize ?
-                this.props.y*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR :
-                <any>(this.props.y + "em");
+        var py = this.props.y;
 
         if (this.props.glyphName.substr(0, 2) === "fa") {
             assert(this.props.code);
@@ -41,8 +36,8 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 fillOpacity: this.props.opacity,
                 strokeOpacity: this.props.opacity,
                 transform: this.props.transform,
-                className: "fa",
-                style: { fontSize: this.props.scale ? this.props.scale + "em" : undefined }
+                fontSize: 40,
+                className: "fa"
             }, this.props.code);
         } else {
             assert(!this.props.code);
@@ -55,6 +50,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 fillOpacity: this.props.opacity,
                 strokeOpacity: this.props.opacity,
                 transform: this.props.transform,
+                fontSize: 40,
                 className: "mn_"},
             SMuFL.getGlyphCode(this.props.glyphName)
         );
@@ -75,10 +71,10 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 text,
                 React.DOM.rect({
                     "data-selection-info": this.props["selection-info"],
-                    width: "0.4em",
-                    height: "0.5em",
-                    x: <any> (this.props.x - 0.12 + "em"),
-                    y: <any> (this.props.y - 0.25 + "em"),
+                    width: 4,
+                    height: 5,
+                    x: <any> (this.props.x - 1.2),
+                    y: <any> (this.props.y - 2.5),
                     fill: "transparent",
                     className: "mn_handle"})
                 );
@@ -115,7 +111,6 @@ module Glyph {
 
     export interface IProps {
         fill: string;
-        fontSize: number;
         glyphName: string;
         "selection-info"?: string;
         transform?: string;

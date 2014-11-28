@@ -23,7 +23,7 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
         return <!Group.Component>
             {_.map(this.getAccidentals(), (a, idx) => <!Accidental.Component
                 key={idx /* for React */}
-                x={spec.x + idx/4}
+                x={spec.x + idx*10}
                 y={spec.y}
                 line={a.line}
                 stroke={spec.color}

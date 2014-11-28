@@ -48,11 +48,11 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     }
                 }
                 if (direction === 1) {
-                    linesOffset[lines[i] + 0.5 - x] = 0.035 * 4 * 2;
+                    linesOffset[lines[i] + 0.5 - x] = 1.4 * 4 * 2;
                     linesOffset[lines[i] - x] = 0;
                 } else {
                     linesOffset[lines[i] + 0.5 - x] = 0;
-                    linesOffset[lines[i] - x] = -0.035 * 4 * 2;
+                    linesOffset[lines[i] - x] = -1.4 * 4 * 2;
                 }
             }
         }
@@ -70,7 +70,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     idx={idx}
                     key={"_1_" + idx}
                     stroke={this.props.strokes[0]}
-                    radius={0.06}
+                    radius={2.4}
                     x={this.props.x}
                     y={this.props.y}
                     fontSize={this.props.fontSize}
@@ -83,7 +83,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     line={this.getStartingLine()}
                     stroke={this.props.secondaryStroke}
                     height={this.getStemHeight()}
-                    fontSize={this.props.fontSize}
                     notehead={this.props.notehead} />}
                 {this.props.flag && <!Flag.Component
                     key="_3"
@@ -91,8 +90,8 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     y={this.props.y}
                     line={this.getStartingLine()}
                     stroke={this.props.secondaryStroke}
-                    stemHeight={this.getStemHeight() - this.direction() / 4}
-                    stemWidth={0.035}
+                    stemHeight={this.getStemHeight()}
+                    stemWidth={1.4}
                     flag={this.props.flag}
                     fontSize={this.props.fontSize}
                     notehead={this.props.notehead}
@@ -164,25 +163,26 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
     getStemHeight() {
         if (this.props.stemHeight) {
+            console.warn("Stem height specified...");
             return this.props.stemHeight;
         }
 
-        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4) / 2;
+        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4)*40 / 2;
 
-        var heightFromOtherNotes = this.getHighestLine() - this.getLowestLine();
+        var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 40;
         var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
         var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
 
         var start = this.getHeightDeterminingLine();
         var idealExtreme = start + this.direction()*idealStemHeight;
 
-        if (idealExtreme >= 6.5) {
-            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 6.5));
-        } else if (idealExtreme <= -1.5) {
-            return Math.max(minStemHeight, idealStemHeight - (-1.5 - idealExtreme));
+        if (idealExtreme >= 260) {
+            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 260));
+        } else if (idealExtreme <= -60) {
+            return Math.max(minStemHeight, idealStemHeight - (-60 - idealExtreme));
         }
 
-        return 3.5;
+        return 35;
     }
     isOnLedger() {
         var lowest = this.getLowestLine();
@@ -219,9 +219,9 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
     accidentalSpacing() {
         if (this.isOnLedger()) {
-            return 0.36;
+            return 14.4;
         } else {
-            return 0.3;
+            return 12;
         }
     }
     accidentals(): any {
@@ -241,7 +241,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                 switch(acc) {
                     case 2:
                         glyphName = "accidentalDoubleSharp";
-                        glyphOffset = 0.45;
+                        glyphOffset = 18;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -254,7 +254,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                         break;
                     case -2:
                         glyphName = "accidentalDoubleFlat";
-                        glyphOffset = 0.45;
+                        glyphOffset = 18;
                         break;
                     default:
                         assert(0, "Not reached");
@@ -285,16 +285,16 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             fontSize={this.props.fontSize}
             spec={{
                 direction: -this.direction(),
-                x: this.props.x + fullWidth/8 + 0.15,
+                x: this.props.x + fullWidth*5 + 6,
                 y: this.props.y,
                 lines1: [this.getStartingLine()],
                 lines2: [this.getStartingLine()],
-                width: fullWidth*0.75}} />;
+                width: fullWidth*30}} />;
     }
 };
 
-var IDEAL_STEM_HEIGHT = 3.5;
-var MIN_STEM_HEIGHT = 2.5;
+var IDEAL_STEM_HEIGHT = 140;
+var MIN_STEM_HEIGHT = 100;
 
 module Note {
     "use strict";

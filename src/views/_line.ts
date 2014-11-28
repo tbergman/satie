@@ -18,12 +18,12 @@ class Line extends TypedReact.Component<Line.IProps, {}> {
     renderSVG() {
         return React.DOM.line({
             className: this.props.className,
-            x1: <any> (this.props.x1 + "em"),
-            x2: <any> (this.props.x2 + "em"),
-            y1: <any> (this.props.y1 + "em"),
-            y2: <any> (this.props.y2 + "em"),
+            x1: <any> (this.props.x1),
+            x2: <any> (this.props.x2),
+            y1: <any> (this.props.y1),
+            y2: <any> (this.props.y2),
             stroke: this.props.stroke,
-            strokeWidth: <any> (this.props.strokeWidth + "em")});
+            strokeWidth: <any> (this.props.strokeWidth)});
     }
 
     renderGL() {

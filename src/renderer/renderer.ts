@@ -22,7 +22,6 @@ import C = require("../stores/contracts");
 import Header = require("../views/_header");
 import Model = require("../stores/model");
 import Tool = require("../stores/tool");
-import renderUtil = require("../util/renderUtil");
 import Rect = require("../views/_rect");
 import Group = require("../views/_group");
 import Line = require("../views/_line");
@@ -33,7 +32,7 @@ var isBrowser = typeof window !== "undefined";
 var useGL = (typeof global.libripienoclient !== "undefined") ||
     (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
-renderUtil.useGL = useGL;
+C.renderUtil.useGL = useGL;
 
 var RenderEngine: typeof Molasses.Component = useGL ? Victoria : Molasses.Component;
 
@@ -54,11 +53,9 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             console.time("render");
         }
 
-        var fontSize = NaN;
         var parts = this.props.parts;
         var bodyLength = 0;
 
-        //fontSize = this.props.header.staveHeight; MXFIX
         for (var i = 0; i < parts.length; ++i) {
             if (parts[i].body) {
                 bodyLength = parts[i].body.length;
@@ -67,6 +64,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
         var pages: Array<IPage> = [];
         var ctx = this.getCtx();
+        var scale40 = ctx.calcFontSize();
         assert(ctx, "You must annotate before rendering");
         var pageStarts = ctx.pageStarts;
         var pageLines = ctx.pageLines;
@@ -81,21 +79,16 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             idx: pageCount - 1
         });
 
-        // MXFIX
-        // var mInchW = 85000*(this.props.pageSize.width/215.9);
-        // var mInchH = 110000*(this.props.pageSize.height/279.4);
-        var mInchW = 13;
-        var mInchH = 37;
+        var print = C.getPrint(ctx._layout.header);
+        var scaling = ctx._layout.header.defaults.scaling;
+        var width10s = print.pageLayout.pageWidth;
+        var height10s = print.pageLayout.pageHeight;
 
-        var viewbox = "0 0 " + Math.round(mInchW) + " " + Math.round(mInchH);
+        var viewbox = "0 0 " + width10s + " " + height10s;
 
-        // XXX: Currently we only support single and double staffs.
-        // isPianoStaff is set to true when there is at least 2 staffs.
-        var isPianoStaff = _.reduce(parts, function (memo: number, s: C.IPart) {
-            return memo + (s.body ? 1 : 0);
-        }, 0) >= 2;
-
-        var vcHeight = 1.2 + ctx.staveSeperation / 2;
+        C.renderUtil.tenthsToMM
+ 
+        var vcHeight = 48 + ctx.staveSpacing * (ctx._parts.length - 1) / 2;
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return <!RenderEngine
                     onClick={this.handleMouseClick}
@@ -105,12 +98,11 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     onMouseMove={this.handleMouseMove}
                     page={page}
                     parts={parts}
-                    width={this.props.raw ? mInchW/10000 + "in" : "100%"}
-                    height={this.props.raw ? mInchH/10000 + "in" : "100%"}
-                    widthInSpaces={/*MXFIX renderUtil.mm(this.props.pageSize.width, fontSize) */1337}
+                    width={this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%"}
+                    height={this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%"}
                     viewbox={viewbox}>
                 {!page.from && !useGL && <!Header.Component
-                    fontSize={fontSize}
+                    fontSize={scale40}
                     key="HEADER"
                     tool={this.props.tool}
                     model={this.props.header} />}
@@ -118,7 +110,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     method in SongEditorStore or something. */}
                 {_.map(parts, (part: C.IPart, idx: number) => {
                     assert(part.body);
-                    return <!Group.Component key={idx} style={{ fontSize: fontSize * Renderer.FONT_SIZE_FACTOR + "px" }}>
+                    return <!Group.Component key={idx} style={{ fontSize: scale40 + "px" }}>
                         {_.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
                             if (obj.type === C.Type.NewLine) {
                                 memo.push([]);
@@ -162,7 +154,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                                 selIdx = -1;
                                             }
                                             if (s[i].visible()) {
-                                                components[h++] = s[i].render(fontSize);
+                                                components[h++] = s[i].render(scale40);
                                             }
                                         }
                                         components.length = h;
@@ -178,26 +170,26 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     this.getCtx(),
                     this.state.mouse,
                     _pointerData,
-                    fontSize,
+                    scale40,
                     pidx)}
                 {this.state.selectionRect && <!SelectionRect.Component
-                    fontSize={fontSize}
+                    fontSize={scale40}
                     x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
                     y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
                     width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
                     height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
                 {(pidx === this.state.visualCursor.annotatedPage) &&
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && <!Group.Component
-                            style={{fontSize: fontSize*Renderer.FONT_SIZE_FACTOR + "px"}}>
+                            style={{fontSize: scale40 + "px"}}>
                         <!Line.Component
-                            x1={this.state.visualCursor.annotatedObj.x - 0.2}
-                            x2={this.state.visualCursor.annotatedObj.x - 0.2}
-                            y1={this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) - vcHeight}
-                            y2={this.state.visualCursor.annotatedObj.y - ctx.staveSeperation *
-                                this.state.visualCursor.annotatedStave + (isPianoStaff ? ctx.staveSeperation/2 : 0) + vcHeight}
+                            x1={this.state.visualCursor.annotatedObj.x - 8}
+                            x2={this.state.visualCursor.annotatedObj.x - 8}
+                            y1={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) *
+                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._parts.length - 1)/2 : 0) - vcHeight}
+                            y2={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) *
+                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._parts.length - 1)/2 : 0) + vcHeight}
                             stroke="#008CFF"
-                            strokeWidth={0.05} />
+                            strokeWidth={2} />
                     </Group.Component>}
                 </RenderEngine>});
 
@@ -477,7 +469,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         if (info) {
             var ctx = this.getCtx();
 
-            dynY = ctx.lines[info.musicLine].y + ctx.staveSeperation * info.visualIdx;
+            dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._parts.length - 1) * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
             var body = this.props.parts[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
@@ -578,7 +570,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             ++visualIdx;
 
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSeperation - my) < 1.01) {
+                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSpacing * (ctx._parts.length - 1) - my) < 1.01) {
                     return {
                         musicLine: i,
                         partIdx: h,
@@ -624,15 +616,16 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     getPositionForMouse(event: React.MouseEvent): Renderer.IPosInfo {
         var target: Element;
         if (useGL) {
-            // MXFIX
-            //var widthInSpaces = renderUtil.mm(this.props.pageSize.width, this.props.staveHeight);
-            var widthInSpaces = 1337;
+            var ctx = this.getCtx();
+            var scale40 = ctx.calcFontSize();
+            var print = C.getPrint(ctx._layout.header);
+            var widthMM = print.pageLayout.pageWidth;
             target = <Element> event.target;
             var rect = target.getBoundingClientRect();
 
             return {
-                x: (event.clientX - rect.left) / target.clientWidth * widthInSpaces,
-                y: (event.clientY - rect.top) / target.clientWidth * widthInSpaces,
+                x: (event.clientX - rect.left) / target.clientWidth,
+                y: (event.clientY - rect.top) / target.clientWidth,
                 page: 0,
                 selectionInfo: null
             };
@@ -646,10 +639,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         svg_pt.y = event.clientY;
         var pt = svg_pt.matrixTransform(svg_elt.getScreenCTM().inverse());
         return {
-            // x: pt.x / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR - 0.15, MXFIX
-            // y: pt.y / this.props.staveHeight / Renderer.FONT_SIZE_FACTOR, MXFIX
-            x: 1337,
-            y: 1337,
+            x: pt.x - 6,
+            y: pt.y,
             page: parseInt(svg_elt.getAttribute("data-page"), 10),
             selectionInfo: target.getAttribute("data-selection-info")
         };
@@ -1003,9 +994,6 @@ module Renderer {
         visualCursor?: C.IVisualCursor;
         mouse?: C.IMouse;
     }
-
-    // Ratio between SVG coordinate system and 1mm.
-    export var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
 
     export interface IPosInfo {
         x: number;

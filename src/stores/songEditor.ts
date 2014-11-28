@@ -17,7 +17,6 @@ import lylite = require("./lylite");
 import History = require("./history");
 import Model = require("./model");
 import PlaybackStore = require("./playback");
-import renderUtil = require("../util/renderUtil");
 import StackableTool = require("./stackableTool");
 import Tool = require("./tool");
 
@@ -176,7 +175,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             var timePerBeat = 60/bpm;
 
             var ctx = new Annotator.Context(parts, {
-                print: C.getPrint(this.header)
+                header: this.header
             }, this, Annotator.AssertionPolicy.NoAssertions);
 
             for (var i = 0; i < body.length; ++i) {
@@ -226,7 +225,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             assert(header);
             // MXFIX
             // lyliteArr.push("#(set-global-staff-size " +
-            //     header.staveHeight * renderUtil.ptPerMM + ")\n");
+            //     header.staveHeight * C.renderUtil.ptPerMM + ")\n");
             // if (!header.pageSize.lilypondName) {
             //     alert("Custom sizes cannot currently be saved. (BUG)"); // XXX
             //     return;
@@ -259,8 +258,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 if (!debugMode) {
                     if (inPianoStaff) {
                         lyliteArr.push("{");
-                    } else if (part.pianoSystemContinues) {
-                        lyliteArr.push("\\new PianoStaff << {\n");
+                    // } else if (part.pianoSystemContinues) { MXFIX
+                    //     lyliteArr.push("\\new PianoStaff << {\n");
                     } else {
                         lyliteArr.push("\\new Staff {\n");
                     }
@@ -296,12 +295,12 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
                 } else {
                     lyliteArr.push("}\n");
                 }
-                if (part.pianoSystemContinues) {
-                    inPianoStaff = true;
-                } else if (inPianoStaff && !debugMode) {
+                // if (part.pianoSystemContinues) { MXFIX
+                //     inPianoStaff = true;
+                // } else if (inPianoStaff && !debugMode) {
                     lyliteArr.push(">>");
                     inPianoStaff = false;
-                }
+                // }
             }
         });
         var lyliteStr = lyliteArr.join(" ");
@@ -350,7 +349,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
         if (pointerData && this._snapshots[pointerData.musicLine]) {
             var ctx = new Annotator.Context(parts, {
-                print: C.getPrint(this.header),
+                header: this.header,
                 snapshot: this._recreateSnapshot(pointerData.musicLine)
             }, this, assertionPolicy);
             for (i = 0; i < parts.length; ++i) {
@@ -658,23 +657,23 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     "PUT /local/song/hmargin/increase"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // if (this.header.paper.leftMargin < 50) {
-        //     this.header.paper.leftMargin += 1;
-        //     this.header.paper.rightMargin += 1;
-        // }
-        // this._everythingIsDirty();
+        this.emit(HISTORY_EVENT);
+        var margins = this.header.defaults.pageLayout.pageMargins[0];
+        if (margins.leftMargin < 500) {
+            margins.leftMargin += 10;
+            margins.rightMargin += 10;
+        }
+        this._everythingIsDirty();
     }
 
     "PUT /local/song/hmargin/decrease"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // if (this.header.paper.leftMargin > -1) { // so it can go to -1
-        //     this.header.paper.leftMargin -= 1;
-        //     this.header.paper.rightMargin -= 1;
-        // }
-        // this._everythingIsDirty();
+        this.emit(HISTORY_EVENT);
+        var margins = this.header.defaults.pageLayout.pageMargins[0];
+        if (margins.leftMargin < 500) {
+            margins.leftMargin -= 10;
+            margins.rightMargin -= 10;
+        }
+        this._everythingIsDirty();
     }
 
     "PUT /local/song/indent/increase"(action: C.IFluxAction) {
@@ -705,15 +704,17 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     "PUT /local/song/pageSize"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // this.header.pageSize = action.postData;
-        // this.dangerouslyMarkRendererDirty();
-        // this._ctx = null;
-        // this.header.pageSize = this.header.pageSize;
-        // Model.removeAnnotations(this._parts);
-        // this._annotate(null, null, null, null, false); // XXX: collaboration
-        // this.emit(CHANGE_EVENT);
+        this.emit(HISTORY_EVENT);
+        var pageSize: {width: number; height: number;} = action.postData;
+        this.dangerouslyMarkRendererDirty();
+        this._ctx = null;
+        var scaling = this._header.defaults.scaling;
+        var scale40 = scaling.millimeters / scaling.tenths * 40;
+        this.header.defaults.pageLayout.pageHeight = C.renderUtil.mmToTenths(scale40, pageSize.height);
+        this.header.defaults.pageLayout.pageWidth = C.renderUtil.mmToTenths(scale40, pageSize.width);
+        Model.removeAnnotations(this._parts);
+        this._annotate(null, null, null, null, false); // XXX: collaboration
+        this.emit(CHANGE_EVENT);
     }
 
 
@@ -752,36 +753,41 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     "PUT /local/staveHeight/increase"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // var h = Math.round(this.header.staveHeight * 100) / 100;
+        this.emit(HISTORY_EVENT);
+        var scaling = this._header.defaults.scaling;
+        var scale40 = scaling.millimeters/scaling.tenths*40;
+        var h = Math.round(C.renderUtil.mmToTenths(scale40,
+            this.header.defaults.systemLayout.systemDistance * 100)) / 100;
 
-        // for (var i = renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
-        //     if (renderUtil.rastalToHeight[i] > h) {
-        //         this.header.staveHeight = renderUtil.rastalToHeight[i];
-        //         break;
-        //     }
-        // }
-        // this.dangerouslyMarkRendererDirty();
-        // this._ctx = null;
-        // this.header.staveHeight = this.header.staveHeight;
-        // this._everythingIsDirty();
+        for (var i = C.renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
+            if (C.renderUtil.rastalToHeight[i] > h) {
+                this.header.defaults.scaling.millimeters = C.renderUtil.rastalToHeight[i];
+                this.header.defaults.scaling.tenths = 40;
+                break;
+            }
+        }
+        this.dangerouslyMarkRendererDirty();
+        this._ctx = null;
+        this._everythingIsDirty();
     }
 
     "PUT /local/staveHeight/decrease"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // var h = Math.round(this.header.staveHeight * 100) / 100;
-        // for (var i = 0; i < renderUtil.rastalToHeight.length; ++i) {
-        //     if (renderUtil.rastalToHeight[i] < h) {
-        //         this.header.staveHeight = renderUtil.rastalToHeight[i];
-        //         break;
-        //     }
-        // }
-        // this.dangerouslyMarkRendererDirty();
-        // this._ctx = null;
-        // this.header.staveHeight = this.header.staveHeight;
-        // this._everythingIsDirty();
+        this.emit(HISTORY_EVENT);
+        var scaling = this._header.defaults.scaling;
+        var scale40 = scaling.millimeters/scaling.tenths*40;
+        var h = Math.round(C.renderUtil.mmToTenths(scale40,
+            this.header.defaults.systemLayout.systemDistance * 100)) / 100;
+
+        for (var i = 0; i < C.renderUtil.rastalToHeight.length; ++i) {
+            if (C.renderUtil.rastalToHeight[i] < h) {
+                this.header.defaults.scaling.millimeters = C.renderUtil.rastalToHeight[i];
+                this.header.defaults.scaling.tenths = 40;
+                break;
+            }
+        }
+        this.dangerouslyMarkRendererDirty();
+        this._ctx = null;
+        this._everythingIsDirty();
     }
 
     "PUT /local/tool"(action: C.IFluxAction) {
@@ -1072,7 +1078,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
 
         var layout: Annotator.ILayoutOpts = {
-            print: C.getPrint(this.header),
+            header: this.header,
             isFirstLine: true
         };
 
@@ -1092,7 +1098,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             assert(Object.keys(context.prevClefByStave).length >= 1, "Previous clefs were not stored");
         }
 
-        var y = renderUtil.getHeaderHeight(this.header);
+        var y = C.renderUtil.getHeaderHeight(this.header);
 
         // Annotate the part.
         var location = {
@@ -1171,7 +1177,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         });
     }
 
-    _everythingIsDirty() { // MXFIX: Make private
+    private _everythingIsDirty() {
         Model.removeAnnotations(this._parts); // TODO: Should not be needed.
         this.dangerouslyMarkRendererDirty();
         this._annotate(null, null, null, null, false); // XXX: collaboration
@@ -1302,6 +1308,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
         var song = SongEditorStore.parse(src);
         this._header = song.header;
+        console.log(this._header);
         this._parts = song.parts;
 
         for (var i = 0; i < this._parts.length; ++i) {

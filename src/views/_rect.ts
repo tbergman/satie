@@ -19,12 +19,12 @@ class Rect extends TypedReact.Component<Rect.IProps, {}> {
         return React.DOM.rect({
             className: this.props.className,
 			opacity: this.props.opacity || 1.0,
-            x: <any> (this.props.x + "em"),
-            y: <any> (this.props.y + "em"),
+            x: <any> (this.props.x),
+            y: <any> (this.props.y),
             stroke: this.props.stroke,
             fill: this.props.fill,
-            height: <any>(this.props.height + "em"),
-            width: <any>(this.props.width + "em")});
+            height: <any>(this.props.height),
+            width: <any>(this.props.width)});
     }
     renderGL() {
         var fill = this.props.stroke;

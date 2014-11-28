@@ -10,10 +10,10 @@ import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
 import assert = require("assert");
-import renderUtil = require("../util/renderUtil");
 
 import Beam = require("./_beam");
 import BeamGroupModel = require("../stores/beamGroup");
+import C = require("../stores/contracts");
 import Duration = require("./duration");
 import Group = require("./_group");
 import Note = require("./_note");
@@ -123,7 +123,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
                     direction * getSH(direction, 0, line1)}
                 line2={parseFloat("" + line2) +
                     direction * getSH(direction, spec.beam.length - 1, line2)}
-                scaleFactor={this.props.fontSize*renderUtil.FONT_SIZE_FACTOR}
+                scaleFactor={this.props.fontSize}
                 stemWidth={0.035}
                 stroke={strokeEnabled && strokeColor}
                 tuplet={spec.tuplet}

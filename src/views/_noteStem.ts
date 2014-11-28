@@ -16,19 +16,19 @@ import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
-var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness/4;
+var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness*10;
 
 class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset();
         return <!Line.Component
-            x1={this.props.x + fontOffset[0]/4 + this.lineXOffset()}
-            x2={this.props.x + fontOffset[0]/4 + this.lineXOffset()}
-            y1={this.props.y - fontOffset[1]/4 - (this.props.line - 3)/4}
+            x1={this.props.x + fontOffset[0]*10 + this.lineXOffset()}
+            x2={this.props.x + fontOffset[0]*10 + this.lineXOffset()}
+            y1={this.props.y - fontOffset[1]*10 - (this.props.line - 3)*10}
             y2={this.props.y -
-                (this.props.line - 3)/4 -
-                fontOffset[1]/4 -
-                this.direction()*this.height()/4}
+                (this.props.line - 3)*10 -
+                fontOffset[1]*10 -
+                this.direction()*this.height()}
             stroke={this.props.stroke}
             strokeWidth={stemThickness} />;
     }

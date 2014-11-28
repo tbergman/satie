@@ -11,11 +11,11 @@ import React = require("react");
 import _ = require("lodash");
 import assert = require("assert");
 
+import C = require("../stores/contracts");
 import DurationModel = require("../stores/duration");
 import Note = require("./_note");
 import NoteNotation = require("./_noteNotation");
 import Rest = require("./_rest");
-import renderUtil = require("../util/renderUtil");
 
 /**
  * This is a pseudo-component to maintain compatibility with
@@ -44,7 +44,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         /**
          * Mode to reduce unneeded renders.
          */
-        var zeroOffsetMode = !renderUtil.useGL && !spec.isRest && !spec.tie;
+        var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest && !spec.tie;
 
         if (spec.isRest) {
             return <!Rest.Component
@@ -92,8 +92,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     key={<any> spec.key /* numeric keys are okay */}
                     x={spec.x /* for beam */}
                     y={spec.y /* for beam */}
-                    transform={"translate(" + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.x +
-                        "," + props.fontSize * renderUtil.FONT_SIZE_FACTOR * spec.y + ")"}>
+                    transform={"translate(" + spec.x + "," + spec.y + ")"}>
                 {note}
             </g>
         } else {

@@ -13,6 +13,7 @@
 
 import assert = require("assert");
 import _ = require("lodash");
+var assign = require("react/lib/Object.assign");
 
 import Annotator = require("./annotator");
 import Model = require("./model");
@@ -378,26 +379,26 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         lyricFonts: [],
         lyricLanguages: [],
         musicFont: {
-            fontSize: "NOT IMPLEMENTED",
+            fontSize: "20.5", // This value is completely ignored. See "scaling"
             fontFamily: "Bravura, Maestro, engraved",
             fontStyle: MusicXML.NormalItalic.Normal,
             fontWeight: MusicXML.NormalBold.Normal
         },
         pageLayout: {
-            pageHeight: NaN,
-            pageWidth: NaN,
+            pageHeight: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].height),
+            pageWidth: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].width),
             pageMargins: [
                 {
-                    bottomMargin: NaN,
-                    leftMargin: NaN,
-                    rightMargin: NaN,
-                    topMargin: NaN,
+                    bottomMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.bottom),
+                    leftMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.left),
+                    rightMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.right),
+                    topMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.top),
                     type: MusicXML.OddEvenBoth.Both
                 }
             ]
         },
         scaling: {
-            millimeters: NaN,
+            millimeters: renderUtil.defaultStaveHeight,
             tenths: 40
         },
         staffLayouts: [],
@@ -412,23 +413,30 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         },
         wordFont: {
             fontSize: "12",
-            fontFamily: "Alegreya, Comic Sans, serif",
+            fontFamily: "Alegreya, Times New Roman, serif",
             fontStyle: MusicXML.NormalItalic.Normal,
             fontWeight: MusicXML.NormalBold.Normal
         }
     }
-    work: MusicXML.Work;
+    work: MusicXML.Work = {
+        opus: {},
+        workNumber: "",
+        workTitle: ""
+    }
 
-    movementTitle: string;
-    movementNumber: string;
+    movementTitle: string = "Untitled";
+    movementNumber: string = "";
 
-    partList: MusicXML.PartList;
+    partList: MusicXML.PartList = {
+        scoreParts: [],
+        partGroups: []
+    };
 
     // Convienience
     constructor(spec: ScoreHeader) {
         console.log(spec);
         for(var key in spec) {
-            if (spec.hasOwnProperty(key) && typeof key === "string") {
+            if (spec.hasOwnProperty(key) && typeof key === "string" && !!(<any>spec)[key]) {
                 (<any>this)[key] = (<any>spec)[key];
             }
         }
@@ -471,7 +479,11 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
                 creditImage: null,
                 creditTypes: ["composer"],
                 creditWords: [{
-                    words: composer
+                    words: composer,
+                    defaultX: renderUtil.mmToTenths(renderUtil.defaultStaveHeight,
+                        renderUtil.defaultPageSize().width - renderUtil.defaultMargins.right),
+                    justify: MusicXML.LeftCenterRight.Right,
+                    defaultY: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, 2)
                 }],
                 page: 1
             });
@@ -486,8 +498,41 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
     }
 }
 
-export function getPrint(header: ScoreHeader): MusicXML.Print {
-    return {
+export class Print implements MusicXML.Print {
+    /* MusicXML.Print */
+    measureNumbering: MusicXML.MeasureNumbering;
+    partNameDisplay: MusicXML.PartNameDisplay;
+    newSystem: boolean;
+    newPage: boolean;
+    blankPage: string;
+    measureLayout: MusicXML.MeasureLayout;
+    partAbbreviationDisplay: MusicXML.PartAbbreviationDisplay;
+    pageLayout: MusicXML.PageLayout;
+    systemLayout: MusicXML.SystemLayout;
+    staffSpacing: number;
+    staffLayouts: number[];
+    pageNumber: string;
+
+    /* Convienience */
+    constructor(print: MusicXML.Print) {
+        assign(this, print);
+    }
+    pageMarginsFor(page: number): MusicXML.PageMargins {
+        for (var i = 0; i < this.pageLayout.pageMargins.length; ++i) {
+            var margins = this.pageLayout.pageMargins[i];
+            if (margins.type === MusicXML.OddEvenBoth.Both ||
+                    (margins.type === MusicXML.OddEvenBoth.Odd) === !!(page % 2)) {
+                return margins;
+            }
+        }
+        console.warn("No valid page margins for current page...");
+        return null;
+    }
+}
+
+export function getPrint(header: ScoreHeader): Print {
+    "use strict";
+    return new Print({
         blankPage: "",
         measureLayout: null,
         measureNumbering: {
@@ -511,7 +556,7 @@ export function getPrint(header: ScoreHeader): MusicXML.Print {
         staffLayouts: header.defaults.staffLayouts,
         staffSpacing: null,
         systemLayout: header.defaults.systemLayout
-    };
+    });
 }
 
 /** 
@@ -783,13 +828,6 @@ export interface IPart {
      * For playback
      */
     instrument?: IInstrument;
-
-    /** 
-     * Whether the next part is in the same system
-     */
-    pianoSystemContinues?: boolean;
-
-    staveSeperation?: number;
 };
 
 /** 

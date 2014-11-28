@@ -21,16 +21,16 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
         return React.DOM.g(null,
             React.DOM.circle({
                 "data-selection-info": "dotted",
-                cx: <any> (this.cx() + "em"),
-                cy: <any> (this.cy() + "em"),
+                cx: <any> (this.cx()),
+                cy: <any> (this.cy()),
                 fill: this.props.stroke,
-                r: <any>(this.props.radius + "em")}),
+                r: <any>(this.props.radius)}),
         global.isChoreServer ? null : React.DOM.rect({
                 "data-selection-info": "dotted",
-                width: <any> "0.3em",
-                height: <any> "0.3em",
-                x: <any> (this.cx() - 0.1 + "em"),
-                y: <any> (this.cy() - 0.1 + "em"),
+                width: 3,
+                height: 3,
+                x: <any> (this.cx() - 4),
+                y: <any> (this.cy() - 4),
                 fill: "transparent",
                 className: "mn_handle"})
         );
@@ -50,14 +50,14 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
     }
 
     cyOffset() {
-        return ((this.props.line * 2) % 2) ? 0 : 0.5/4;
+        return ((this.props.line * 2) % 2) ? 0 : 5;
     }
 
     cx() {
-        return this.props.x + 0.45 + 0.15*(this.props.idx);
+        return this.props.x + 18 + 6*(this.props.idx);
     }
     cy() {
-        return this.props.y - (this.props.line - 3)/4 - this.cyOffset();
+        return this.props.y - (this.props.line - 3)*10 - this.cyOffset();
     }
 }
 

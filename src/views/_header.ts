@@ -6,7 +6,6 @@
 
 import React = require("react");
 import TypedReact = require("typed-react");
-import renderUtil = require("../util/renderUtil");
 
 import C = require("../stores/contracts");
 import Tool = require("../stores/tool");
@@ -21,7 +20,7 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
         var model: C.ScoreHeader = this.props.model;
         var editMode = !!this.props.tool.instance(TextTool);
         var style = {
-            fontSize: renderUtil.FONT_SIZE_FACTOR*this.props.fontSize + "px"
+            fontSize: this.props.fontSize + "px"
         };
 
         return React.DOM.g({style: style},
@@ -36,8 +35,9 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
                                 style: {
                                     textAnchor: toCSS(words.justify)
                                 },
-                                x: this.props.middle*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
-                                y: 2*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR
+                                x: (words.defaultX + (words.relativeX || 0)),
+                                y: (words.defaultY + (words.relativeY || 0)),
+                                fontSize: C.renderUtil.cssSizeToTenths(this.props.fontSize, words.fontSize)
                             },
                             words.words
                         )
@@ -49,30 +49,13 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
         function toCSS(justification: C.MusicXML.LeftCenterRight) {
             switch(justification) {
                 case C.MusicXML.LeftCenterRight.Left:
-                    return "left";
+                    return "start";
                 case C.MusicXML.LeftCenterRight.Center:
                     return "middle";
                 case C.MusicXML.LeftCenterRight.Right:
-                    return "right";
+                    return "end";
             }
         }
-        // model.movementTitle &&
-        //     React.DOM.text({className: "tn_ " + (editMode ? "svgLink" : ""),
-        //         "data-selection-info": "song_title",
-        //         style: {textAnchor: "middle"},
-        //         x: this.props.middle*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
-        //         y: 2*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR},
-        //             model.movementTitle
-        //     ),
-
-        // model.composer &&
-        //     React.DOM.text({className: "tn_ " + (editMode ? "svgLink" : ""),
-        //         "data-selection-info": "song_composer",
-        //         style: {textAnchor: "end", fontSize: 0.75 + "em"},
-        //         x: this.props.right*0.75*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR,
-        //         y: 3/0.75*0.75*this.props.fontSize*renderUtil.FONT_SIZE_FACTOR},
-        //             model.composer
-        //     )
     }
 }
 
@@ -81,9 +64,7 @@ module Header {
     export var Component = TypedReact.createClass(React.createClass, Header);
     export interface IProps {
         fontSize: number;
-        middle: number;
         model: C.ScoreHeader;
-        right: number;
         tool: Tool;
     }
 }

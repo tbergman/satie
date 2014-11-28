@@ -23,21 +23,19 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
         var x = spec.x - (spec.isChange ? 0.2 : 0);
         var clef = <!Glyph.Component
             x={x}
-            y={spec.y - (this.line() - 3)/4}
+            y={spec.y - (this.line() - 3)*10}
             opacity={this.props.opacity}
             fill={spec.color}
-            fontSize={this.props.fontSize}
             glyphName={this.sign() + (spec.isChange ? "Change" : "")} />
         var ClefTool: typeof ClefToolType = require("../stores/clefTool");
         if (this.isLocked() && global.SongEditor.tool instanceof ClefTool) {
             return <!Group.Component>
                 <!Glyph.Component
-                    x={x + 0.25}
-                    y={spec.y - 0.98}
+                    x={x + 2.5}
+                    y={spec.y - 9.8}
                     opacity={0.2}
                     fill={"#000000"}
                     scale={0.5}
-                    fontSize={this.props.fontSize}
                     glyphName={"fa-lock"}
                     code={"\uF023" /*fa-lock*/} />
                 {clef}
@@ -79,7 +77,6 @@ module Clef {
     export interface IProps {
         key: number;
         spec: ClefModel;
-        fontSize: number;
         opacity?: number;
     }
 }

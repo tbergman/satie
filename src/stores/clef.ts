@@ -68,17 +68,17 @@ class ClefModel extends Model.StateChangeModel {
             var note: C.IPitch = <any> next;
             if (note.acc) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                this._annotatedSpacing = 1.5;
+                this._annotatedSpacing = 15;
             } else {
-                this._annotatedSpacing = 2.5;
+                this._annotatedSpacing = 25;
             }
         } else {
-            this._annotatedSpacing = 1.25;
+            this._annotatedSpacing = 12.5;
         }
         if (this.isChange) {
-            ctx.x += 0.21 + this._annotatedSpacing / 4;
+            ctx.x += 4.2 + this._annotatedSpacing;
         } else {
-            ctx.x += 0.6 + this._annotatedSpacing/4;
+            ctx.x += 24 + this._annotatedSpacing;
         }
         this.color = this.displayedClef !== this.clef ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;

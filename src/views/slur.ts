@@ -13,11 +13,11 @@ import TypedReact = require("typed-react");
 import assert = require("assert");
 
 import Bezier = require("./_bezier");
+import C = require("../stores/contracts");
 import Note = require("./_note");
 import SlurGroupModel = require("../stores/slur");
 import getFontOffset = require("./_getFontOffset");
 import hash = require("../util/hash");
-import renderUtil = require("../util/renderUtil");
 
 var getExtremeLine = Note.getExtremeLine;
 
@@ -70,7 +70,7 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
             x6={0.95619358 / 1.23897534 * x2mx1 + x1}
             y6={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
 
-            fontSizeFactor={this.props.fontSize * renderUtil.FONT_SIZE_FACTOR}
+            fontSizeFactor={this.props.fontSize}
             fill="#000000"
             strokeWidth={0.03}
             stroke="#000000" />

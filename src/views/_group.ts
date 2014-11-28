@@ -5,14 +5,14 @@
 import TypedReact=require("typed-react");
 import React = require("react");
 
+import C = require("../stores/contracts");
 var Victoria = require("../renderer/victoria/victoria");
-import renderUtil = require("../util/renderUtil");
 
 var VG = Victoria.VG;
 
 class Group extends TypedReact.Component<any, any> {
     render() {
-        var x = (renderUtil.useGL ? VG : React.DOM.g).apply(null, [this.props].concat(this.props.children));
+        var x = (C.renderUtil.useGL ? VG : React.DOM.g).apply(null, [this.props].concat(this.props.children));
         console.assert(x);
         return x;
     }

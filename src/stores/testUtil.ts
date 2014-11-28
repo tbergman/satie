@@ -25,6 +25,7 @@ export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>)
         var dispatcher = new Dispatcher;
         var session = new SessionStore(dispatcher);
         var songEditor = new SongEditorStore(dispatcher, session);
+        console.log("Unused:", songEditor);
         it("should parse", function () {
             var song = lylite.parse(ly);
             assert(song.parts && song.header, "Did it parse?");

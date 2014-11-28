@@ -21,18 +21,19 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
         var spec = this.props.spec;
 
         return <!Group.Component>
-            {spec.pianoSystemContinues && <!Brace.Component
-                idx={1}
-                x={spec.begin}
-                fontSize={this.props.fontSize}
-                y={spec.braceY + spec.lineSpacing}
-                y2={spec.braceY2 + spec.lineSpacing} />}
             <!StaveLines.Component
                 key="StaveLines"
                 width={this.props.spec.width}
-                x={spec.begin}
+                x={spec.x}
                 y={spec.braceY + spec.lineSpacing} />
         </Group.Component>;
+
+        // {spec.pianoSystemContinues && <!Brace.Component MXFIX
+        //     idx={1}
+        //     x={spec.x}
+        //     fontSize={this.props.fontSize}
+        //     y={spec.braceY + spec.lineSpacing}
+        //     y2={spec.braceY2 + spec.lineSpacing} />}
     }
 };
 

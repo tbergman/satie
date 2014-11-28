@@ -6,8 +6,8 @@
 
 import React = require("react");
 import TypedReact = require("typed-react");
-import renderUtil = require("../util/renderUtil");
 
+import C = require("../stores/contracts");
 import Line = require("./_line");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
@@ -15,7 +15,6 @@ import SMuFL = require("../util/SMuFL");
 
 class Brace extends TypedReact.Component<Brace.IProps, {}> {
     render() {
-        var FONT_SIZE_FACTOR = renderUtil.FONT_SIZE_FACTOR;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
 
         var height = (this.props.y2 - this.props.y) + 1;
@@ -23,10 +22,8 @@ class Brace extends TypedReact.Component<Brace.IProps, {}> {
         var s = height;
         return <!Group.Component>
             <!Glyph.Component transform={"scale(" + s + "," + s + ")" +
-                    "translate(" + -FONT_SIZE_FACTOR*
-                        this.props.fontSize*this.props.x*(1-1/s) + "," +
-                    -(1-1/s)*FONT_SIZE_FACTOR*this.props.fontSize*
-                        mid + ")"}
+                    "translate(" + (-this.props.fontSize*this.props.x*(1-1/s)) + "," +
+                    -(1-1/s)*this.props.fontSize*mid + ")"}
                 fill={"#000000"}
                 fontSize={this.props.fontSize}
                 key={0}

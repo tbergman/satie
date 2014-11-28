@@ -39,15 +39,15 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.ITimeSignat
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                this._annotatedSpacing = 1.5;
+                this._annotatedSpacing = 15;
             } else {
-                this._annotatedSpacing = 2.5;
+                this._annotatedSpacing = 25;
             }
         } else {
-            this._annotatedSpacing = 1.25;
+            this._annotatedSpacing = 12.5;
         }
 
-        ctx.x += 0.7 + this._annotatedSpacing/4;
+        ctx.x += 28 + this._annotatedSpacing;
         ctx.timeSignature = this._timeSignature;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;

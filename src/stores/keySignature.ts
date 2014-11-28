@@ -33,16 +33,16 @@ class KeySignatureModel extends Model.StateChangeModel {
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                this._annotatedSpacing = 2.5;
+                this._annotatedSpacing = 25;
             } else {
-                this._annotatedSpacing = 1.5;
+                this._annotatedSpacing = 15;
             }
         } else {
-            this._annotatedSpacing = 1;
+            this._annotatedSpacing = 10;
         }
         var c: number = this.getSharpCount() || this.getFlatCount();
         if (c) {
-            ctx.x += this._annotatedSpacing/4 + 0.26*c;
+            ctx.x += this._annotatedSpacing + 10.4*c;
         }
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;

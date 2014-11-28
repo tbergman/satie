@@ -33,7 +33,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
             {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
                 idx={idx}
                 key={idx + "d"}
-                radius={0.06}
+                radius={2.4}
                 stroke={this.props.stroke}
                 x={this.props.x + this.props.spacing}
                 y={this.props.y}

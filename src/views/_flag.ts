@@ -19,16 +19,17 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset(this.glyphName());
         var noteOffset = this.getFontOffset();
+        console.log(this.direction(), this.props.stemHeight, noteOffset[1], this.props.line);
         return <!Glyph.Component
             x={this.props.x +
-                fontOffset[0]/4 +
+                fontOffset[0]*10 +
                 ((this.props.direction === 1) ?
-                    noteOffset[0]/4 - this.props.stemWidth :
+                    noteOffset[0]*10 - this.props.stemWidth :
                     0)}
             y={this.props.y -
-                (this.props.line - 3)/4 -
-                noteOffset[1]/4 -
-                this.direction()*this.props.stemHeight/4}
+                (this.props.line - 3)*10 -
+                noteOffset[1]*10 -
+                this.direction()*this.props.stemHeight}
             fill={this.props.stroke}
             fontSize={this.props.fontSize}
             glyphName={this.glyphName() } />;
@@ -55,9 +56,7 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
         return {
             x: 0,
             y: 0,
-            line: 3,
-            stemHeight: 3.5,
-            stemWidth: 0.035
+            line: 3
         };
     }
 }

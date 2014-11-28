@@ -12,7 +12,6 @@ import C = require("./contracts");
 import Model = require("./model");
 import NewlineModelType = require("./newline"); // Cyclic dependency. For types only.
 import PlaceholderModelType = require("./placeholder"); // Cyclic dependency. For types only.
-import renderUtil = require("../util/renderUtil");
 
 /**
  * Annotator has two goals:
@@ -32,6 +31,7 @@ import renderUtil = require("../util/renderUtil");
 export class Context implements C.MetreContext {
     constructor(parts: Array<C.IPart>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
         this._parts = parts;
+        this._layout = layout;
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
 
@@ -39,7 +39,7 @@ export class Context implements C.MetreContext {
             if (layout.snapshot) {
                 _cpysnapshot(this, layout.snapshot);
             } else {
-                _cpylayout(this, layout);
+                this._assignLayout();
             }
         }
     }
@@ -109,8 +109,6 @@ export class Context implements C.MetreContext {
     captureSnapshot(): IPartialSnapshot {
         return {
             fontSize: this.fontSize,
-            initialX: this.initialX,
-            lineSpacing: this.lineSpacing,
             maxX: this.maxX,
             maxY: this.maxY,
             prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
@@ -129,9 +127,20 @@ export class Context implements C.MetreContext {
         return this.body[this.idx];
     }
 
-    get staveSeperation(): number {
-        var bodies = _.filter(this._parts, s => !!s.body).length;
-        return (bodies - 1) * (this.currStave.staveSeperation || renderUtil.staveSeperation);
+    get staveSpacing(): number {
+        return C.getPrint(this._layout.header).staffSpacing;
+    }
+
+    /**
+     * 1-indexed to match MusicXML!
+     */
+    get page(): number {
+        for (var i = 0; i < this.pageStarts.length; ++i) {
+            if (this.pageStarts[i] < this.line) {
+                return i;
+            }
+        }
+        return this.pageStarts.length;
     }
 
     /**
@@ -802,18 +811,6 @@ export class Context implements C.MetreContext {
     fontSize: number;
 
     /**
-     * The x on the first line.
-     * @scope layout
-     */
-    initialX: number;
-
-    /**
-     * The spacing from bottom of one staff, to the top of another.
-     * @scope layout
-     */
-    lineSpacing: number = 3.3;
-
-    /**
      * The end of a line.
      * @scope layout
      */
@@ -921,6 +918,44 @@ export class Context implements C.MetreContext {
         }
     }
 
+    newline() {
+        this._assignLayout(IncrementLine.Yes);
+    }
+
+    private _assignLayout(incrementLine: IncrementLine = IncrementLine.No) {
+        var layout = this._layout;
+
+        if (incrementLine) {
+            ++this.line;
+        }
+
+        var print = C.getPrint(layout.header);
+        var systemMargins = print.systemLayout.systemMargins;
+        var pageMargins = print.pageMarginsFor(this.page);
+        var pageLayout = print.pageLayout;
+        var fontSize = this.calcFontSize();
+
+        this.fontSize = fontSize;
+        this.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
+        this.maxY = pageLayout.pageHeight - pageMargins.topMargin;
+        this.x = systemMargins.leftMargin + pageMargins.leftMargin;
+        if (!this.line) {
+            this.y = pageMargins.topMargin + print.systemLayout.topSystemDistance;
+        } else {
+            this.y += this.calcLineSpacing(print);
+        }
+        this.lines = [this.captureLine()];
+        console.log("START AT ", this.x, this.y);
+    }
+
+    calcFontSize(): number {
+        var scaling = this._layout.header.defaults.scaling;
+        return scaling.millimeters / scaling.tenths * 40;
+    }
+    calcLineSpacing(print: C.Print = C.getPrint(this._layout.header)): number {
+        return C.renderUtil.mmToTenths(this.calcFontSize(), print.systemLayout.systemDistance);
+    }
+
     private _assertAligned() {
         if (this._assertionPolicy === AssertionPolicy.Strict) {
             var expectedLength = 0;
@@ -961,10 +996,17 @@ export class Context implements C.MetreContext {
      */
     _parts: Array<C.IPart>;
 
+    _layout: ILayoutOpts;
+
     /**
      * @scope private
      */
     lines: Array<ILineSnapshot> = [];
+}
+
+enum IncrementLine {
+    No = 0,
+    Yes = 1
 }
 
 export enum SplicePolicy {
@@ -1005,7 +1047,7 @@ export interface ICustomAction {
 }
 
 export interface ILayoutOpts {
-    print: C.MusicXML.Print;
+    header: C.ScoreHeader;
     isFirstLine?: boolean;
     snapshot?: ICompleteSnapshot;
 }
@@ -1043,8 +1085,6 @@ export interface ILineSnapshot {
  */
 export interface IPartialSnapshot {
     fontSize: number;
-    initialX: number;
-    lineSpacing: number;
     maxX: number;
     maxY: number;
     prevClefByStave: { [key: number]: string };
@@ -1140,7 +1180,7 @@ class PrivIterator {
 
             this._parent.y = origSnapshot.y;
             for (var j = 0; j < i; ++j) {
-                this._parent.y += this._components[i].staveSeperation;
+                this._parent.y += this._parent.staveSpacing;
             }
 
             this._assertOffsetsOK();
@@ -1635,10 +1675,6 @@ class PrivIteratorComponent {
         return this._body.length;
     }
 
-    get staveSeperation() {
-        return this._part.staveSeperation || renderUtil.staveSeperation;
-    }
-
     private _aheadOfSchedule(ctx: Context): boolean {
         if (ctx.curr.type !== C.Type.Duration) {
             return false;
@@ -1751,20 +1787,6 @@ enum NewlineMode {
     MIDDLE_OF_LINE
 }
 
-function _cpylayout(ctx: Context, layout: ILayoutOpts) {
-    "use strict";
-
-    // MXFIX
-    // ctx.fontSize = layout.fontSize;
-    // ctx.initialX = renderUtil.mm(layout.leftMargin, layout.fontSize);
-    // ctx.maxX = renderUtil.mm(layout.pageSize.width - layout.rightMargin, layout.fontSize);
-    // ctx.maxY = renderUtil.mm(layout.pageSize.height - 15, layout.fontSize);
-    // ctx.pageSize = layout.pageSize;
-    // ctx.x = ctx.initialX + renderUtil.mm(layout.isFirstLine ? layout.indent : 0, layout.fontSize);
-    // ctx.y = renderUtil.mm(15, layout.fontSize) + layout.top;
-    // ctx.lines = [ctx.captureLine()];
-}
-
 function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
     "use strict";
 
@@ -1774,13 +1796,11 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
         }
         switch (attrib) {
             case "fontSize": ctx.fontSize = layout.fontSize; break;
-            case "initialX": ctx.initialX = layout.initialX; break;
             case "lines":
                 ctx.lines = layout.lines;
                 ctx.line = layout.lines.length - 1;
                 _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.START_OF_LINE);
                 break;
-            case "lineSpacing": ctx.lineSpacing = layout.lineSpacing; break;
             case "maxX": ctx.maxX = layout.maxX; break;
             case "maxY": ctx.maxY = layout.maxY; break;
             case "partialLine": break; // skipped

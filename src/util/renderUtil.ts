@@ -77,16 +77,16 @@ export function defaultPageSize() {
     return pageSizes[0];
 };
 
-export function defaultStaveHeight() {
-    "use strict";
-    return rastalToHeight[4];
-};
-
 export var defaultIndent = 15;
 export var defaultMargins = {
-    left: 15.25,
-    right: 15.25
+    top: 15.25,
+    right: 15.25,
+    bottom: 15.25,
+    left: 15.25
 };
+
+// This means that 4 spaces (i.e., 1 stave) equals 6.5mm.
+export var defaultStaveHeight = rastalToHeight[4];
 
 export var lilypondSizes = {
     // Sizes that we support loading from Lilypond.
@@ -565,11 +565,70 @@ export var lilypondSizes = {
 };
 
 /**
- * Converts a length in mms to ems.
+ * Converts a length in mms to tenths of a standard stave height.
+ * 
+ * @param scaling40 the standard stave height
  */
-export function mm(mm: number, fontSize: number) {
+export function mmToTenths(scaling40: number, mm: number) {
     "use strict";
-    return mm*1.0415/fontSize;
+    return mm / scaling40 * 40;
+}
+
+/**
+ * Converts a 'px' size or a named css size (e.g., "small") to tenths of a standard stave height.
+ * 
+ * @param scaling40 the standard stave height
+ */
+export function cssSizeToTenths(scaling40: number, css: string) {
+    "use strict";
+    var px = NaN;
+    // The xx-small - xx-large values were found from Chrome computed sizes.
+    switch(true) {
+        case !!~css.indexOf("px"):
+        case !isNaN(parseFloat(css)):
+            px = parseFloat(css.split("px")[0]);
+            break;
+        case css === "xx-small":
+            px = 9;
+            break;
+        case css === "x-small":
+            px = 10;
+            break;
+        case css === "medium":
+            px = 16;
+            break;
+        case css === "large":
+            px = 18;
+            break;
+        case css === "x-large":
+            px = 24;
+            break;
+        case css === "xx-large":
+            px = 32;
+            break;
+        case css === "small":
+        default:
+            px = 13;
+            break;
+    }
+
+    // 1 px = 3/4     pt
+    // 1 pt = 1/72    in
+    // 1 in = 25.4    mm
+    // =================
+    // 1 px = 25.4/96 mm
+    return mmToTenths(scaling40, px * 25.4/96);
+}
+
+/**
+ *
+ * Converts a length in tenths of a stave length to mm.
+ *
+ * @param scaling40 the standard stave height
+ */
+export function tenthsToMM(scaling40: number, tenths: number) {
+    "use strict";
+    return scaling40 * tenths / 40;
 }
 
 export var ptPerMM = 2.842;
@@ -582,8 +641,6 @@ export function sigmoid(t: number) {
 }
 
 export var V_PADDING = 20;
-
-export var FONT_SIZE_FACTOR = 378;
 
 export function getHeaderHeight(header: any) {
     "use strict";

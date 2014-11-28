@@ -23,18 +23,12 @@ class StaveLines extends TypedReact.Component<StaveLines.IProps, {}> {
                 key={"staff-" + i}
                 x1={this.props.x}
                 x2={this.props.x + this.props.width}
-                y1={this.props.y - 0.25*(i - 2)}
-                y2={this.props.y - 0.25*(i - 2)}
+                y1={this.props.y - 10*(i - 2)}
+                y2={this.props.y - 10*(i - 2)}
                 stroke="#6A6A6A"
                 victoriaXStrokeWidthFactor={0}
-                strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness/4} />)}
+                strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness*10} />)}
         </Group.Component>;
-    }
-
-    getDefaultProps() {
-        return {
-            width: 300
-        };
     }
 }
 

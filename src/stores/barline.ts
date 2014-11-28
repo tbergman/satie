@@ -111,7 +111,7 @@ class BarlineModel extends Model {
         var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
         if (nextNonPlaceholder.isNote) {
-            this.annotatedAccidentalSpacing = 0.2 * (_.any(intersectingNotes,
+            this.annotatedAccidentalSpacing = 2 * (_.any(intersectingNotes,
                 n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
@@ -126,16 +126,17 @@ class BarlineModel extends Model {
         ctx.barKeys.push(this.key);
 
         // Set information from context that the view needs
-        if (ctx.currStave.pianoSystemContinues) {
-            this.onPianoStaff = true;
-        };
-        ctx.x += (this.newlineNext ? 0 : 0.3) + this.annotatedAccidentalSpacing;
+        // this.onPianoStaff = true; MXFIX
+        ctx.x += (this.newlineNext ? 0 : 3) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
         ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.keySignature);
 
-        this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 2/4;
-        this.yOffset = this.onPianoStaff ? (2/4 - (ctx.staveSeperation/2)): 0;
+        // MXFIX
+        // this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 20;
+        this.height = 20;
+        // this.yOffset = this.onPianoStaff ? (20 - (ctx.staveSeperation/2)): 0;
+        this.yOffset = 0;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
 
         if (!ctx.disableRecordings) {
@@ -258,7 +259,6 @@ class BarlineModel extends Model {
     color: string;
     height: number;
     newlineNext: boolean;
-    onPianoStaff: boolean;
     selected: boolean;
     temporary: boolean;
     _revision: string = BarlineModel._sessionId + "-0";

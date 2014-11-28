@@ -12,7 +12,6 @@ import _ = require("lodash");
 
 import C = require("../stores/contracts");
 import SMuFL = require("../util/SMuFL");
-import renderUtil = require("../util/renderUtil");
 import Glyph = require("./_glyph");
 import Group = require("./_group");
 import RenderableMixin = require("./_renderable");
@@ -25,7 +24,7 @@ import getFontOffset = require("./_getFontOffset");
  */
 class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMixin {
     renderSVG() {
-        var f = this.props.fontSize * renderUtil.FONT_SIZE_FACTOR;
+        var f = this.props.fontSize;
         if (this.props.beams === C.BeamCount.Variable) {
             var xLow = this._getX1();
             var xHi = this._getX2();
