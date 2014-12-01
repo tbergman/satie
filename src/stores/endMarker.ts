@@ -84,13 +84,13 @@ class EndMarkerModel extends Model {
 
         // Double barlines terminate a piece.
         if (!ctx.next() && (prev.type !== C.Type.Barline ||
-            prev.barline !== C.Barline.Double)) {
+                (<BarlineModelType>prev).barStyle.data !== C.MusicXML.BarStyleType.LightHeavy)) {
             if (prev.type === C.Type.Barline) {
-                prev.barline = C.Barline.Double;
+                (<BarlineModelType>prev).barStyle.data = C.MusicXML.BarStyleType.LightHeavy;
                 return C.IterationStatus.RetryLine;
             } else {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
-                return BarlineModel.createBarline(ctx, C.Barline.Double);
+                return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.LightHeavy);
             }
         }
 

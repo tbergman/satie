@@ -76,11 +76,6 @@ class Model {
         return null;
     }
 
-    get barline(): C.Barline {
-        assert(false, "Not a barline");
-        return null;
-    }
-
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         assert(false, "Not implemented");
         return null; // Not reached

@@ -92,11 +92,6 @@ export interface IAnnotationOpts {
     toolFn?: (obj: Model, ctx: Annotator.Context) => IterationStatus;
 };
 
-export enum Barline {
-    Standard,
-    Double
-}
-
 /** 
  * The stupid enumeration is the way it because I didn't know how to make a type
  * that is either a number or variable.

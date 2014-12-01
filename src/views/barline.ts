@@ -29,7 +29,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
         var thickX = spec.x + defaults.barlineSeparation*10 +
             defaults.thickBarlineThickness*10;
 
-        if (spec.barline === C.Barline.Double) {
+        if (spec.barStyle.data === C.MusicXML.BarStyleType.LightHeavy) {
             return <!Group.Component>
                 <!Line.Component
                     key={1}
@@ -37,9 +37,9 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     x2={spec.x}
                     y1={spec.y - spec.height - spec.yOffset}
                     y2={spec.y + spec.height - spec.yOffset}
-                    stroke={spec.color}
+                    stroke={spec.barStyle.color}
                     victoriaYStrokeWidthFactor={0}
-                    fill={spec.color}
+                    fill={spec.barStyle.color}
                     strokeWidth={defaults.thinBarlineThickness*10} />
                 <!Line.Component
                     key={2}
@@ -48,8 +48,8 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     y1={spec.y - spec.height - spec.yOffset}
                     y2={spec.y + spec.height - spec.yOffset}
                     victoriaYStrokeWidthFactor={0}
-                    stroke={spec.color}
-                    fill={spec.color}
+                    stroke={spec.barStyle.color}
+                    fill={spec.barStyle.color}
                     strokeWidth={defaults.thickBarlineThickness*10} />
                 {/* HACK HACK HACK: We're drawing a white bar to
                     cover over the empty part of the stave.*/}
@@ -72,8 +72,8 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             x2={spec.x}
             y1={spec.y - spec.height - spec.yOffset}
             y2={spec.y + spec.height - spec.yOffset}
-            stroke={spec.color}
-            fill={spec.color}
+            stroke={spec.barStyle.color}
+            fill={spec.barStyle.color}
             strokeWidth={defaults.thinBarlineThickness*10} />
     }
 
@@ -88,11 +88,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
      * Compute a hash for quickly checking whether the component needs updating.
      */
     getHash(spec: BarlineModel) {
-        return hash(
-            (""+spec.barline) +
-            (""+spec.x) +
-            (""+spec.y) +
-            (""+spec.color));
+        return hash(JSON.stringify(spec));
     }
 
     /**

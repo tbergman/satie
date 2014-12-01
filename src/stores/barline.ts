@@ -19,7 +19,7 @@ import TimeSignatureModel = require("./timeSignature");
 /**
  * The model for single and double barlines.
  */
-class BarlineModel extends Model {
+class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
         // If we have an overfilled note in the previous bar, it will at some point turn
@@ -78,7 +78,7 @@ class BarlineModel extends Model {
             return ctx.eraseCurrent();
         }
 
-        if (this.barline === C.Barline.Double) {
+        if (this.barStyle.data === C.MusicXML.BarStyleType.LightHeavy) {
             // The document cannot be entirely empty.
             okay = false;
             for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
@@ -118,8 +118,8 @@ class BarlineModel extends Model {
         }
 
         // Double barlines only exist at the end of a piece.
-        if (this.barline === C.Barline.Double && ctx.next(null, 2)) {
-            this.barline = C.Barline.Standard;
+        if (this.barStyle.data === C.MusicXML.BarStyleType.LightHeavy && ctx.next(null, 2)) {
+            this.barStyle.data = C.MusicXML.BarStyleType.Regular;
             return C.IterationStatus.RetryCurrent;
         }
 
@@ -137,7 +137,7 @@ class BarlineModel extends Model {
         this.height = 20;
         // this.yOffset = this.onPianoStaff ? (20 - (ctx.staveSeperation/2)): 0;
         this.yOffset = 0;
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
+        this.barStyle.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");
 
         if (!ctx.disableRecordings) {
             ctx.record(this);
@@ -145,9 +145,8 @@ class BarlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    constructor(spec: { barline: C.Barline }) {
+    constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}) {
         super(spec);
-        this._barline = spec.barline;
     }
 
     toLylite(lylite: Array<string>) {
@@ -157,15 +156,13 @@ class BarlineModel extends Model {
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
-    static createBarline = (ctx: Annotator.Context, mode: C.Barline): C.IterationStatus => {
-        mode = mode || C.Barline.Standard;
-
+    static createBarline = (ctx: Annotator.Context, type = C.MusicXML.BarStyleType.Regular): C.IterationStatus => {
         if (ctx.curr.type === C.Type.BeamGroup) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
-                    var newBarline = new BarlineModel({ barline: mode });
+                    var newBarline = new BarlineModel({ barStyle: {data: type }});
                     if (j === ctx.idx) {
                         ctx.insertPast(newBarline);
                     } else {
@@ -177,38 +174,45 @@ class BarlineModel extends Model {
             return C.IterationStatus.RetryLine;
         }
 
-        BarlineModel._seperate(ctx, mode);
+        BarlineModel._seperate(ctx, type);
         return C.IterationStatus.RetryCurrentNoOptimizations;
     };
 
-    private static _seperate = (ctx: Annotator.Context, mode: C.Barline) => {
+    private static _seperate = (ctx: Annotator.Context, type: C.MusicXML.BarStyleType) => {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === C.Type.Barline) {
             // We want to keep this barline where it is!
-            ctx.body[jdx] = new BarlineModel({ barline: inTwo.barline });
-            inTwo.barline = mode;
+            ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }});
+            (<BarlineModel>inTwo).barStyle.data = type;
             ctx.insertPast(inTwo, null, true);
             return;
         }
 
-        ctx.insertPast(new BarlineModel({ barline: mode }), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}), null, true);
     };
 
 
     get type() {
         return C.Type.Barline;
     }
-    get barline() {
-        return this._barline;
-    }
-    set barline(barline: C.Barline) {
-        this._barline = barline;
-    }
 
     toJSON(): {} {
         return _.extend(super.toJSON(), {
-            _revision: this.revision
+            _revision: this.revision,
+            segno: this.segno,
+            coda: this.coda,
+            location: this.location,
+            codaAttrib: this.codaAttrib,
+            wavyLine: this.wavyLine,
+            fermatas: this.fermatas,
+            segnoAttrib: this.segnoAttrib,
+            divisions: this.divisions,
+            barStyle: this.barStyle,
+            ending: this.ending,
+            repeat: this.repeat,
+            footnote: this.footnote,
+            level: this.level
         });
     }
 
@@ -251,18 +255,43 @@ class BarlineModel extends Model {
         return history.reverse().join("\n") + "\n";
     }
 
+    /* Collab and undo/redo */
     __history__: string = "";
     __lkg__: string = "";
+    _revision: string = BarlineModel._sessionId + "-0";
 
-    private _barline: C.Barline;
+    /* Ripieno Internal and annotated */
     annotatedAccidentalSpacing: number;
-    color: string;
     height: number;
     newlineNext: boolean;
     selected: boolean;
     temporary: boolean;
-    _revision: string = BarlineModel._sessionId + "-0";
     yOffset: number;
+
+    /* C.MusicXML.Barline */
+    segno: C.MusicXML.Segno;
+    coda: C.MusicXML.Coda;
+    /**
+     * Ignored for Ripieno since barlines are always at the end
+     * of a measure in Ripieno. We preserve the value for third-party
+     * programs though.
+     */
+    location: C.MusicXML.BarlineLocation = C.MusicXML.BarlineLocation.Right;
+    codaAttrib: string;
+    wavyLine: C.MusicXML.WavyLine;
+    fermatas: C.MusicXML.Fermata[];
+    segnoAttrib: string;
+    divisions: string;
+    barStyle: C.MusicXML.BarStyle = {
+        color: "#000000",
+        data: C.MusicXML.BarStyleType.Regular
+    }
+    ending: C.MusicXML.Ending;
+    repeat: C.MusicXML.Repeat;
+
+    /* C.MusicXML.Editorial */
+    footnote: C.MusicXML.Footnote;
+    level: C.MusicXML.Level;
 }
 
 export = BarlineModel;

@@ -55,7 +55,7 @@ class ClefModel extends Model.StateChangeModel {
             // Otherwise, barlines should be before clefs when either is possible.
             if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
-                return BarlineModel.createBarline(ctx, C.Barline.Standard);
+                return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
             }
         }
 
