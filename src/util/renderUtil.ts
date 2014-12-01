@@ -85,8 +85,9 @@ export var defaultMargins = {
     left: 15.25
 };
 
-// This means that 4 spaces (i.e., 1 stave) equals 6.5mm.
-export var defaultStaveHeight = rastalToHeight[4];
+// This means that 4 spaces (i.e., 1 stave) equals 6.3mm.
+export var defaultStaveHeight = 6.25;
+// export var defaultStaveHeight = rastalToHeight[4]; MXFIX: Restore to this after everything else matches.
 
 export var lilypondSizes = {
     // Sizes that we support loading from Lilypond.

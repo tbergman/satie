@@ -101,7 +101,7 @@ class BarlineModel extends Model {
         }
 
         // Barlines followed by newlines do not have any right padding
-        var next = ctx.next();
+        var next = ctx.next(c => c.type !== C.Type.Print);
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (
             next.type === C.Type.NewLine || next.type === C.Type.NewPage);
 

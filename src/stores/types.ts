@@ -26,6 +26,7 @@ import NewlineModel = require("./newline");
 import NewlineView = require("../views/newline");
 import NewpageModel = require("./newpage");
 import PlaceholderModel = require("./placeholder");
+import PrintModel = require("./print");
 import SlurModel = require("./slur");
 import SlurView = require("../views/slur");
 import TimeSignatureModel = require("./timeSignature");
@@ -49,6 +50,7 @@ export function ensureRegistered() {
     registerType(C.Type.NewLine, NewlineModel, NewlineView.Component);
     registerType(C.Type.NewPage, NewpageModel, null);
     registerType(C.Type.Placeholder, PlaceholderModel, null);
+    registerType(C.Type.Print, PrintModel, null);
     registerType(C.Type.Slur, SlurModel, SlurView.Component);
     registerType(C.Type.TimeSignature, TimeSignatureModel, TimeSignatureView.Component);
     registerType(C.Type.Wedge, WedgeModel, WedgeView.Component);

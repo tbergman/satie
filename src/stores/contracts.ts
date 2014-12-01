@@ -403,7 +403,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         },
         staffLayouts: [],
         systemLayout: {
-            systemDistance: 121,
+            systemDistance: 131,
             systemDividers: null,
             systemMargins: {
                 leftMargin: 0,
@@ -508,6 +508,9 @@ export class Print implements MusicXML.Print {
     partAbbreviationDisplay: MusicXML.PartAbbreviationDisplay;
     pageLayout: MusicXML.PageLayout;
     systemLayout: MusicXML.SystemLayout;
+    /**
+     * DEPRECATED. Use staffLayouts
+     */
     staffSpacing: number;
     staffLayouts: number[];
     pageNumber: string;
@@ -553,7 +556,7 @@ export function getPrint(header: ScoreHeader): Print {
         pageNumber: "",
         partNameDisplay: null,
         staffLayouts: header.defaults.staffLayouts,
-        staffSpacing: null,
+        staffSpacing: null, // <-- DEPRECATED
         systemLayout: header.defaults.systemLayout
     });
 }
@@ -897,6 +900,8 @@ export enum RectifyXPolicy {
 }
 
 export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
+RectifyXPolicyFor[Type.Print] = RectifyXPolicy.Max;
+
 RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
 RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
 RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
@@ -1064,6 +1069,8 @@ export enum Source {
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
+    Print,              // C.MusicXML.Print
+
     EndMarker,
     NewPage,
     NewLine,

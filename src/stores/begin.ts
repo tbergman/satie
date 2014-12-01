@@ -10,6 +10,7 @@ import Model = require("./model");
 
 import C = require("./contracts");
 import Annotator = require("./annotator");
+import PrintModel = require("./print");
 
 import _ = require("lodash");
 
@@ -18,11 +19,35 @@ class BeginModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        if (!ctx.print) {
+            return ctx.insertPast(new PrintModel({}));
+        }
+
         // BeginModel must only appear at the beginning of a song.
-        if (ctx.idx !== 0) {
+        if (ctx.idx !== 1) {
             return ctx.eraseCurrent();
         }
 
+        /////////////////////////////////////////////////////////////
+
+        var print = ctx.print;
+
+        var systemMargins = print.systemLayout.systemMargins;
+        var pageMargins = print.pageMarginsFor(ctx.page);
+        var pageLayout = print.pageLayout;
+
+        ctx.fontSize = ctx.calcFontSize();
+        ctx.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
+        ctx.maxY = pageLayout.pageHeight - pageMargins.topMargin;
+        ctx.x = systemMargins.leftMargin + pageMargins.leftMargin;
+        ctx.y = pageMargins.topMargin + print.systemLayout.topSystemDistance;
+        ctx.lines[ctx.line].y = ctx.y;
+        ctx.lines[ctx.line].x = ctx.x;
+
+        /////////////////////////////////////////////////////////////
+
+        this.x = ctx.x;
+        this.y = ctx.y;
         this.width = ctx.maxX - ctx.x;
 
         /*

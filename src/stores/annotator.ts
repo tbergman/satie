@@ -39,7 +39,6 @@ export class Context implements C.MetreContext {
             if (layout.snapshot) {
                 _cpysnapshot(this, layout.snapshot);
             } else {
-                this._assignLayout();
                 this.lines = [this.captureLine()];
             }
         }
@@ -129,7 +128,9 @@ export class Context implements C.MetreContext {
     }
 
     get staveSpacing(): number {
-        return C.getPrint(this._layout.header).staffSpacing;
+        var print = C.getPrint(this._layout.header);
+        var staffSpacing = print.staffLayouts[this.currStaveIdx];
+        return isNaN(staffSpacing) ? print.staffSpacing : staffSpacing;
     }
 
     /**
@@ -919,34 +920,6 @@ export class Context implements C.MetreContext {
         }
     }
 
-    newline() {
-        this._assignLayout(IncrementLine.Yes);
-    }
-
-    private _assignLayout(incrementLine: IncrementLine = IncrementLine.No) {
-        var layout = this._layout;
-
-        if (incrementLine) {
-            ++this.line;
-        }
-
-        var print = C.getPrint(layout.header);
-        var systemMargins = print.systemLayout.systemMargins;
-        var pageMargins = print.pageMarginsFor(this.page);
-        var pageLayout = print.pageLayout;
-        var fontSize = this.calcFontSize();
-
-        this.fontSize = fontSize;
-        this.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
-        this.maxY = pageLayout.pageHeight - pageMargins.topMargin;
-        this.x = systemMargins.leftMargin + pageMargins.leftMargin;
-        if (!this.line) {
-            this.y = pageMargins.topMargin + print.systemLayout.topSystemDistance;
-        } else {
-            this.y += this.calcLineSpacing(print);
-        }
-    }
-
     calcFontSize(): number {
         var scaling = this._layout.header.defaults.scaling;
         return scaling.millimeters / scaling.tenths * 40;
@@ -996,16 +969,12 @@ export class Context implements C.MetreContext {
     _parts: Array<C.IPart>;
 
     _layout: ILayoutOpts;
+    print: C.Print;
 
     /**
      * @scope private
      */
     lines: Array<ILineSnapshot> = [];
-}
-
-enum IncrementLine {
-    No = 0,
-    Yes = 1
 }
 
 export enum SplicePolicy {
@@ -1047,7 +1016,6 @@ export interface ICustomAction {
 
 export interface ILayoutOpts {
     header: C.ScoreHeader;
-    isFirstLine?: boolean;
     snapshot?: ICompleteSnapshot;
 }
 

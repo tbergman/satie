@@ -86,8 +86,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
         var viewbox = "0 0 " + width10s + " " + height10s;
 
-        C.renderUtil.tenthsToMM
- 
         var vcHeight = 48 + ctx.staveSpacing * (ctx._parts.length - 1) / 2;
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return <!RenderEngine

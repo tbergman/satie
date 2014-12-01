@@ -28,21 +28,15 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
 
         // props of first and last notes.
         // The slope is usually decided based on the first and last notes.
-        var heightDeterminingCount: number = 0;
-
         var Xs: Array<number> = [];
         var Ys: Array<number> = [];
         var lines : Array<Array<number>> = [];
 
         _.each(spec.beam, (note, idx) => {
-            heightDeterminingCount = Math.max(heightDeterminingCount, note.count || 1);
-
             Xs.push(note.x);
             Ys.push(note.y);
             lines.push(note.lines);
         });
-
-        var heightFromCount = Math.max(0, (Math.log(heightDeterminingCount) / Math.log(2)) - 2) * 20;
 
         var direction = BeamGroupModel.decideDirection(lines[0] || [3], lines[lines.length - 1]);
 
@@ -54,7 +48,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
         var stemHeight1 = 35;
         var stemHeight2 = 35;
 
-        // Limit the slope to the range (-0.5, 0.5)
+        // Limit the slope to the range (-5, 5)
         if (m > 5) {
             stemHeight2 = stemHeight2 - direction*(m - 20)*(spec.beam.length - 1);
             m = 5;
@@ -66,7 +60,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
 
         var dynamicM = m / (Xs[Xs.length - 1] - Xs[0]);
 
-        var b = line1*10 + stemHeight1 + heightFromCount;
+        var b = line1*10 + stemHeight1;
 
         function getSH(direction: number, idx: number, line: number) {
             return (b * direction +

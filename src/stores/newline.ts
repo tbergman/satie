@@ -9,6 +9,7 @@ import Model = require("./model");
 import C = require("./contracts");
 import Annotator = require("./annotator");
 import NewPageModel = require("./newpage");
+import PrintModel = require("./print");
 import SMuFL = require("../util/SMuFL");
 
 import _ = require("lodash");
@@ -24,6 +25,10 @@ class NewlineModel extends Model {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        if (ctx.prev().priority !== C.Type.Print) {
+            return ctx.insertPast(new PrintModel({}));
+        }
+
         // Pages should not overflow.
         if (ctx.y + ctx.calcLineSpacing() > ctx.maxY) {
             return NewPageModel.createNewPage(ctx);
@@ -61,9 +66,24 @@ class NewlineModel extends Model {
         this.braceY = this.y;
         this.braceY2 = this.y + C.renderUtil.staveSeperation;
 
-        ////////////////////////////////////////
-        ctx.newline();
-        ////////////////////////////////////////
+        ctx.lines[ctx.line].y = ctx.y;
+        ctx.lines[ctx.line].x = ctx.x;
+
+        /////////////////////////////////////////////////////////////
+        var print = ctx.print;
+
+        var systemMargins = print.systemLayout.systemMargins;
+        var pageMargins = print.pageMarginsFor(ctx.page);
+        var pageLayout = print.pageLayout;
+
+        ctx.fontSize = ctx.calcFontSize();
+        ctx.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
+        ctx.maxY = pageLayout.pageHeight - pageMargins.topMargin;
+        ctx.x = systemMargins.leftMargin + pageMargins.leftMargin;
+        ctx.y += ctx.calcLineSpacing(print);
+
+        ++ctx.line;
+        /////////////////////////////////////////////////////////////
 
         if (ctx.clef) {
             // This is guarded in case another part called a RETRY_CURRENT.

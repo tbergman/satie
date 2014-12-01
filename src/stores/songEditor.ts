@@ -646,7 +646,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             this.dangerouslyMarkRenderDone();
             // don"t emit.
         });
-        // this._linesToUpdate[action.postData] = null; ?
     }
 
     "PUT /local/song/forceUpdate"(action: C.IFluxAction) {
@@ -677,20 +676,27 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
     "PUT /local/song/indent/increase"(action: C.IFluxAction) {
-        // MXFIX
-        // this.emit(HISTORY_EVENT);
-        // if (this.header.paper.indent < 50) {
-        //     this.header.paper.indent += 1;
-        // }
-        // this._everythingIsDirty();
+        this.emit(HISTORY_EVENT);
+        var firstPotentialPrint = this.parts[0].body[0];
+        if (firstPotentialPrint.priority === C.Type.Print) {
+            var firstPrint: C.MusicXML.Print = <any> firstPotentialPrint;
+            if (firstPrint.systemLayout.systemMargins.leftMargin < 500) {
+                firstPrint.systemLayout.systemMargins.leftMargin += 10;
+            }
+        }
+        this._everythingIsDirty();
     }
 
     "PUT /local/song/indent/decrease"(action: C.IFluxAction) {
-        // MXFIX
-        // if (this.header.paper.indent > -1) { // so it can go to -1
-        //     this.header.paper.indent -= 1;
-        // }
-        // this._everythingIsDirty();
+        this.emit(HISTORY_EVENT);
+        var firstPotentialPrint = this.parts[0].body[0];
+        if (firstPotentialPrint.priority === C.Type.Print) {
+            var firstPrint: C.MusicXML.Print = <any> firstPotentialPrint;
+            if (firstPrint.systemLayout.systemMargins.leftMargin > -10) { // It can go to -10
+                firstPrint.systemLayout.systemMargins.leftMargin -= 10;
+            }
+        }
+        this._everythingIsDirty();
     }
 
     "PUT /local/song/lineDirty"(action: C.IFluxAction) {
@@ -756,16 +762,18 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(HISTORY_EVENT);
         var scaling = this._header.defaults.scaling;
         var scale40 = scaling.millimeters/scaling.tenths*40;
-        var h = Math.round(C.renderUtil.mmToTenths(scale40,
-            this.header.defaults.systemLayout.systemDistance * 100)) / 100;
 
         for (var i = C.renderUtil.rastalToHeight.length - 1; i >= 0; --i) {
-            if (C.renderUtil.rastalToHeight[i] > h) {
+            if (C.renderUtil.rastalToHeight[i] > scale40) {
                 this.header.defaults.scaling.millimeters = C.renderUtil.rastalToHeight[i];
                 this.header.defaults.scaling.tenths = 40;
                 break;
             }
         }
+
+        var newScale40 = scaling.millimeters/scaling.tenths*40;
+        this._rescale(scale40/newScale40);
+
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
         this._everythingIsDirty();
@@ -775,19 +783,41 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(HISTORY_EVENT);
         var scaling = this._header.defaults.scaling;
         var scale40 = scaling.millimeters/scaling.tenths*40;
-        var h = Math.round(C.renderUtil.mmToTenths(scale40,
-            this.header.defaults.systemLayout.systemDistance * 100)) / 100;
 
         for (var i = 0; i < C.renderUtil.rastalToHeight.length; ++i) {
-            if (C.renderUtil.rastalToHeight[i] < h) {
+            if (C.renderUtil.rastalToHeight[i] < scale40) {
                 this.header.defaults.scaling.millimeters = C.renderUtil.rastalToHeight[i];
                 this.header.defaults.scaling.tenths = 40;
                 break;
             }
         }
+
+        var newScale40 = scaling.millimeters/scaling.tenths*40;
+        this._rescale(scale40/newScale40);
+
         this.dangerouslyMarkRendererDirty();
         this._ctx = null;
         this._everythingIsDirty();
+    }
+
+    /**
+     * Scales content that should be measured in mm rather than stave height by the ratio specified.
+     * IMPORTANT: Does not mark document dirty or reannotate. The caller should
+     * do this sometime after calling this.
+     *
+     * @param ratio old width : new width
+     */
+    private _rescale(ratio: number) {
+        this.header.defaults.pageLayout.pageHeight *= ratio;
+        this.header.defaults.pageLayout.pageWidth  *= ratio;
+        _.forEach(this.header.credits, credit => {
+            _.forEach(credit.creditWords, words => {
+                words.defaultX = isNaN(words.defaultX) ? null : words.defaultX * ratio;
+                words.defaultY = isNaN(words.defaultY) ? null : words.defaultY * ratio;
+                words.relativeX = isNaN(words.relativeX) ? null : words.relativeX * ratio;
+                words.relativeY = isNaN(words.relativeY) ? null : words.relativeY * ratio;
+            });
+        });
     }
 
     "PUT /local/tool"(action: C.IFluxAction) {
