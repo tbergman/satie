@@ -62,7 +62,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     key="_0"
                     x={this.props.x + (linesOffset[line] || 0)}
                     y={this.props.y}
-                    fontSize={this.props.fontSize}
                     line={line}
                     stroke={this.props.strokes[idx]}
                     notehead={this.props.notehead} />
@@ -73,7 +72,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     radius={2.4}
                     x={this.props.x}
                     y={this.props.y}
-                    fontSize={this.props.fontSize}
                     line={line} />) : null}
                 {this.props.hasStem && <!NoteStem.Component
                     x={this.props.x}
@@ -93,7 +91,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     stemHeight={this.getStemHeight()}
                     stemWidth={1.4}
                     flag={this.props.flag}
-                    fontSize={this.props.fontSize}
                     notehead={this.props.notehead}
                     direction={direction} />}
                 {this.props.children && _.map(this.props.children,
@@ -105,7 +102,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                         component.props.y = this.props.y;
                         component.props.idx = idx;
                         component.props.notehead = this.props.notehead;
-                        component.props.fontSize = this.props.fontSize;
                         return component;
                     }
                 )}
@@ -163,23 +159,22 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
     getStemHeight() {
         if (this.props.stemHeight) {
-            console.warn("Stem height specified...");
             return this.props.stemHeight;
         }
 
-        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4)*40 / 2;
+        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4)*10 / 2;
 
-        var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 40;
+        var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 10;
         var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
         var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
 
         var start = this.getHeightDeterminingLine();
         var idealExtreme = start + this.direction()*idealStemHeight;
 
-        if (idealExtreme >= 260) {
-            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 260));
-        } else if (idealExtreme <= -60) {
-            return Math.max(minStemHeight, idealStemHeight - (-60 - idealExtreme));
+        if (idealExtreme >= 65) {
+            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
+        } else if (idealExtreme <= -15) {
+            return Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
         }
 
         return 35;
@@ -263,7 +258,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     x={this.props.x - (glyphOffset || this.accidentalSpacing())}
                     y={this.props.y}
                     stroke={this.props.accStrokes[idx]}
-                    fontSize={this.props.fontSize}
                     line={l[idx]}
                     key={"acc_" + idx}
                     idx={idx}
@@ -282,7 +276,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         var fullWidth = this.props.tieTo - this.props.x;
         return <!Slur.Component
             key={"tie_0"}
-            fontSize={this.props.fontSize}
             spec={{
                 direction: -this.direction(),
                 x: this.props.x + fullWidth*5 + 6,
@@ -293,8 +286,8 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
 };
 
-var IDEAL_STEM_HEIGHT = 140;
-var MIN_STEM_HEIGHT = 100;
+var IDEAL_STEM_HEIGHT = 35;
+var MIN_STEM_HEIGHT = 25;
 
 module Note {
     "use strict";
@@ -319,7 +312,6 @@ module Note {
         dotted?: number;
         idx?: number;
         flag?: string;
-        fontSize?: number;
         hasStem?: boolean;
         heightDeterminingCount?: number;
         key?: string;

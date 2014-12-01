@@ -40,6 +40,7 @@ export class Context implements C.MetreContext {
                 _cpysnapshot(this, layout.snapshot);
             } else {
                 this._assignLayout();
+                this.lines = [this.captureLine()];
             }
         }
     }
@@ -944,8 +945,6 @@ export class Context implements C.MetreContext {
         } else {
             this.y += this.calcLineSpacing(print);
         }
-        this.lines = [this.captureLine()];
-        console.log("START AT ", this.x, this.y);
     }
 
     calcFontSize(): number {
@@ -953,7 +952,7 @@ export class Context implements C.MetreContext {
         return scaling.millimeters / scaling.tenths * 40;
     }
     calcLineSpacing(print: C.Print = C.getPrint(this._layout.header)): number {
-        return C.renderUtil.mmToTenths(this.calcFontSize(), print.systemLayout.systemDistance);
+        return print.systemLayout.systemDistance;
     }
 
     private _assertAligned() {

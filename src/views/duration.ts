@@ -33,7 +33,6 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
             <!NoteNotation.Component
                 idx={1}
                 direction={props.direction}
-                fontSize={props.fontSize}
                 notation={m}
                 key={idx}
                 line={3}
@@ -53,7 +52,6 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     line={[3]}
                     key={spec.key}
                     isNote={true /* In this context, we mean not a wrapper. */}
-                    fontSize={props.fontSize}
                     notehead={spec.restHead}
                     spacing={spec.spacing}
                     stroke={spec.color}
@@ -72,7 +70,6 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     dotted={spec.displayDots}
                     heightDeterminingCount={spec.count}
                     flag={spec.flag}
-                    fontSize={props.fontSize}
                     hasStem={spec.hasStem}
                     isNote={true}
                     key={spec.key}
@@ -106,7 +103,6 @@ module Duration {
     export interface IProps {
         key: number;
         spec: DurationModel;
-        fontSize: number;
         direction: number;
         stemHeight: number;
     }

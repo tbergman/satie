@@ -42,7 +42,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
             lines.push(note.lines);
         });
 
-        var heightFromCount = Math.max(0, (Math.log(heightDeterminingCount) / Math.log(2)) - 2) / 2;
+        var heightFromCount = Math.max(0, (Math.log(heightDeterminingCount) / Math.log(2)) - 2) * 20;
 
         var direction = BeamGroupModel.decideDirection(lines[0] || [3], lines[lines.length - 1]);
 
@@ -50,27 +50,27 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
         var line2 = getExtremeLine(lines[lines.length - 1] || 3, direction);
 
         // y = m*x + b
-        var m = spec.beam.length ? (line2 - line1)/(spec.beam.length - 1) : 0;
-        var stemHeight1 = 3.5;
-        var stemHeight2 = 3.5;
+        var m = spec.beam.length ? 10*(line2 - line1)/(spec.beam.length - 1) : 0;
+        var stemHeight1 = 35;
+        var stemHeight2 = 35;
 
         // Limit the slope to the range (-0.5, 0.5)
-        if (m > 0.5) {
-            stemHeight2 = stemHeight2 - direction*(m - 0.5)*(spec.beam.length - 1);
-            m = 0.5;
+        if (m > 5) {
+            stemHeight2 = stemHeight2 - direction*(m - 20)*(spec.beam.length - 1);
+            m = 5;
         }
-        if (m < -0.5) {
-            stemHeight2 = stemHeight2 - direction*(m + 0.5)*(spec.beam.length - 1);
-            m = -0.5;
+        if (m < -5) {
+            stemHeight2 = stemHeight2 - direction*(m + 20)*(spec.beam.length - 1);
+            m = -5;
         }
 
         var dynamicM = m / (Xs[Xs.length - 1] - Xs[0]);
 
-        var b = line1 + stemHeight1 + heightFromCount;
+        var b = line1*10 + stemHeight1 + heightFromCount;
 
         function getSH(direction: number, idx: number, line: number) {
             return (b * direction +
-                (direction === 1 ? 0 : 6.9) + dynamicM * (Xs[idx] - Xs[0]) * direction) - direction * line;
+                (direction === 1 ? 0 : 69) + dynamicM * (Xs[idx] - Xs[0]) * direction) - direction * line * 10;
         }
 
         // When the slope causes near-collisions, eliminate the slope.
@@ -78,8 +78,8 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
             // Using -direction means that we'll be finding the closest note to the
             // beam. This will help us avoid collisions.
             var sh = getSH(direction, idx, getExtremeLine(note.lines, -direction));
-            if (sh < 3) {
-                b += direction*(3 - sh);
+            if (sh < 30) {
+                b += direction*(30 - sh);
                 m = 0;
             }
 
@@ -104,12 +104,11 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
                 direction: direction,
             	stemHeight: getSH(direction, idx, getExtremeLine(lines[idx], direction)),
                 key: null,
-                spec: undefined,
-                fontSize: undefined
+                spec: undefined
             });
         });
 
-        var children = spec.generate(this.props.fontSize, durationProps);
+        var children = spec.generate(durationProps);
 
         return <!Group.Component>
             <!Beam.Component
@@ -118,13 +117,11 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
                 variableX={spec.variableBeams ? Xs : null}
                 direction={direction}
                 key={"beam"}
-                fontSize={this.props.fontSize}
                 line1={parseFloat("" + line1) +
-                    direction * getSH(direction, 0, line1)}
+                    direction * getSH(direction, 0, line1)/10}
                 line2={parseFloat("" + line2) +
-                    direction * getSH(direction, spec.beam.length - 1, line2)}
-                scaleFactor={this.props.fontSize}
-                stemWidth={0.035}
+                    direction * getSH(direction, spec.beam.length - 1, line2)/10}
+                stemWidth={1.4}
                 stroke={strokeEnabled && strokeColor}
                 tuplet={spec.tuplet}
                 tupletsTemporary={spec.tupletsTemporary}
@@ -148,7 +145,6 @@ module BeamGroup {
     export interface IProps {
         key: number;
         spec: BeamGroupModel;
-        fontSize: number;
     }
 }
 

@@ -24,7 +24,6 @@ if (typeof window !== "undefined") {
 class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
     renderSVG() {
         var px = this.props.x;
-
         var py = this.props.y;
 
         if (this.props.glyphName.substr(0, 2) === "fa") {
@@ -36,7 +35,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 fillOpacity: this.props.opacity,
                 strokeOpacity: this.props.opacity,
                 transform: this.props.transform,
-                fontSize: 40,
+                style: { fontSize: this.props.scale ? this.props.scale + "em" : undefined },
                 className: "fa"
             }, this.props.code);
         } else {
@@ -118,7 +117,10 @@ module Glyph {
         y: number;
         opacity?: number;
         code?: string;
-        scale?: number;
+        /**
+         * Only for FA glyphs for now
+         */
+        scale?: number
     }
 }
 

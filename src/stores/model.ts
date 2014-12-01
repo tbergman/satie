@@ -94,7 +94,7 @@ class Model {
         return true;
     }
 
-    render(fontSize: number, options?: any): React.ReactComponentElement<any> {
+    render(options?: any): React.ReactComponentElement<any> {
         throw "Not implemented";
     }
 
@@ -121,9 +121,9 @@ class Model {
     }
 
     // FIXME: key is now a string
-    static setView = function (View: (opts: { key: number; spec: Model; fontSize: number }) => any) {
-        this.prototype.render = function (fontSize: number, options: any) {
-            var props = assign({}, options, {key: this.key, spec: this, fontSize: fontSize});
+    static setView = function (View: (opts: { key: number; spec: Model;}) => any) {
+        this.prototype.render = function (options: any) {
+            var props = assign({}, options, {key: this.key, spec: this});
             return React.createElement(View, props);
         };
     };

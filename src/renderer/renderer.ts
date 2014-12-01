@@ -470,19 +470,19 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             var ctx = this.getCtx();
 
             dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._parts.length - 1) * info.visualIdx;
-            dynLine = Math.round((dynY - mouse.y)/0.125)/2 + 3;
+            dynLine = Math.round((dynY - mouse.y)/5)/2 + 3;
             var body = this.props.parts[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
                     j < body.length && body[info.musicLine].type !== C.Type.NewPage; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
-                if (Math.abs(item.y - dynY) < 0.001) {
+                if (Math.abs(item.y - dynY) < 0.04) {
                     if ((item.type === C.Type.KeySignature ||
                                 item.type === C.Type.TimeSignature ||
                                 item.type === C.Type.Clef ||
                                 item.type === C.Type.Duration) &&
-                            Math.abs(dynX - item.x + item.cachedSpacing*2) < 0.27 + item.cachedSpacing*4 +
-                                (item.isNote ? (item.note.dots||0)*0.2 : 0)) {
+                            Math.abs(dynX - item.x + item.cachedSpacing*2) < 10.8 + item.cachedSpacing*4 +
+                                (item.isNote ? (item.note.dots||0)*8 : 0)) {
                         dynX = item.x;
                         foundIdx = j;
                         foundObj = item;
@@ -570,7 +570,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             ++visualIdx;
 
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSpacing * (ctx._parts.length - 1) - my) < 1.01) {
+                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSpacing * (ctx._parts.length - 1) - my) < 55) {
                     return {
                         musicLine: i,
                         partIdx: h,
@@ -1043,7 +1043,6 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty ||
                 nextProps.parts !== this.props.parts;
-        var heightChanged = nextProps.staveHeight !== this.props.staveHeight;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
@@ -1059,7 +1058,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
                 });
             }
         }
-        if (songDirty || heightChanged || lineDirty || this.dirty) {
+        if (songDirty || lineDirty || this.dirty) {
             // Throttle updating, unless we're on the active line, or if we're
             // completely replacing the song.
             if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
@@ -1115,7 +1114,6 @@ interface ILineProps {
     h: number;
     idx: number;
     isCurrent: boolean;
-    staveHeight: number;
     parts: Array<C.IPart>;
     store: C.ISongEditor;
 }

@@ -127,7 +127,7 @@ class BarlineModel extends Model {
 
         // Set information from context that the view needs
         // this.onPianoStaff = true; MXFIX
-        ctx.x += (this.newlineNext ? 0 : 3) + this.annotatedAccidentalSpacing;
+        ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
         ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.keySignature);

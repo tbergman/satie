@@ -434,7 +434,6 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
 
     // Convienience
     constructor(spec: ScoreHeader) {
-        console.log(spec);
         for(var key in spec) {
             if (spec.hasOwnProperty(key) && typeof key === "string" && !!(<any>spec)[key]) {
                 (<any>this)[key] = (<any>spec)[key];

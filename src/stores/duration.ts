@@ -324,7 +324,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
-        var i: number;
         var str: string;
         if (this.chord.length === 1) {
             str = this._lyPitch(this.chord[0]);

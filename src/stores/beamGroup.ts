@@ -136,8 +136,8 @@ class BeamGroupModel extends Model {
     /**
      * Renders the beam
      */
-    generate(fontSize: number, options: Array<Duration.IProps>): Array<React.ReactElement<any, any>> {
-        return <any> _.map(this.beam, (b, idx) => b.render(fontSize, options[idx]));
+    generate(options: Array<Duration.IProps>): Array<React.ReactElement<any, any>> {
+        return <any> _.map(this.beam, (b, idx) => b.render(options[idx]));
     }
 
     toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {

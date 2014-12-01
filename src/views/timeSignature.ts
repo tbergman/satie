@@ -48,7 +48,7 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
                     stroke={spec.color}
                     fontSize={this.props.fontSize}
                     x={spec.x + this.numOffset()}
-                    y={spec.y - 1/4}>
+                    y={spec.y - 10}>
                 {ts.beats}
             </TimeSignatureNumber.Component>
             <!TimeSignatureNumber.Component
@@ -56,7 +56,7 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
                     stroke={spec.color}
                     fontSize={this.props.fontSize}
                     x={spec.x + this.denOffset()}
-                    y={spec.y + 1/4}>
+                    y={spec.y + 10}>
                 {ts.beatType}
             </TimeSignatureNumber.Component>
         </Group.Component>;
@@ -66,7 +66,7 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
         // XXX: crazy hack. fix.
         var ts = this.props.spec.displayTimeSignature;
         if (ts.beats < 10 && ts.beatType >= 10) {
-            return 1/8;
+            return 5;
         }
         return 0;
     }
@@ -74,7 +74,7 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
         // crazy hack. fix.
         var ts = this.props.spec.displayTimeSignature;
         if (ts.beatType < 10 && ts.beats >= 10) {
-            return 1/8;
+            return 5;
         }
         return 0;
     }
@@ -97,7 +97,7 @@ class TimeSignatureNumber extends TypedReact.Component<TimeSignatureNumber.IProp
         return <!Group.Component>
             {_.map((this.props.children + "").split(""), (c, i) => <!Glyph.Component
                 key={"ts-" + i}
-                x={this.props.x + i/4}
+                x={this.props.x + i*10}
                 y={this.props.y}
                 fill={this.props.stroke}
                 fontSize={this.props.fontSize}

@@ -28,7 +28,6 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 x={this.props.x + this.props.spacing}
                 y={this.props.y}
                 fill={this.props.stroke}
-                fontSize={this.props.fontSize}
                 glyphName={this.props.notehead} />
             {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
                 idx={idx}
@@ -37,7 +36,6 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 stroke={this.props.stroke}
                 x={this.props.x + this.props.spacing}
                 y={this.props.y}
-                fontSize={this.props.fontSize}
                 line={3} />): null}
             {this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = this.direction();
@@ -46,7 +44,6 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 element.props.y = this.props.y;
                 element.props.idx = idx;
                 element.props.notehead = this.props.notehead;
-                element.props.fontSize = this.props.fontSize;
                 return element;
             })}
         </Group.Component>;
@@ -69,7 +66,6 @@ module Rest {
     export interface IProps {
         children: Array<NoteNotation>;
         dotted: number;
-        fontSize: number;
         line: Array<number>;
         notehead: string;
         spacing: number;

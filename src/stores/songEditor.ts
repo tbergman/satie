@@ -1308,7 +1308,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
         var song = SongEditorStore.parse(src);
         this._header = song.header;
-        console.log(this._header);
         this._parts = song.parts;
 
         for (var i = 0; i < this._parts.length; ++i) {

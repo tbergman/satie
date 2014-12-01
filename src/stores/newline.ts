@@ -61,7 +61,10 @@ class NewlineModel extends Model {
         this.braceY = this.y;
         this.braceY2 = this.y + C.renderUtil.staveSeperation;
 
+        ////////////////////////////////////////
         ctx.newline();
+        ////////////////////////////////////////
+
         if (ctx.clef) {
             // This is guarded in case another part called a RETRY_CURRENT.
             // (Note: This is shady.)
@@ -80,14 +83,10 @@ class NewlineModel extends Model {
         this.width = ctx.maxX - ctx.x;
 
         /*
-         * 0.2 is the padding between beginning of part and the clef.
+         * 8 is the padding between beginning of part and the clef.
          * This value should also be changed in BeginModel.
          */
-        ctx.x += 0.2;
-
-        ////////////////////////////////////////
-        ++ctx.line;
-        ////////////////////////////////////////
+        ctx.x += 8;
 
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
@@ -287,7 +286,7 @@ class NewlineModel extends Model {
                 lw = ctx.maxX - ctx.curr.x;
                 nw = lw/n;
             } else {
-                var weight = C.renderUtil.sigmoid((nw - ctx.maxX/2)/20)*2/3;
+                var weight = C.renderUtil.sigmoid((nw - ctx.maxX/80)/20)*2/3;
                 nw = (1 - weight)*nw;
                 lw = nw * n;
             }

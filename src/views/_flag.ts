@@ -19,7 +19,6 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
     render() {
         var fontOffset = this.getFontOffset(this.glyphName());
         var noteOffset = this.getFontOffset();
-        console.log(this.direction(), this.props.stemHeight, noteOffset[1], this.props.line);
         return <!Glyph.Component
             x={this.props.x +
                 fontOffset[0]*10 +

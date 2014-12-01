@@ -31,11 +31,11 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
         if (this.isLocked() && global.SongEditor.tool instanceof ClefTool) {
             return <!Group.Component>
                 <!Glyph.Component
-                    x={x + 2.5}
-                    y={spec.y - 9.8}
+                    x={x + 10}
+                    y={spec.y - 39.2}
                     opacity={0.2}
                     fill={"#000000"}
-                    scale={0.5}
+                    scale={3.5}
                     glyphName={"fa-lock"}
                     code={"\uF023" /*fa-lock*/} />
                 {clef}

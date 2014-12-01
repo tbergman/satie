@@ -24,7 +24,6 @@ import getFontOffset = require("./_getFontOffset");
  */
 class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMixin {
     renderSVG() {
-        var f = this.props.fontSize;
         if (this.props.beams === C.BeamCount.Variable) {
             var xLow = this._getX1();
             var xHi = this._getX2();
@@ -42,20 +41,20 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
                                 this.props.variableBeams[idx + 1] === beams) {
                                 return null;
                             }
-                            x1 = this._withXOffset((this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) / 4);
+                            x1 = this._withXOffset((this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) * 10);
                         } else {
                             x1 = this._withXOffset(this.props.variableX[idx - 1]);
                         }
                         return React.DOM.polygon({
                             key: idx + "_" + beam,
-                            points: f * x1 + "," +
-                            f * this._getYVar(0, beam, (x1 - xLow)/(xHi - xLow)) + " " +
-                            f * x2 + "," +
-                            f * this._getYVar(0, beam, (x2 - xLow)/(xHi - xLow)) + " " +
-                            f * x2 + "," +
-                            f * this._getYVar(1, beam, (x2 - xLow)/(xHi - xLow)) + " " +
-                            f * x1 + "," +
-                            f * this._getYVar(1, beam, (x1 - xLow)/(xHi - xLow)),
+                            points: x1 + "," +
+                            this._getYVar(0, beam, (x1 - xLow)/(xHi - xLow)) + " " +
+                            x2 + "," +
+                            this._getYVar(0, beam, (x2 - xLow)/(xHi - xLow)) + " " +
+                            x2 + "," +
+                            this._getYVar(1, beam, (x2 - xLow)/(xHi - xLow)) + " " +
+                            x1 + "," +
+                            this._getYVar(1, beam, (x1 - xLow)/(xHi - xLow)),
                             stroke: this.props.stroke,
                             fill: this.props.stroke,
                             strokeWidth: 0
@@ -69,10 +68,10 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
                 {_.times(this.props.beams, idx =>
                     React.DOM.polygon({
                         key: "" + idx,
-                        points: f*this._getX1() + "," + f*this._getY1(0, idx) + " " +
-                            f*this._getX2() + "," + f*this._getY2(0, idx) + " " +
-                            f*this._getX2() + "," + f*this._getY2(1, idx) + " " +
-                            f*this._getX1() + "," + f*this._getY1(1, idx),
+                        points: this._getX1() + "," + this._getY1(0, idx) + " " +
+                            this._getX2() + "," + this._getY2(0, idx) + " " +
+                            this._getX2() + "," + this._getY2(1, idx) + " " +
+                            this._getX1() + "," + this._getY1(1, idx),
                         stroke: this.props.stroke,
                         fill: this.props.stroke,
                         strokeWidth: 0})
@@ -138,7 +137,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
         // Note that we use notehadBlack regardless of the notehead.
         // This keeps spacing consistent, even in beam groups with rests.
         return x +
-            this.getFontOffset("noteheadBlack")[0]/4 +
+            this.getFontOffset("noteheadBlack")[0]*10 +
             this.getLineXOffset();
     }
 
@@ -155,10 +154,10 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
         // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
-            (this.props.line1 - 3)/4 +
-            this.direction()*idx*0.88/4 + // MXFIX
-            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
+            this.direction()*this.getFontOffset("noteheadBlack")[1]*10 -
+            (this.props.line1 - 3)*10 +
+            this.direction()*idx*8.8 +
+            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
     }
 
     private _getY2(incl: number, idx: number) {
@@ -166,10 +165,10 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
         // This keeps spacing consistent, even in beam groups with rests.
         return this.props.y -
             this._getYOffset() -
-            this.direction()*this.getFontOffset("noteheadBlack")[1]/4 -
-            (this.props.line2 - 3)/4 +
-            this.direction()*idx*0.88/4 + // MXFIX
-            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness/4);
+            this.direction()*this.getFontOffset("noteheadBlack")[1]*10 -
+            (this.props.line2 - 3)*10 +
+            this.direction()*idx*8.8 +
+            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
     }
 
     private _getYVar(incl: number, idx: number, percent: number) {
@@ -184,9 +183,9 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
      */
     private _getYOffset() {
         if (this.direction() === -1) {
-            return 0.025;
+            return 1;
         }
-        return 0.005;
+        return 0.2;
     }
 
     /**
@@ -199,14 +198,13 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
             var offset = this._getX2() - this._getX1();
             var y = (this._getY1(1, this.props.beams - 1) +
                         this._getY2(1, this.props.beams - 1))/2 -
-                    (0.1 + 0.2*this.props.beams)*this.direction() + 0.13;
+                    (1 + 2*this.props.beams)*this.direction() + 13;
 
             // XXX: all tuplets are drawn as triplets.
             return <!Glyph.Component
                 "selection-info"="beamTuplet"
                 fill={this.props.tupletsTemporary ? "#A5A5A5" : "#000000"}
                 glyphName="tuplet3"
-                fontSize={this.props.fontSize}
                 x={this.props.x + offset/2}
                 y={y} />;
         }
@@ -222,7 +220,6 @@ module Beam {
     export interface IProps {
         beams: C.BeamCount;
         direction: number;
-        fontSize: number;
         line1: number;
         line2: number;
         stemWidth: number;
