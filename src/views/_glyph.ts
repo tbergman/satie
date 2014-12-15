@@ -7,22 +7,19 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import React = require("react");
-import TypedReact = require("typed-react");
+import React            = require("react");
+import TypedReact       = require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import RenderableMixin = require("./_renderable");
-import SMuFL = require("../util/SMuFL");
-var Victoria = require("../renderer/victoria/victoria");
-import assert = require("assert");
-
-var VGlyph = Victoria.VGlyph;
+import assert           = require("assert");
+import C                = require("../stores/contracts");
 
 if (typeof window !== "undefined") {
     require("./_glyph.less");
 }
 
 class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
-    renderSVG() {
+    render() {
         var px = this.props.x;
         var py = this.props.y;
 
@@ -51,7 +48,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 transform: this.props.transform,
                 fontSize: 40,
                 className: "mn_"},
-            SMuFL.getGlyphCode(this.props.glyphName)
+            C.SMuFL.getGlyphCode(this.props.glyphName)
         );
 
         if (!this.props["selection-info"] || global.isChoreServer) {
@@ -79,34 +76,12 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 );
         }
     }
-
-    renderGL() {
-        var fill = this.props.fill;
-        if (fill === "black" || !fill) {
-            fill = "#000000";
-        }
-
-        return VGlyph({
-            x: this.props.x,
-            y: this.props.y,
-            fill: fill,
-            glyphName: this.props.glyphName});
-    }
-
-    shouldComponentUpdate(nextProps: Glyph.IProps) {
-        return this.props.x !== nextProps.x ||
-            this.props.y !== nextProps.y ||
-            this.props.fill !== nextProps.fill ||
-            this.props.glyphName !== nextProps.glyphName;
-    }
 }
-
-Glyph.prototype.render = RenderableMixin.prototype.render;
 
 module Glyph {
     "use strict";
 
-    export var Component = TypedReact.createClass(React.createClass, Glyph);
+    export var Component = TypedReact.createClass(Glyph, [PureRenderMixin]);
 
     export interface IProps {
         fill: string;

@@ -17,14 +17,11 @@ import C = require("../stores/contracts");
 import Note = require("./_note");
 import SlurGroupModel = require("../stores/slur");
 import getFontOffset = require("./_getFontOffset");
-import hash = require("../util/hash");
 
 var getExtremeLine = Note.getExtremeLine;
 
 class Slur extends TypedReact.Component<Slur.IProps, {}> {
     render() {
-        this.hash = this.getHash(this.props.spec);
-
         var x2: number = this.getX2();
         var x1: number = this.getX1();
         var y2: number = this.getY2(0);
@@ -70,23 +67,9 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
             x6={0.95619358 / 1.23897534 * x2mx1 + x1}
             y6={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
 
-            fontSizeFactor={this.props.fontSize}
             fill="#000000"
             strokeWidth={0.03}
             stroke="#000000" />
-    }
-
-    shouldComponentUpdate(nextProps: Slur.IProps) {
-        return this.getHash(nextProps.spec) !== this.hash;
-    }
-    getHash(spec: SlurGroupModel) {
-        return hash(
-            ("" + spec.lines1) +
-            ("" + spec.lines2) +
-            ("" + spec.width) +
-            ("" + spec.direction) +
-            ("" + spec.x) +
-            ("" + spec.y));
     }
 
     getYOffset() {
@@ -115,17 +98,21 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
             this.getYOffset() -
             (getExtremeLine(this.props.spec.lines2, -this.direction) - 3)/4;
     }
-    hash: number = NaN;
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 }
 
 module Slur {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Slur);
+    export var Component = TypedReact.createClass(Slur);
 
     export interface IProps {
-        key: number;
         spec: SlurGroupModel;
-        fontSize: number;
     }
 }
 

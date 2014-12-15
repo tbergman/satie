@@ -11,16 +11,17 @@
 /// <reference path="../../references/lodash.d.ts" />
 /// <reference path="../../references/node.d.ts" />
 
-import assert = require("assert");
-import _ = require("lodash");
-var assign = require("react/lib/Object.assign");
+import        assert     = require("assert");
+var           assign     = require("react/lib/Object.assign");
+import        _          = require("lodash");
 
-import Annotator = require("./annotator");
-import Model = require("./model");
+import        Annotator  = require("./annotator");
+import        Model      = require("./model");
 
+export import MusicXML   = require("./musicxml");
+export import SMuFL      = require("../util/SMuFL");
 export import renderUtil = require("../util/renderUtil");
-export import MusicXML = require("./musicxml");
-export import SMuFL = require("../util/SMuFL");
+export import strHash    = require("../util/hash");
 
 /** 
  * Represents the client's policy for communicating changes with each other and saving them
@@ -30,18 +31,18 @@ export enum ApiRole {
     /** 
      * All changes are cached until the client can reconnect to the relay.
      */
-    Offline = 0,
+    Offline             = 0,
 
     /** 
      * In charged of accepting or rejecting changes from peers, PUTs official version to
      * the server.
      */
-    Primary = 1,
+    Primary             = 1,
 
     /** 
      * Sends all requests to PRIMARY peer via the relay. Does not save.
      */
-    Secondary = 2
+    Secondary           = 2
 }
 
 /** 
@@ -51,31 +52,16 @@ export enum ApiRole {
  * b has sharp.
  */
 export interface IAccidentals {
-    [key: string]: number
-}
-
-/** 
- * Used to generate Model.intersects.
- */
-export interface IActiveIntersection {
-    /** 
-     * A model that is in the time frame being considered.
-     */
-    obj: Model;
-
-    /** 
-     * The beat when the Model should be removed.
-     */
-    expires: number;
+    [key: string]:      number
 }
 
 export interface IAnnotationResult {
-    cursor: IVisualCursor;
-    operations: number;
-    resetY: boolean;
-    skip: boolean;
-    success: boolean;
-    patch: Array<string>;
+    cursor:             IVisualCursor;
+    operations:         number;
+    resetY:             boolean;
+    skip:               boolean;
+    success:            boolean;
+    patch:              string[];
 }
 
 /** 
@@ -84,12 +70,12 @@ export interface IAnnotationResult {
  * @deprecated
  */
 export interface IAnnotationOpts {
-    cursor?: IVisualCursor;
-    cursorBar?: number;
-    cursorBeat?: number;
-    cursorStave?: number;
-    pointerData?: IPointerData;
-    toolFn?: (obj: Model, ctx: Annotator.Context) => IterationStatus;
+    cursor?:            IVisualCursor;
+    cursorBar?:         number;
+    cursorBeat?:        number;
+    cursorStave?:       number;
+    pointerData?:       IPointerData;
+    toolFn?:            (obj: Model, ctx: Annotator.Context) => IterationStatus;
 };
 
 /** 
@@ -97,32 +83,31 @@ export interface IAnnotationOpts {
  * that is either a number or variable.
  */
 export enum BeamCount {
-    Variable = -1,
-    One = 1,
-    Two = 2,
-    Three = 3,
-    Four = 4,
-    Five = 5,
-    Six = 6,
-    Seven = 7,
-    Eight = 8,
-    Nine = 9
-}
-
-export interface IBody extends Array<Model> {
+    Variable            = -1,
+    One                 = 1,
+    Two                 = 2,
+    Three               = 3,
+    Four                = 4,
+    Five                = 5,
+    Six                 = 6,
+    Seven               = 7,
+    Eight               = 8,
+    Nine                = 9
 }
 
 /** 
  * Standard clefs or sets of clefs.
+ *
+ * TODO(jnetterf): Deprecate this in favour of MusicXML.
  */
 export enum Clef {
-    Treble,
-    Bass,
-    Alto,
-    Tenor,
-    Piano,
-    Choral,
-    TrebleDrums,
+    Treble              = 0,
+    Bass                = 1,
+    Alto                = 2,
+    Tenor               = 3,
+    Piano               = 4,
+    Choral              = 5,
+    TrebleDrums         = 6,
 }
 
 /** 
@@ -134,8 +119,8 @@ export interface IDispatcher {
      * @param {function} callback The callback to be registered.
      * @return {number} The index of the callback within the _callbacks array.
      */
-    register: (callback: (payload: any) => boolean) => void;
-    unregister: (callback: (payload: any) => boolean) => void;
+    register:           (callback: (payload: any) => boolean) => void;
+    unregister:         (callback: (payload: any) => boolean) => void;
 
     /** 
      * Dispatch a Flux-style event.
@@ -145,13 +130,13 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
-    DELETE: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
-    PATCH: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
-    PUT: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
-    POST: (url: string, p?: any, cb?: () => void, nested?: boolean) => Promise<void>;
+    GET:                (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+    DELETE:             (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+    PATCH:              (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+    PUT:                (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+    POST:               (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
 
-    _events: string;
+    _events:            string;
 }
 
 /** 
@@ -160,13 +145,13 @@ export interface IDispatcher {
  */
 export class DispatcherRedirect {
     constructor(verb: string, newUrl: string) {
-        this.newUrl = newUrl;
-        this.verb = verb;
+        this.newUrl     = newUrl;
+        this.verb       = verb;
     }
 
-    newUrl: string;
-    verb: string;
-    postData: any;
+    newUrl:             string;
+    verb:               string;
+    postData:           any;
 }
 
 /** 
@@ -181,40 +166,31 @@ export interface IDuration {
      * 
      * A quarter note is '4', a half note is '8', ...
      */
-    count: number;
+    count:              number;
 
     /** 
      * The number of displayed dots, or null.
      */
-    dots: number;
+    dots:               number;
 
     /** 
      * The number of dots to be displayed, if different from dots.
      */
-    displayDots?: number;
+    displayDots?:       number;
 
     /** 
      * The tuplet to be displayed, if different from tuplet.
      */
-    displayTuplet?: ITuplet;
+    displayTuplet?:     ITuplet;
 
-    /** 
-     * Returns the number of beats in the duration, between 0 and the
-     * number of beats in the timeSignature.
-     * 
-     * @param ctx with a valid timeSignature, for computing beats.
-     * @param inheritedCount the count to use if duration's count is null.
-     */
-    getBeats?: (ctx: MetreContext, inheritedCount?: number) => number;
+    hasFlagOrBeam?:     boolean;
 
-    hasFlagOrBeam?: boolean;
-
-    temporary?: boolean;
+    temporary?:         boolean;
 
     /** 
      * The displayed tuplet, or null.
      */
-    tuplet: ITuplet;
+    tuplet:             ITuplet;
 }
 
 /** 
@@ -228,17 +204,17 @@ export interface IDurationSpec {
      * 
      * A quarter note is '4', a half note is '8', ...
      */
-    count: number;
+    count:              number;
 
     /** 
      * The number of displayed dots, or null.
      */
-    dots?: number;
+    dots?:              number;
 
     /** 
      * The displayed tuplet, or null.
      */
-    tuplet?: ITuplet
+    tuplet?:            ITuplet
 }
 
 /** 
@@ -248,45 +224,48 @@ export interface IError {
     /** 
      * A human-readable explanation of what went wrong.
      */
-    type: string;
+    type:               string;
 
     /** 
      * An absolute URL (without the hostname) that explains the error.
      */
-    redirectTo: string;
+    redirectTo:         string;
 };
 
 /** 
  * A request to the Ripieno server and/or internal store.
  */
-export interface IFluxAction {
+export interface IFluxAction<PostData, Response> {
     /** 
-     * The path and verb of the resource, such as "PUT /local/selection"
+     * The path and verb of the resource, such as "PUT /webapp/selection"
      */
-    description: string;
+    description:        string;
 
     /** 
      * The parsed JSON response from the server, if this is a server request.
      */
-    response: any;
+    response:           Response;
 
     /** 
-     * For requests like "PUT /foo/bar/_qui", "qui".
+     * For URIs containing '/_[a-zA-Z0-9-_]*', the part between the first
+     * underscore and either the next slash or the final character.
+     * 
+     * For example, in "PUT /foo/bar/_qui", the resource is "qui".
      */
-    resource?: string;
+    resource?:          string;
 
     /** 
      * For requests like "GET /api/v0/song?userId=blah&another=query",
      * "userId=blah&another=query"
      */
-    query: string;
+    query:              string;
 
     /** 
      * For PUT and POST requests, the non-stringified JSON postData.
      */
-    postData: any;
+    postData:           PostData;
 
-    nested?: boolean;
+    nested?:            boolean;
 };
 
 /** 
@@ -295,139 +274,147 @@ export interface IFluxAction {
  */
 export class ScoreHeader implements MusicXML.ScoreHeader {
     // MusicXML.ScoreHeader
-    credits: MusicXML.Credit[] = [];
+    credits:            MusicXML.Credit[]           = [];
 
-    identification: MusicXML.Identification = {
-        creators: [],
-        encodings: [],
-        miscellaneous: [],
-        relations: [],
-        rights: [],
-        sources: []
+    identification:     MusicXML.Identification = {
+        creators:                                   [],
+        encodings:                                  [],
+        miscellaneous:                              [],
+        relations:                                  [],
+        rights:                                     [],
+        sources:                                    []
     }
-    defaults: MusicXML.Defaults = {
+
+    defaults:           MusicXML.Defaults = {
         appearance: {
             distances: {
                 hyphen: {
-                    tenths: 120,
-                    type: "hyphen"
+                    tenths:                         120,
+                    type:                           "hyphen"
                 },
                 beam: {
-                    tenths: SMuFL.distances.beam * 10,
-                    type: "beam"
+                    tenths:                         10 * SMuFL.distances.beam,
+                    type:                           "beam"
                 }
             },
             lineWidths: {
                 staff: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness * 10,
-                    "type": "staff"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness,
+                    "type":                         "staff"
                 },
                 wedge: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.hairpinThickness * 10,
-                    "type": "wedge"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.hairpinThickness,
+                    "type":                         "wedge"
                 },
                 ending: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.repeatEndingLineThickness * 10,
-                    "type": "ending"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.repeatEndingLineThickness,
+                    "type":                         "ending"
                 },
                 heavyBarline: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.thickBarlineThickness * 10,
-                    "type": "heavy barline"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.thickBarlineThickness,
+                    "type":                         "heavy barline"
                 },
                 leger: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.legerLineThickness * 10,
-                    "type": "leger"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.legerLineThickness,
+                    "type":                         "leger"
                 },
                 stem: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.stemThickness * 10,
-                    "type": "stem"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.stemThickness,
+                    "type":                         "stem"
                 },
                 tupletBracket: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.tupletBracketThickness * 10,
-                    "type": "tuplet bracket"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.tupletBracketThickness,
+                    "type":                         "tuplet bracket"
                 },
                 beam: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.beamThickness * 10,
-                    "type": "beam"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.beamThickness,
+                    "type":                         "beam"
                 },
                 lightBarline: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness * 10,
-                    "type": "light barline"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.thinBarlineThickness,
+                    "type":                         "light barline"
                 },
                 enclosure: {
-                    "tenths": SMuFL.bravuraMetadata.engravingDefaults.textEnclosureThickness * 10,
-                    "type": "enclosure"
+                    "tenths":                       10 * SMuFL.bravuraMetadata.engravingDefaults.textEnclosureThickness,
+                    "type":                         "enclosure"
                 }
             },
             noteSizes: {
                 1: { // Grace
-                    "type": 1,
-                    "size": 60 // Not sure what 60 refers to. Our grace notes are 1.9 spaces
+                    "type":                         1,
+                    "size":                         60 // Not sure what 60 refers to. Our grace notes are 1.9 spaces
                 },
                 0: { // Cue
-                    "type": 0,
-                    "size": 60 // Not sure what 60 refers to. Our cue notes are 1.9 spaces.
+                    "type":                         0,
+                    "size":                         60 // Not sure what 60 refers to. Our cue notes are 1.9 spaces.
                 }
             },
-            otherAppearances: []
+            otherAppearances:                       []
         },
-        lyricFonts: [],
-        lyricLanguages: [],
+        lyricFonts:                                 [],
+        lyricLanguages:                             [],
         musicFont: {
-            fontSize: "20.5", // This value is completely ignored. See "scaling"
-            fontFamily: "Bravura, Maestro, engraved",
-            fontStyle: MusicXML.NormalItalic.Normal,
-            fontWeight: MusicXML.NormalBold.Normal
+            fontSize:                               "20.5", // This value is completely ignored. See "scaling"
+            fontFamily:                             "Bravura, Maestro, engraved",
+            fontStyle:                              MusicXML.NormalItalic.Normal,
+            fontWeight:                             MusicXML.NormalBold.Normal
         },
         pageLayout: {
-            pageHeight: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].height),
-            pageWidth: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].width),
+            pageHeight:                             renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].height),
+            pageWidth:                              renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.pageSizes[0].width),
             pageMargins: [
                 {
-                    bottomMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.bottom),
-                    leftMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.left),
-                    rightMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.right),
-                    topMargin: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.top),
-                    type: MusicXML.OddEvenBoth.Both
+                    bottomMargin:                   renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.defaultMargins.bottom),
+                    leftMargin:                     renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.defaultMargins.left),
+                    rightMargin:                    renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.defaultMargins.right),
+                    topMargin:                      renderUtil.mmToTenths(
+                                                        renderUtil.defaultStaveHeight, renderUtil.defaultMargins.top),
+                    type:                           MusicXML.OddEvenBoth.Both
                 }
             ]
         },
         scaling: {
-            millimeters: renderUtil.defaultStaveHeight,
-            tenths: 40
+            millimeters:                            renderUtil.defaultStaveHeight,
+            tenths:                                 40
         },
-        staffLayouts: [],
+        staffLayouts:                               [],
         systemLayout: {
-            systemDistance: 131,
-            systemDividers: null,
+            systemDistance:                         131,
+            systemDividers:                         null,
             systemMargins: {
-                leftMargin: 0,
-                rightMargin: 0
+                leftMargin:                         0,
+                rightMargin:                        0
             },
-            topSystemDistance: 70
+            topSystemDistance:                      70
         },
         wordFont: {
-            fontSize: "12",
-            fontFamily: "Alegreya, Times New Roman, serif",
-            fontStyle: MusicXML.NormalItalic.Normal,
-            fontWeight: MusicXML.NormalBold.Normal
+            fontSize:                               "12",
+            fontFamily:                             "Alegreya, Times New Roman, serif",
+            fontStyle:                              MusicXML.NormalItalic.Normal,
+            fontWeight:                             MusicXML.NormalBold.Normal
         }
     }
-    work: MusicXML.Work = {
-        opus: {},
-        workNumber: "",
-        workTitle: ""
+
+    work:               MusicXML.Work = {
+        opus:                                       {},
+        workNumber:                                 "",
+        workTitle:                                  ""
     }
 
-    movementTitle: string = "Untitled";
-    movementNumber: string = "";
+    movementTitle:      string =                    "Untitled";
+    movementNumber:     string =                    "";
 
-    partList: MusicXML.PartList = {
-        scoreParts: [],
-        partGroups: []
+    partList:           MusicXML.PartList = {
+        scoreParts:                                 [],
+        partGroups:                                 []
     };
 
-    // Convienience
+    /* Convienience */
     constructor(spec: ScoreHeader) {
         for(var key in spec) {
             if (spec.hasOwnProperty(key) && typeof key === "string" && !!(<any>spec)[key]) {
@@ -494,21 +481,21 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
 
 export class Print implements MusicXML.Print {
     /* MusicXML.Print */
-    measureNumbering: MusicXML.MeasureNumbering;
-    partNameDisplay: MusicXML.PartNameDisplay;
-    newSystem: boolean;
-    newPage: boolean;
-    blankPage: string;
-    measureLayout: MusicXML.MeasureLayout;
-    partAbbreviationDisplay: MusicXML.PartAbbreviationDisplay;
-    pageLayout: MusicXML.PageLayout;
-    systemLayout: MusicXML.SystemLayout;
+    measureNumbering:           MusicXML.MeasureNumbering;
+    partNameDisplay:            MusicXML.PartNameDisplay;
+    newSystem:                  boolean;
+    newPage:                    boolean;
+    blankPage:                  string;
+    measureLayout:              MusicXML.MeasureLayout;
+    partAbbreviationDisplay:    MusicXML.PartAbbreviationDisplay;
+    pageLayout:                 MusicXML.PageLayout;
+    systemLayout:               MusicXML.SystemLayout;
     /**
      * DEPRECATED. Use staffLayouts
      */
-    staffSpacing: number;
-    staffLayouts: number[];
-    pageNumber: string;
+    staffSpacing:               number;
+    staffLayouts:                MusicXML.StaffLayout[];
+    pageNumber:                 string;
 
     /* Convienience */
     constructor(print: MusicXML.Print) {
@@ -529,30 +516,31 @@ export class Print implements MusicXML.Print {
 
 export function getPrint(header: ScoreHeader): Print {
     "use strict";
+
     return new Print({
-        blankPage: "",
-        measureLayout: null,
+        blankPage:                  "",
+        measureLayout:              null,
         measureNumbering: {
-            relativeX: 0,
-            relativeY: 0,
-            fontSize: "small",
-            color: "#000000",
-            data: "system",
-            defaultX: null,
-            defaultY: null,
-            fontFamily: "Alegreya, serif",
-            fontStyle: MusicXML.NormalItalic.Normal,
-            fontWeight: MusicXML.NormalBold.Normal
+            relativeX:              0,
+            relativeY:              0,
+            fontSize:               "small",
+            color:                  "#000000",
+            data:                   "system",
+            defaultX:               null,
+            defaultY:               null,
+            fontFamily:             "Alegreya, serif",
+            fontStyle:              MusicXML.NormalItalic.Normal,
+            fontWeight:             MusicXML.NormalBold.Normal
         },
-        newPage: false,
-        newSystem: false,
-        partAbbreviationDisplay: null,
-        pageLayout: header.defaults.pageLayout,
-        pageNumber: "",
-        partNameDisplay: null,
-        staffLayouts: header.defaults.staffLayouts,
-        staffSpacing: null, // <-- DEPRECATED
-        systemLayout: header.defaults.systemLayout
+        newPage:                    false,
+        newSystem:                  false,
+        partAbbreviationDisplay:    null,
+        pageLayout:                 header.defaults.pageLayout,
+        pageNumber:                 "",
+        partNameDisplay:            null,
+        staffLayouts:               header.defaults.staffLayouts,
+        staffSpacing:               null, // DEPRECATED
+        systemLayout:               header.defaults.systemLayout
     });
 }
 
@@ -563,12 +551,12 @@ export interface IInstrument {
     /** 
      * A human readable string representing the instrument.
      */
-    name: string;
+    name:       string;
 
     /** 
      * A name that fits within the buttons on the "Parts" tab
      */
-    shortName: string;
+    shortName:  string;
 
     /** 
      * A slug representing uniquely representing the soundfont used for the instrument.
@@ -576,24 +564,24 @@ export interface IInstrument {
      * 
      * Some instruments have the SAME soundfont.
      */
-    soundfont: string;
+    soundfont:  string;
 
     /** 
      * The standard clef or clef set for an instrument.
      */
-    clef: Clef;
+    clef:       Clef;
 
     /** 
      * The 0-indexed MIDI program for the instrument.
      */
-    program: number;
+    program:    number;
 
     /** 
      * In Lilypond, instruments are set like
      *      \set Staff.midiInstrument = #"glockenspiel"
      * Names are obtained from http://lilypond.org/doc/v2.17/Documentation/notation/midi-instruments
      */
-    lilypond: string;
+    lilypond:   string;
 }
 
 export class InvalidDurationError {
@@ -607,26 +595,26 @@ export enum IterationStatus {
      * No further annotation is necessary. The document is correct
      * and renderable.
      */
-    ExitEarly,
+    ExitEarly                       = 5,
 
     /** 
      * All of the pre-conditions of the Model were met, and
      * the annotator should continue to the next item.
      */
-    Success,
+    Success                         = 10,
 
     /** 
      * At least one of the pre-conditions of the Model were not
      * met and an item has been inserted in place of the current
      * item.
      */
-    RetryCurrent,
+    RetryCurrent                    = 20,
 
     /** 
      * Like RETRY_CURRENT, but explicitly state that the entire
      * remainder of the document must be re-annotated.
      */
-    RetryCurrentNoOptimizations,
+    RetryCurrentNoOptimizations     = 30,
 
     /** 
      * At least one of the pre-conditions of the Model were not
@@ -634,59 +622,51 @@ export enum IterationStatus {
      * 
      * The Model must be in a beam for this return type to be used.
      */
-    RetryBeam,
+    RetryBeam                       = 40,
 
     /** 
      * The precondition is now met, but a line was removed. The index has already
      * been set to the correct previous line.
      */
-    LineRemoved,
+    LineRemoved                     = 50,
 
     /** 
      * At least one of the pre-conditions of the Model were not
      * met and the entire line must be re-annotated.
      */
-    RetryLine,
+    RetryLine                       = 60,
 
     /** 
      * The precondition is now met, but a line was added somewhere between
      * where the previous line was an idx. The annotator should re-annotate
      * the previous two lines.
      */
-    LineCreated,
+    LineCreated                     = 70,
 
     /** 
      * The precondition is now met, but the previous line was modified. For example,
      * the visual cursor has been moved to the previous line.
      */
-    RetryPreviousLine,
+    RetryPreviousLine               = 80,
 
     /** 
      * At least one of the preconditions of the Model were not
      * met and the entire document must be re-annotated.
      */
-    RetryFromEntry
+    RetryFromEntry                  = 90
 };
-
-/** 
- * A key signature, such as a KeySignatureModel.
- */
-export interface IKeySignature {
-    mode: string;
-    pitch: IPitch;
-}
 
 export interface ILocation {
     /** 
      * MSD of cursor position, counting from 1.
      */
-    bar: number;
+    bar:        number;
 
     /** 
      * LSD of cursor position. Represents the beat directly before the
      * cursor, so if it's at the beginning of bar, it is beat 0.
      */
-    beat: number;
+    beat:       number;
 
     /** 
      * True if the cursor is at the end of a bar. This information is added as
@@ -697,6 +677,10 @@ export interface ILocation {
 }
 
 export class Location implements ILocation {
+    bar:        number;
+    beat:       number;
+    endMarker:  boolean;
+
     eq(b: ILocation) {
         return this.bar === b.bar && this.beat === b.beat;
     }
@@ -722,66 +706,70 @@ export class Location implements ILocation {
         this.beat = opts.beat;
         this.endMarker = opts.endMarker;
     }
-
-    bar: number;
-    beat: number;
-    endMarker: boolean;
 }
+
+export var log2     = Math.log(2);
 
 /** 
  * The Lilypond name for a major key.
  */
-export var MAJOR = "\\major";
+export var MAJOR    = "\\major";
 
 /** 
  * The Lilypond name for a minor key.
  */
-export var MINOR = "\\minor";
+export var MINOR    = "\\minor";
 
-export var MAX_NUM = 1000000000;
+export var MAX_NUM  = 1000000000;
 
 export interface INotation {
-    glyph: string;
-    noDirection: boolean;
-    x: number;
-    y: number;
-    scale: number;
-    style: any;
+    glyph:          string;
+    noDirection:    boolean;
+    key?:           string;
+    x:              number;
+    y:              number;
+    scale:          number;
+    style?:         any;
 };
+
+export var noteNames =
+    ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
+        "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
 /** 
  * Used for the metre annotation pass.
  */
 export class MetreContext {
-    endMarker: boolean = false;
-    timeSignature: ITimeSignature = { beats: 4, beatType: 4 };
-    bar: number = 1;
-    beat: number = 0;
-    defaultCount: number = 4;
+    attributes: MusicXML.Attributes;
+    endMarker:  boolean                 = false;
+    ts:         ISimpleTimeSignature    = { beats: 4, beatType: 4, commonRepresentation: false };
+    bar:        number                  = 1;
+    beat:       number                  = 0;
+
     constructor(other?: MetreContext) {
         if (other) {
-            this.timeSignature = {
-                beats: other.timeSignature.beats,
-                beatType: other.timeSignature.beatType
+            this.ts = {
+                beats: other.ts.beats,
+                beatType: other.ts.beatType,
+                commonRepresentation: other.ts.commonRepresentation
             };
             this.bar = other.bar;
             this.beat = other.beat;
             this.endMarker = other.endMarker || false;
-            this.defaultCount = other.defaultCount || 4;
         }
     }
 }
 
 export interface IMidiEvent {
-    type: MidiEventType;
-    note: number;
-    channel: number;
-    velocity: number;
+    type:       MidiEventType;
+    note:       number;
+    channel:    number;
+    velocity:   number;
 }
 
 export enum MidiEventType {
-    NoteOn = 0,
-    NoteOff = 1
+    NoteOn      = 0,
+    NoteOff     = 1
 }
 
 /** 
@@ -791,12 +779,12 @@ export interface IMouse {
     /** 
      * The location of the mouse relative to the left, in 'em's
      */
-    x: number;
+    x:                          number;
 
     /** 
      * The location of the mouse relative to the top, in 'em's.
      */
-    y: number;
+    y:                          number;
 
     /** 
      * A string identifying the currently selected object, if applicable.
@@ -804,27 +792,23 @@ export interface IMouse {
      * 
      * TODO: Let selectionInfo also work with the Victoria engine.
      */
-    selectionInfo?: string;
-    page: number;
+    selectionInfo?:             string;
+    page:                       number;
 };
 
 /** 
  * Properties that make up a part
  */
 export interface IPart {
-    //////////////////////////////////////////////
-    // The following can be set if body is true //
-    //////////////////////////////////////////////
-
     /** 
      * The Models that compose the part.
      */
-    body?: IBody;
+    body?:                      Model[];
 
     /** 
      * For playback
      */
-    instrument?: IInstrument;
+    instrument?:                IInstrument;
 };
 
 /** 
@@ -832,17 +816,32 @@ export interface IPart {
  * 
  * See also IDuration and IPitchDuration.
  */
-export interface IPitch {
-    acc: number;
-    displayAcc?: number;
-    isRest?: boolean; // read only
-    /** 
-     * Note: In the case of a chord, the average line.
+export interface IPitch extends MusicXML.Pitch {
+    /**
+     * Temporary accidental
      */
-    line?: number;
-    octave: number;
-    pitch: string;
-    temporary?: boolean;
+    displayAlter?:              number;
+
+    /**
+     * True if is a rest.
+     *
+     * @annotated
+     * @readOnly
+     */
+    isRest?:                    boolean;
+
+    /** 
+     * Calculated line.
+     *
+     * @annotated
+     * @readOnly
+     */
+    line?:                      number;
+
+    /** 
+     * Used for a preview. If true, must not be saved, sent, or restored.
+     */
+    temporary?:                 boolean;
 };
 
 /** 
@@ -851,72 +850,53 @@ export interface IPitch {
  * DurationModels implement PitchDurations.
  */
 export interface IPitchDuration extends IDuration {
-    chord?: Array<IPitch>;
-    isRest?: boolean;
-    tie?: boolean;
-    accToDelete?: number;
-    isWholebar?: boolean;
+    chord?:                     Array<IPitch>;
+    isRest?:                    boolean;
+    tie?:                       boolean;
+    accToDelete?:               number;
+    isWholebar?:                boolean;
 };
 
 export interface IPlaybackStore {
-    addChangeListener: (callback: Function) => void;
-    addLoadingListener: (callback: Function) => void;
-    removeChangeListener: (callback: Function) => void;
-    removeLoadingListener: (callback: Function) => void;
+    addChangeListener:          (callback: Function) => void;
+    addLoadingListener:         (callback: Function) => void;
+    removeChangeListener:       (callback: Function) => void;
+    removeLoadingListener:      (callback: Function) => void;
 
-    ensureLoaded: (soundfont: string, avoidEvent?: boolean) => boolean;
-    destructor: () => void;
+    ensureLoaded:               (soundfont: string, avoidEvent?: boolean) => boolean;
+    destructor:                 () => void;
 
-    bpm: number;
-    playing: boolean;
-    ready: boolean;
-    upToDate: boolean;
+    bpm:                        number;
+    playing:                    boolean;
+    ready:                      boolean;
+    upToDate:                   boolean;
 }
 
 export enum PreviewMode {
-    ExcludePreviews = 0,
-    IncludePreviews = 1
+    ExcludePreviews             = 0,
+    IncludePreviews     		= 1
+}
+
+export interface IPointerAction {
+    mouseData:                  IPointerData;
+    fn:                 		(obj: Model, ctx: Annotator.Context) => IterationStatus;
 }
 
 export interface IPointerData {
-    partIdx: number;
-    obj: Model;
-    idx: number;
-    visualIdx?: number;
-    musicLine?: number;
-    line?: number;
-    ctxData?: IVisualCursor;
+    partIdx:                    number;
+    obj:                		Model;
+    idx:                		number;
+    visualIdx?:         		number;
+    musicLine?:         		number;
+    line?:              		number;
+    ctxData?:           		IVisualCursor;
 };
 
 export enum RectifyXPolicy {
-    Invalid = 0,
-    Max,
-    Min
+    Invalid                     = 0,
+    Max                         = 1,
+    Min                         = 2
 }
-
-export var RectifyXPolicyFor: { [key: number]: RectifyXPolicy } = {};
-RectifyXPolicyFor[Type.Print] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.EndMarker] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.NewPage] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.NewLine] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Begin] = RectifyXPolicy.Min;
-RectifyXPolicyFor[Type.Clef] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.KeySignature] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.TimeSignature] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Barline] = RectifyXPolicy.Max;
-
-RectifyXPolicyFor[Type.Slur] = RectifyXPolicy.Max;
-RectifyXPolicyFor[Type.BeamGroup] = RectifyXPolicy.Min;
-RectifyXPolicyFor[Type.Wedge] = RectifyXPolicy.Min;
-
-RectifyXPolicyFor[Type.Duration] = RectifyXPolicy.Min;
-
-RectifyXPolicyFor[Type.Placeholder] = RectifyXPolicy.Invalid;
-
-RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
 
 /** 
  * A session, directly from the server.
@@ -924,25 +904,25 @@ RectifyXPolicyFor[Type.Unknown] = RectifyXPolicy.Invalid;
  * See also "session.d".
  */
 export interface ISession {
-    user: IUser;
-    remoteSongsSynced: boolean;
-    isLoading: boolean;
+    user:                   IUser;
+    remoteSongsSynced:      boolean;
+    isLoading:              boolean;
     /** 
      * Either LoggedIn or LoggedOut
      */
-    state: string;
-    csrf: string;
+    state:                  string;
+    csrf:                   string;
 };
 
 export interface ISessionStore {
-    addChangeListener: (callback: () => void) => void;
-    removeChangeListener: (callback: () => void) => void;
+    addChangeListener:      (callback: () => void) => void;
+    removeChangeListener:   (callback: () => void) => void;
 
-    activeSong: ISong;
-    apiRole: ApiRole;
-    errors: Array<IError>;
-    info: ISession;
-    songs: Array<ISong>;
+    activeSong:             ISong;
+    apiRole:                ApiRole;
+    errors:                 Array<IError>;
+    info:                   ISession;
+    songs:                  Array<ISong>;
 }
 
 /** 
@@ -954,161 +934,141 @@ export interface ISong {
     /** 
      * MongoDB ID for the song.
      */
-    _id: string;
+    _id:            string;
 
     /** 
      * MongoDB ID for the IUser who created the song.
      */
-    _owner: string;
+    _owner:         string;
 
     /** 
      * Lylite source for the song.
      */
-    src: string;
+    src:            string;
 
     /** 
      * The title. This should always match the title at the top of the page.
      */
-    title: string;
+    title:          string;
 
     /** 
      * The composer. Should match the composer in the header.
      */
-    composer: string;
+    composer:       string;
 
-    subtitle?: string;
-    arranger?: string;
-    lyricist?: string;
-    copyright?: string;
-    secret?: boolean;
-    path?: string;
-    clefs?: string;
+    subtitle?:      string;
+    arranger?:      string;
+    lyricist?:      string;
+    copyright?:     string;
+    secret?:        boolean;
+    path?:          string;
+    clefs?:         string;
 };
 
 export interface ISongEditor {
-    addChangeListener: (callback: any) => void;
-    addAnnotationListener: (callback: any) => void;
-    addHistoryListener: (callback: any) => void;
-    addMidiOutHintListener: (callback: (out: Array<number>) => void) => void;
-    addMidiInHintListener: (data: (ev: {data: number[]; currentTarget: any}) => void) => void;
-    addClearHistoryListener: (callback: any) => void;
-    removeChangeListener: (callback: any) => void;
-    removeAnnotationListener: (callback: any) => void;
-    removeHistoryListener: (callback: any) => void;
-    removeMidiOutHintListener: (callback: (out: Array<number>) => void) => void;
-    removeMidiInHintListener: (data: (ev: {data: number[]; currentTarget: any}) => void) => void;
-    removeClearHistoryListener: (callback: any) => void;
+    /* Lifecycle */
+    destructor:                         () => void;
 
-    destructor: () => void;
+    addListener:                        (event: number, listener: Function) => void;
+    removeListener:                     (event: number, listener: Function) => void;
 
-    notationsSidebarVisible: boolean;
+    /* Properties */
+    notationsSidebarVisible:            boolean;
 
-    autosaveModalVisible: boolean;
-    changesPending: boolean;
-    copyModalVisible: boolean;
-    midiModalTab: number;
-    dirty: boolean;
-    dragonAudio: Array<string>;
-    exportModalVisible: boolean;
-    finalCtx: Annotator.Context;
-    getLineDirty: (idx: number, h: number) => void;
-    ly: string;
-    metadataModalVisible: boolean;
-    midiOutHint: (out: Array<number>) => void;
-    partModalStave: IPart;
-    selection: Array<Model>;
-    socialModalVisible: boolean;
-    header: ScoreHeader;
-    parts: Array<IPart>;
-    src: string;
-    testly: string;
-    tool: any;
-    visualCursor: IVisualCursor;
-    legacyAudioID: number;
+    autosaveModalVisible:               boolean;
+    changesPending:                     boolean;
+    copyModalVisible:                   boolean;
+    midiModalTab:                       number;
+    dirty:                              boolean;
+    dragonAudio:                        string[];
+    exportModalVisible:                 boolean;
+    finalCtx:                           Annotator.Context;
+    getLineDirty:                       (idx: number, h: number) => void;
+    metadataModalVisible:               boolean;
+    midiOutHint:                        (out: Array<number>) => void;
+    partModalStave:                     IPart;
+    selection:                          Model[];
+    socialModalVisible:                 boolean;
+    header:                             ScoreHeader;
+    parts:                              IPart[];
+    src:                                string;
+    tool:                               any;
+    visualCursor:                       IVisualCursor;
+    legacyAudioID:                      number;
 
-    dangerouslyHidePreview: (action: IFluxAction) => void;
-    dangerouslyMarkRenderDone: () => void;
-    dangerouslyMarkRendererDirty: () => void;
-    dangerouslyMarkRendererLineClean: (action: IFluxAction) => void;
-    dangerouslyMarkRendererLineDirty: (line: number) => void;
-    dangerouslySetVisualCursor: (visualCursor: IVisualCursor) => void;
-    dangerouslyShowPreview: (action: IFluxAction) => void;
-    dangerouslyTakeSnapshot: (ctx: Annotator.Context) => void;
-    ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void;
+    /* Sketch */
+    dangerouslyHidePreview:             () => void;
+    dangerouslyMarkRenderDone:          () => void;
+    dangerouslyMarkRendererDirty:       () => void;
+    dangerouslyMarkRendererLineClean:   (action: IFluxAction<string, void>) => void; // request is $(PART)_$(LINE)
+    dangerouslyMarkRendererLineDirty:   (line: number) => void;
+    dangerouslySetVisualCursor:         (visualCursor: IVisualCursor) => void;
+    dangerouslyShowPreview:             (action: IFluxAction<IPointerAction, void>) => void;
+    dangerouslyTakeSnapshot:            (ctx: Annotator.Context) => void;
+    ensureSoundfontLoaded:              (soundfont: string, avoidEvent?: boolean) => void;
 };
 
-/** 
- * The original creator of an element. This is used as a HINT to Ripieno to decide whether
- * or not it is okay to modify the element.
- */
-export enum Source {
-    /** 
-     * The element was created directly from an action performed by the user. This does not
-     * include annotations from such an action.
-     */
-    User = 0,
-
-    /** 
-     * The element was created to satisfy the annotation engine.
-     */
-    Annotator,
-
-    /** 
-     * The element was created from an action performed by the user, but may be split or joined
-     * initially to satisfy a rhythmic spell-check. Becomes User after successful annotation.
-     */
-    UserProposed
+export enum EventType {
+    Change,
+    Annotate,
+    History,
+    ClearHistory,
+    MidiOut,
+    MidiIn
 }
 
 /** 
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
-    Print,              // C.MusicXML.Print
+    Print                   = 50,         // C.MusicXML.Print
+    Attributes              = 60,         // C.MusicXML.Attributes
 
-    EndMarker,
-    NewPage,
-    NewLine,
+    START_OF_ATTRIBUTES     = 100,
+    EndMarker               = 110,
+    NewPage                 = 120,
+    NewLine                 = 130,
 
-    Begin,
-    Clef,
-    KeySignature,
-    TimeSignature,
+    Begin                   = 140,
+    Clef                    = 150,
+    KeySignature            = 160,
+    TimeSignature           = 170,
+    END_OF_ATTRIBUTES       = 199,
 
-    Barline,
+    Barline                 = 300,
 
-    START_OF_MODIFIERS,
-    Slur,
-    BeamGroup,
-    Wedge,
-    END_OF_MODIFIERS,
+    START_OF_MODIFIERS      = 400,
+    Slur                    = 425,
+    BeamGroup               = 450,
+    Wedge                   = 475,
+    END_OF_MODIFIERS        = 499,
 
-    Duration,
+    Duration                = 600,
 
-    Placeholder,
+    Placeholder             = 999,
 
-    Unknown
+    Unknown                 = 1111
 };
 
 /** 
  * A time signature, such as a TimeSignatureModel.
  */
-export interface ITimeSignature {
+export interface ISimpleTimeSignature {
     /** 
      * The numerator of a time signature.
      */
-    beats: number;
+    beats:                  number;
 
     /** 
      * The denominator of a time signature.
      */
-    beatType: number;
+    beatType:               number;
 
     /** 
      * True if the time signature should be rendered as "common"
      * e.g., as a "C" instead of "4/4".
      */
-    commonRepresentation?: boolean;
+    commonRepresentation?:  boolean;
 };
 
 /** 
@@ -1118,19 +1078,19 @@ export interface IUser {
     /** 
      * Google ID
      */
-    userId: string;
+    userId:                 string;
 
     /** 
      * MongoDB id
      */
-    _id: string;
+    _id:                    string;
 
     identity: {
-        id: string;
-        displayName: string;
+        id:                 string;
+        displayName:        string;
     };
 
-    whitelisted: boolean;
+    whitelisted:            boolean;
 };
 
 /** 
@@ -1139,16 +1099,12 @@ export interface IUser {
  * A triplet would have the following ITuplet:
  * {
  *     "num": 3,
- * 	   "den": 2
+ *        "den": 2
  * }
  */
 export interface ITuplet {
-    num: number;
-    den: number;
-}
-
-export interface IViewComponent {
-    (opts: { key: number; spec: Model; fontSize: number }): any;
+    num:                    number;
+    den:                    number;
 }
 
 /** 
@@ -1160,23 +1116,23 @@ export interface IVisualCursor extends ILocation {
      * of the annotation process, and is not guaranteed to exist until after
      * the annotation process.
      */
-    annotatedObj?: Model;
+    annotatedObj?:          Model;
 
     /** 
      * The line, counting from 1, where annotatedObj is.
      */
-    annotatedLine?: number;
+    annotatedLine?:         number;
 
     /** 
      * The page, counting from 1, where annotatedObj is.
      */
-    annotatedPage?: number;
+    annotatedPage?:         number;
 
     /** 
      * The part, counting from 0, not counting parts without a body, where
      * annotatedObj is.
      */
-    annotatedStave?: number;
+    annotatedStave?:        number;
 };
 
 export module NoteUtil {
@@ -1191,15 +1147,10 @@ export module NoteUtil {
         "use strict";
 
         return {
-            count: spec.count,
-            dots: spec.dots || 0,
-            tuplet: spec.tuplet || null,
-            displayTuplet: null,
-            getBeats(ctx: MetreContext, inheritedCount?: number): number {
-                return require("./metre").getBeats(
-                    this.count || inheritedCount,
-                    this.dots, this.tuplet, ctx.timeSignature);
-            }
+            count:          spec.count,
+            dots:           spec.dots || 0,
+            tuplet:         spec.tuplet || null,
+            displayTuplet:  null
         };
     }
 
@@ -1209,13 +1160,23 @@ export module NoteUtil {
     export function pitchToMidiNumber(p: IPitch) {
         "use strict";
 
-        var base = require("./duration").chromaticScale[p.pitch] + 48;
-        return base + (p.octave || 0)*12 + (p.acc || 0);
+        var base = require("./duration").chromaticScale[p.step] + 48;
+
+        return base +
+            (p.octave || 0)*12 +
+            (p.alter  || 0);
     }
 
     export var noteToVal: { [key: string]: number } = {
-        c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
+        c: 0,
+        d: 2,
+        e: 4,
+        f: 5,
+        g: 7,
+        a: 9,
+        b: 11
     }; // c:12
+
     export var valToNote = _.invert(noteToVal);
 
     /** 
@@ -1232,14 +1193,12 @@ export module NoteUtil {
         //  - Spell stepwise figures as a scale, i.e., as adjacent pitch letters (TODO)
         //
         //     -- Behind Bars by Elaine Gould, p. 85
-        var keySignature = ctx.keySignature;
-        var sharps = getSharpCount(keySignature);
-        var flats = getFlatCount(keySignature);
+        var key = ctx.attributes.keySignature;
 
         // Some notes are only aug or dim, never p/M/m, so we tend to give sharps to Cmaj and keys
         // with sharps, and flats to Amin and keys with flats. (This looks backwards here -- flats
         // have a higher number than sharps. That's because tendency is in terms of the base note!)
-        var tendency = sharps || !flats && keySignature.pitch.pitch === "c" ? 0 : 1;
+        var tendency = key.fifths >= 0 ? 0 : 1;
 
         var idealStepsPerInterval: {[key: number]: number} = {
             0:  0,              // Perfect unison
@@ -1257,7 +1216,16 @@ export module NoteUtil {
         };
 
         // We avoid negative modulos.
-        var halfStepsFromScaleRoot = (((n - pitchToMidiNumber(keySignature.pitch)) % 12) + 12) % 12;
+        // MXFIX: mode should be an enum!
+        var pitchS = NoteUtil.keyCircle[
+                NoteUtil.circleOffsetByMode[<any>key.mode] + key.fifths];
+
+        var pitch: IPitch = {
+            alter:  pitchS[1] === "#" ? 1 : (pitchS[1] === "b" ? -1 : 0),
+            octave: 0,
+            step:   pitchS[0]
+        };
+        var halfStepsFromScaleRoot = (((n - pitchToMidiNumber(pitch)) % 12) + 12) % 12;
 
         var idealSteps = idealStepsPerInterval[halfStepsFromScaleRoot];
         var notesInv: {[key: string]: number} = {
@@ -1271,18 +1239,18 @@ export module NoteUtil {
         };
         var notes = _.invert(notesInv);
 
-        var base = notes[(notesInv[keySignature.pitch.pitch] + idealSteps) % 7];
+        var base = notes[(notesInv[pitch.step] + idealSteps) % 7];
 
         // Add accidental
-        var acc = -positiveMod(pitchToMidiNumber({octave: 0, acc: 0, pitch: base}) - n, 12) || null;
+        var acc = -positiveMod(pitchToMidiNumber({octave: 0, alter: 0, step: base}) - n, 12) || null;
         if (acc < -6) {
             acc += 12;
         }
 
         return {
             octave: Math.floor(n/12 - 4),
-            acc: acc,
-            pitch: base
+            alter:  acc,
+            step:   base
         };
     }
 
@@ -1290,113 +1258,17 @@ export module NoteUtil {
         return ((base % mod) + mod) % mod;
     }
 
-    export function getSharpCount(keySignature: IKeySignature): number {
-        var k = keySignature.pitch;
-        if (keySignature.mode === MAJOR) {
-            if (isPitch(k, "c")) {
-                return 0;
-            } else if (isPitch(k, "g")) {
-                return 1;
-            } else if (isPitch(k, "d")) {
-                return 2;
-            } else if (isPitch(k, "a")) {
-                return 3;
-            } else if (isPitch(k, "e")) {
-                return 4;
-            } else if (isPitch(k, "b")) {
-                return 5;
-            } else if (isPitch(k, "f", 1)) {
-                return 6;
-            } else if (isPitch(k, "c", 1)) {
-                return 7;
-            } else if (isPitch(k, "g", 1)) {
-                return 7; // + fx
-            }
-        } else if (keySignature.mode === MINOR) {
-            if (isPitch(k, "a")) {
-                return 0;
-            } else if (isPitch(k, "e")) {
-                return 1;
-            } else if (isPitch(k, "b")) {
-                return 2;
-            } else if (isPitch(k, "f", 1)) {
-                return 3;
-            } else if (isPitch(k, "c", 1)) {
-                return 4;
-            } else if (isPitch(k, "g", 1)) {
-                return 5;
-            } else if (isPitch(k, "d", 1)) {
-                return 6;
-            } else if (isPitch(k, "a", 1)) {
-                return 7;
-            } else if (isPitch(k, "e", 1)) {
-                return 7; // + fx
-            }
-        } else {
-            assert(0, "Not reached");
-        }
-
-        return undefined;
-    };
-
-    export function getFlatCount(keySignature: IKeySignature): number {
-        var k = keySignature.pitch;
-        if (keySignature.mode === MAJOR) {
-            if (isPitch(k, "f")) {
-                return 1;
-            } else if (isPitch(k, "b", -1)) {
-                return 2;
-            } else if (isPitch(k, "e", -1)) {
-                return 3;
-            } else if (isPitch(k, "a", -1)) {
-                return 4;
-            } else if (isPitch(k, "d", -1)) {
-                return 5;
-            } else if (isPitch(k, "g", -1)) {
-                return 6;
-            } else if (isPitch(k, "c", -1)) {
-                return 7;
-            } else if (isPitch(k, "f", -1)) {
-                return 7; // + bbb
-            }
-        } else if (keySignature.mode === MINOR) {
-            if (isPitch(k, "d")) {
-                return 1;
-            } else if (isPitch(k, "g")) {
-                return 2;
-            } else if (isPitch(k, "c")) {
-                return 3;
-            } else if (isPitch(k, "f")) {
-                return 4;
-            } else if (isPitch(k, "b", -1)) {
-                return 5;
-            } else if (isPitch(k, "e", -1)) {
-                return 6;
-            } else if (isPitch(k, "a", -1)) {
-                return 7;
-            } else if (isPitch(k, "d", -1)) {
-                return 7; // + bbb
-            }
-        } else {
-            assert(0, "Not reached");
-        }
-
-        return undefined;
-    };
-
-    export function getAccidentals(keySignature: IKeySignature) {
+    export function getAccidentals(key: MusicXML.Key) {
         var ret: IAccidentals = { };
 
-        var flats = getFlatCount(keySignature);
-        if (flats) {
-            _.times(flats, idx => {
+        if (key.fifths < 0) {
+            _.times(-key.fifths, idx => {
                 ret[flatCircle[idx]] = -1;
             });
             return ret;
         }
 
-        var sharps = getSharpCount(keySignature);
-        _.times(sharps, idx => {
+        _.times(key.fifths, idx => {
             ret[sharpCircle[idx]] = 1;
         });
         return ret;
@@ -1405,11 +1277,55 @@ export module NoteUtil {
     export var flatCircle = "beadgcf";
     export var sharpCircle = "fcgdaeb";
 
+    export var keyCircle = [
+        "fb", "cb", "gb", "db", "ab", "eb", "bb",
+        "f ", "c ", "g ", "d ", "a ", "e ", "b ",
+        "f#", "c#", "g#", "d#", "a#", "e#"];
+    export var circleOffsetByMode: {[key: string]: number} = { // MXFIX: enum plz
+        major: 8,
+        minor: 11
+    };
+
     export function isPitch(k: IPitch, name: string, acc?: number) {
-        return k.pitch === name && (k.acc || 0) === (acc || 0);
+        return k.step === name && (k.alter || 0) === (acc || 0);
     }
 }
 
 export var InvalidAccidental = 9001;
+
+export module JSONx {
+    "use strict";
+    export function clone<T>(obj: T): T {
+        "use strict";
+        return <T>JSON.parse(JSON.stringify(obj));
+    }
+    export function hash<T>(obj: T): number {
+        "use strict";
+        return strHash(JSON.stringify(obj));
+    }
+}
+
+export function deepAssign<T>(a: T, b: T):T {
+    "use strict";
+    if (a instanceof Array || b instanceof Array) {
+        var retArr: any[] = [];
+        var aArr:   any[] = (<any>a);
+        var bArr:   any[] = (<any>b);
+        for (var i = 0; i < Math.max(a ? aArr.length : 0, b ? bArr.length : 0); ++i) {
+            retArr.push(deepAssign(a ? aArr[i] : null, b ? bArr[i] : null));
+        }
+        return (<any>retArr);
+    } else if (a instanceof Object || b instanceof Object) {
+        var ret: T = a ? JSONx.clone(a) : (<T>{});
+        for (var key in b) {
+            if (b.hasOwnProperty(key)) {
+                (<any>ret)[key] = deepAssign((<any>ret)[key], (<any>b)[key]);
+            }
+        }
+        return ret;
+    } else {
+        return (a === undefined) ? b : a;
+    }
+}
 
 global.C = module.exports; // For debugging

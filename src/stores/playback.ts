@@ -6,42 +6,34 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import assert = require("assert");
-import _ = require("lodash");
-import TSEE = require("./tsee");
+import assert                   = require("assert");
+import _                		= require("lodash");
+import TSEE             		= require("./tsee");
 
-import AnnotatorType = require("./annotator"); // Cyclic dependency. For types only.
-import C = require("./contracts");
-import Instruments = require("./instruments");
-import Model = require("./model");
+import AnnotatorType    		= require("./annotator");       // Cyclic
+import C                		= require("./contracts");
+import Instruments      		= require("./instruments");
+import Metre            		= require("./metre");
+import Model 		   	        = require("./model");
+import TimeSignatureModelType   = require("./timeSignature");   // Cyclic
 
-var enabled = (typeof document !== "undefined");
-var USING_LEGACY_AUDIO = !global.AudioContext && enabled;
+var enabled                     = typeof document !== "undefined";
+var usingLegacyAudio    		= !global.AudioContext && enabled;
 
-if (!global.AudioContext && global.webkitAudioContext) {
-    global.AudioContext = global.webkitAudioContext;
+var Audio5js:   any     		= enabled && usingLegacyAudio && require("audio5");
+var MIDI:       any     		= enabled && _.extend(require("midi/js/MIDI/Plugin.js"), {
+                        		    audioDetect: require("midi/js/MIDI/AudioDetect.js"),
+                        		    loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
+                        		    Player: require("midi/js/MIDI/Player.js")
+                        		});
+
+global.AudioContext             = global.AudioContext || global.webkitAudioContext;
+global.MIDI                     = MIDI;
+
+enum EventType {
+    Change,
+    Load
 }
-
-var Audio5js: any;
-var MIDI: any;
-var _legacyAudioReady = false;
-var audio5js: any;
-
-if (enabled) {
-    MIDI = require("midi/js/MIDI/Plugin.js");
-    MIDI = _.extend(MIDI, {
-        audioDetect: require("midi/js/MIDI/AudioDetect.js"),
-        loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
-        Player: require("midi/js/MIDI/Player.js")
-    });
-    global.MIDI = MIDI;
-    if (USING_LEGACY_AUDIO) {
-        Audio5js = require("audio5");
-    }
-}
-
-var CHANGE_EVENT = "change";
-var LOAD_EVENT = "load";
 
 class PlaybackStore extends TSEE implements C.IPlaybackStore {
     constructor(dispatcher: C.IDispatcher, songEditor?: C.ISongEditor) {
@@ -54,10 +46,10 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
         if (songEditor) {
             songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
-            songEditor.addMidiOutHintListener(hit);
+            songEditor.addListener(C.EventType.MidiOut, hit);
         }
 
-        if (PlaybackStore.USING_LEGACY_AUDIO) {
+        if (PlaybackStore.usingLegacyAudio) {
             var store = this;
             _.defer(() => {
                 global.audio5js = audio5js = new Audio5js({
@@ -66,7 +58,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                     ready: function (player: any) {
                         this.on("canplay", function () {
                             _legacyAudioReady = true;
-                            store.emit(CHANGE_EVENT);
+                            store.emit(EventType.Change);
                         });
                         if (this.pending) {
                             this.pending();
@@ -85,7 +77,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._play(false);
         this._dispatcher.unregister(this._handleAction);
         if (this._songEditor) {
-            this._songEditor.removeMidiOutHintListener(hit);
+            this._songEditor.removeListener(C.EventType.MidiOut, hit);
         }
     }
 
@@ -94,16 +86,16 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     ///////////////////
 
     addChangeListener(callback: Function) {
-        this.on(CHANGE_EVENT, callback); }
+        this.on(EventType.Change, callback); }
 
     addLoadingListener(callback: Function) {
-        this.on(LOAD_EVENT, callback); }
+        this.on(EventType.Load, callback); }
 
     removeChangeListener(callback: Function) {
-        this.removeListener(CHANGE_EVENT, callback); }
+        this.removeListener(EventType.Change, callback); }
 
     removeLoadingListener(callback: Function) {
-        this.removeListener(LOAD_EVENT, callback); }
+        this.removeListener(EventType.Load, callback); }
 
     /////////////////////////////////
     // PROPERTIES AND DERIVED DATA // 
@@ -116,17 +108,17 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         return this._playing; }
 
     get ready(): boolean {
-        return !this._pendingInstruments && (!PlaybackStore.USING_LEGACY_AUDIO || _legacyAudioReady); }
+        return !this._pendingInstruments && (!PlaybackStore.usingLegacyAudio || _legacyAudioReady); }
 
     //////////////////
     // FLUX METHODS // 
     //////////////////
 
-    "POST /api/v0/synth"(action: C.IFluxAction) {
+    "POST /api/v0/synth"(action: C.IFluxAction<void, void>) {
         _legacyAudioReady = false;
-        this.emit(CHANGE_EVENT);
+        this.emit(EventType.Change);
     }
-    "POST /api/v0/synth DONE"(action: C.IFluxAction) {
+    "POST /api/v0/synth DONE"(action: C.IFluxAction<void, PlaybackStore.ISynthCallback>) {
         var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
         if (action.response.forExport) {
             window.location = <any> url;
@@ -142,42 +134,47 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
             }
             this._songEditor.legacyAudioID = PlaybackStore.latestID;
         }
-        this.emit(CHANGE_EVENT);
+        this.emit(EventType.Change);
     }
 
-    "PUT /local/bpm"(action: C.IFluxAction) {
-        this._bpm = parseInt(action.postData, 10);
+    "PUT /webapp/bpm"(action: C.IFluxAction<number, void>) {
+        assert(!isNaN(action.postData));
+
+        this._bpm = action.postData;
         if (this._playing) {
             this._play(false);
             this._play(true);
         }
-        this.emit(CHANGE_EVENT);
+        this.emit(EventType.Change);
     }
 
-    "POST /local/midiOut"(action: C.IFluxAction) {
+    "POST /webapp/midiOut"(action: C.IFluxAction<any, void>) { // IFluxAction<number | number[]>
         if (!this._pendingInstruments) {
             hit(action.postData);
         }
     }
 
-    "PUT /local/song/show"(action: C.IFluxAction) {
+    "PUT /webapp/song/show"(action: C.IFluxAction<void, void>) {
+        // Stops the current playback stream when a new song will be shown.
         this._play(false);
     }
-    "DELETE /local/song/show" = this["PUT /local/song/show"].bind(this);
-    "PUT /local/visualCursor"(action: C.IFluxAction) {
+    "DELETE /webapp/song/show" = this["PUT /webapp/song/show"].bind(this);
+    "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor, void>) {
         if (!this._pendingInstruments) {
-            if (action.resource === "togglePlay") {
-                this._play(!this._playing);
+            this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
+        }
+    }
 
-                this.emit(CHANGE_EVENT);
-            } else if (this._playing && action.postData && !action.postData.step) {
-                this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
-            }
+    "PUT /webapp/visualCursor/togglePlay"(action: C.IFluxAction<void, void>) {
+        if (action.resource === "togglePlay") {
+            this._play(!this._playing);
+
+            this.emit(EventType.Change);
         }
     }
 
     static latestID: number = 0;
-    static USING_LEGACY_AUDIO = USING_LEGACY_AUDIO;
+    static usingLegacyAudio = usingLegacyAudio;
 
     private _continuePlay() {
         var Annotator: typeof AnnotatorType = require("./annotator");
@@ -190,7 +187,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
         var aobj = this._songEditor.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
-            this._dispatcher.PUT("/local/visualCursor", {
+            this._dispatcher.PUT("/webapp/visualCursor/step", {
                 step: 1,
                 skipDurationlessContent: true,
                 loopThroughEnd: true
@@ -199,10 +196,10 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
 
         var seek = 0;
         var foundLegacyStart = false;
-        var startTime = PlaybackStore.USING_LEGACY_AUDIO ? null : MIDI.Player.ctx.currentTime + 0.01;
+        var startTime = PlaybackStore.usingLegacyAudio ? null : MIDI.Player.ctx.currentTime + 0.01;
 
         for (var h = 0; h < this._songEditor.parts.length; ++h) {
-            var body: C.IBody = this._songEditor.parts[h].body;
+            var body: Model[] = this._songEditor.parts[h].body;
             if (!body) {
                 continue;
             }
@@ -223,7 +220,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                     var obj: Model = body[i];
                     foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
                             visualCursor.bar === obj.ctxData.bar);
-                    if (foundIdx && PlaybackStore.USING_LEGACY_AUDIO && !foundLegacyStart) {
+                    if (foundIdx && PlaybackStore.usingLegacyAudio && !foundLegacyStart) {
                         audio5js.seek(seek);
                         audio5js.play();
                         foundLegacyStart = true;
@@ -233,12 +230,12 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                     }
 
                     if (obj.type === C.Type.TimeSignature) {
-                        ctx.timeSignature = obj.timeSignature;
+                        ctx.ts = (<TimeSignatureModelType>obj).ts;
                     }
 
                     if (foundIdx && obj.isNote) {
-                        beats = obj.note.getBeats(ctx);
-                        if (!PlaybackStore.USING_LEGACY_AUDIO && !obj.isRest) {
+                        beats = Metre.calcBeats2(obj.note, ctx);
+                        if (!PlaybackStore.usingLegacyAudio && !obj.isRest) {
                             _.each(obj.note.chord.map(C.NoteUtil.pitchToMidiNumber), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
@@ -258,7 +255,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                     }
 
                     if (obj.isNote) {
-                        beats = obj.note.getBeats(ctx);
+                        beats = Metre.calcBeats2(obj.note, ctx);
                         seek += beats*timePerBeat;
                     }
                 }
@@ -281,11 +278,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                 if (idx === lastIdx) {
                     global.setTimeout(() => {
                         this._playing = false;
-                        this.emit(CHANGE_EVENT);
+                        this.emit(EventType.Change);
                     });
                 }
                 _.defer(() => {
-                    this._dispatcher.PUT("/local/visualCursor", {
+                    this._dispatcher.PUT("/webapp/visualCursor/step", {
                         step: 1,
                         skipDurationlessContent: true,
                         loopThroughEnd: true
@@ -308,7 +305,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     }
 
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
-        if (!enabled || PlaybackStore.USING_LEGACY_AUDIO && soundfont !== "acoustic_grand_piano") {
+        if (!enabled || PlaybackStore.usingLegacyAudio && soundfont !== "acoustic_grand_piano") {
             return; // Sorry IE, you only get a piano.
         }
 
@@ -318,7 +315,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         }
 
         if (!avoidEvent) {
-            this.emit(LOAD_EVENT);
+            this.emit(EventType.Load);
         }
 
         if (this._playing) {
@@ -337,12 +334,12 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                 MIDI.programChange(this._lastChannel, Instruments.soundfontToProgram[soundfont]);
                 if (!--this._pendingInstruments) {
                     MIDI.setVolume(0, 127);
-                    this.emit(CHANGE_EVENT);
+                    this.emit(EventType.Change);
                 }
             }
         });
         if (!avoidEvent) {
-            this.emit(CHANGE_EVENT);
+            this.emit(EventType.Change);
         }
     }
 
@@ -350,7 +347,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._getInstrument("acoustic_grand_piano", true);
     }
 
-    private _handleAction = (action: C.IFluxAction) => {
+    private _handleAction = (action: C.IFluxAction<any, any>) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
@@ -390,7 +387,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
      * For legacy audio.
      */
     get upToDate() {
-        return !USING_LEGACY_AUDIO || this._songEditor.legacyAudioID === PlaybackStore.latestID;
+        return !usingLegacyAudio || this._songEditor.legacyAudioID === PlaybackStore.latestID;
     }
 
     private _bpm: number = 120;
@@ -405,11 +402,14 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     private _timeoutId: number;
 }
 
+function hit(note: number[], velocity?: number, duration?: any): void;
+function hit(note: number,   velocity?: number, duration?: any): void;
+
 function hit(note: any, velocity?: number, duration?: any) {
     "use strict";
 
     if (note instanceof Array) {
-        _.map(note, n => hit(n, velocity, duration));
+        _.map(note, (n: number) => hit(n, velocity, duration));
     } else {
         if (enabled) {
             MIDI.noteOn(0, note, velocity || 127, 0);
@@ -417,5 +417,17 @@ function hit(note: any, velocity?: number, duration?: any) {
         }
     }
 };
+
+module PlaybackStore {
+    "use strict";
+    export interface ISynthCallback {
+        tmpRef:     string;
+        forExport:  boolean;
+        cb:         string;
+    }
+}
+
+var _legacyAudioReady   = false;
+var audio5js: any       = null;
 
 export = PlaybackStore;

@@ -9,6 +9,7 @@ import React = require("react");
 import TypedReact = require("typed-react");
 
 import Glyph = require("./_glyph");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
     render() {
@@ -17,7 +18,6 @@ class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
             y={this.props.y - (this.props.line - 3)*10}
             fill={this.props.stroke}
             opacity={this.props.opacity}
-            fontSize={this.props.fontSize}
             glyphName={this.props.accidental}
 			"selection-info"={"accidental-" + this.props.idx} />
     }
@@ -25,9 +25,10 @@ class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
 
 module Accidental {
     "use strict";
+    export var Component = TypedReact.createClass(Accidental, [PureRenderMixin]);
+
     export interface IProps {
         accidental: string;
-        fontSize: number;
         opacity?: number;
         idx?: number;
         line: number;
@@ -35,8 +36,6 @@ module Accidental {
         x: number;
         y: number;
     }
-
-    export var Component = TypedReact.createClass(React.createClass, Accidental);
 }
 
 export = Accidental;

@@ -4,16 +4,15 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model            = require("./model");
 
-import C = require("./contracts");
-import Annotator = require("./annotator");
-import NewPageModel = require("./newpage");
-import PrintModel = require("./print");
-import SMuFL = require("../util/SMuFL");
+import _                = require("lodash");
 
-import _ = require("lodash");
-import assert = require("assert");
+import Annotator        = require("./annotator");
+import AttributesModel  = require("./attributes")
+import C                = require("./contracts");
+import NewPageModel     = require("./newpage");
+import PrintModel       = require("./print");
 
 /**
  * A manual or automatic hint that a new line should be created. This file
@@ -21,12 +20,24 @@ import assert = require("assert");
  * piano part for everything but the first line of each page. See also begin.ts.
  */
 class NewlineModel extends Model {
+    /* Model */
+    get type()          { return C.Type.NewLine; }
+    get xPolicy()       { return C.RectifyXPolicy.Max; }
+
+    /* NewlineModel */
+    extraWidth:         number;
+    braceY:             number;
+    braceY2:            number;
+    lineSpacing:        number;
+    width:              number;
+
+    /* Lifecycle */
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (ctx.prev().priority !== C.Type.Print) {
-            return ctx.insertPast(new PrintModel({}));
+            return ctx.insertPast(new PrintModel({}, true));
         }
 
         // Pages should not overflow.
@@ -85,19 +96,7 @@ class NewlineModel extends Model {
         ++ctx.line;
         /////////////////////////////////////////////////////////////
 
-        if (ctx.clef) {
-            // This is guarded in case another part called a RETRY_CURRENT.
-            // (Note: This is shady.)
-            ctx.prevClefByStave[ctx.currStaveIdx] = ctx.clef;
-        } else if (global.console) {
-            console.warn("Not updating prevClefByStave because clef is not set. Be afraid.");
-        }
-        if (ctx.keySignature) {
-            ctx.prevKeySignature = ctx.keySignature;
-        }
         ctx.smallest = 10000;
-        ctx.clef = null;
-        ctx.keySignature = null;
 
         this.x = ctx.x;
         this.width = ctx.maxX - ctx.x;
@@ -108,21 +107,24 @@ class NewlineModel extends Model {
          */
         ctx.x += 8;
 
+        var lattributes: C.MusicXML.Attributes = new AttributesModel({
+            time: ctx.attributes.time
+        }, true);
+        ctx.attributes = null;
+
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
-                accidentalsByStave: JSON.parse(JSON.stringify(ctx.accidentalsByStave)),
+                accidentalsByStave: C.JSONx.clone(ctx.accidentalsByStave),
+                attributes: lattributes,
                 bar: null,
                 barKeys: null,
                 barlineX: null,
                 beat: null,
-                clef: null,
                 keySignature: null,
-                timeSignature: ctx.timeSignature,
                 line: ctx.line,
                 pageLines: null,
                 pageStarts: null,
                 prevClefByStave: {},
-                prevKeySignature: null,
                 partIdx: ctx.currStaveIdx,
                 x: null,
                 y: null
@@ -132,17 +134,12 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].accidentalsByStave = [];
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
-        ctx.lines[ctx.line].barKeys = JSON.parse(JSON.stringify(ctx.barKeys));
+        ctx.lines[ctx.line].barKeys = C.JSONx.clone(ctx.barKeys);
         ctx.lines[ctx.line].beat = 0;
         ctx.lines[ctx.line].x = ctx.x;
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
-        ctx.lines[ctx.line].prevClefByStave = JSON.parse(JSON.stringify(ctx.prevClefByStave));
-        ctx.lines[ctx.line].keySignature = ctx.prevKeySignature;
-
-        assert(ctx.lines[ctx.line].prevClefByStave);
-        this.DEBUG_line = ctx.line;
 
         if (ctx.songEditor) {
             ctx.songEditor.dangerouslyTakeSnapshot(ctx);
@@ -151,13 +148,7 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    toLylite(lylite: Array<string>) {
-        lylite.push("\n");
-    }
-
-    get type() {
-        return C.Type.NewLine;
-    }
+    /* Convienience */
 
     /**
      * Spaces things out to fill the entire page width, while maintaining
@@ -182,8 +173,8 @@ class NewlineModel extends Model {
                 break;
             }
             if (ctx.body[i].isNote) {
-                ctx.body[i].annotatedExtraWidth =
-                    (ctx.body[i].annotatedExtraWidth || 0) +
+                ctx.body[i].extraWidth =
+                    (ctx.body[i].extraWidth || 0) +
                     diff/l;
                 xOffset -= diff/l;
             }
@@ -250,9 +241,9 @@ class NewlineModel extends Model {
             ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         }
         var l = 0;
-        var fidx = ctx.idx;
-        for (; fidx >=0; --fidx) {
-            ctx.body[fidx].annotatedExtraWidth = 0;
+        var fidx: number;
+        for (fidx = ctx.idx; fidx >= 0; --fidx) {
+            ctx.body[fidx].extraWidth = 0;
             if (ctx.body[fidx].type === C.Type.Barline) {
                 break;
             }
@@ -261,7 +252,7 @@ class NewlineModel extends Model {
             return C.IterationStatus.Success;
         }
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i].source) {
+            if (!ctx.body[i].annotated) {
                 if (ctx.body[i].type === C.Type.NewLine ||
                         ctx.body[i].type === C.Type.Clef ||
                         ctx.body[i].type === C.Type.TimeSignature ||
@@ -273,12 +264,13 @@ class NewlineModel extends Model {
         }
 
         ctx.insertPast(new NewlineModel({
-            newline: true,
-            source: C.Source.Annotator
-        }), fidx + 1);
+            newline: true
+        }, true), fidx + 1);
 
         return C.IterationStatus.LineCreated;
     };
+
+    /* Static */
 
     /**
      * Given an incomplete line ending at current index, spreads out the line
@@ -335,31 +327,15 @@ class NewlineModel extends Model {
             }
         }
         for (var j = 0; j < toCenter.length; ++j) {
-            var bbox = SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
+            var bbox = C.SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
             var offset = 0;
             if (body[i].type === C.Type.TimeSignature) {
                 offset += 0.7/4;
             }
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
-                (bbox.bBoxNE[0] + bbox.bBoxSW[0]) / 8 - toCenter[j].x;
-        }
-        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.Barline; --i) {
-            body[i].cachedSpacing = Math.max(body[i].cachedSpacing, body[i].spacing);
+                (bbox[0] + bbox[3]) / 8 - toCenter[j].x;
         }
     }
-
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-        });
-    }
-
-    DEBUG_line: number;
-    annotatedExtraWidth: number;
-    braceY: number;
-    braceY2: number;
-    lineSpacing: number;
-    width: number;
 }
 
 export = NewlineModel;

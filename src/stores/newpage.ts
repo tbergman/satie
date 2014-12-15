@@ -15,47 +15,39 @@ import C = require("./contracts");
 import Annotator = require("./annotator");
 
 class NewPageModel extends Model {
+    /* Model */
+    get visible()       { return false; }
+    get type()          { return C.Type.NewPage; }
+    get xPolicy()       { return C.RectifyXPolicy.Max; }
+
+    /* Lifecycle */
     recordMetreDataImpl(mctx: C.MetreContext) {
-        this.ctxData = new C.MetreContext(mctx);
+        this.ctxData    = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         ctx.y = 0;
 
-        ctx.pageLines = _.clone(ctx.pageLines);
+        ctx.pageLines   = _.clone(ctx.pageLines);
         ctx.pageLines.push(ctx.line + 1);
 
-        ctx.pageStarts = _.clone(ctx.pageStarts);
+        ctx.pageStarts  = _.clone(ctx.pageStarts);
         ctx.pageStarts.push(ctx.idx);
+
         return C.IterationStatus.Success;
     }
-    visible() {
-        return false;
-    }
-    toLylite(lylite: Array<string>) {
-        if (!this.source) {
-            lylite.push("\\pageBreak");
-        }
-    }
 
+    /* Static */
     static createNewPage = (ctx: Annotator.Context) => {
-        ctx.insertPast(new NewPageModel({newpage: true, source: C.Source.Annotator}));
+        ctx.insertPast(new NewPageModel({newpage: true}, true));
+
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
-            if (ctx.body[i].type === C.Type.NewPage && ctx.body[i].source) {
+            if (ctx.body[i].type === C.Type.NewPage && ctx.body[i].annotated) {
                 ctx.eraseFuture(i);
                 --i;
             }
         }
         return C.IterationStatus.RetryCurrent;
     };
-
-    get type() {
-        return C.Type.NewPage;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-        });
-    }
 }
 
 export = NewPageModel;

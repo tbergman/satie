@@ -10,29 +10,28 @@
 
 import React = require("react");
 import TypedReact = require("typed-react");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
+import C = require("../stores/contracts");
 import Glyph = require("./_glyph");
-import SMuFL = require("../util/SMuFL");
 import getFontOffset = require("./_getFontOffset");
 
 class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
     render() {
-        var offset = SMuFL.bravuraBBoxes[this.props.notehead].bBoxNE;
-        var start = SMuFL.bravuraBBoxes[this.props.notehead].bBoxSW;
-        var o2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxSW;
-        var s2 = SMuFL.bravuraBBoxes[this.glyphName()].bBoxNE;
+        var offset  = C.SMuFL.bravuraBBoxes[this.props.notehead][0];
+        var start   = C.SMuFL.bravuraBBoxes[this.props.notehead][3];
+        var o2      = C.SMuFL.bravuraBBoxes[this.glyphName()][3];
+        var s2      = C.SMuFL.bravuraBBoxes[this.glyphName()][0];
         return <!Glyph.Component
-            x={this.props.x + this.xOffset() + (offset[0] - start[0])/4/2 + (o2[0] - s2[0])/4/2}
-            y={this.props.y - this.yOffset()}
-            fontSize={this.props.fontSize}
-            fill={this.glyphIsTemporary() ? "#A5A5A5" : "#000000"}
-            staveHeight={this.props.fontSize}
-            glyphName={this.glyphName()}
-            glyphIsTemporary={this.glyphIsTemporary()} />;
+            x               = {this.props.x + this.xOffset() + (offset - start)/4/2 + (o2 - s2)/4/2}
+            y       		= {this.props.y - this.yOffset()}
+            fill    		= {this.glyphIsTemporary() ? "#A5A5A5" : "#000000"}
+            glyphName   	= {this.glyphName()}
+            glyphIsTemporary= {this.glyphIsTemporary()} />;
     }
 
     directionString() {
-        if (SMuFL.bravuraBBoxes[this.notationName()]) {
+        if (C.SMuFL.bravuraBBoxes[this.notationName()]) {
             return "";
         } else if (this.direction() === 1) {
             return "Below";
@@ -59,14 +58,16 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         return false;
     }
     glyphIsTemporary() {
-        return this.props.notation.substr(0, 2) === "__";
+        return false; // MXFIX
+        // return this.props.notation.substr(0, 2) === "__";
     }
     glyphName() {
         return this.notationName() + this.directionString();
     }
     notationName() {
-        var isTmp = this.glyphIsTemporary();
-        return isTmp ? this.props.notation.substring(2) : this.props.notation;
+        return ""; // MXFIX
+        // var isTmp = this.glyphIsTemporary();
+        // return isTmp ? this.props.notation.substring(2) : this.props.notation;
     }
     direction() {
         if (this.shouldBeAboveStaff()) {
@@ -76,11 +77,12 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
     }
     getFontOffset = getFontOffset;
     xOffset() {
-        if (this.props.notation.indexOf("caesura") === 0) {
-            return -3/8; // TODO -- move to DurationModel and fix
-        } else if (this.props.notation.indexOf("breathMarkComma") === 0) {
-            return 3/8; // TODO -- move to DurationModel and fix
-        }
+        // MXFIX
+        // if (this.props.notation.indexOf("caesura") === 0) {
+        //     return -3/8; // TODO -- move to DurationModel and fix
+        // } else if (this.props.notation.indexOf("breathMarkComma") === 0) {
+        //     return 3/8; // TODO -- move to DurationModel and fix
+        // }
         return 0;
     }
     yOffset() {
@@ -111,14 +113,13 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
 
 module NoteNotation {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, NoteNotation);
+    export var Component = TypedReact.createClass(NoteNotation, [PureRenderMixin]);
 
     export interface IProps {
         direction: number; // -1 or 1
-        fontSize: number;
         idx: number;
         line: number;
-        notation: string;
+        notation: C.MusicXML.Notations;
         notehead: string;
         x: number;
         y: number;

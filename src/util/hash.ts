@@ -1,3 +1,7 @@
+/**
+ * Public domain.
+ */
+
 function hash(str: string) {
     "use strict";
 

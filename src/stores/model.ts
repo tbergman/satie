@@ -4,19 +4,17 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import React = require("react"); // For TSX in setView.
-import assert = require("assert");
+import React            = require("react");                     // For setView.
+import assert           = require("assert");
+import _                = require("lodash");
+var    assign           = require("react/lib/Object.assign");
 
-import C = require("./contracts");
-import Annotator = require("./annotator");
-
-import _ = require("lodash");
-var assign = require("react/lib/Object.assign");
+import Annotator        = require("./annotator");
+import C                = require("./contracts");
 
 /**
  * Subclasses of Models handle the gap between the abstract representation of
- * a score (as, for example, parsed in lylite.jison) and the actual rendering
- * (which is done by components in ./primitives).
+ * a score and the actual rendering (which is done by components in ./primitives).
  * 
  * In particular, classes which extend Model provide three two functions:
  *   - annotateImpl: adds any missing information (default values) not provided
@@ -30,92 +28,185 @@ var assign = require("react/lib/Object.assign");
  * console, look at 'SongEditorStore.parts()[...].body'. Every item is a Model.
  */
 class Model {
-    annotate(ctx: Annotator.Context): C.IterationStatus {
-        if (!this.inBeam) {
-            // Beamed notes are placed by the BeamGroupModel
-            this.x = ctx.x;
-            this.y = ctx.y;
-            this.spacing = 0;
-        }
-        this.idx = ctx.idx;
+    /////////////////////////////////////////
+    // I.1 Properties common to all models //
+    /////////////////////////////////////////
 
-        var ret: C.IterationStatus = this.annotateImpl(ctx);
-        assert(ret !== undefined);
-        if (ret === C.IterationStatus.Success && this.source === C.Source.UserProposed) {
-            this.source = C.Source.User;
+    /** Unique identifier for this instance */
+    key:                string                  = Model.newKey();
+
+    /** Calculated. Position in part */
+    idx:                number                  = NaN;
+
+    /** Calculated. From left, in tenths of a stave space */
+    x:                  number                  = NaN;
+
+    /** Calculated. From bottom, in tenths of a stave space */
+    y:                  number                  = NaN;
+
+    /**
+     * Calculated. Offset due to right or center justification, in tenths of a
+     * stave space. Note that Model.x takes spacing into account.
+     */
+    spacing:            number                  = 0;
+
+    /** Caclculated. The bar, beat of this model */
+    ctxData:            C.MetreContext          = null;
+
+    get isModifier() {
+        return this.priority > C.Type.START_OF_MODIFIERS && this.priority < C.Type.END_OF_MODIFIERS;
+    }
+
+    ////////////////////////////////////
+    // I.2 Flags common to all models //
+    ////////////////////////////////////
+
+    private _flags:     number                  = 0;
+    get inBeam():       boolean     { return this._getFlag(Flags.InBeam); }
+    set inBeam(b:       boolean)    {        this._setFlag(Flags.InBeam, b); }
+
+    get placeholder():  boolean     { return this._getFlag(Flags.Placeholder); }
+    set placeholder(b:  boolean)    {        this._setFlag(Flags.Placeholder, b); }
+
+    get selected():     boolean     { return this._getFlag(Flags.Selected); }
+    set selected(b:     boolean)    {        this._setFlag(Flags.Selected, b); }
+
+    get annotated():    boolean     { return this._getFlag(Flags.Annotator); }
+    set annotated(b:    boolean)    {        this._setFlag(Flags.Annotator, b); }
+
+    get proposed():     boolean     { return this._getFlag(Flags.Proposed); }
+    set proposed(b:     boolean)    {        this._setFlag(Flags.Proposed, b); }
+
+    ////////////////////////////////////////////////////
+    // I.3 Properties to be reimplemented by subtypes //
+    ////////////////////////////////////////////////////
+
+    endMarker:          boolean;
+    beam:               C.IPitchDuration[];
+    get note():         C.IPitchDuration        { throw "Not a Duration"; }
+    get isNote():       boolean                 { return false; }
+    get isRest():       boolean                 { return false; }
+    get visible():      boolean                 { return true; }
+
+    get xPolicy():      C.RectifyXPolicy        { throw "Not implemented"; }
+    get type():         C.Type                  { throw "Not implemented"; }
+    get fields():       string[]                { return []; }
+
+    get extraWidth(): number                    { return 0; }
+    set extraWidth(w: number) {
+        if (w !== 0) {
+            assert(false, "This element does not support annotatedExtraWidth.");
         }
-        return ret;
+    }
+
+    get revision():     string                  { throw "Not a Barline"; }
+    set revision(n: string)                     { throw "Not a Barline"; }
+
+    get priority():     C.Type                  { return this.type; }
+    set priority(p: C.Type)                     { throw "Not a Placeholder"; }
+
+    calcBeats(ctx: C.MetreContext)              { return 0; }
+
+    ///////////////////
+    // II. Lifecycle //
+    ///////////////////
+
+    constructor(spec: any, annotated: boolean) {
+        // By only setting attributes in jsonWhitelist, we make bugs in
+        // jsonWhitelist more obvious.
+        for (var idx in this.fields) {
+            if (spec.hasOwnProperty(this.fields[idx])) {
+                var key = this.fields[idx];
+                (<any>this)[key] = spec[key];
+            }
+        }
+
+        if (spec._) {
+            spec.key        = spec._[0];
+            spec.flags      = spec._[2];
+        }
+        if (spec.x) {
+            this.x          = spec.x;
+            this.y          = spec.y;
+        }
+
+        spec.annotated      = annotated;
     }
 
     modelDidLoad(body: Array<Model>, idx: number) {
-        // Pass
+        // pass
     }
 
-    /**
-     * TODO: child models should fully manage the spec.
-     */
-    constructor(spec: any) {
-        assert(this instanceof Model);
-        var self: { [key: string]: any } = <any> this;
-        for (var prop in spec) {
-            if (spec.hasOwnProperty(prop) && prop !== "type") {
-                self[prop] = spec[prop];
-            }
+    annotate(ctx: Annotator.Context): C.IterationStatus {
+        if (!this.inBeam) {
+            // Beamed notes are placed by the BeamGroupModel
+            this.x          = ctx.x;
+            this.y          = ctx.y;
+            this.spacing    = 0;
         }
-    }
+        this.idx            = ctx.idx;
 
-    static _sessionId: string = _sessionId(); // TODO: Make sure this isn't a duplicate.
-    static _lastKey = 0;
+        var status          = this.annotateImpl(ctx);
 
-    static _generateKey(): string {
-        return Model._sessionId + "-" + ++Model._lastKey;
-    }
+        this.proposed       = false;
 
-    get timeSignature(): C.ITimeSignature {
-        assert(false, "Not a time signature");
-        return null;
+        assert(status !== undefined);
+        return status;
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        assert(false, "Not implemented");
-        return null; // Not reached
+        throw C.Type[this.type] + " does not implement annotateImpl.";
     }
 
     recordMetreDataImpl(mctx: C.MetreContext): void {
         assert(false, "Not implemented");
     }
 
-    visible(): boolean {
-        return true;
-    }
-
     render(options?: any): React.ReactComponentElement<any> {
-        throw "Not implemented";
+        throw "No view has been set for " + C.Type[this.type] + ". See Model.setView(...)";
     }
 
-    get annotatedExtraWidth(): number {
-        return 0;
-    }
-    set annotatedExtraWidth(w: number) {
-        if (w !== 0) {
-            assert(false, "This element does not support annotatedExtraWidth " +
-                "because its not a note");
-        }
+    //
+    // III. Util
+    //
+
+    toJSON(): {} {
+        var json: {} = {
+            _: [this.key, this.type, this._flags]
+        };
+
+        _.forEach(this.fields, value => {
+            if (!!(<any>this)[value]) {
+                (<any>json)[value] = (<any>this)[value];
+            }
+        });
+
+        return json;
     }
 
-    get isNote(): boolean {
-        return false;
+    assign<T>(obj: T) {
+        _.forEach(obj, (value, key) => {
+            (<any>this)[key] = C.JSONx.clone(value);
+        });
     }
 
-    get isRest(): boolean {
-        return false;
+    protected _getFlag(f: number) {
+        return !!(this._flags & f);
+    }
+    protected _setFlag(f: number, v: boolean) {
+        this._flags = v ? (this._flags | f) : (this._flags & ~f);
     }
 
-    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
-        assert(false, "Not implemented");
-    }
+    //
+    // IV. Static
+    //
 
-    // FIXME: key is now a string
+    static _sessionId:  string                  = _sessionId();
+    static _lastKey:    number                  = 0;
+
+    /**
+     * Sets the type used for render().
+     */
     static setView = function (View: (opts: { key: number; spec: Model;}) => any) {
         this.prototype.render = function (options: any) {
             var props = assign({}, options, {key: this.key, spec: this});
@@ -131,7 +222,7 @@ class Model {
         for (var i = 0; i < parts.length; ++i) {
             for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
                 var item = parts[i].body[j];
-                if (item.source === C.Source.Annotator && !item.placeholder) {
+                if (item.annotated && !item.placeholder) {
                     for (var k = 0; k < parts.length; ++k) {
                         if (parts[k].body) {
                             parts[k].body.splice(j, 1);
@@ -144,57 +235,6 @@ class Model {
             }
         }
     };
-
-    getBeats(ctx: C.MetreContext) {
-        return 0;
-    }
-
-    // FLAGS
-    get inBeam(): boolean { return !!(this._flags & Flags.IN_BEAM); }
-    set inBeam(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.IN_BEAM;
-        } else { this._flags = this._flags & ~Flags.IN_BEAM; } }
-
-    get placeholder() { return !!(this._flags & Flags.PLACEHOLDER); }
-    set placeholder(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.PLACEHOLDER;
-        } else { this._flags = this._flags & ~Flags.PLACEHOLDER; } }
-
-    get selected() { return !!(this._flags & Flags.SELECTED); }
-    set selected(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.SELECTED;
-        } else { this._flags = this._flags & ~Flags.SELECTED; } }
-
-    get source(): C.Source {
-        if (!!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.UserProposed;
-        } else if (!(this._flags & Flags.PROPOSED) && !(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.User;
-        } else if (!(this._flags & Flags.PROPOSED) && !!(this._flags & Flags.ANNOTATOR)) {
-            return C.Source.Annotator;
-        }
-        assert(false, "Unknown source");
-    }
-    set source(source: C.Source) {
-        if (source === C.Source.Annotator) {
-            this._flags = this._flags | Flags.ANNOTATOR;
-            this._flags = this._flags & ~Flags.PROPOSED;
-        } else if (source === C.Source.User) {
-            this._flags = this._flags & ~Flags.ANNOTATOR;
-            this._flags = this._flags & ~Flags.PROPOSED;
-        } else if (source === C.Source.UserProposed) {
-            this._flags = this._flags & ~Flags.ANNOTATOR;
-            this._flags = this._flags | Flags.PROPOSED;
-        }
-    }
-
-    toJSON(): {} {
-        return {
-            key: this.key,
-            type: C.Type[this.type],
-            _flags: this._flags
-        };
-    }
 
     /**
      * Return a Model that is equivalent to one that has been JSON.stringified.
@@ -223,78 +263,31 @@ class Model {
         } else {
             spec = json;
         }
-        var model = (existingObjects && existingObjects[spec.key]) || Model.constructorsByType[spec.type](spec);
+        // _[1] is the type. See toJSON.
+        var model = (existingObjects && existingObjects[spec.key]) || Model.constructorsByType[spec._[1]](spec);
         var modelObj: { [key: string]: any } = <any> model;
         assert(model);
         _.each(spec, (value: any, key: string) => {
-            if (key !== "_priority") { // HACK: _priority should be a number.
-                modelObj[key] = value;
-            }
+            modelObj[key] = value;
         });
         return model;
     }
 
-    key: string = Model._generateKey();
-    x: number = NaN;
-    y: number = NaN;
-    cachedSpacing: number = 0;
-    spacing: number = 0;
-    endMarker: boolean;
-    idx: number;
-    _flags: number = 0;
-    ctxData: C.MetreContext;
-
-    get type(): C.Type {
-        return C.Type.Unknown;
+    /**
+     * Creates a new unique identifier for an instance of a model.
+     */
+    static newKey(): string {
+        return Model._sessionId + "-" + ++Model._lastKey;
     }
-
-    get note(): C.IPitchDuration {
-        assert(false, "Not a note.");
-        return null;
-    }
-
-    get revision(): string {
-        assert(false, "Not implemented for this type");
-        return "";
-    }
-
-    set revision(n: string) {
-        assert(false, "Not implemented for this type");
-    }
-
-    get priority(): C.Type {
-        return this.type;
-    }
-
-    set priority(p: C.Type) {
-        assert(false, "Setting priority is not implemented for this type.");
-    }
-
-    get isModifier() {
-        return this.priority > C.Type.START_OF_MODIFIERS && this.priority < C.Type.END_OF_MODIFIERS;
-    }
-
-    beam: Array<C.IPitchDuration>;
-
-    static constructorsByType: { [key: string /* C.Type */]: (spec: any) => Model } = {};
-}
-
-enum Flags {
-    IN_BEAM = 2 << 0,
-    PLACEHOLDER = 2 << 1,
-    SELECTED = 2 << 2,
-    ANNOTATOR = 2 << 3,
-    PROPOSED = 2 << 4
-    // model-specific = 2 << 6
-}
-
-function _sessionId(): string {
-    "use strict";
-    return (Math.random().toString(16) + "000000000").substr(2, 8);
 }
 
 module Model {
     "use strict";
+
+    /**
+     * See types.ts
+     */
+    export var constructorsByType: { [key: number /* C.Type */]: (spec: any) => Model } = {};
 
     /**
      * Types that do not support adjacent models of the same type.
@@ -326,5 +319,18 @@ module Model {
     }
 }
 
+enum Flags {
+    InBeam              = 2 << 0,
+    Placeholder     	= 2 << 1,
+    Selected        	= 2 << 2,
+    Annotator       	= 2 << 3,
+    Proposed        	= 2 << 4
+    // Model-specific  >= 2 << 6
+}
+
+function _sessionId(): string {
+    "use strict";
+    return (Math.random().toString(16) + "000000000").substr(2, 8);
+}
+
 export = Model;
-global.Model = Model; // For debugging

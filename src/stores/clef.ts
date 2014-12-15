@@ -7,41 +7,113 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model                    = require("./model");
 
-import Annotator = require("./annotator");
-import BarlineModelType = require("./barline"); // Cyclic dependency. For types only.
-import BeginModel = require("./begin");
-import C = require("./contracts");
+import Annotator                = require("./annotator");
+import BarlineModelType         = require("./barline");     // Cyclic.
+import AttributesModel          = require("./attributes");
+import C                        = require("./contracts");
 
-import _ = require("lodash");
+class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplete {
+    /* Model */
+    get type()                                          { return C.Type.Clef; }
+    get visible():              boolean                 { return this.isVisible !== false; }
+    get xPolicy()                                       { return C.RectifyXPolicy.Max; }
 
-class ClefModel extends Model.StateChangeModel {
+    get fields() {
+        return [
+            "isLocked",
+
+            "clefOctaveChange", "sign", "number_", "size", "line", "afterBarline", "additional",
+            "defaultX", "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle",
+            "fontSize", "color", "printObject"
+        ];
+    }
+
+    /* ClefModel */
+    get displayedClef()                                 { return this._displayedClef || this; }
+    set displayedClef(clef: C.MusicXML.ClefComplete)    { this._displayedClef = clef; }
+
+    _annotatedSpacing:          number;
+    isChange:                   boolean;
+    isVisible:                  boolean;
+    selected:                   boolean;
+    retryStatus                                         = C.IterationStatus.RetryLine;
+    private _displayedClef:     C.MusicXML.ClefComplete;
+
+    /* Extensions */
+    /** If false, it's a reminder rather than a change and shouldn't be saved in MusicXML */
+    isLocked:                   boolean;
+
+    /* C.MusicXML.Clef */
+    clefOctaveChange:           string;
+    sign:                       string;
+    number_:                    number;
+    size:                       C.MusicXML.SymbolSize;
+    line:                       number;
+    afterBarline:               boolean;
+    additional:                 boolean;
+
+    /* C.MusicXML.PrintStyle */
+
+    /* C.MusicXML.PrintStyle >> Position */
+    defaultX: number;
+    relativeY: number;
+    defaultY: number;
+    relativeX: number;
+
+    /* C.MusicXML.PrintStyle >> Font */
+    fontFamily: string;
+    fontWeight: C.MusicXML.NormalBold;
+    fontStyle: C.MusicXML.NormalItalic;
+    fontSize: string;
+
+    /* C.MusicXML.PrintStyle >> Color */
+    color: string;
+
+    /* C.MusicXML.PrintObject */
+    printObject: boolean;
+
+
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        // Songs begin with BeginModels.
-        if (ctx.idx === 0) {
-            return BeginModel.createBegin(ctx);
+        // Songs must have attributes to put the clef in.
+        if (!ctx.attributes) {
+            return ctx.insertPast(new AttributesModel({}, true));
         }
 
         // A clef must not be redundant.
-        if (this.clefIsRedundant(ctx)) {
+        if (this._clefIsRedundant(ctx)) {
             ctx.eraseCurrent(Annotator.SplicePolicy.Masked);
             return C.IterationStatus.RetryLine; // BUG: Caching
+        }
+
+        this.sign = this.sign.toUpperCase();
+
+        if (isNaN(this.line)) {
+            for (var i = 0; i < ClefModel.standardClefs.length; ++i) {
+                if (ClefModel.standardClefs[i].sign === this.sign) {
+                    this.line = ClefModel.standardClefs[i].line;
+                }
+            }
         }
 
         // There must be at least one note or rest between clefs.
         for (var i = ctx.idx + 1; ctx.body[i] && !ctx.body[i].isNote; ++i) {
             if (ctx.body[i].type === C.Type.Clef) {
-                this.clef = (<ClefModel>ctx.body[i]).clef;
-                break;
+                return ctx.eraseCurrent(Annotator.SplicePolicy.MatchedOnly);
             }
         }
 
         // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
-        this.isChange = !!ctx.clef;
+        this.isChange = ctx.attributes.clef !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
             if (barCandidate && barCandidate.type === C.Type.Barline) {
@@ -53,20 +125,18 @@ class ClefModel extends Model.StateChangeModel {
             }
         } else {
             // Otherwise, barlines should be before clefs when either is possible.
-            if (ctx.timeSignature && ctx.beat >= ctx.timeSignature.beats) {
+            if (ctx.ts && ctx.beat >= ctx.ts.beats) {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
             }
         }
 
         // Copy information from the context that the view needs.
-        this.displayedClefName = (this.clef === "detect" && this.displayedClef === this.clef) ?
-            ctx.prevClefByStave[ctx.currStaveIdx] : this.displayedClef;
-        ctx.clef = this.clef === "detect" ? ctx.prevClefByStave[ctx.currStaveIdx] : this.clef;
+        ctx.attributes.clef = this;
         var next = ctx.next();
         if (next.isNote) {
             var note: C.IPitch = <any> next;
-            if (note.acc) {
+            if (note.alter) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing = 15;
             } else {
@@ -80,135 +150,120 @@ class ClefModel extends Model.StateChangeModel {
         } else {
             ctx.x += 24 + this._annotatedSpacing;
         }
-        this.color = this.displayedClef !== this.clef ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        this.color = this.displayedClef !== this ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;
     }
-    visible(): boolean {
-        return this.isVisible !== false;
-    }
-    toLylite(lylite: Array<string>) {
-        if (this.source === C.Source.Annotator) {
-            return;
+
+    /* Convenience */
+    private _clefIsRedundant(ctx: Annotator.Context): boolean {
+        switch (true) {
+            case ctx.attributes.clef === this:
+            case !ctx.attributes.clef:
+                return false;
+            case ClefModel.serializeClef(ctx.attributes.clef) === ClefModel.serializeClef(this):
+                return true;
+            default:
+                console.warn("_clefIsRedundant: not reached");
         }
-        lylite.push("\\clef " + this.clef + "\n");
-    }
-    clefIsRedundant(ctx: Annotator.Context): boolean {
-        return ctx.clef === this.clef && this.clef !== "detect";
     }
 
+    /* Static */
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
-        return ctx.insertPast(new ClefModel({
-            clef: (ctx.prevClefByStave[ctx.currStaveIdx] ? "detect" : "treble"),
-            source: C.Source.Annotator
-        }));
+        var clef = ctx.prev(c => c.type === C.Type.Clef);
+        return ctx.insertPast(new ClefModel(clef, true));
     };
 
-    static standardClefs = [
+    static standardClefs: C.MusicXML.ClefComplete[] = [
         {
-            name: "treble",
-            glyph: "gClef",
-            x: -0.4,
-            y: 0.4
+            // Treble
+            line:               2,
+            sign:              	"G",
+            additional:        	false,
+            afterBarline:      	false,
+            clefOctaveChange:   null,
+            color:              "#000000",
+            defaultX:           -16,
+            defaultY:           16,
+            fontFamily:         "",
+            fontSize:           "small",
+            fontStyle:          0,
+            fontWeight:         0,
+            number_:            1,
+            printObject:        true,
+            relativeX:          0,
+            relativeY: 			0,
+            size:               1
         }, {
-            name: "bass",
-            glyph: "fClef",
-            x: -0.4,
-            y: 0.1
+            // bass
+            line:               4,
+            sign: 				"F",
+            additional:         false,
+            afterBarline:       false,
+            clefOctaveChange:   null,
+            color:              "#000000",
+            defaultX:           -16,
+            defaultY: 			4,
+            fontFamily:         "",
+            fontSize:           "small",
+            fontStyle:          0,
+            fontWeight:         0,
+            number_:            1,
+            printObject:        true,
+            relativeX:          0,
+            relativeY:          0,
+            size:               1
         }, {
-            name: "tenor",
-            glyph: "cClef",
-            x: -0.4,
-            y: 0.0
+            // tenor
+            line:               3,
+            sign:               "C",
+            additional:         false,
+            afterBarline:       false,
+            clefOctaveChange:   null,
+            color:              "#000000",
+            defaultX:           -16,
+            defaultY: 			0,
+            fontFamily:         "",
+            fontSize:           "small",
+            fontStyle:          0,
+            fontWeight:         0,
+            number_:            1,
+            printObject:        true,
+            relativeX:          0,
+            relativeY:          0,
+            size:               1
         }, {
-            name: "alto",
-            glyph: "cClef",
-            x: -0.4,
-            y: 0.2
+            // alto
+            line:               4,
+            sign: 				"C",
+            additional:         false,
+            afterBarline:       false,
+            clefOctaveChange:   null,
+            color:              "#000000",
+            defaultX:           -16,
+            defaultY:           8,
+            fontFamily:         "",
+            fontSize:           "small",
+            fontStyle:          0,
+            fontWeight:         0,
+            number_:            1,
+            printObject:        true,
+            relativeX:          0,
+            relativeY:          0,
+            size:               1
         }
     ];
+}
 
-    static clefToLine: { [key:string]: number } = {
-        "treble": 2,
-        "gClef15mb": 2,
-        "gClef8vb": 2,
-        "gClef8va": 2,
-        "gClef15ma": 2,
-        "gClef8vbOld": 2,
-        "gClef8vbCClef": 2,
-        "gClef8vbParens": 2,
-        "gClefArrowUp": 2,
-        "gClefArrowDown": 2,
-
-        "alto": 3,
-        "tenor": 4,
-        "cClef8vb": 3,
-        "cClefArrowUp": 3,
-        "cClefArrowDown": 3,
-        "cClefSquare": 3,
-        "cClefCombining": 3,
-
-        "bass": 4,
-        "fClef15mb": 4,
-        "fClef8vb": 4,
-        "fClef8va": 4,
-        "fClef15ma": 4,
-        "fClefArrowUp": 4,
-        "fClefArrowDown": 4,
-
-        "unpitchedPercussionClef1": 3,
-        "unpitchedPercussionClef2": 3,
-        "semipitchedPercussionClef1": 3,
-        "semipitchedPercussionClef2": 3,
-
-        "6stringTabClef": 3,
-        "4stringTabClef": 3,
-        "cClefTriangular": 3,
-        "fClefTriangular": 3,
-        "cClefTriangularToFClef": 3,
-        "fClefTriangularToCClef": 3,
-        "gClefReversed": 2,
-        "gClefTurned": 2,
-        "cClefReversed": 3,
-        "fClefReversed": 4,
-        "fClefTurned": 4,
-        "bridgeClef": 3,
-        "accdnDiatonicClef":3,
-
-        "soprano": 1,
-        "mezzosoprano": 2,
-        "baritone": 5,
-        "french": 1
-    };
-
-    get type() {
-        return C.Type.Clef;
-    }
-
-    get displayedClef() {
-        return this._displayedClef || this.clef;
-    }
-
-    set displayedClef(clef: string) {
-        this._displayedClef = clef;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            clef: this.clef,
-            displayedClefName: this.displayedClefName,
-            visible: this.visible
+module ClefModel {
+    "use strict";
+    export function serializeClef(c: C.MusicXML.Clef) {
+        return JSON.stringify({
+            additional:         c.additional || false,
+            size:               c.sign,
+            number_:            c.number_,
+            line:               c.line
         });
     }
-
-    _annotatedSpacing: number;
-    clef: string;
-    displayedClefName: string;
-    color: string;
-    isChange: boolean;
-    isVisible: boolean;
-    selected: boolean;
-    retryStatus = C.IterationStatus.RetryLine;
-    private _displayedClef: string;
 }
 
 export = ClefModel;

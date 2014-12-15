@@ -11,14 +11,14 @@
 import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Group = require("./_group");
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
 
 class StaveLines extends TypedReact.Component<StaveLines.IProps, {}> {
     render() {
-        return <!Group.Component>
+        return <!g>
             {_.times(5, i => <!Line.Component
                 key={"staff-" + i}
                 x1={this.props.x}
@@ -28,13 +28,13 @@ class StaveLines extends TypedReact.Component<StaveLines.IProps, {}> {
                 stroke="#6A6A6A"
                 victoriaXStrokeWidthFactor={0}
                 strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness*10} />)}
-        </Group.Component>;
+        </g>;
     }
 }
 
 module StaveLines {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, StaveLines);
+    export var Component = TypedReact.createClass(StaveLines, [PureRenderMixin]);
 
     export interface IProps {
         width: number;

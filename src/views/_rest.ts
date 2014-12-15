@@ -12,17 +12,17 @@ import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
 import assert = require("assert");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Dot = require("./_dot");
 import Glyph = require("./_glyph");
-import Group = require("./_group");
 import NoteNotation = require("./_noteNotation");
 
 class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
         var line = this.props.line;
         assert.deepEqual(line, [3]);
-        return <!Group.Component>
+        return <!g>
             <!Glyph.Component
                 key="r"
                 x={this.props.x + this.props.spacing}
@@ -46,7 +46,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 element.props.notehead = this.props.notehead;
                 return element;
             })}
-        </Group.Component>;
+        </g>;
     }
 
     direction() {
@@ -61,10 +61,10 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
 
 module Rest {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Rest);
+    export var Component = TypedReact.createClass(Rest, [PureRenderMixin]);
 
     export interface IProps {
-        children: Array<NoteNotation>;
+        children: NoteNotation[];
         dotted: number;
         line: Array<number>;
         notehead: string;

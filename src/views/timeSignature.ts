@@ -8,16 +8,17 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
+import React                = require("react");
+import TypedReact           = require("typed-react");
+import _                    = require("lodash");
+var    PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Glyph = require("./_glyph");
-import Group = require("./_group");
-import TimeSignatureModel = require("../stores/timeSignature");
+import C                    = require("../stores/contracts");
+import Glyph                = require("./_glyph");
+import TimeSignatureModel   = require("../stores/timeSignature");
 
 class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
-    render() {
+    render(): any {
         var spec = this.props.spec;
         var ts = spec.displayTimeSignature;
 
@@ -30,23 +31,20 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
                     x={spec.x}
                     y={spec.y}
                     fill={spec.color}
-                    fontSize={this.props.fontSize}
                     glyphName="timeSigCommon" />
             } else if (beats === 2 && beatType === 2) {
                 return <!Glyph.Component
                     x={spec.x}
                     y={spec.y}
                     fill={spec.color}
-                    fontSize={this.props.fontSize}
                     glyphName="timeSigCutCommon" />;
             }
             // Cannot be represented in common representation. Pass through.
         }
-        return <!Group.Component>
+        return <!g>
             <!TimeSignatureNumber.Component
                     key="-5"
                     stroke={spec.color}
-                    fontSize={this.props.fontSize}
                     x={spec.x + this.numOffset()}
                     y={spec.y - 10}>
                 {ts.beats}
@@ -54,12 +52,11 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
             <!TimeSignatureNumber.Component
                     key="-6"
                     stroke={spec.color}
-                    fontSize={this.props.fontSize}
                     x={spec.x + this.denOffset()}
                     y={spec.y + 10}>
                 {ts.beatType}
             </TimeSignatureNumber.Component>
-        </Group.Component>;
+        </g>;
     }
 
     numOffset() {
@@ -78,43 +75,47 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
         }
         return 0;
     }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 };
 
 module TimeSignature {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, TimeSignature);
+    export var Component = TypedReact.createClass(TimeSignature);
 
     export interface IProps {
         key: number;
         spec: TimeSignatureModel;
-        fontSize: number;
     }
 }
 
 /* private */
 class TimeSignatureNumber extends TypedReact.Component<TimeSignatureNumber.IProps, {}> {
     render() {
-        return <!Group.Component>
+        return <!g>
             {_.map((this.props.children + "").split(""), (c, i) => <!Glyph.Component
                 key={"ts-" + i}
                 x={this.props.x + i*10}
                 y={this.props.y}
                 fill={this.props.stroke}
-                fontSize={this.props.fontSize}
                 glyphName={"timeSig" + c} />)}
-        </Group.Component>;
+        </g>;
     }
 }
 
 /* private */
 module TimeSignatureNumber {
-    export var Component = TypedReact.createClass(React.createClass, TimeSignatureNumber);
+    export var Component = TypedReact.createClass(TimeSignatureNumber, [PureRenderMixin]);
     export interface IProps {
         key: string;
         x: number;
         y: number;
         stroke: string;
-        fontSize: number;
         children?: any;
     }
 }

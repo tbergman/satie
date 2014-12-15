@@ -4,46 +4,331 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model                = require("./model");
 
-import _ = require("lodash");
-import assert = require("assert");
+import _                	= require("lodash");
+import assert           	= require("assert");
 
-import Annotator = require("./annotator");
-import BarlineModel = require("./barline");
-import BeamGroupModelType = require("./beamGroup"); // Cyclic dependency. For types only.
-import C = require("./contracts");
-import EndMarkerModel = require("./endMarker");
-import KeySignatureModel = require("./keySignature");
-import Metre = require("./metre");
-import NewlineModel = require("./newline");
-import TimeSignatureModel = require("./timeSignature");
+import Annotator        	= require("./annotator");
+import AttributesModel  	= require("./attributes");
+import BarlineModel     	= require("./barline");
+import BeamGroupModelType   = require("./beamGroup");       // Cyclic
+import C                    = require("./contracts");
+import EndMarkerModel       = require("./endMarker");
+import KeySignatureModel    = require("./keySignature");
+import Metre                = require("./metre");
+import NewlineModel         = require("./newline");
+import TimeSignatureModel   = require("./timeSignature");
 
 /**
  * A duration is a chord (if chord is set, and pitch is null), a pitch
  * (if pitch is [a-g]), or a rest (if pitch is "r").
+ *
+ * Unlike MusicXML Notes, the entirity of a chord is held in a DurationModel.
+ * 
+ * In addition, since the MusicXML Note type is complicated, there is a simplified interface
+ * in addition to the standard MusicXML interface.
  */
 class DurationModel extends Model implements C.IPitchDuration {
+    ///////////////
+    // I.1 Model //
+    ///////////////
+
+    get fields()                            { return [ "_notes", "dots" ]; }
+    get visible()                           { return !this.inBeam; }
+    get isNote():  boolean                  { return true; }
+    get note():    C.IPitchDuration         { return this; }
+    get type()                              { return C.Type.Duration; }
+    get xPolicy()                           { return C.RectifyXPolicy.Min; }
+
+    //////////////////////////
+    // I.2 C.IPitchDuration //
+    //////////////////////////
+
+    chord: C.IPitch[];
+    get isRest() {
+        return (this.chord && this.chord.length === 1 && this.chord[0].step === "r");
+    }
+
+    set isRest(r: boolean) {
+        if (!!r) {
+            this.chord = [{
+                step: "r",
+                alter: null,
+                octave: null
+            }];
+            this.tie = false;
+        } else {
+            assert(!this.isRest, "Instead, set the exact pitch or chord...");
+        }
+    }
+
+    get tie(): boolean          { return    this._getFlag(Flags.TIE); }
+    set tie(v: boolean)         {           this._setFlag(Flags.TIE, v); }
+
+    get isWholebar(): boolean   { return    this._getFlag(Flags.WHOLE_BAR); }
+    set isWholebar(v: boolean)  {           this._setFlag(Flags.WHOLE_BAR, v); }
+
+    accToDelete: number;
+
+    ///////////////////////
+    // I.2.1 C.IDuration //
+    ///////////////////////
+
+    get count() {
+        return this._count;
+    }
+
+    set count(n: C.MusicXML.Count) {
+        assert(!isNaN(n));
+        this._count = n;
+        this._beats = null; // Kill optimizer.
+    }
+
+    dots: number;
+
+    /**
+     * Returns the number of dots that should be rendered. This can differ
+     * from the actual number of dots during a preview, for example.
+     */
+    get displayDots(): number {
+        if (this.isWholebar && this.isRest) {
+            return 0;
+        }
+        return this._displayDots === void 0 || this._displayDots === null ?
+            this.dots : this._displayDots;
+    }
+
+    set displayDots(c: number) {
+        this._displayDots = c;
+    }
+
+    get tuplet() {
+        return this._tuplet;
+    }
+
+    set tuplet(t: C.ITuplet) {
+        this._tuplet = t;
+        this._displayTuplet = null;
+    }
+
+    get displayTuplet() {
+        return this._displayTuplet || this._tuplet;
+    }
+
+    set displayTuplet(t: C.ITuplet) {
+        this._displayTuplet = t;
+    }
+
+
+    get hasFlagOrBeam() {
+        return !!this.tuplet || !this.isRest && DurationModel.countToIsBeamable[this.count];
+    }
+
+    get temporary(): boolean    { return    this._getFlag(Flags.TEMPORARY); }
+    set temporary(v: boolean)   {          	this._setFlag(Flags.TEMPORARY, v); }
+
+    ////////////////////////
+    // I.3 Duration Model //
+    ////////////////////////
+
+    get accStrokes() {
+        return _.map(this.chord, (c, idx) =>
+            (c.displayAlter !== null && c.displayAlter !== undefined || this.accToDelete === idx) ? "#A5A5A5" : "#000000");
+    }
+
+    get extraWidth() {
+        return this._extraWidth;
+    }
+
+    set extraWidth(w: number) {
+        this._extraWidth = w;
+    }
+
+    get direction() {
+        return isNaN(this.forceMiddleNoteDirection) ? undefined : this.forceMiddleNoteDirection;
+    }
+
+    /**
+     * Returns the length of the beat, without dots or tuplet modifiers
+     * that should be rendered. This can differ from the actual count
+     * during a preview, for example.
+     */
+    get displayCount(): number              { return this._displayCount || this.count; }
+    set displayCount(c: number) {
+        assert(c !== null);
+        this._displayCount = c;
+    }
+
+    get displayNotation(): C.MusicXML.Notations[] {
+        return this._displayNotation || this._notes[0].notations;
+    }
+
+    set displayNotation(m: C.MusicXML.Notations[]) {
+        this._displayNotation = m;
+    }
+
+    getFlag() {
+        return !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
+            DurationModel.countToFlag[this.displayCount];
+    }
+
+    set flag(a: string) {
+        assert(false, "Read-only property");
+    }
+
+    get hasStem() {
+        return DurationModel.countToHasStem[this.displayCount];
+    }
+
+    get isMultibar() {
+        return this.count < 1;
+    }
+
+    get noteheadGlyph() {
+        return DurationModel.countToNotehead[this.displayCount];
+    }
+
+    get restHead() {
+        if (this.isWholebar) {
+            return DurationModel.countToRest[1];
+        }
+        return DurationModel.countToRest[this.count];
+    }
+
+    get strokes() {
+        return _.map(this.chord, c => c.temporary ?
+                "#A5A5A5" :
+                (this.selected ? "#75A1D0" : "#000000"));
+    }
+
+    private _extraWidth: number;
+    private _beats: number;
+    /** @deprecated */
+    private _count: C.MusicXML.Count;
+    /** @deprecated */
+    private _displayCount: number;
+    /** @deprecated */
+    private _displayDots: number = undefined;
+    /** @deprecated */
+    private _displayNotation: C.MusicXML.Notations[];
+    /** @deprecated */
+    private _displayTuplet: C.ITuplet;
+    /** @deprecated */
+    private _tuplet: C.ITuplet;
+
+    _displayedAccidentals: Array<number>;
+    forceMiddleNoteDirection: number;
+    impliedTS: {
+        beats: number;
+        beatType: number;
+    };
+    lines: Array<number>;
+    tieTo: DurationModel;
+
+    get beats(): number {
+        assert(false);
+        return NaN;
+    }
+    set beats(n: number) {
+        assert(false);
+    }
+
+    get notations() {
+        return this._notes[0].notations;
+    }
+
+    set notations(m: C.MusicXML.Notations[]) {
+        this._notes[0].notations = m;
+        this.displayNotation = null;
+    }
+
+    get color() {
+        return this._notes[0].color;
+    }
+
+    set color(c: string) {
+        _.forEach(this._notes, n => {
+            n.color = c;
+        });
+    }
+
+    //////////////////////
+    // I.4 C.MusicXML.* //
+    //////////////////////
+
+    _p_notes: MNote[];
+    get _notes(): C.MusicXML.Note[] {
+        return this._p_notes;
+    }
+    set _notes(notes: C.MusicXML.Note[]) {
+        this.chord        = this.chord || [];
+        this.chord.length = notes.length;
+
+        for (var i = 0; i < notes.length; ++i) {
+            if (!(notes[i] instanceof MNote)) {
+                notes[i]  = new MNote(this, i, notes[i]);
+            }
+        }
+        this._p_notes     = <any> notes;
+    }
+
+    ///////////////////
+    // II. Lifecycle //
+    ///////////////////
+
+    constructor(spec: C.IPitchDuration, annotated: boolean) {
+        super({}, annotated);
+        this.annotated = annotated;
+
+        var self : {[key:string]: any} = <any> this;
+        // TODO: The only properties should be key, _notes and maybe _flags
+        var properties                 = [
+            "key", "_flags",
+            "count", "dots", "displayCount", "displayDots", "displayNotation", "isRest", "tuplet",
+            "displayTuplet", "chord", "_notes"
+        ];
+
+        _.forEach(properties, setIfDefined);
+
+        if (!this._p_notes) {
+            this._p_notes = _.map(this.chord, (pitch, idx) => {
+                return new MNote(this, idx, {
+                    pitch: pitch
+                });
+            });
+        }
+        this.tie = this.tie;
+
+        function setIfDefined(property: string) {
+            if (spec.hasOwnProperty(property)) {
+                self[property]  = <any> (<any>spec)[property];
+            }
+        }
+    }
+
     recordMetreDataImpl(mctx: C.MetreContext) {
-        // A note's duration, when unspecified, is set by the previous note.
-        if (!this._count) {
-            assert(mctx.defaultCount, "Never null (the initial count is '4')");
-            this.count = mctx.defaultCount;
+        // We require attributes to know the number of divisions.
+        if (!mctx.attributes) {
+            throw new AttributesModel.AttributesUndefinedException();
         }
 
-        // Update the context to reflect the current note's duration.
-        mctx.defaultCount = this.count;
+        // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
+        assert(this._count === this._notes[0].noteType.duration);
 
         // Guess bar and beat (annotation could add rests and shift it!)
         this.ctxData = new C.MetreContext(mctx);
+        assert(isFinite(this._count));
 
-        this._beats = this.getBeats(mctx, null, true);
+        this._beats = this.calcBeats(mctx, null, true);
+        assert(isFinite(this._beats));
         assert(this._beats !== null);
-        mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.timeSignature.beats);
-        mctx.beat = (mctx.beat + this._beats) % mctx.timeSignature.beats;
+        mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.ts.beats);
+        mctx.beat = (mctx.beat + this._beats) % mctx.ts.beats;
 
         Metre.correctRoundingErrors(mctx);
     }
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var status: C.IterationStatus = C.IterationStatus.Success;
         var i: number;
@@ -51,42 +336,42 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // A key signature must exist on each line;
         // The key signature ensures a clef exists.
-        if (!ctx.keySignature) { return KeySignatureModel.createKeySignature(ctx); }
+        if (!ctx.attributes.keySignature) { return KeySignatureModel.createKeySignature(ctx); }
 
         // A time signature must exist on the first line of every page.
-        this.impliedTS = ctx.timeSignature;
+        this.impliedTS = ctx.ts;
         if (!this.impliedTS) { return TimeSignatureModel.createTS(ctx); }
 
         assert(this._beats !== null, "Unknown beat count");
 
-        this.isWholebar = this._beats === ctx.timeSignature.beats;
+        this.isWholebar = this._beats === ctx.ts.beats;
 
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
-            if (this._beats > ctx.timeSignature.beats && ctx.beat >= ctx.timeSignature.beats) {
+            if (this._beats > ctx.ts.beats && ctx.beat >= ctx.ts.beats) {
                 // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
                 // start at beat 0.
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
             } else if (!this.isMultibar) {
                 // The number of beats in a bar must not exceed that specified by the time signature.
-                if (ctx.beat + this._beats > ctx.timeSignature.beats) {
-                    var overfill = ctx.beat + this._beats - ctx.timeSignature.beats;
+                if (ctx.beat + this._beats > ctx.ts.beats) {
+                    var overfill = ctx.beat + this._beats - ctx.ts.beats;
                     if (this._beats === overfill) {
                         var ret = BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
                         return ret;
                     } else {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
-                            new DurationModel(<any>t, C.Source.Annotator));
+                            new DurationModel(<any>t, true));
                         var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx)
-                            .map(t => new DurationModel(<any>t, C.Source.Annotator));
+                            .map(t => new DurationModel(<any>t, true));
                         for (i = 0; i < replaceWith.length; ++i) {
-                            replaceWith[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                            replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
                                 replaceWith[i].tie = true;
                             }
                         }
                         for (i = 0; i < addAfterBar.length; ++i) {
-                            addAfterBar[i].chord = this.chord ? JSON.parse(JSON.stringify(this.chord)) : null;
+                            addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if (i + 1 !== addAfterBar.length && !this.isRest) {
                                 addAfterBar[i].tie = true;
                             }
@@ -110,8 +395,8 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             // Each note's width has a linear component proportional to the log of its duration.
-            this.annotatedExtraWidth = (Math.log(this._beats) - Math.log(ctx.smallest)) /
-                DurationModel.log2 / 3 * 40;
+            this.extraWidth = (Math.log(this._beats) - Math.log(ctx.smallest)) /
+                C.log2 / 3 * 40;
 
             // The width of a line must not exceed that specified by the page layout.
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
@@ -149,7 +434,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // The document must end with a marker.
         if (!ctx.next()) {
-            status = ctx.insertFuture(new EndMarkerModel({endMarker: true}));
+            status = ctx.insertFuture(new EndMarkerModel({endMarker: true}, true));
         }
         if (status !== C.IterationStatus.Success) { return status; }
 
@@ -181,13 +466,13 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // Set which accidentals are displayed, and then update the accidentals currently
         // active in the bar.
-        this.displayedAccidentals = this.getDisplayedAccidentals(ctx);
+        this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             // Set the octave specific accidental
-            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch + this.chord[i].octave] = this.chord[i].acc;
+            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
             // If needed, invalidate the default accidental
-            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch]||null) !== this.chord[i].acc) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].pitch] = C.InvalidAccidental;
+            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]||null) !== this.chord[i].alter) {
+                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] = C.InvalidAccidental;
             }
         }
 
@@ -197,25 +482,32 @@ class DurationModel extends Model implements C.IPitchDuration {
         return C.IterationStatus.Success;
     }
 
-    constructor(spec: C.IPitchDuration, source: C.Source) {
-        super(spec);
-        if (!isNaN(source)) {
-            this.source = source;
+    ///////////////
+    // III. Util //
+    ///////////////
+
+    getWidth(ctx: Annotator.Context) {
+        return 22.8 + (this.extraWidth || 0) + (this._displayedAccidentals ? 9.6 : 0);
+    }
+
+    calcBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
+        if (!force && this._beats) {
+            return this._beats;
         }
-        this.tie = this.tie;
+        return Metre.calcBeats2(this, ctx, inheritedCount);
     }
 
     containsAccidentalAfterBarline(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
-        var nonAccidentals = C.NoteUtil.getAccidentals(ctx.keySignature);
+        var nonAccidentals = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
-            if ((nonAccidentals[pitches[i].pitch]||0) !== (pitches[i].acc||0)) {
+            if ((nonAccidentals[pitches[i].step]||0) !== (pitches[i].alter||0)) {
                 return true;
             }
             // Make sure there's no ambiguity from the previous note 
             var prevNote = ctx.prev(c => c.isNote && !c.isRest);
             if (prevNote) {
-                if (_hasConflict(prevNote.note.chord, pitches[i].pitch, nonAccidentals[pitches[i].pitch]||null)) {
+                if (_hasConflict(prevNote.note.chord, pitches[i].step, nonAccidentals[pitches[i].step]||null)) {
                     return true;
                 }
             }
@@ -262,8 +554,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nextLine: number = ctx.next() && ctx.next().isNote ?
                 DurationModel.getAverageLine(ctx.next().note, ctx) : null;
 
-        if ((nextLine !== null) && ctx.beat + this._beats + ctx.next().note
-                .getBeats(ctx, this.count) > ctx.timeSignature.beats) {
+        if ((nextLine !== null) && ctx.beat + this._beats +
+                Metre.calcBeats2(ctx.next().note, ctx, this.count) > ctx.ts.beats) {
             // Barlines aren't inserted yet.
             nextLine = null;
         }
@@ -288,7 +580,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             } else if (Math.floor(startsAt) !== startsAt) {
                 // XXX: ASSUMES no divisions mid-beat
                 check = prevLine;
-            } else if (startsAt >= ctx.timeSignature.beats/2) {
+            } else if (startsAt >= ctx.ts.beats/2) {
                 // XXX: ASSUMES 4/4 !!!
                 check = nextLine;
             } else {
@@ -301,11 +593,92 @@ class DurationModel extends Model implements C.IPitchDuration {
         return C.IterationStatus.Success;
     }
 
+    private getDisplayedAccidentals(ctx: Annotator.Context) {
+        return this.getAccidentals(ctx, true);
+    }
+    private getAccidentals(ctx: Annotator.Context, display?: boolean) {
+        var chord: Array<C.IPitch> = this.chord || <any> [this];
+        var result = new Array(chord.length || 1);
+        function or3(first: number, second: number, third?: number) {
+            if (third === undefined) {
+                third = null;
+            }
+            var a = first === null || first === undefined || first !== first ? second : first;
+            return a == null || a === undefined || a !== a ? third : a;
+        };
+        for (var i = 0; i < result.length; ++i) {
+            var pitch: C.IPitch = chord[i];
+            var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
+            assert(actual !== undefined);
+            var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step], null);
+            var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step + pitch.octave], null);
+            if (!target && generalTarget !== C.InvalidAccidental) {
+                target = generalTarget;
+            }
 
-    visible() {
-        return !this.inBeam;
+            if (actual === target) {
+                // We don't need to show an accidental if all of these conditions are met:
+
+                // 1. The note has the same accidental on other octave (if the note is on other octaves)
+                var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
+
+                // 2. The note has the same accidental on all other part (in the same bar, in the past)
+                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
+                    if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.step + pitch.octave],
+                            ctx.accidentalsByStave[j][pitch.step], target)) {
+                        noConflicts = false;
+                    }
+                }
+
+                // 3. The note has the same accidental on other part with the same note(right now!)
+                var concurrentNotes = ctx.findVertical(c => c.isNote);
+                for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
+                    var otherChord = concurrentNotes[j].note.chord;
+                    noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
+                }
+
+                // 4. Ambiguity could not be caused by being directly after a barline
+                var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
+                if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
+                    var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+                    if (prevNote) {
+                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
+                    }
+                }
+
+                if (noConflicts) {
+                    result[i] = NaN; // no accidental
+                    continue;
+                } else {
+                    // XXX: Otherwise, the note should be in parentheses
+                }
+            }
+
+            if (!actual) {
+                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step] = undefined;
+                result[i] = 0; // natural
+                continue;
+            }
+
+            assert(actual !== C.InvalidAccidental, "Accidental is invalid");
+            result[i] = actual;
+        }
+        return result;
     }
 
+    private _handleTie(ctx: Annotator.Context) {
+        if (this.tie) {
+            var nextNote = ctx.next(obj => obj.isNote);
+            if (!nextNote || nextNote.isRest) {
+                this.tie = false;
+                this.tieTo = null;
+            } else {
+                this.tieTo = <DurationModel> nextNote;
+            }
+        } else {
+            this.tieTo = null;
+        }
+    }
 
     getAccWidth(ctx: Annotator.Context) {
         var accWidth: number = 0;
@@ -319,245 +692,16 @@ class DurationModel extends Model implements C.IPitchDuration {
         return Math.max(0, accWidth - 12);
     }
 
-    getWidth(ctx: Annotator.Context) {
-        return 22.8 + (this.annotatedExtraWidth || 0) + (this.displayedAccidentals ? 9.6 : 0);
-    }
-
-    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
-        var str: string;
-        if (this.chord.length === 1) {
-            str = this._lyPitch(this.chord[0]);
-        } else if (this.chord) {
-            str = "< " + _.map(this.chord, a => this._lyPitch(a)).join(" ") + " >";
-        }
-        str += this.count;
-        if (this.dots) {
-            _.times(this.dots, d => str += ".");
-        }
-        if (this.tie) {
-            str += "~";
-        }
-        lylite.push(str);
-    }
-
-    getBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
-        if (!force && this._beats) {
-            return this._beats;
-        }
-        return getBeats(
-            this.count || inheritedCount,
-            this.dots,
-            this.tuplet,
-            ctx.timeSignature);
-    }
-
-    get accStrokes() {
-        return _.map(this.chord, (c, idx) =>
-            (c.displayAcc !== null && c.displayAcc !== undefined || this.accToDelete === idx) ? "#A5A5A5" : "#000000");
-    }
-
-    get annotatedExtraWidth() {
-        return this._annotatedExtraWidth;
-    }
-
-    set annotatedExtraWidth(w: number) {
-        this._annotatedExtraWidth = w;
-    }
-
-    get count() {
-        return this._count;
-    }
-
-    set count(n: number) {
-        assert(!isNaN(n));
-        this._count = n;
-        this._beats = null; // Kill optimizer.
-    }
-
-    get direction() {
-        return isNaN(this.forceMiddleNoteDirection) ? undefined : this.forceMiddleNoteDirection;
-    }
-
-    get dots() {
-        return this._dots;
-    }
-
-    set dots(n: number) {
-        this._dots = n;
-        this._displayDots = null; // Kill preview.
-        this._beats = null; // Kill optimizer.
-    }
-
-    /**
-     * Returns the length of the beat, without dots or tuplet modifiers
-     * that should be rendered. This can differ from the actual count
-     * during a preview, for example.
-     */
-    get displayCount(): number {
-        return this._displayCount || this.count;
-    }
-    set displayCount(c: number) {
-        assert(c !== null);
-        this._displayCount = c;
-    }
-
-    /**
-     * Returns the number of dots that should be rendered. This can differ
-     * from the actual number of dots during a preview, for example.
-     */
-    get displayDots(): number {
-        if (this.isWholebar && this.isRest) {
-            return 0;
-        }
-        return this._displayDots === void 0 || this._displayDots === null ?
-            this.dots : this._displayDots;
-    }
-
-    set displayDots(c: number) {
-        this._displayDots = c;
-    }
-
-    get displayNotation(): Array<string> {
-        return this._displayNotation || this._notations;
-    }
-
-    set displayNotation(m: Array<string>) {
-        this._displayNotation = m;
-    }
-
-    get flag() {
-        return !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
-            DurationModel.countToFlag[this.displayCount];
-    }
-
-    set flag(a: string) {
-        assert(false, "Read-only property");
-    }
-
-    get hasStem() {
-        return DurationModel.countToHasStem[this.displayCount];
-    }
-
-    get hasFlagOrBeam() {
-        return !!this.tuplet || !this.isRest && DurationModel.countToIsBeamable[this.count];
-    }
-
-    get isMultibar() {
-        return this.count < 1;
-    }
-
-    get isRest() {
-        return (this.chord && this.chord.length === 1 && this.chord[0].pitch === "r");
-    }
-
-    set isRest(r: boolean) {
-        assert(!!r, "Instead, set the exact pitch or chord...");
-        this.chord = [{
-            pitch: "r",
-            acc: null,
-            octave: null
-        }];
-        this.tie = false;
-    }
-
-    get isNote() : boolean {
-        return true;
-    }
-
-    get notations() {
-        return this._notations;
-    }
-
-    set notations(m: Array<string>) {
-        this._notations = m;
-        this._displayNotation = null;
-    }
-
-    get note(): C.IPitchDuration {
-        return this;
-    }
-
-    get notehead() {
-        return DurationModel.countToNotehead[this.displayCount];
-    }
-
-    get restHead() {
-        if (this.isWholebar) {
-            return DurationModel.countToRest["1"];
-        }
-        return DurationModel.countToRest[this.count];
-    }
-
-    get strokes() {
-        return _.map(this.chord, c => c.temporary ?
-                "#A5A5A5" :
-                (this.selected ? "#75A1D0" : "#000000"));
-    }
-
-    get type() {
-        return C.Type.Duration;
-    }
-
-    get tuplet() {
-        return this._tuplet;
-    }
-
-    set tuplet(t: C.ITuplet) {
-        this._tuplet = t;
-        this._displayTuplet = null;
-    }
-
-    get displayTuplet() {
-        return this._displayTuplet || this._tuplet;
-    }
-
-    set displayTuplet(t: C.ITuplet) {
-        this._displayTuplet = t;
-    }
+    ////////////////
+    // IV. Static //
+    ////////////////
 
     static BEAMDATA: Array<DurationModel>;
 
     static clefOffsets: { [key: string]: number } = {
-        treble: -3.5,
-        bass: 2.5,
-        alto: -0.5,
-        tenor: 0.5,
-
-
-        gClef15mb: -3.5 + 3.5*2,
-        gClef8vb: -3.5 + 3.5,
-        gClef8va: -3.5 - 3.5,
-        gClef15ma: -3.5 - 3.5*2,
-        gClef8vbOld: -3.5 +3.5*2,
-        gClef8vbCClef: -3.5 + 3.5,
-        gClef8vbParens: -3.5 + 3.5,
-
-        fClef15mb: 2.5 + 3.5*2,
-        fClef8vb: 2.5 + 3.5,
-        fClef8va: 2.5 - 3.5,
-        fClef15ma: 2.5 - 3.5*2,
-
-        cClef8vb: -0.5 +3.5*2,
-
-        unpitchedPercussionClef1: 0,
-        unpitchedPercussionClef2: 0,
-        semipitchedPercussionClef1: 0,
-        semipitchedPercussionClef2: 0,
-        "6stringTabClef": 0,
-        "4stringTabClef": 0,
-        "bridgeClef": 0,
-        "accdnDiatonicClef": 0,
-
-        "cClefTriangular": -0.5,
-        "fClefTriangular": 2.5,
-        "cClefTriangularToFClef": 2.5,
-        "fClefTriangularToCClef": -0.5,
-
-        "gClefReversed": -3.5,
-        "gClefTurned": -3.5,
-        "cClefReversed": -0.5,
-        "fClefReversed": 2.5,
-        "fClefTurned": 2.5
+        g: -3.5,
+        f: 2.5,
+        c: -0.5
     };
 
     static chromaticScale: { [key: string]: number } = {
@@ -602,9 +746,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         1024: true
     };
 
-    static countToNotehead: { [key: string]: string } = {
-        0.25: "noteheadDoubleWhole",
-        0.5: "noteheadDoubleWhole",
+    static countToNotehead: { [key: number]: string } = {
+        9992: "noteheadDoubleWhole",
+        9991: "noteheadDoubleWhole",
+        9990: "noteheadDoubleWhole",
         1: "noteheadWhole",
         2: "noteheadHalf",
         4: "noteheadBlack",
@@ -618,9 +763,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         1024: "noteheadBlack"
     };
 
-    static countToRest: { [key: string]: string } = {
-        0.25: "restLonga",
-        0.5: "restDoubleWhole",
+    static countToRest: { [key: number]: string } = {
+        9992: "restLonga",
+        9991: "restLonga",
+        9990: "restDoubleWhole",
         1: "restWhole",
         2: "restHalf",
         4: "restQuarter",
@@ -656,9 +802,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                     "Must be first annotated in duration.jsx");
             return pitch.line;
         }
-        assert(ctx.clef, "A clef must be inserted before the first note");
-        return DurationModel.clefOffsets[ctx.clef] +
-            (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.pitch];
+        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
+        return DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+            (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
     };
 
     static getLines = (note: C.IPitchDuration,
@@ -668,35 +814,29 @@ class DurationModel extends Model implements C.IPitchDuration {
         for (var i = 0; i < note.chord.length; ++i) {
             if (!options.filterTemporary || !note.chord[i].temporary) {
                 ret.push(note.isRest ? 3 :
-                    DurationModel.clefOffsets[ctx.clef] +
+                    DurationModel.clefOffsets[ctx.attributes.clef.sign] +
                     (note.chord[i].octave || 0) * 3.5 +
-                    DurationModel.pitchOffsets[note.chord[i].pitch]);
+                    DurationModel.pitchOffsets[note.chord[i].step]);
             }
         }
         return ret;
     };
 
     static getPitch = (line: number, ctx: Annotator.Context) => {
-        assert(ctx.clef, "A clef must be inserted before the first note");
+        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5];
-        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.clef]) / 3.5);
-        var acc = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
+                line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5];
+        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) / 3.5);
+        var alter = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
             ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
 
         return {
-            pitch: DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.clef]) % 3.5 + 3.5) % 3.5],
+            step: DurationModel.offsetToPitch[((
+                line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5],
             octave: octave,
-            acc: acc === C.InvalidAccidental ? null : acc
+            alter: alter === C.InvalidAccidental ? null : alter
         };
     };
-
-    static log2 = Math.log(2);
-
-    static noteNames =
-        ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
-            "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 
     static offsetToPitch: { [key: string]: string } = {
         0: "c",
@@ -717,209 +857,221 @@ class DurationModel extends Model implements C.IPitchDuration {
         a: 2.5,
         b: 3
     };
+}
 
-    private getDisplayedAccidentals(ctx: Annotator.Context) {
-        return this.getAccidentals(ctx, true);
-    }
-    private getAccidentals(ctx: Annotator.Context, display?: boolean) {
-        var chord: Array<C.IPitch> = this.chord || <any> [this];
-        var result = new Array(chord.length || 1);
-        function or3(first: number, second: number, third?: number) {
-            if (third === undefined) {
-                third = null;
+class MNote implements C.MusicXML.NoteComplete {
+    /* Parent */
+    _parent: DurationModel;
+    _idx : number;
+
+    constructor(parent: DurationModel, idx: number, note: C.MusicXML.Note) {
+        var self : {[key:string]: any} = <any> this;
+
+        /* Link to parent */
+        this._parent            =   parent;
+        this._idx               =   idx;
+
+        /* Properties owned by parent */
+        parent.chord[idx]       =   note.pitch;
+        parent.dots       		=  (note.dots || []).length;
+        parent.isRest     		= !!note.rest || parent.isRest;
+        parent.count      		=   note.noteType ? note.noteType.duration : (parent.count || 4);
+
+        /* Properties owned by MNote */
+        var properties          = [
+            "unpitched", "noteheadText", "timeModification", "accidental", "instrument",
+            "attack", "endDynamics", "lyrics", "notations", "stem", "cue", "ties", "dynamics", "duration",
+            "play", "staff", "grace", "notehead", "release", "beams", "voice", "footnote", "level",
+            "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle", "fontSize",
+            "color", "printDot", "printLyric", "printObject", "printSpacing", "timeOnly" ];
+
+        _.forEach(properties, setIfDefined);
+
+        function setIfDefined(property: string) {
+            if (note.hasOwnProperty(property)) {
+                self[property]  = <any> (<any>note)[property];
             }
-            var a = first === null || first === undefined || first !== first ? second : first;
-            return a == null || a === undefined || a !== a ? third : a;
-        };
-        for (var i = 0; i < result.length; ++i) {
-            var pitch: C.IPitch = chord[i];
-            var actual = or3(display ? pitch.displayAcc : null, pitch.acc);
-            assert(actual !== undefined);
-            var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch], null);
-            var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch + pitch.octave], null);
-            if (!target && generalTarget !== C.InvalidAccidental) {
-                target = generalTarget;
-            }
-
-            if (actual === target) {
-                // We don't need to show an accidental if all of these conditions are met:
-
-                // 1. The note has the same accidental on other octave (if the note is on other octaves)
-                var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
-
-                // 2. The note has the same accidental on all other part (in the same bar, in the past)
-                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.pitch + pitch.octave],
-                            ctx.accidentalsByStave[j][pitch.pitch], target)) {
-                        noConflicts = false;
-                    }
-                }
-
-                // 3. The note has the same accidental on other part with the same note(right now!)
-                var concurrentNotes = ctx.findVertical(c => c.isNote);
-                for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
-                    var otherChord = concurrentNotes[j].note.chord;
-                    noConflicts = noConflicts && !_hasConflict(otherChord, pitch.pitch, target);
-                }
-
-                // 4. Ambiguity could not be caused by being directly after a barline
-                var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
-                if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
-                    var prevNote = ctx.prev(c => c.isNote && !c.isRest);
-                    if (prevNote) {
-                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.pitch, target);
-                    }
-                }
-
-                if (noConflicts) {
-                    result[i] = NaN; // no accidental
-                    continue;
-                } else {
-                    // XXX: Otherwise, the note should be in parentheses
-                }
-            }
-
-            if (!actual) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.pitch] = undefined;
-                result[i] = 0; // natural
-                continue;
-            }
-
-            assert(actual !== C.InvalidAccidental, "Accidental is invalid");
-            result[i] = actual;
-        }
-        return result;
-    }
-
-    private _handleTie(ctx: Annotator.Context) {
-        if (this.tie) {
-            var nextNote = ctx.next(obj => obj.isNote);
-            if (!nextNote || nextNote.isRest) {
-                this.tie = false;
-                this.tieTo = null;
-            } else {
-                this.tieTo = <DurationModel> nextNote;
-            }
-        } else {
-            this.tieTo = null;
         }
     }
 
-    private _lyPitch(pitch: C.IPitch) {
-        var str = pitch.pitch;
-        if (pitch.acc === 1) {
-            str += "is";
-        } else if (pitch.acc === -1) {
-            str += "es";
-        }
-        if (pitch.octave > 0) {
-            _.times(pitch.octave, () => str += "'");
-        } else if (pitch.octave < 0) {
-            _.times(-pitch.octave, () => str += ",");
-        }
-
-        return str;
-    }
-
-    get temporary(): boolean { return !!(this._flags & Flags.TEMPORARY); }
-    set temporary(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.TEMPORARY;
-        } else { this._flags = this._flags & ~Flags.TEMPORARY; } }
-
-    get relative(): boolean { return !!(this._flags & Flags.RELATIVE); }
-    set relative(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.RELATIVE;
-        } else { this._flags = this._flags & ~Flags.RELATIVE; } }
-
-    get isWholebar(): boolean { return !!(this._flags & Flags.WHOLE_BAR); }
-    set isWholebar(v: boolean) {
-        if (v) { this._flags = this._flags | Flags.WHOLE_BAR;
-        } else { this._flags = this._flags & ~Flags.WHOLE_BAR; } }
-
-    get tie(): boolean { return !!(this._flags & Flags.TIE); }
-    set tie(v: boolean) {
-        assert(!this.isRest || !v);
-        if (v) { this._flags = this._flags | Flags.TIE;
-        } else { this._flags = this._flags & ~Flags.TIE; } }
-
+    /* JSON */
     toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            _count: this._count,
-            _dots: this._dots,
-            _notations: this._notations,
-            chord: _.map(this.chord, pitch => sanitizePitch(pitch))
+        var clone: {[key: string]: any} = {};
+
+        /* Properties owned by parent */
+        if (this.pitch) {
+            clone["pitch"]              = this.pitch;
+        }
+        if (this.rest) {
+            clone["rest"]               = this.rest;
+        }
+        if (this.chord) {
+            clone["chord"]              = this.chord;
+        }
+        if (this.color) {
+            clone["color"]              = this.color;
+        }
+        if (this.noteType) {
+            clone["noteType"]           = this.noteType;
+        }
+
+        /* Properties owned by MNote */
+        for (var key in this) {
+            if (this.hasOwnProperty(key) && key[0] !== "_" && !!(<any>this)[key]) {
+                clone[key] = (<any>this)[key];
+            }
+        }
+        return clone;
+    }
+
+    /* C.MusicXML.Note */
+
+    /* C.MusicXML.Note > Core */
+    get chord(): C.MusicXML.Chord {
+        return this._idx + 1 !== this._parent.chord.length;
+    }
+
+
+    get pitch(): C.MusicXML.Pitch {
+        return this._parent.isRest ? null : this._parent.chord[this._idx ];
+    }
+    set pitch(pitch: C.MusicXML.Pitch) {
+        this._parent.chord[this._idx ].alter  = pitch.alter;
+        this._parent.chord[this._idx ].step   = pitch.step;
+        this._parent.chord[this._idx ].octave = pitch.octave;
+    }
+
+    get rest(): C.MusicXML.Rest {
+        // TODO: full measure
+        // TODO: display step
+        // TODO: display octave
+        return this._parent.isRest ? {
+            measure: this._parent.isWholebar,
+            displayStep: null, // TODO
+            displayOctave: null
+        } : null;
+    }
+    set rest(rest: C.MusicXML.Rest) {
+        this._parent.isRest = !!rest;
+    }
+
+    get dots(): C.MusicXML.Dot[] {
+        return _.times(this._parent.dots, idx => <C.MusicXML.Dot> {
+            // TODO: save/restore dot formatting
+            // TODO: display dot formatting
         });
     }
+    set dots(dots: C.MusicXML.Dot[]) {
+        this._parent.dots = dots.length;
+    }
 
-    private _annotatedExtraWidth: number;
-    private _beats: number;
-    private _color: number = 0x000000;
-    private _count: number;
-    private _displayCount: number;
-    private _displayDots: number = undefined;
-    private _displayNotation: Array<string>;
-    private _displayTuplet: C.ITuplet;
-    private _dots: number;
-    private _notations: Array<string>;
-    private _tuplet: C.ITuplet;
-    accToDelete: number;
-    chord: Array<C.IPitch>;
-    displayedAccidentals: Array<number>;
-    forceMiddleNoteDirection: number;
-    impliedTS: {
-        beats: number;
-        beatType: number;
-    };
-    lines: Array<number>;
-    tieTo: DurationModel;
+    get noteType(): C.MusicXML.Type {
+        return {
+            duration: this._parent.count,
+            size: C.MusicXML.SymbolSize.Full // TODO: grace, cue
+        };
+    }
 
+    set noteType(type: C.MusicXML.Type) {
+        this._parent.count = type.duration;
+    }
+
+    /* C.MusicXML.Note > Extended */
+    unpitched:          C.MusicXML.Unpitched;
+    noteheadText:       C.MusicXML.NoteheadText;
+    timeModification:   C.MusicXML.TimeModification;
+    accidental:         C.MusicXML.Accidental;
+    instrument:         C.MusicXML.Instrument;
+    attack:             number;
+    endDynamics:        number;
+    lyrics:             C.MusicXML.Lyric[];
+    notations:          C.MusicXML.Notations[];
+    stem:               C.MusicXML.Stem;
+    cue:                C.MusicXML.Cue;
+    duration:           number;                     // Currently ignored!
+    ties:               C.MusicXML.Tie[];
+    dynamics:           number;
+    play:               C.MusicXML.Play;
+    staff:              C.MusicXML.Staff;
+    grace:              C.MusicXML.Grace;
+    notehead:           C.MusicXML.Notehead;
+    release:            number;
+    beams:              C.MusicXML.Beam[];
+
+
+    /* C.MusicXML.PrintStyle */
+
+    /* C.MusicXML.PrintStyle >> EditorialVoice */
+    voice:              string;
+    footnote:           C.MusicXML.Footnote;
+    level:              C.MusicXML.Level;
+
+    /* C.MusicXML.PrintStyle >> Position */
+    get defaultX(): number {
+        return this._parent.x;
+    }
+    relativeY:          number;
+    defaultY:           number;
+    relativeX:          number;
+
+    /* C.MusicXML.PrintStyle >> Font */
+    fontFamily:         string;
+    fontWeight:         C.MusicXML.NormalBold;
+    fontStyle:          C.MusicXML.NormalItalic;
+    fontSize:           string;
+
+    /* C.MusicXML.PrintStyle >> Color */
     get color(): string {
         var hex = this._color.toString(16);
         return "#" + "000000".substr(0, 6 - hex.length) + hex;
     }
-
     set color(a: string) {
-        if (a.length && a[0] === "#") {
-            a = a.slice(1);
+        switch(true) {
+            case !a:
+                this._color = 0;
+                break;
+            case a[0] === "#":
+                a = a.slice(1);
+                // passthrough
+            default:
+                this._color = parseInt(a, 16);
+                break;
         }
-        this._color = parseInt(a, 16);
     }
 
-    get beats(): number {
-        assert(false);
-        return NaN;
-    }
-    set beats(n: number) {
-        assert(false);
-    }
+
+    /* C.MusicXML.Printout */
+    printDot:           boolean;
+    printLyric:         boolean;
+
+    /* C.MusicXML.Printout >> PrintObject */
+    printObject:        boolean;
+
+    /* C.MusicXML.Printout >> PrintSpacing */
+    printSpacing:       boolean;
+
+
+    /* C.MusicXML.TimeOnly */
+    timeOnly:           boolean;
+
+
+    private _color:     number = 0x000000;
 }
 
 function _hasConflict(otherChord: Array<C.IPitch>, pitch: string, target: number) {
     "use strict";
     for (var k = 0; k < otherChord.length; ++k) {
-        if (otherChord[k].pitch === pitch && otherChord[k].acc !== target) {
+        if (otherChord[k].step === pitch && otherChord[k].alter !== target) {
             return true;
         }
     }
     return false;
 }
 
-var getBeats = Metre.getBeats;
-
 enum Flags {
-    TEMPORARY = 2 << 7,
-    RELATIVE = 2 << 8,
-    WHOLE_BAR = 2 << 9,
-    TIE = 2 << 10
-}
-
-function sanitizePitch(pitch: C.IPitch): C.IPitch {
-    "use strict";
-    return {
-        acc: pitch.acc || null,
-        octave: pitch.octave || null,
-        pitch: pitch.pitch
-    };
+    TEMPORARY   = 2 << 7,
+    WHOLE_BAR   = 2 << 8,
+    TIE         = 2 << 9
 }
 
 export = DurationModel;

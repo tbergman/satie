@@ -4,39 +4,129 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model                = require("./model");
 
-import _ = require("lodash");
-import diff = require("diff");
+import _                    = require("lodash");
+import diff                 = require("diff");
 
-import Annotator = require("./annotator");
-import C = require("./contracts");
-import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
-import EndMarkerModel = require("./endMarker");
-import Metre = require("./metre");
-import TimeSignatureModel = require("./timeSignature");
+import Annotator            = require("./annotator");
+import C                    = require("./contracts");
+import DurationModelType    = require("./duration");        // Cyclic.
+import EndMarkerModel       = require("./endMarker");
+import Metre                = require("./metre");
+import TimeSignatureModel   = require("./timeSignature");
 
 /**
  * The model for single and double barlines.
  */
 class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
+    //
+    // I.1 Model
+    //
+
+    get type()                                      { return C.Type.Barline; }
+    get xPolicy()                                   { return C.RectifyXPolicy.Max; }
+
+    get fields() {
+        return [
+            "segno",
+            "coda",
+            "location",
+            "codaAttrib",
+            "wavyLine",
+            "fermatas",
+            "segnoAttrib",
+            "divisions",
+            "barStyle",
+            "ending",
+            "repeat",
+            "footnote",
+            "level",
+            "revision"
+        ];
+    }
+
+    //
+    // I.2 Collab and Change Tracking
+    //
+
+    __history__:                string              = "";
+    __lkg__:                    string              = "";
+    __revision__:               string              = BarlineModel._sessionId + "-0";
+    get revision()                                  { return this.__revision__; }
+    set revision(r: string)                         { this.__revision__ = r; }
+    incrRevision() {
+        return this.revision                        = Model._sessionId + "-" + ++BarlineModel._lastRev;
+    }
+
+    //
+    // I.3 Ripieno Internal and annotated
+    //
+
+    annotatedAccidentalSpacing: number;
+    height:                     number;
+    newlineNext:                boolean;
+    selected:                   boolean;
+    temporary:                  boolean;
+    yOffset:                    number;
+
+    //
+    // I.4 C.MusicXML.Barline
+    //
+
+    segno:                      C.MusicXML.Segno;
+    coda:                       C.MusicXML.Coda;
+    /**
+     * Ignored for Ripieno since barlines are always at the end
+     * of a measure in Ripieno. We preserve the value for third-party
+     * programs though.
+     */
+    location:                   C.MusicXML.BarlineLocation  = C.MusicXML.BarlineLocation.Right;
+    codaAttrib:                 string;
+    wavyLine:                   C.MusicXML.WavyLine;
+    fermatas:                   C.MusicXML.Fermata[];
+    segnoAttrib:                string;
+    divisions:                  string;
+    barStyle:                   C.MusicXML.BarStyle         = {
+        color:                                                  "#000000",
+        data:                                                   C.MusicXML.BarStyleType.Regular
+    }
+    ending:                     C.MusicXML.Ending;
+    repeat: 					C.MusicXML.Repeat;
+
+    //
+    // I.5 C.MusicXML.Editorial
+    //
+
+    footnote:                   C.MusicXML.Footnote;
+    level:                      C.MusicXML.Level;
+
+    //
+    // II. Lifecycle
+    //
+
+    constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean) {
+        super(spec, annotated);
+    }
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
         // If we have an overfilled note in the previous bar, it will at some point turn
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.beat = 0;
     }
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
-            return ctx.insertPast(new EndMarkerModel({ endMarker: true }));
+            return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true));
         }
 
         var i: number;
         var okay: boolean;
 
         // A time signature must exist on the first line of every page.
-        if (!ctx.timeSignature) { return TimeSignatureModel.createTS(ctx); }
+        if (!ctx.ts) { return TimeSignatureModel.createTS(ctx); }
 
         // At least one note must exist before a barline on every line.
         okay = false;
@@ -50,7 +140,8 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             if (i === -1) { // Beginning of document.
                 var DurationModel: typeof DurationModelType = require("./duration");
                 var fullRest = Metre.wholeNote(ctx)
-                    .map(spec => new DurationModel(spec, C.Source.Annotator));
+                    .map(spec => <C.IDuration> _.extend({isRest: true}, spec))
+                    .map(spec => new DurationModel(spec, true));
                 _.each(fullRest, (r) => {
                     r.isRest = true;
                     ctx.insertPast(r);
@@ -89,9 +180,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             }
             if (!okay) {
                 var DurationModel: typeof DurationModelType = require("./duration");
-                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, C.Source.Annotator));
+                var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, true));
                 for (i = 0; i < whole.length; ++i) {
-                    whole[i].chord = [{ pitch: "r", acc: null, octave: null }];
+                    whole[i].chord = [{ step: "r", alter: null, octave: null }];
                     whole[i].tie = false;
                 }
                 // This is dangerous, and probably wrong.
@@ -130,7 +221,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.keySignature);
+        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
 
         // MXFIX
         // this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 20;
@@ -145,13 +236,36 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return C.IterationStatus.Success;
     }
 
-    constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}) {
-        super(spec);
+    //
+    // III. Util
+    //
+
+    markLKG(currIdx: number, body: Model[]) {
+        // See songEditor.ts
+        this.__history__ = this.__lkg__ = this._state(currIdx, body);
     }
 
-    toLylite(lylite: Array<string>) {
-        lylite.push("|\n");
+    createPatch(currIdx: number, body: Model[]) {
+        var lastHistory = this.__history__;
+
+        this.__history__ = this._state(currIdx, body);
+        if (lastHistory === this.__history__) {
+            return;
+        }
+        return diff.createPatch(this.key, lastHistory, this.__history__, this.revision, this.incrRevision());
     }
+
+    private _state(currIdx: number, body: Model[]) {
+        var history: string[] = [];
+        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.Barline; --i) {
+            history.push(JSON.stringify(body[i]).replace("\n", "")); // the spec does not specify whether there are \ns
+        }
+        return history.reverse().join("\n") + "\n";
+    }
+
+    //
+    // IV. Static
+    //
 
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
@@ -162,7 +276,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
-                    var newBarline = new BarlineModel({ barStyle: {data: type }});
+                    var newBarline = new BarlineModel({ barStyle: {data: type }}, true);
                     if (j === ctx.idx) {
                         ctx.insertPast(newBarline);
                     } else {
@@ -183,115 +297,16 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === C.Type.Barline) {
             // We want to keep this barline where it is!
-            ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }});
+            ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }}, true);
             (<BarlineModel>inTwo).barStyle.data = type;
             ctx.insertPast(inTwo, null, true);
             return;
         }
 
-        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true), null, true);
     };
 
-
-    get type() {
-        return C.Type.Barline;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            _revision: this.revision,
-            segno: this.segno,
-            coda: this.coda,
-            location: this.location,
-            codaAttrib: this.codaAttrib,
-            wavyLine: this.wavyLine,
-            fermatas: this.fermatas,
-            segnoAttrib: this.segnoAttrib,
-            divisions: this.divisions,
-            barStyle: this.barStyle,
-            ending: this.ending,
-            repeat: this.repeat,
-            footnote: this.footnote,
-            level: this.level
-        });
-    }
-
-    get revision() {
-        return this._revision;
-    }
-
-    /**
-     * To be used ONLY in collab.ts
-     */
-    set revision(n: string) {
-        this._revision = n;
-    }
-
-    markLKG(currIdx: number, body: C.IBody) {
-        // See songEditor.ts
-        this.__history__ = this.__lkg__ = this._state(currIdx, body);
-    }
-
     private static _lastRev = 0;
-    incrRevision() {
-        return this._revision = Model._sessionId + "-" + ++BarlineModel._lastRev;
-    }
-
-    createPatch(currIdx: number, body: C.IBody) {
-        var lastHistory = this.__history__;
-
-        this.__history__ = this._state(currIdx, body);
-        if (lastHistory === this.__history__) {
-            return;
-        }
-        return diff.createPatch(this.key, lastHistory, this.__history__, this.revision, this.incrRevision());
-    }
-
-    private _state(currIdx: number, body: C.IBody) {
-        var history: string[] = [];
-        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.Barline; --i) {
-            history.push(JSON.stringify(body[i]).replace("\n", "")); // the spec does not specify whether there are \ns
-        }
-        return history.reverse().join("\n") + "\n";
-    }
-
-    /* Collab and undo/redo */
-    __history__: string = "";
-    __lkg__: string = "";
-    _revision: string = BarlineModel._sessionId + "-0";
-
-    /* Ripieno Internal and annotated */
-    annotatedAccidentalSpacing: number;
-    height: number;
-    newlineNext: boolean;
-    selected: boolean;
-    temporary: boolean;
-    yOffset: number;
-
-    /* C.MusicXML.Barline */
-    segno: C.MusicXML.Segno;
-    coda: C.MusicXML.Coda;
-    /**
-     * Ignored for Ripieno since barlines are always at the end
-     * of a measure in Ripieno. We preserve the value for third-party
-     * programs though.
-     */
-    location: C.MusicXML.BarlineLocation = C.MusicXML.BarlineLocation.Right;
-    codaAttrib: string;
-    wavyLine: C.MusicXML.WavyLine;
-    fermatas: C.MusicXML.Fermata[];
-    segnoAttrib: string;
-    divisions: string;
-    barStyle: C.MusicXML.BarStyle = {
-        color: "#000000",
-        data: C.MusicXML.BarStyleType.Regular
-    }
-    ending: C.MusicXML.Ending;
-    repeat: C.MusicXML.Repeat;
-
-    /* C.MusicXML.Editorial */
-    footnote: C.MusicXML.Footnote;
-    level: C.MusicXML.Level;
 }
 
 export = BarlineModel;

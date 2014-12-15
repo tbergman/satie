@@ -18,7 +18,7 @@ import TextTool = require("../stores/textTool");
 class Header extends TypedReact.Component<Header.IProps, {}> {
     render() {
         var model: C.ScoreHeader = this.props.model;
-        var editMode = !!this.props.tool.instance(TextTool);
+        var editMode = this.props.editMode && !!this.props.tool.instance(TextTool);
         var style = {
             fontSize: this.props.fontSize + "px"
         };
@@ -57,15 +57,23 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
             }
         }
     }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: Header.IProps, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 }
 
 module Header {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Header);
+    export var Component = TypedReact.createClass(Header);
     export interface IProps {
-        fontSize: number;
-        model: C.ScoreHeader;
-        tool: Tool;
+        editMode:   boolean;
+        fontSize:   number;
+        model:      C.ScoreHeader;
+        tool:       Tool;
     }
 }
 

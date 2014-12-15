@@ -15,16 +15,17 @@ import React = require("react");
 import TypedReact = require("typed-react");
 import _ = require("lodash");
 import assert = require("assert");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Accidental = require("./_accidental");
 import Dot = require("./_dot");
 import Flag = require("./_flag");
-import Group = require("./_group");
 import LedgerLine = require("./_ledgerLine");
 import NoteHead = require("./_noteHead");
 import NoteNotation = require("./_noteNotation");
 import NoteStem = require("./_noteStem");
 import SlurType = require("./slur"); // Recursive.
+import SlurModel = require("../stores/slur");
 
 class Note extends TypedReact.Component<Note.IProps, {}> {
     render() {
@@ -56,8 +57,8 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                 }
             }
         }
-        return <!Group.Component>
-            {_.map(lines, (line: number, idx: number) => <!Group.Component key={"_" + idx}>
+        return <!g>
+            {_.map(lines, (line: number, idx: number) => <!g key={"_" + idx}>
                 <!NoteHead.Component
                     key="_0"
                     x={this.props.x + (linesOffset[line] || 0)}
@@ -108,8 +109,8 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                 {this.accidentals()}
                 {this.ledgerLines()}
                 {this.tie()}
-            </Group.Component>)}
-        </Group.Component>;
+            </g>)}
+        </g>;
     }
 
     getDefaultProps(): Note.IProps {
@@ -142,7 +143,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         }
         assert(0);
     }
-    getLines() {
+    getLines(): Array<number> {
         return this.props.line.length ? this.props.line : [this.props.line];
     }
     getLowestLine() {
@@ -157,7 +158,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     getHeightDeterminingLine() {
         return this.direction() === 1 ? this.getHighestLine() : this.getLowestLine();
     }
-    getStemHeight() {
+    getStemHeight(): number {
         if (this.props.stemHeight) {
             return this.props.stemHeight;
         }
@@ -275,8 +276,8 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
 
         var fullWidth = this.props.tieTo - this.props.x;
         return <!Slur.Component
-            key={"tie_0"}
-            spec={{
+            key={0}
+            spec={<SlurModel>{
                 direction: -this.direction(),
                 x: this.props.x + fullWidth*5 + 6,
                 y: this.props.y,
@@ -302,11 +303,11 @@ module Note {
         }
     };
 
-    export var Component = TypedReact.createClass(React.createClass, Note);
+    export var Component = TypedReact.createClass(Note, [PureRenderMixin]);
 
     export interface IProps {
         accidentals?: any;
-        accStrokes?: any;
+        accStrokes?: string[];
         children?: Array<React.ReactComponentElement<NoteNotation.IProps>>;
         direction?: number;
         dotted?: number;
@@ -317,9 +318,9 @@ module Note {
         key?: string;
         line?: any;
         notehead?: string;
-        secondaryStroke?: any;
+        secondaryStroke?: string;
         stemHeight?: number;
-        strokes?: any;
+        strokes?: string[];
         tieTo?: any;
         x?: number;
         y?: number;

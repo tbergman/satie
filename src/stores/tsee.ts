@@ -14,23 +14,23 @@ class TSEE {
         (<any>EventEmitter.EventEmitter).call(this);
     }
 
-    public addListener(event: string, listener: Function) {
+    public addListener(event: number, listener: Function) {
         (<any>EventEmitter.EventEmitter).prototype.addListener.call(this, event, listener);
     }
 
-    public on(event: string, listener: Function): any {
+    public on(event: number, listener: Function): any {
         return (<any>EventEmitter.EventEmitter).prototype.on.call(this, event, listener);
     }
 
-    public once(event: string, listener: Function): void {
+    public once(event: number, listener: Function): void {
         (<any>EventEmitter.EventEmitter).prototype.once.call(this, event, listener);
     }
 
-    public removeListener(event: string, listener: Function): void {
+    public removeListener(event: number, listener: Function): void {
         (<any>EventEmitter.EventEmitter).prototype.removeListener.call(this, event, listener);
     }
 
-    public removeAllListener(event: string): void {
+    public removeAllListener(event: number): void {
         (<any>EventEmitter.EventEmitter).prototype.removeAllListener.call(this, event);
     }
 
@@ -38,11 +38,11 @@ class TSEE {
         (<any>EventEmitter.EventEmitter).prototype.setMaxListeners.call(this, n);
     }
 
-    public listeners(event: string): { Function: any; }[]{
+    public listeners(event: number): { Function: any; }[]{
         return (<any>EventEmitter.EventEmitter).prototype.listeners.call(this, event);
     }
 
-    public emit(event: string, arg1?: any, arg2?: any): void {
+    public emit(event: number, arg1?: any, arg2?: any): void {
         (<any>EventEmitter.EventEmitter).prototype.emit.call(this, event, arg1, arg2);
     }
 }

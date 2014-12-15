@@ -13,14 +13,13 @@ import TypedReact = require("typed-react");
 import _ = require("lodash");
 
 import Accidental = require("./_accidental");
-import Group = require("./_group");
+import C = require("../stores/contracts");
 import KeySignatureModel = require("../stores/keySignature");
 
 class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
-
-        return <!Group.Component>
+        return <!g>
             {_.map(this.getAccidentals(), (a, idx) => <!Accidental.Component
                 key={idx /* for React */}
                 x={spec.x + idx*10}
@@ -28,46 +27,51 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
                 line={a.line}
                 stroke={spec.color}
                 opacity={this.props.opacity}
-                fontSize={this.props.fontSize}
                 accidental={a.accidental} />)}
-        </Group.Component>
+        </g>
     }
 
     /**
      * Returns an array representing the position and glyphName of each accidental.
      */
-    getAccidentals() {
+    getAccidentals(): {accidental: string; line: number}[] {
         var spec = this.props.spec;
-        if (!isNaN(spec.getSharpCount())) {
-            return _.times(spec.getSharpCount(), i => Object({
+        if (spec.fifths >= 0) {
+            return _.times(spec.fifths, i => Object({
                 line: sharps[standardClef(spec.clef)][i],
                 accidental: "accidentalSharp"
             }));
-        } else if (!isNaN(spec.getFlatCount())) {
-            return _.times(spec.getFlatCount(), i => Object({
+        } else if (spec.fifths < 0) {
+            return _.times(-spec.fifths, i => Object({
                 line: flats[standardClef(spec.clef)][i],
                 accidental: "accidentalFlat"
             }));
         }
     }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 };
 
-function standardClef(clef: string) {
+function standardClef(clef: C.MusicXML.Clef) {
     "use strict";
-    if (clef.indexOf("gClef") === 0 || clef.indexOf("treble") !== -1) {
-        return "treble";
+    switch (true) {
+        case (clef.sign === "G"):
+            return "treble";
+        case (clef.sign === "F"):
+            return "bass";
+        case (clef.sign === "C" && clef.line === 3):
+            return "alto";
+        case (clef.sign === "C" && clef.line === 4):
+            return "tenor";
+        default:
+            console.warn("Invalid clef?");
+            return "treble";
     }
-    if (clef.indexOf("cClef") === 0 || clef.indexOf("bass") !== -1) {
-        return "bass";
-    }
-    if (clef.indexOf("fClef") === 0 || clef.indexOf("alto") !== -1) {
-        return "alto";
-    }
-    if (clef.indexOf("tenor") !== -1) {
-        return "tenor";
-    }
-    console.warn("Invalid clef?");
-    return "treble";
 };
 
 // TODO: this almost looks like logic -- move to keySignature.ts
@@ -89,12 +93,11 @@ var flats: { [key: string]: Array<number> } = {
 
 module KeySignature {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, KeySignature);
+    export var Component = TypedReact.createClass(KeySignature);
 
     export interface IProps {
         key: number;
         spec: KeySignatureModel;
-        fontSize: number;
         opacity?: number;
     }
 }

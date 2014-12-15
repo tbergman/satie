@@ -4,23 +4,23 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, September 2014
  */
 
-import Model = require("./model");
+import Model                = require("./model");
 
-import Annotator = require("./annotator");
-import BarlineModel = require("./barline");
-import BeginModel = require("./begin");
-import C = require("./contracts");
-import ClefModel = require("./clef");
-import DurationModel = require("./duration");
-import EndMarkerModel = require("./endMarker");
-import KeySignatureModel = require("./keySignature");
-import Metre = require("./metre");
-import NewlineModel = require("./newline");
-import NewpageModel = require("./newpage");
-import TimeSignatureModel = require("./timeSignature");
+import _                	= require("lodash");
+import assert           	= require("assert");
 
-import _ = require("lodash");
-import assert = require("assert");
+import Annotator        	= require("./annotator");
+import BarlineModel     	= require("./barline");
+import BeginModel       	= require("./begin");
+import C                	= require("./contracts");
+import ClefModel        	= require("./clef");
+import DurationModel    	= require("./duration");
+import EndMarkerModel   	= require("./endMarker");
+import KeySignatureModel    = require("./keySignature");
+import Metre                = require("./metre");
+import NewlineModel         = require("./newline");
+import NewpageModel         = require("./newpage");
+import TimeSignatureModel   = require("./timeSignature");
 
 /**
  * Models with the same index in each staff have the same starting location and
@@ -30,16 +30,44 @@ import assert = require("assert");
  * is equal to the type in the other part.
  */
 class PlaceholderModel extends Model {
+    ///////////////
+    // I.1 Model //
+    ///////////////
+
+    get visible()                                       { return false; }
+    get xPolicy()                                       { return C.RectifyXPolicy.Invalid; }
+    get fields()                                        { return ["priority"]; }
+    get type():             C.Type                      { return C.Type.Placeholder; }
+    get placeholder()                                   { return true; }
+    set placeholder(b: boolean) {
+        assert(false, "A PlaceholderModel cannot help but be a placeholder, however much it tries...");
+    }
+
+    //////////////////////////
+    // I.2 PlaceholderModel //
+    //////////////////////////
+
+    priority:               C.Type                      = C.Type.Unknown;
+
+    ///////////////////
+    // II. Lifecycle //
+    ///////////////////
+
+    constructor(spec: {priority: number}, annotated: boolean) {
+        super(spec, annotated);
+        this.annotated = annotated;
+    }
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         // EXCEPTION -- if we are a DurationModel at beat 0, we actually should be
         // at the end of the bar. See duration.ts
         if (this.priority === C.Type.Duration && mctx.beat === 0) {
             this.ctxData = new C.MetreContext({
-                beat: mctx.timeSignature.beats,
+                attributes: mctx.attributes,
+                beat: mctx.ts.beats,
                 bar: mctx.bar - 1,
                 endMarker: false,
-                timeSignature: mctx.timeSignature,
-                defaultCount: mctx.defaultCount
+                ts: mctx.ts
             });
         } else {
             this.ctxData = new C.MetreContext(mctx);
@@ -65,14 +93,14 @@ class PlaceholderModel extends Model {
             ctx.eraseFuture(ctx.idx + 1);
         }
 
-        if (this._priority !== realItems[0].type) {
+        if (this.priority !== realItems[0].type) {
             console.warn("Dangerously correcting a mismatched type.");
-            this._priority = realItems[0].type;
+            this.priority = realItems[0].type;
         }
 
         // Only correct rhythm if the beat is valid (otherwise, our rhythmicSpellcheck
         // won't give sensible results!)
-        if (ctx.timeSignature && ctx.__globalBeat__ < ctx.timeSignature.beats) {
+        if (ctx.ts && ctx.__globalBeat__ < ctx.ts.beats) {
             // Add in rests, if needed. (This is part of the reason (2) is needed above).
             if (ctx.beat < ctx.__globalBeat__) {
                 return PlaceholderModel.fillMissingBeats(ctx);
@@ -80,24 +108,27 @@ class PlaceholderModel extends Model {
 
             if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.Duration) {
                 assert(realItems[0], "We can't have an entire column of fake durations,");
-                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].getBeats(ctx));
+                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].calcBeats(ctx));
             }
         }
 
         // See if we should replace a placeholder for a real type...
         switch(this.priority) {
             case C.Type.Barline:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barline: C.Barline.Standard }));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: {data: C.MusicXML.BarStyleType.Regular }}, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Begin:
-                ctx.body.splice(ctx.idx, 1, new BeginModel({}));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new BeginModel({}, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Clef:
-                if (!ctx.clef) {
-                    ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }));
-                    ctx.body[ctx.idx].source = this.source;
+                if (!ctx.attributes.clef) {
+                    ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }, true));
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed  = this.proposed;
                     return C.IterationStatus.RetryCurrent;
                 }
                 break;
@@ -107,33 +138,39 @@ class PlaceholderModel extends Model {
                     var bodies: Array<Model> = ctx.findVertical(() => true, this.idx + 1);
                     ctx.eraseFuture(this.idx + 1);
                     ctx.insertPastVertical(bodies);
-                    ctx.body[ctx.idx].source = this.source;
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed  = this.proposed;
                     return C.IterationStatus.RetryCurrent;
                 }
                 break;
             case C.Type.EndMarker:
-                ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new EndMarkerModel({}, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.KeySignature:
-                var ks = (<KeySignatureModel>realItems[0]).keySignature;
+                var ks = C.JSONx.clone(<KeySignatureModel>realItems[0]);
                 assert(ks, "Undefined prevKeySignature!!");
-                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.NewLine:
-                ctx.body.splice(ctx.idx, 1, new NewlineModel({}));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new NewlineModel({}, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.NewPage:
-                ctx.body.splice(ctx.idx, 1, new NewpageModel({}));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new NewpageModel({}, true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.TimeSignature:
                 var tses = ctx.findVertical(obj => obj.type === C.Type.TimeSignature);
                 assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel({ timeSignature: tses[0].timeSignature }));
-                ctx.body[ctx.idx].source = this.source;
+                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(<TimeSignatureModel> tses[0], true));
+                ctx.body[ctx.idx].annotated = this.annotated;
+                ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
         }
 
@@ -143,51 +180,9 @@ class PlaceholderModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    constructor(spec: {_priority: string}, source: C.Source) {
-        super(spec);
-        assert(isNaN(<any>spec._priority), "Expected string");
-
-        this.source = source;
-
-        this._priority = (<any>C.Type)[spec._priority];
-        assert(!isNaN(this._priority));
-    }
-
-    visible() {
-        return false;
-    }
-
-    toLylite(lylite: Array<string>, unresolved?: Array<(obj: Model) => boolean>) {
-        return; // no-op
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            _priority: C.Type[this._priority]
-        });
-    }
-
-    _priority: C.Type;
-    get priority(): C.Type {
-        return this._priority;
-    }
-
-    set priority(p: C.Type) {
-        assert(!isNaN(p), "Expected priority enumeration");
-        this._priority = p;
-    }
-
-    get type(): C.Type {
-        return C.Type.Placeholder;
-    }
-
-    get placeholder() {
-        return true;
-    }
-
-    set placeholder(b: boolean) {
-        assert(false, "A PlaceholderModel cannot help but be a placeholder, however much it tries...");
-    }
+    ////////////////
+    // IV. Static //
+    ////////////////
 
     static fillMissingBeats(ctx: Annotator.Context, extraBeats?: number): C.IterationStatus {
         extraBeats = extraBeats || 0;
@@ -195,7 +190,7 @@ class PlaceholderModel extends Model {
         var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
-                    C.Source.Annotator));
+                    true));
         ctx.splice(ctx.idx, 1, missingBeats, Annotator.SplicePolicy.Masked);
         return C.IterationStatus.RetryLine;
     }

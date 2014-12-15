@@ -11,6 +11,7 @@
 import React = require("react");
 import TypedReact = require("typed-react");
 import assert = require("assert");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Glyph = require("./_glyph");
 import getFontOffset = require("./_getFontOffset");
@@ -30,7 +31,6 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
                 noteOffset[1]*10 -
                 this.direction()*this.props.stemHeight}
             fill={this.props.stroke}
-            fontSize={this.props.fontSize}
             glyphName={this.glyphName() } />;
     }
 
@@ -62,12 +62,11 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
 
 module Flag {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Flag);
+    export var Component = TypedReact.createClass(Flag, [PureRenderMixin]);
 
     export interface IProps {
         direction: number; // -1 or 1
         flag: string;
-        fontSize: number;
         line: number;
         notehead: string;
         stemHeight: number;

@@ -36,7 +36,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                 notation={m}
                 key={idx}
                 line={3}
-                notehead={props.spec.notehead}
+                notehead={props.spec.noteheadGlyph}
                 x={NaN /*assigned later :( */}
                 y={NaN /*assigned later :( */} />);
 
@@ -64,7 +64,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         assert(spec.count);
 
         var note = <!Note.Component
-                    accidentals={spec.displayedAccidentals}
+                    accidentals={spec._displayedAccidentals}
                     accStrokes={spec.accStrokes}
                     direction={this.props.direction || spec.direction}
                     dotted={spec.displayDots}
@@ -74,7 +74,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     isNote={true}
                     key={spec.key}
                     line={spec.lines}
-                    notehead={spec.notehead}
+                    notehead={spec.noteheadGlyph}
                     secondaryStroke={spec.color}
                     stemHeight={this.props.stemHeight}
                     strokes={spec.strokes}
@@ -96,10 +96,17 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
             return note;
         }
     }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 }
 
 module Duration {
-    export var Component = TypedReact.createClass(React.createClass, Duration);
+    export var Component = TypedReact.createClass(Duration);
     export interface IProps {
         key: number;
         spec: DurationModel;

@@ -40,18 +40,18 @@ class Dispatcher implements C.IDispatcher {
         this._callbacks = this._callbacks.filter(cb => cb !== callback);
     }
 
-	DELETE(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	DELETE(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
 	    return this._dispatch(url, "DELETE", p, cb, nested); }
-	GET(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	GET(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
 	    return this._dispatch(url, "GET", p, cb, nested); }
-    PATCH(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+    PATCH(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
         return this._dispatch(url, "PATCH", p, cb, nested); }
-	POST(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	POST(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
 	    return this._dispatch(url, "POST", p, cb, nested); }
-	PUT(url: string, p?: any, cb?: () => void, nested?: boolean): Promise<void> {
+	PUT(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
 	    return this._dispatch(url, "PUT", p, cb, nested); }
 
-    _dispatch(url: string, verb: string, postData: any, cb?: () => void, nested: boolean = false) : Promise<void> {
+    _dispatch(url: string, verb: string, postData: any, cb?: (response: any) => void, nested: boolean = false) : Promise<void> {
 	    assert(verb, "Verb must be defined");
 
         var pr: Promise<void>;
@@ -83,7 +83,7 @@ class Dispatcher implements C.IDispatcher {
 	            });
 
 	            if (cb) {
-                    ev.then(cb);
+                    ev.then(() => cb(response));
 	            }
 	        });
 	    } else if (verb in immediateActions) {
@@ -111,7 +111,7 @@ class Dispatcher implements C.IDispatcher {
 	                });
 
 	                if (cb) {
-                        ev.then(cb);
+                        ev.then(() => cb(response));
 	                }
 	            });
 	        } else {
@@ -157,7 +157,7 @@ class Dispatcher implements C.IDispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    private _dispatchImpl(action: C.IFluxAction) {
+    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData, Response>) {
         if (FLUX_DEBUG) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),

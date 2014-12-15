@@ -52,7 +52,7 @@ module Molasses {
         width: string;
     }
 
-    export var Component = TypedReact.createClass(React.createClass, Molasses);
+    export var Component = TypedReact.createClass(Molasses);
 }
 
 export = Molasses;

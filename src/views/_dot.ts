@@ -7,16 +7,12 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-
-import RenderableMixin = require("./_renderable");
-var Victoria = require("../renderer/victoria/victoria");
-
-var VCircle = Victoria.VCircle;
+import React            = require("react");
+import TypedReact       = require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 class Dot extends TypedReact.Component<Dot.IProps, {}> {
-    renderSVG() {
+    render() {
         // See rationale for hidden rect in _glyph.jsx
         return React.DOM.g(null,
             React.DOM.circle({
@@ -36,19 +32,6 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
         );
     }
 
-    renderGL() {
-        var fill = this.props.stroke;
-        if (fill === "black" || !fill) {
-            fill = "#000000";
-        }
-
-        return VCircle({
-            fill: fill,
-            cx: this.cx(),
-            cy: this.cy(),
-            radius: this.props.radius});
-    }
-
     cyOffset() {
         return ((this.props.line * 2) % 2) ? 0 : 5;
     }
@@ -61,11 +44,9 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
     }
 }
 
-Dot.prototype.render = RenderableMixin.prototype.render;
-
 module Dot {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Dot);
+    export var Component = TypedReact.createClass(Dot, [PureRenderMixin]);
 
     export interface IProps {
         x: number;

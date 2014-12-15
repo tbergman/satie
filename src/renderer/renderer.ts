@@ -6,37 +6,33 @@
 
 /* tslint:disable */ 
 
-import Bootstrap = require("react-bootstrap");
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
-import assert = require("assert");
-(<any>Object).assign = require("react/lib/Object.assign"); // For DisqusThread
-var DisqusThread = require("react-disqus-thread");
+import Bootstrap        = require("react-bootstrap");
+import React        	= require("react");
+import TypedReact   	= require("typed-react");
+import _            	= require("lodash");
+import assert       	= require("assert");
+(<any>Object).assign    = require("react/lib/Object.assign");   // For DisqusThread
+var    DisqusThread     = require("react-disqus-thread");
 
-import Molasses = require("./molasses");
-var Victoria = require("./victoria/victoria");
+import Molasses         = require("./molasses");
 
-import Annotator = require("../stores/annotator");
-import C = require("../stores/contracts");
-import Header = require("../views/_header");
-import Model = require("../stores/model");
-import Tool = require("../stores/tool");
-import Rect = require("../views/_rect");
-import Group = require("../views/_group");
-import Line = require("../views/_line");
-import RipienoFooter = require("../ui/ripienoFooter");
-import SelectionRect = require("./selectionRect");
+import Annotator        = require("../stores/annotator");
+import C                = require("../stores/contracts");
+import Header           = require("../views/_header");
+import Model            = require("../stores/model");
+import Tool             = require("../stores/tool");
+import Rect             = require("../views/_rect");
+import Line             = require("../views/_line");
+import RipienoFooter    = require("../ui/ripienoFooter");
+import SelectionRect	= require("./selectionRect");
 
-var isBrowser = typeof window !== "undefined";
-var useGL = (typeof global.libripienoclient !== "undefined") ||
-    (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
+var    isBrowser        = typeof window !== "undefined";
+var    useGL            = (typeof global.libripienoclient !== "undefined") ||
+                          (isBrowser && global.location.search.indexOf("engine=gl") !== -1);
 
-C.renderUtil.useGL = useGL;
-
-var RenderEngine: typeof Molasses.Component = useGL ? Victoria : Molasses.Component;
-
-var PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
+C.renderUtil.useGL      = useGL;
+var RenderEngine        = Molasses.Component;
+var profilerEnabled     = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
 if (typeof window !== "undefined") {
     require("web-midi-api/WebMIDIAPI.js"); // Inserts itself if WebMIDI isn't present.
@@ -47,9 +43,9 @@ if (typeof window !== "undefined") {
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
  */
-class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
+class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
     render() {
-        if (PROFILER_ENABLED) {
+        if (profilerEnabled) {
             console.time("render");
         }
 
@@ -100,6 +96,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     height={this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%"}
                     viewbox={viewbox}>
                 {!page.from && !useGL && <!Header.Component
+                    editMode={this.props.editMode}
                     fontSize={scale40}
                     key="HEADER"
                     tool={this.props.tool}
@@ -108,7 +105,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     method in SongEditorStore or something. */}
                 {_.map(parts, (part: C.IPart, idx: number) => {
                     assert(part.body);
-                    return <!Group.Component key={idx} style={{ fontSize: scale40 + "px" }}>
+                    return <!g key={"" + idx} style={{ fontSize: scale40 + "px" }}>
                         {_.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
                             if (obj.type === C.Type.NewLine) {
                                 memo.push([]);
@@ -151,7 +148,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                                 components[selIdx]= <!Rect.Component {...selProps} />;
                                                 selIdx = -1;
                                             }
-                                            if (s[i].visible()) {
+                                            if (s[i].visible) {
                                                 components[h++] = s[i].render(scale40);
                                             }
                                         }
@@ -162,7 +159,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                     key={lidx} />;
                             }
                         )}
-                    </Group.Component>
+                    </g>
                 })}
                 {this.props.tool && this.props.tool.render(
                     this.getCtx(),
@@ -177,7 +174,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
                     height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
                 {(pidx === this.state.visualCursor.annotatedPage) &&
-                    this.state.visualCursor && this.state.visualCursor.annotatedObj && <!Group.Component
+                    this.state.visualCursor && this.state.visualCursor.annotatedObj && <!g
                             style={{fontSize: scale40 + "px"}}>
                         <!Line.Component
                             x1={this.state.visualCursor.annotatedObj.x - 8}
@@ -188,7 +185,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                 this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._parts.length - 1)/2 : 0) + vcHeight}
                             stroke="#008CFF"
                             strokeWidth={2} />
-                    </Group.Component>}
+                    </g>}
                 </RenderEngine>});
 
         var ret: React.ReactElement<any, any>;
@@ -240,7 +237,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             this.props.store.dangerouslyMarkRenderDone();
         }
 
-        if (PROFILER_ENABLED) {
+        if (profilerEnabled) {
             console.timeEnd("render");
         }
         return ret;
@@ -316,7 +313,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 <!b style={{fontSize: "20px"}}>Enter music up to 3x faster!</b> <!br /><!br />
                 <!Bootstrap.Button
                             onClick={() => {
-                                this.props.dispatcher.PUT("/local/modal/midi", 1);
+                                this.props.dispatcher.PUT("/webapp/modal/midi", 1);
                                 this._hideMidiEntry();
                             }}
                             style={{width: 200}}
@@ -327,7 +324,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 <!span style={{marginLeft: 8, marginRight: 9}}>or</span>
                 <!Bootstrap.Button
                             onClick={() => {
-                                this.props.dispatcher.PUT("/local/modal/midi", 2);
+                                this.props.dispatcher.PUT("/webapp/modal/midi", 2);
                                 this._hideMidiEntry();
                             }}
                             style={{width: 200}}
@@ -337,7 +334,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 <!div style={{height: 10}} />
                 <!Bootstrap.Button bsStyle="link"
                             onClick={() => {
-                                this.props.dispatcher.PUT("/local/modal/midi", 4);
+                                this.props.dispatcher.PUT("/webapp/modal/midi", 4);
                                 this._hideMidiEntry();
                             }}>
                     keyboard shortcuts</Bootstrap.Button>
@@ -371,8 +368,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             this._attachToMIDI();
         }
         if (this.props.store) {
-            this.props.store.addAnnotationListener(this.update);
-            this.props.store.addMidiInHintListener(this._handleMidiEvent);
+            this.props.store.addListener(C.EventType.Annotate, this.update);
+            this.props.store.addListener(C.EventType.MidiIn, this._handleMidiEvent);
         }
 
         if (this.props.tool) {
@@ -388,8 +385,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             this._detachFromMIDI();
         }
         if (this.props.store) {
-            this.props.store.removeAnnotationListener(this.update);
-            this.props.store.removeMidiInHintListener(this._handleMidiEvent);
+            this.props.store.removeListener(C.EventType.Annotate, this.update);
+            this.props.store.removeListener(C.EventType.MidiIn, this._handleMidiEvent);
         }
     }
 
@@ -427,7 +424,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
     // Bind manually because Jazz MIDI also wants to bind, and React doesn't like that.
     _handleMidiEvent = (ev: {data: number[]; currentTarget: any}) => {
-        debugger;
         switch(true) {
             case(ev.data[0] < 128):
                 // unknown
@@ -479,7 +475,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                 item.type === C.Type.TimeSignature ||
                                 item.type === C.Type.Clef ||
                                 item.type === C.Type.Duration) &&
-                            Math.abs(dynX - item.x + item.cachedSpacing*2) < 10.8 + item.cachedSpacing*4 +
+                            Math.abs(dynX - item.x + item.spacing*2) < 10.8 + item.spacing*4 +
                                 (item.isNote ? (item.note.dots||0)*8 : 0)) {
                         dynX = item.x;
                         foundIdx = j;
@@ -506,7 +502,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                 idx: j,
                                 item: item,
                                 musicLine: info.musicLine,
-                                Source: C.Source.Annotator,
+                                annotated: true,
+                                proposed: false,
                                 fontSize: 0,
                                 _key: null,
                                 x: () => NaN,
@@ -529,9 +526,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                                 key: null,
                                 annotateImpl: null,
                                 visible: () => false,
-                                render: null,
-                                toLylite: null
-                            })
+                                render: null
+                            }, true)
                         };
                         return _pointerData;
                     }
@@ -649,7 +645,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var data = this._getPointerData(mouse);
         // No tool is also known as the "select" tool.
         if (this.props.tool.instance(Tool.Null) && data.ctxData) {
-            this.props.dispatcher.PUT("/local/visualCursor", {
+            this.props.dispatcher.PUT("/webapp/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
@@ -666,7 +662,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             }
         }
         if (fn) {
-            this.props.dispatcher.PUT("/local/tool/action", {mouseData: data, fn: fn});
+            this.props.dispatcher.PUT("/webapp/tool/action", {mouseData: data, fn: fn});
         }
         this.forceUpdate();
     }
@@ -695,7 +691,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 }
             });
             if (this.props.selection) {
-                this.props.dispatcher.DELETE("/local/selection");
+                this.props.dispatcher.DELETE("/webapp/selection");
             }
         }
     }
@@ -727,7 +723,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 selectionRect: null
             });
             if (_selection) {
-                this.props.dispatcher.PUT("/local/selection", _selection.length ? _selection : null);
+                this.props.dispatcher.PUT("/webapp/selection", _selection.length ? _selection : null);
             }
         }
     }
@@ -743,7 +739,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
             if (area > 1 && this.props.tool) {
-                this.props.dispatcher.DELETE("/local/tool");
+                this.props.dispatcher.DELETE("/webapp/tool");
             }
             return;
         }
@@ -774,16 +770,17 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         if (fn === "hide" || !data.obj) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
             if (this.props.store) {
-                this.props.store.dangerouslyHidePreview(null);
+                this.props.store.dangerouslyHidePreview();
             }
         } else if (fn && this.props.store) {
             // Skip the dispatcher and unneeded stores (potentially dangerous!)
             this.props.store.dangerouslyShowPreview({
-                description: "PUT /local/tool/preview",
+                description: "PUT /webapp/tool/preview",
                 response: null,
                 query: null,
                 postData: {
-                    mouseData: data, fn: fn
+                    mouseData: data,
+                    fn: fn
                 }
             });
         }
@@ -832,18 +829,18 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
             case 32: // space
                 event.preventDefault(); // don't navigate backwards
-                this.props.dispatcher.PUT("/local/visualCursor/_togglePlay", null);
+                this.props.dispatcher.PUT("/webapp/visualCursor/_togglePlay", null);
                 break;
             case 27: // escape
-                this.props.dispatcher.PUT("/local/tool", null);
+                this.props.dispatcher.PUT("/webapp/tool", null);
                 break;
             case 8: // backspace
             case 46: // DELETE
                 event.preventDefault(); // don't navigate backwards
                 if (_selection) {
-                    this.props.dispatcher.DELETE("/local/selection/contents");
+                    this.props.dispatcher.DELETE("/webapp/selection/contents");
                 } else if (this.props.tool.instance(Tool.Null)) {
-                    this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                    this.props.dispatcher.PUT("/webapp/tool", new NoteTool("note8thUp"));
                 }
                 if (this.props.tool) {
                     this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
@@ -851,31 +848,31 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 break;
             case 37: // left arrow
                 event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                this.props.dispatcher.PUT("/local/visualCursor", {step: -1});
+                this.props.dispatcher.PUT("/webapp/visualCursor/step", {step: -1});
                 break;
             case 39: // right arrow
                 event.preventDefault(); // don't scroll (shouldn't happen anyway!)
-                this.props.dispatcher.PUT("/local/visualCursor", {step: 1});
+                this.props.dispatcher.PUT("/webapp/visualCursor/step", {step: 1});
                 break;
             case 38: // up arrow
                 if (this.props.tool instanceof NoteTool) {
                     event.preventDefault(); // scroll by mouse only
-                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: 1 });
+                    this.props.dispatcher.PUT("/webapp/visualCursor/before/octave", { delta: 1 });
                 }
                 break;
             case 40: // down arrow
                 if (this.props.tool instanceof NoteTool) {
                     event.preventDefault(); // scroll by mouse only
-                    this.props.dispatcher.PUT("/local/visualCursor/before/octave", { delta: -1 });
+                    this.props.dispatcher.PUT("/webapp/visualCursor/before/octave", { delta: -1 });
                 }
                 break;
             case 90: // 'z'
                 event.preventDefault(); // we control all undo behavior
                 if (event.ctrlKey || event.metaKey) {
                     if (event.shiftKey) {
-                        this.props.dispatcher.PUT("/local/song/redo");
+                        this.props.dispatcher.PUT("/webapp/song/redo");
                     } else {
-                        this.props.dispatcher.PUT("/local/song/undo");
+                        this.props.dispatcher.PUT("/webapp/song/undo");
                     }
                 }
                 break;
@@ -929,16 +926,16 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         if (this.props.tool.instance(Tool.Null)) {
             if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
                 key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                this.props.dispatcher.PUT("/local/tool", new NoteTool("note8thUp"));
+                this.props.dispatcher.PUT("/webapp/tool", new NoteTool("note8thUp"));
             } else if (key === "r") {
-                this.props.dispatcher.PUT("/local/tool", new RestTool());
+                this.props.dispatcher.PUT("/webapp/tool", new RestTool());
             } else if (key === ".") {
-                this.props.dispatcher.PUT("/local/tool", new DotTool());
+                this.props.dispatcher.PUT("/webapp/tool", new DotTool());
             }
         }
         var toolFn = keyToTool[key];
         if (toolFn) {
-            this.props.dispatcher.PUT("/local/tool", toolFn());
+            this.props.dispatcher.PUT("/webapp/tool", toolFn());
         } else if (this.props.tool) {
             this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
         }
@@ -961,7 +958,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
 module Renderer {
     "use strict";
-    export var Component = TypedReact.createClass<Renderer.IProps, Renderer.IState>(React.createClass, Renderer);
+    export var Component = TypedReact.createClass(Renderer);
 
     export interface IProps {
         comments?: boolean;
@@ -987,12 +984,6 @@ module Renderer {
         setRibbonTabFn: (tab: number) => void;
     }
 
-    export interface IState {
-        selectionRect?: IRect;
-        visualCursor?: C.IVisualCursor;
-        mouse?: C.IMouse;
-    }
-
     export interface IPosInfo {
         x: number;
         y: number;
@@ -1012,6 +1003,11 @@ module Renderer {
     }
 }
 
+interface IState {
+    selectionRect?: Renderer.IRect;
+    visualCursor?:  C.IVisualCursor;
+    mouse?:         C.IMouse;
+}
 
 /**
  * Contains a line. Exists for two reasons:
@@ -1030,12 +1026,12 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         if (this.shouldClear) {
             assert(this.dirty);
             this.shouldClear = false;
-            return <!Group.Component />;
+            return <!g />;
         }
-        if (PROFILER_ENABLED) {
+        if (profilerEnabled) {
             console.log("Rendering line", this.props.idx);
         }
-        return <!Group.Component>{this.props.generate()}</Group.Component>;
+        return <!g>{this.props.generate()}</g>;
     }
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
@@ -1044,7 +1040,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
-            if (PROFILER_ENABLED) {
+            if (profilerEnabled) {
                 console.log("Line dirty", this.props.idx);
             }
             if (this.props.store) {
@@ -1103,7 +1099,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
     shouldClear: boolean = false;
 };
 
-var LineContainerComponent = TypedReact.createClass(React.createClass, LineContainer);
+var LineContainerComponent = TypedReact.createClass(LineContainer);
 
 var _selection: Array<Model> = null;
 

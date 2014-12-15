@@ -6,29 +6,26 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
+import React            = require("react");
+import TypedReact       = require("typed-react");
+import _                = require("lodash");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import C = require("../stores/contracts");
-import SMuFL = require("../util/SMuFL");
-import Glyph = require("./_glyph");
-import Group = require("./_group");
-import RenderableMixin = require("./_renderable");
-var Victoria = require("../renderer/victoria/victoria");
-import getFontOffset = require("./_getFontOffset");
+import C                = require("../stores/contracts");
+import Glyph			= require("./_glyph");
+import getFontOffset    = require("./_getFontOffset");
 
 /**
  * Calculates a way to render a beam given two endpoints.
  * See also BeamGroup and BeamGroupModel.
  */
-class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMixin {
-    renderSVG() {
+class Beam extends TypedReact.Component<Beam.IProps, {}> {
+    render() {
         if (this.props.beams === C.BeamCount.Variable) {
             var xLow = this._getX1();
             var xHi = this._getX2();
 
-            return <!Group.Component>
+            return <!g>
                 {_.map(this.props.variableBeams, (beams: number, idx: number): any => {
                     if (idx === 0) {
                         return null;
@@ -62,9 +59,9 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
                     });
                 })}
                 {this._tuplet()}
-            </Group.Component>;
+            </g>;
         } else {
-            return <!Group.Component>
+            return <!g>
                 {_.times(this.props.beams, idx =>
                     React.DOM.polygon({
                         key: "" + idx,
@@ -77,43 +74,8 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
                         strokeWidth: 0})
                 )}
                 {this._tuplet()}
-            </Group.Component>;
+            </g>;
         }
-    }
-
-    renderGL() {
-        return <!Group.Component>
-            {_.times(this.props.beams, idx => <!Victoria.VRect
-                key={idx}
-                x1={this._getX1()}
-                x2={this._getX2()}
-                y1={this._getY1(0, idx)}
-                y2={this._getY1(1, idx)}
-                fill={this.props.stroke}
-                skewX={0}
-                skewY={this._getY1(1, idx) - this._getY2(1, idx)} />)}
-            this._tuplet()}
-        </Group.Component>;
-    }
-
-    /**
-     * Returns true if anything has changed. Beams are particularly slow to mount.
-     */
-    shouldComponentUpdate(nextProps : Beam.IProps) {
-        var ret =
-            this.props.x !== nextProps.x ||
-            this.props.y !== nextProps.y ||
-            this.props.beams !== nextProps.beams ||
-            this.props.direction !== nextProps.direction ||
-            this.props.line1 !== nextProps.line1 ||
-            this.props.line2 !== nextProps.line2 ||
-            this.props.stroke !== nextProps.stroke ||
-            this.props.tuplet !== nextProps.tuplet ||
-            this.props.tupletsTemporary !== nextProps.tupletsTemporary ||
-            this.props.width !== nextProps.width ||
-            JSON.stringify(this.props.variableBeams) !==
-                JSON.stringify(nextProps.variableBeams);
-        return ret;
     }
 
     /**
@@ -157,7 +119,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
             this.direction()*this.getFontOffset("noteheadBlack")[1]*10 -
             (this.props.line1 - 3)*10 +
             this.direction()*idx*8.8 +
-            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
+            (incl || 0)*(C.SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
     }
 
     private _getY2(incl: number, idx: number) {
@@ -168,7 +130,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
             this.direction()*this.getFontOffset("noteheadBlack")[1]*10 -
             (this.props.line2 - 3)*10 +
             this.direction()*idx*8.8 +
-            (incl || 0)*(SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
+            (incl || 0)*(C.SMuFL.bravuraMetadata.engravingDefaults.beamThickness*10);
     }
 
     private _getYVar(incl: number, idx: number, percent: number) {
@@ -211,11 +173,9 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> implements RenderableMi
     }
 };
 
-Beam.prototype.render = RenderableMixin.prototype.render;
-
 module Beam {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Beam);
+    export var Component = TypedReact.createClass(Beam, [PureRenderMixin]);
 
     export interface IProps {
         beams: C.BeamCount;
@@ -226,7 +186,7 @@ module Beam {
         stroke: string;
         tuplet: C.ITuplet;
         tupletsTemporary: boolean;
-        variableBeams: Array<number>;
+        variableBeams: Array<number>; // MXFIX: make sure a new copy is created every time
         variableX: Array<number>;
         width: number;
         x: number;

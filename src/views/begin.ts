@@ -13,20 +13,20 @@ import TypedReact = require("typed-react");
 
 import BeginModel = require("../stores/begin");
 import Brace = require("./_brace");
-import Group = require("./_group");
+import C = require("../stores/contracts");
 import StaveLines = require("./_staveLines");
 
 class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
-        return <!Group.Component>
+        return <!g>
             <!StaveLines.Component
                 key="StaveLines"
                 width={this.props.spec.width}
                 x={spec.x}
                 y={spec.braceY} />
-        </Group.Component>
+        </g>
 
         // MXFIX
         // {spec.pianoSystemContinues && <!Brace.Component
@@ -36,16 +36,22 @@ class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
         //     y={spec.braceY}
         //     y2={spec.braceY2} />}
     }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
+    }
 };
 
 module BeginView {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, BeginView);
+    export var Component = TypedReact.createClass(BeginView);
 
     export interface IProps {
         key: number;
         spec: BeginModel;
-        fontSize: number;
     }
 }
 

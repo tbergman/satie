@@ -4,96 +4,126 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model                = require("./model");
 
-import _ = require("lodash");
+import _                    = require("lodash");
+import assert               = require("assert");
 
-import C = require("./contracts");
-import Annotator = require("./annotator");
-import ClefModel = require("./clef");
-import DurationModelType = require("./duration"); // Potentially cyclic. For types only.
+import C                    = require("./contracts");
+import Annotator            = require("./annotator");
+import ClefModel            = require("./clef");
+import DurationModelType    = require("./duration"); // Potentially cyclic. For types only.
 
 /**
  * Represents a key signature as an array of accidentals, and a tonality (major/minor).
  */
-class KeySignatureModel extends Model.StateChangeModel {
+class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.KeyComplete {
+    /* Model */
+    get type()                              { return C.Type.KeySignature; }
+    get xPolicy()                           { return C.RectifyXPolicy.Max; }
+
+    get fields() {
+        return [
+            "cancel", "keySteps", "keyOctaves", "number_", "fifths", "keyAlters", "keyAccidentals", "mode",
+            "defaultX", "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle",
+            "fontSize", "color", "printObject"
+        ];
+    }
+
+    /* KeySignatureModel */
+    clef:               C.MusicXML.Clef;
+    _annotatedSpacing:  number;
+    temporary:          boolean;
+    selected:           boolean;
+
+    /* C.MusicXML.KeySignature */
+    cancel:             C.MusicXML.Cancel;
+    keySteps:           string[];
+    keyOctaves:         C.MusicXML.KeyOctave[];
+    number_:            number;
+    fifths:             number;
+    keyAlters:          string[];
+    keyAccidentals:     string[];
+    mode:               string;
+
+
+    /* C.MusicXML.PrintStyle */
+
+    /* C.MusicXML.PrintStyle >> Position */
+    defaultX:           number;
+    relativeY:          number;
+    defaultY:           number;
+    relativeX:          number;
+
+    /* C.MusicXML.PrintStyle >> Font */
+    fontFamily:         string;
+    fontWeight:         C.MusicXML.NormalBold;
+    fontStyle:          C.MusicXML.NormalItalic;
+    fontSize:           string;
+
+    /* C.MusicXML.PrintStyle >> Color */
+    color:              string;
+
+    /* C.MusicXML.PrintObject */
+    printObject:        boolean;
+
+    /* Lifecycle */
+    constructor(spec: {clef?: C.MusicXML.Clef; x?: number; y?: number}, annotated: boolean) {
+        super(spec, annotated);
+        if (spec.clef) {
+            this.clef                               = spec.clef;
+        }
+    }
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (!ctx.clef) {
+        if (!ctx.attributes.clef) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
-        this.clef = ctx.clef;
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
-        ctx.keySignature = this.keySignature;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.keySignature);
+        this.clef                                   = ctx.attributes.clef;
+        assert(this.clef instanceof Object);
+        var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
+        ctx.attributes.keySignature                 = this;
+        ctx.accidentalsByStave[ctx.currStaveIdx]    = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                this._annotatedSpacing = 25;
+                this._annotatedSpacing              = 25;
             } else {
-                this._annotatedSpacing = 15;
+                this._annotatedSpacing              = 15;
             }
         } else {
-            this._annotatedSpacing = 10;
+            this._annotatedSpacing                  = 10;
         }
-        var c: number = this.getSharpCount() || this.getFlatCount();
+        var c: number                               = Math.abs(this.fifths);
         if (c) {
-            ctx.x += this._annotatedSpacing + 10.4*c;
+            ctx.x                                   += this._annotatedSpacing + 10.4*c;
         }
-        this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        switch (true) {
+            case this.temporary:
+                this.color                          = "#A5A5A5";
+                break;
+            case this.selected:
+                this.color                          = "#75A1D0";
+                break;
+            default:
+                this.color                          = "#000000";
+                break;
+        }
         return C.IterationStatus.Success;
     }
-    toLylite(lylite: Array<string>) {
-        if (this.source === C.Source.Annotator) {
-            return;
-        }
 
-        var acc = "";
-        if (this.keySignature.pitch.acc === -1) {
-            acc = "es";
-        } else if (this.keySignature.pitch.acc === 1) {
-            acc = "is";
-        }
-        lylite.push("\\key " +
-            this.keySignature.pitch.pitch + acc + " " + this.keySignature.mode + "\n");
-    }
-    getSharpCount() {
-        return C.NoteUtil.getSharpCount(this.keySignature);
-    }
-    getFlatCount() {
-        return C.NoteUtil.getFlatCount(this.keySignature);
-    }
+    /* Static */
     static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
-        var keySignature = ctx.prevKeySignature || { pitch: { pitch: "c" }, acc: 0, mode: C.MAJOR };
+        // MXFIX
+        var keySignature: C.MusicXML.Key;
         return ctx.insertPast(new KeySignatureModel({
-            keySignature: keySignature,
-            source: C.Source.Annotator
-        }));
+            keySignature: keySignature
+        }, true));
     };
-
-    get type() {
-        return C.Type.KeySignature;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            keySignature: this.keySignature,
-            pitch: this.pitch
-        });
-    }
-
-    clef: string;
-    keySignature: C.IKeySignature;
-    _annotatedSpacing: number;
-    color: string;
-    temporary: boolean;
-    selected: boolean;
-    pitch: C.IPitch;
-
 }
 
 export = KeySignatureModel;

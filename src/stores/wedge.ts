@@ -6,55 +6,48 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, November 2014
  */
 
-import Model = require("./model");
+import Model        = require("./model");
 
-import Annotator = require("./annotator");
-import C = require("./contracts");
-import assert = require("assert");
+import Annotator    = require("./annotator");
+import C            = require("./contracts");
+import assert       = require("assert");
 
-import _ = require("lodash");
+class WedgeModel extends Model /* implements C.MusicXML.Wedge */ {
+    //
+    // I.1 Model
+    //
+    get type()                      { return C.Type.Wedge; }
+    get xPolicy()                   { return C.RectifyXPolicy.Min; }
+    get fields(): string[]          { return ["wedgeType"]; }
 
-class WedgeModel extends Model {
+    //
+    // I.2 WedgeModel
+    //
+    wedgeType: C.MusicXML.WedgeType;
+    endpoint: WedgeModel;
+
+    //
+    // II. Lifecycle
+    //
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Wedges are paired.
-        if (this.wedgeType === WedgeModel.Type.Stop) {
-            var endpoint = ctx.prev(m => m.type === C.Type.Wedge, 1);
+        if (this.wedgeType === C.MusicXML.WedgeType.Stop) {
+            var endpoint            = ctx.prev(m => m.type === C.Type.Wedge, 1);
             assert.equal(endpoint.type, C.Type.Wedge);
-            assert.notEqual((<WedgeModel>endpoint).wedgeType, WedgeModel.Type.Stop);
-            this.endpoint = <WedgeModel> endpoint;
-            this.endpoint.endpoint = this;
+            assert.notEqual((<WedgeModel>endpoint).wedgeType, C.MusicXML.WedgeType.Stop);
+            this.endpoint           = <WedgeModel> endpoint;
+            this.endpoint.endpoint  = this;
         }
 
         // Wedges have no logical width.
         return C.IterationStatus.Success;
     }
 
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-            wedgeType: this.wedgeType
-        });
-    }
-
-    get type() {
-        return C.Type.Wedge;
-    }
-    wedgeType: WedgeModel.Type;
-    endpoint: WedgeModel;
-}
-
-module WedgeModel {
-    "use strict";
-    export enum Type {
-        // Warning: The numbers are saved/reloaded in toJSON
-        // TODO(jnetterf): Write a test and get rid of this comment
-        Crescendo = 0,
-        Diminuendo = 1,
-        Stop = 2
-    }
 }
 
 export = WedgeModel;

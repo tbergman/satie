@@ -15,7 +15,7 @@ import Beam = require("./_beam");
 import BeamGroupModel = require("../stores/beamGroup");
 import C = require("../stores/contracts");
 import Duration = require("./duration");
-import Group = require("./_group");
+import DurationModel = require("../stores/duration");
 import Note = require("./_note");
 
 /**
@@ -68,7 +68,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
         }
 
         // When the slope causes near-collisions, eliminate the slope.
-        _.each(spec.beam, (note, idx) => {
+        _.each(spec.beam, (note: DurationModel, idx: number) => {
             // Using -direction means that we'll be finding the closest note to the
             // beam. This will help us avoid collisions.
             var sh = getSH(direction, idx, getExtremeLine(note.lines, -direction));
@@ -104,9 +104,9 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
 
         var children = spec.generate(durationProps);
 
-        return <!Group.Component>
+        return <!g>
             <!Beam.Component
-                beams={(spec.beams) || 1}
+                beams={(spec.beams) || C.BeamCount.One}
                 variableBeams={spec.variableBeams}
                 variableX={spec.variableBeams ? Xs : null}
                 direction={direction}
@@ -116,14 +116,22 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
                 line2={parseFloat("" + line2) +
                     direction * getSH(direction, spec.beam.length - 1, line2)/10}
                 stemWidth={1.4}
-                stroke={strokeEnabled && strokeColor}
+                stroke={strokeEnabled ? strokeColor : "#000000"}
                 tuplet={spec.tuplet}
                 tupletsTemporary={spec.tupletsTemporary}
                 width={Xs[Xs.length - 1] - Xs[0]}
                 x={Xs[0] /* should assert all in order */}
                 y={Ys[0]/* should assert all are equal */} />
             {children}
-        </Group.Component>;
+        </g>;
+    }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: BeamGroup.IProps, nextState: {}) {
+        // I'm not sure if this is actually faster... it's a fairly expensive hash.
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps) + C.JSONx.hash(nextProps.spec.beam);
+        return oldHash !== this._hash;
     }
 };
 
@@ -134,7 +142,7 @@ var getExtremeLine = Note.getExtremeLine;
 
 module BeamGroup {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, BeamGroup);
+    export var Component = TypedReact.createClass(BeamGroup);
 
     export interface IProps {
         key: number;

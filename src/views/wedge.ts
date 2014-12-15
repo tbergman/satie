@@ -8,20 +8,20 @@
 
 /* tslint:disable */
 
-import TypedReact = require("typed-react");
-import React = require("react");
+import TypedReact       = require("typed-react");
+import React            = require("react");
 
-import WedgeModel = require("../stores/wedge");
-import Group = require("./_group");
-import Line = require("./_line");
+import C                = require("../stores/contracts");
+import WedgeModel       = require("../stores/wedge");
+import Line             = require("./_line");
 
 class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
     render() {
         var spec = this.props.spec;
         var strokeWidth = 0.04;
-        var isCrec = spec.wedgeType === WedgeModel.Type.Crescendo;
+        var isCrec = spec.wedgeType === C.MusicXML.WedgeType.Crescendo;
 
-        if (spec.wedgeType === WedgeModel.Type.Stop) {
+        if (spec.wedgeType === C.MusicXML.WedgeType.Stop) {
             return null;
         }
 
@@ -35,7 +35,7 @@ class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
             spec.y - strokeWidth / 2 + 1.2,
         ];
 
-        return <!Group.Component>
+        return <!g>
             <!Line.Component
                 x1={spec.x}
                 x2={spec.x + 0.8}
@@ -50,15 +50,22 @@ class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
                 y2={(isCrec ? yOut : yIn)[1]}
                 stroke="#000000"
                 strokeWidth={0.04} />
-        </Group.Component>;
+        </g>;
+    }
+
+    _hash: number;
+    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+        var oldHash         = this._hash;
+        this._hash          = C.JSONx.hash(nextProps);
+
+        return oldHash !== this._hash;
     }
 }
 
 module Wedge {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Wedge);
+    export var Component = TypedReact.createClass(Wedge);
     export interface IProps {
-        fontSize: number;
         key: number;
         spec: WedgeModel;
     }

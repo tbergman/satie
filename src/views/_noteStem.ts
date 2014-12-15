@@ -57,11 +57,9 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     }
 }
 
-(<any>NoteStem.prototype).mixins = [PureRenderMixin];
-
 module NoteStem {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, NoteStem);
+    export var Component = TypedReact.createClass(NoteStem, [PureRenderMixin]);
 
     export interface IProps {
         height: number;

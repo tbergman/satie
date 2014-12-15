@@ -4,23 +4,22 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
+import React            = require("react");
+import TypedReact   	= require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import C = require("../stores/contracts");
-import Line = require("./_line");
-import Glyph = require("./_glyph");
-import Group = require("./_group");
-import SMuFL = require("../util/SMuFL");
+import C                = require("../stores/contracts");
+import Line     		= require("./_line");
+import Glyph    		= require("./_glyph");
 
 class Brace extends TypedReact.Component<Brace.IProps, {}> {
     render() {
-        var defaults = SMuFL.bravuraMetadata.engravingDefaults;
+        var defaults = C.SMuFL.bravuraMetadata.engravingDefaults;
 
         var height = (this.props.y2 - this.props.y) + 1;
         var mid = (this.props.y2 + this.props.y) / 2;
         var s = height;
-        return <!Group.Component>
+        return <!g>
             <!Glyph.Component transform={"scale(" + s + "," + s + ")" +
                     "translate(" + (-this.props.fontSize*this.props.x*(1-1/s)) + "," +
                     -(1-1/s)*this.props.fontSize*mid + ")"}
@@ -39,13 +38,14 @@ class Brace extends TypedReact.Component<Brace.IProps, {}> {
                 x2={this.props.x}
                 y1={mid - height/2}
                 y2={mid + height/2} />
-        </Group.Component>;
+        </g>;
     }
 }
 
+
 module Brace {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Brace);
+    export var Component = TypedReact.createClass(Brace, [PureRenderMixin]);
 
     export interface IProps {
         x: number;

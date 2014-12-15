@@ -6,16 +6,12 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, October 2014
  */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-
-import RenderableMixin = require("./_renderable");
-var Victoria = require("../renderer/victoria/victoria");
-
-var VRect = Victoria.VRect;
+import React            = require("react");
+import TypedReact       = require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 class Rect extends TypedReact.Component<Rect.IProps, {}> {
-    renderSVG() {
+    render() {
         return React.DOM.rect({
             className: this.props.className,
 			opacity: this.props.opacity || 1.0,
@@ -26,22 +22,7 @@ class Rect extends TypedReact.Component<Rect.IProps, {}> {
             height: <any>(this.props.height),
             width: <any>(this.props.width)});
     }
-    renderGL() {
-        var fill = this.props.stroke;
-        if (fill === "black" || !fill) {
-            fill = "#000000";
-        }
-
-        return VRect({
-            fill: fill,
-            x1: this.props.x,
-            x2: this.props.x + this.props.width,
-            y1: this.props.y,
-            y2: this.props.y + this.props.height});
-    }
 }
-
-Rect.prototype.render = RenderableMixin.prototype.render;
 
 module Rect {
     "use strict";
@@ -56,7 +37,7 @@ module Rect {
         y: number;
     }
 
-    export var Component = TypedReact.createClass(React.createClass, Rect);
+    export var Component = TypedReact.createClass(Rect, [PureRenderMixin]);
 }
 
 export = Rect;

@@ -4,27 +4,32 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model                = require("./model");
 
-import assert = require("assert");
-import _ = require("lodash");
+import assert       		= require("assert");
 
-import Annotator = require("./annotator");
-import BarlineModelType = require("./barline"); // Cyclic dependency. For types only.
-import C = require("./contracts");
-import DurationModelType = require("./duration"); // Cyclic dependency. For types only.
-import Metre = require("./metre");
+import Annotator        	= require("./annotator");
+import BarlineModelType 	= require("./barline");     // Cyclic
+import C                	= require("./contracts");
+import DurationModelType    = require("./duration");    // Cyclic
+import Metre                = require("./metre");
 
 /**
  * A marker for the end of lines and bars. Its purpose is to help with
  * positioning and other logic. It is not rendered.
  */
 class EndMarkerModel extends Model {
+    /* Model */
+    get visible()           { return false; }
+    get type()              { return C.Type.EndMarker; }
+    get xPolicy()           { return C.RectifyXPolicy.Max; }
+
+    /* Lifecycle */
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext({
-            defaultCount: 4,
-            timeSignature: mctx.timeSignature,
-            beat: mctx.timeSignature.beats,
+            attributes: mctx.attributes,
+            ts: mctx.ts,
+            beat: mctx.ts.beats,
             bar: mctx.bar - 1,
             endMarker: true
         });
@@ -61,20 +66,20 @@ class EndMarkerModel extends Model {
 
         // Bars must not be under-filled (should be filled with rests)
         if (prev.type !== C.Type.Barline &&
-                    ctx.beat && ctx.beat < ctx.timeSignature.beats) {
+                    ctx.beat && ctx.beat < ctx.ts.beats) {
             // XXX: extend to work on things other than 4/4
-            var beatsRemaining = ctx.timeSignature.beats - ctx.beat;
+            var beatsRemaining = ctx.ts.beats - ctx.beat;
 
-            assert(beatsRemaining < ctx.timeSignature.beats,
+            assert(beatsRemaining < ctx.ts.beats,
                 "Don't run this on entirely blank bars!");
 
             var DurationModel: typeof DurationModelType = require("./duration");
 
-            var toAdd = Metre.subtract(ctx.timeSignature.beats, ctx.beat, ctx)
+            var toAdd = Metre.subtract(ctx.ts.beats, ctx.beat, ctx)
                 .map((beat: C.IPitchDuration) => {
-                    beat.chord = [{ pitch: "r", octave: 0, acc: null }];
+                    beat.chord = [{ step: "r", octave: 0, alter: null }];
                     beat.tie = false;
-                    return new DurationModel(beat, C.Source.Annotator);
+                    return new DurationModel(beat, true);
                 });
 
             ctx.splice(this.idx, 0, toAdd);
@@ -97,20 +102,6 @@ class EndMarkerModel extends Model {
         this.endMarker = true;
 
         return C.IterationStatus.Success;
-    }
-    visible() {
-        return false;
-    }
-    toLylite(lylite: Array<string>) {
-        // pass
-    }
-    get type() {
-        return C.Type.EndMarker;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-        });
     }
 }
 

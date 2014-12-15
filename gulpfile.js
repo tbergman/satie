@@ -1,57 +1,57 @@
-var browserify = require("browserify");
-var concat = require("gulp-concat");
-var exit = require("gulp-exit");
-var generateSuite = require("gulp-mocha-browserify-sweet");
-var gulp = require("gulp");
-var gutil = require("gulp-util");
-var jasmine = require('gulp-jasmine');
-var karma = require("gulp-karma");
-var newer = require("gulp-newer");
-var path = require("path");
-var source = require("vinyl-source-stream");
-var spawn = require("child_process").spawn;
-var streamify = require("gulp-streamify");
-var tslint = require("gulp-tslint");
-var typescript = require("gulp-typescript");
-var uglify = require("gulp-uglify");
-var watchify = require("watchify");
+var browserify          = require("browserify");
+var concat              = require("gulp-concat");
+var exit                = require("gulp-exit");
+var generateSuite       = require("gulp-mocha-browserify-sweet");
+var gulp                = require("gulp");
+var gutil               = require("gulp-util");
+var jasmine             = require('gulp-jasmine');
+var karma               = require("gulp-karma");
+var newer               = require("gulp-newer");
+var path                = require("path");
+var source              = require("vinyl-source-stream");
+var spawn               = require("child_process").spawn;
+var streamify           = require("gulp-streamify");
+var tslint              = require("gulp-tslint");
+var typescript          = require("gulp-typescript");
+var uglify              = require("gulp-uglify");
+var watchify            = require("watchify");
 
 var browserifyOpts = {
     debug: {
-        debug: false,
-        cache: {},
-        packageCache: {},
-        fullPaths: true
+        debug:          false,
+        cache:          {},
+        packageCache:   {},
+        fullPaths:      true
     },
     prod: {
-        debug: false
+        debug:          false
     },
     chore: {
-        debug: false,
-        noparse: ["startExpressServer.js"],
-        builtins: false,
-        commondir: false,
-        detectGlobals: false
+        debug:          false,
+        noparse:        ["startExpressServer.js"],
+        builtins:       false,
+        commondir:      false,
+        detectGlobals:  false
     }
 };
 
 var dirs = {
-    build: path.join(__dirname, ".partialBuild"),
-    typings: path.join(__dirname, "references")
+    build:              path.join(__dirname, ".partialBuild"),
+    typings:            path.join(__dirname, "references")
 };
 
 var files = {
-    ts: path.join(__dirname, "src", "**", "*.ts"),
-    typings: path.join(dirs.typings, "*.d.ts"),
-    nonTsSources: path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,vs}"),
-    allSrc: path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,ts,vs}"),
-    mainWebapp: "./.partialBuild/main.js",
-    mainTablet: "./.partialBuild/tablet/main.js"
+    ts:                 path.join(__dirname, "src", "**", "*.ts"),
+    typings:            path.join(dirs.typings, "*.d.ts"),
+    nonTsSources:       path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,vs}"),
+    allSrc:             path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,ts,vs}"),
+    mainWebapp:         "./.partialBuild/main.js",
+    mainTablet:         "./.partialBuild/tablet/main.js"
 };
-console.log(files.typings);
 
 gulp.task("watch", ["watch-prebuild", "chores", "lint"], function() {
-    var nginx = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
+    var nginx           = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
+
     nginx.stderr.on("data", function(data) {
         console.log(data.toString());
     });
@@ -65,14 +65,14 @@ gulp.task("watch-prebuild", ["typescript"], function() {
 });
 
 function watch(main, output) {
-    var webappBundler = watchify(browserify(browserifyOpts.debug))
-        .add(main);
+    var webappBundler       = watchify(browserify(browserifyOpts.debug))
+                                .add(main);
 
     webappBundler.on("error", gutil.log.bind(gutil, "Browserify Error"))
         .on("update", function () {
-            var before = new Date;
+            var before      = new Date;
             bundlerShare(webappBundler);
-            var after = new Date;
+            var after       = new Date;
             console.log("Rebundled in " + (after - before) + "msec...");
         });
 
@@ -120,11 +120,11 @@ function buildAndRunTest(daemonize, karmalize) {
             if (karmalize) {
                 stream = stream
                     .pipe(karma({
-                        configFile: "karma.conf.js",
-                        action: "run",
-                        autoWatch: false,
-                        singleRun: true,
-                        dieOnError: true
+                        configFile:     "karma.conf.js",
+                        action:         "run",
+                        autoWatch:      false,
+                        singleRun:      true,
+                        dieOnError:     true
                     }))
                     .on("error", gutil.log.bind(gutil, "Test Error"));
             }
@@ -152,37 +152,47 @@ gulp.task("build-chores", ["typescript"], function() {
 gulp.task("chores", ["build-chores"], function() {
     run_cmd("bash", ["-c", "cat ./build/chore-server.js | node"]);
 
-    function run_cmd(cmd, args, callback ) {
-        var spawn = require('child_process').spawn;
-        var child = spawn(cmd, args);
-        var resp = "";
+    function run_cmd(cmd, args, callback) {
+        var spawn   = require('child_process').spawn;
+        var child   = spawn(cmd, args);
 
-        child.stdout.on('data', function (buffer) { resp += buffer.toString() });
-        child.stdout.on('end', function() { callback && callback(resp) });
+        child.stdout.on('data', function (buffer) {
+            console.log(buffer.toString());
+        });
+
+        child.stdout.on('end', function() {
+        });
+
+        child.stdout.on('error', function(err) {
+            console.log("ERROR!!!" + err.toString());
+        });
     }
 });
 
 var sharedTypescriptProject = typescript.createProject({
-    removeComments: true,
-    noImplicitAny: true,
-    target: 'ES5',
-    module: 'commonjs',
-    noExternalResolve: true
+    removeComments:     true,
+    noImplicitAny:      true,
+    target:             'ES5',
+    module:             'commonjs',
+    noExternalResolve:  true
 });
 
 gulp.task("typescript", function() {
     var ts = gulp.src([files.ts, files.typings])
         .pipe(typescript(sharedTypescriptProject)).js
         .pipe(gulp.dest(dirs.build));
+
     var js = gulp.src([files.nonTsSources])
         .pipe(newer(dirs.build))
         .pipe(gulp.dest(dirs.build));
+
     var tsLint = gulp.src([files.ts])
         .pipe(newer({ dest: dirs.build, ext: ".js" }))
         .pipe(tslint())
         .pipe(tslint.report("verbose", {
             emitError: false
         }));
+
     return ts;
 });
 

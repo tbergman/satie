@@ -24,7 +24,7 @@
         "react-router-component": "git://github.com/STRML/react-router-component#react-0.12",
         "react-select": "0.2.5",
         "statics": "0.1.0",
-        "typed-react": "2.1.2",
+        "typed-react": "3.1.3",
         "web-midi-api": "0.0.5"
     },
     "devDependencies": {
@@ -43,7 +43,6 @@
         "gulp-typescript": "git://github.com/jnetterf/gulp-typescript-react-jsx#fe6ced",
         "gulp-uglify": "1.0.1",
         "gulp-util": "3.0.1",
-        "jisonify": "git://github.com/jnetterf/jisonify.git",
         "karma-chrome-launcher": "0.1.5",
         "karma-coverage": "0.2.6",
         "karma-firefox-launcher": "0.1.3",
@@ -62,7 +61,6 @@
     "browserify": {
         "transform": [
             "node-lessify",
-            "jisonify",
             "browserify-shader"
         ]
     },

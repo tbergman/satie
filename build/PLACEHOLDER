@@ -1,1 +1,1 @@
-The build directory is required for 'npm run dev-server'.
+The build directory holds the results of the build process.

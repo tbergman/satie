@@ -10,14 +10,14 @@
 /// <reference path="../references/react.d.ts" />
 /// <reference path="../references/react-bootstrap.d.ts" />
 
-import React = require("react");
+import React            = require("react");
 
-import C = require("./stores/contracts");
-import Dispatcher = require("./stores/dispatcher");
-import FiveOhFive = require("./ui/fiveOhFive");
+import C                = require("./stores/contracts");
+import Dispatcher       = require("./stores/dispatcher");
+import FiveOhFive       = require("./ui/fiveOhFive");
 
-import Router = require("./router");
-import SessionStore = require("./stores/session");
+import Router           = require("./router");
+import SessionStore     = require("./stores/session");
 
 /**
  * The webapp entry point.

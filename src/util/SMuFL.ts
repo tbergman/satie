@@ -9,14 +9,14 @@
  * See http://smufl.org for more details.
  */
 
-import _ = require("lodash");
+import _                        = require("lodash");
 
-export import bravuraMetadata = require("./bravura_metadata");
-export var glyphClasses = require("./classes.json");
-export var glyphNames = require("./glyphnames_diet.json");
+export import bravuraMetadata   = require("./bravura_metadata");
+export var glyphClasses         = require("./classes.json");
+export var glyphNames           = require("./glyphnames_diet.json");
 
-export var bravuraBBoxes: {[key:string]: {bBoxNE: Array<number>; bBoxSW: Array<number>;};} =
-    <any> _.indexBy(bravuraMetadata.glyphBBoxes, "name");
+export var bravuraBBoxes: {[key:string]: any[];} = <any> _.indexBy(bravuraMetadata.glyphBBoxes, 4);
+
 export function getGlyphCode(name: string) {
     "use strict";
     if (!(name in this.glyphNames)) {

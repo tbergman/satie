@@ -10,6 +10,7 @@
 
 import React = require("react");
 import TypedReact = require("typed-react");
+var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Glyph = require("./_glyph");
 
@@ -19,7 +20,6 @@ class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
             x={this.props.x}
             y={this.props.y - (this.props.line - 3)*10}
             fill={this.props.stroke}
-            fontSize={this.props.fontSize}
             glyphName={this.props.notehead} />;
     }
     getDefaultProps() {
@@ -33,10 +33,9 @@ class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
 
 module NoteHead {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, NoteHead);
+    export var Component = TypedReact.createClass(NoteHead, [PureRenderMixin]);
 
     export interface IProps {
-        fontSize: number;
         line: number;
         notehead: string;
         stroke: string;

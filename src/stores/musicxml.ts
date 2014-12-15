@@ -346,7 +346,7 @@ export interface KeyAlter extends String {}
 export interface KeyAccidental extends String {}
 
 /**
- * Time signatures are represented by two elements. The
+ * BUG: Is number but must support compound time. Time signatures are represented by two elements. The
  * beats element indicates the number of beats, as found in
  * the numerator of a time signature. The beat-type element
  * indicates the beat unit, as found in the denominator of
@@ -2313,7 +2313,7 @@ export interface BendSoundComplete {
  * times through the repeated section that the element applies.
  */
 export interface TimeOnly {
-    timeOnly: boolean;
+    timeOnly?: boolean;
 }
 
 /**
@@ -2868,7 +2868,7 @@ export interface StringComplete extends PrintStyleComplete, PlacementComplete {
  * They are used in the staff-tuning and accord elements.
  */
 export interface TuningAlter {
-    step: number;
+    step: string;
 }
 
 /**
@@ -2878,7 +2878,7 @@ export interface TuningAlter {
  * They are used in the staff-tuning and accord elements.
  */
 export interface TuningAlterComplete {
-    step: number;
+    step: string;
 }
 
 /**
@@ -2888,7 +2888,7 @@ export interface TuningAlterComplete {
  * They are used in the staff-tuning and accord elements.
  */
 export interface TuningOctave {
-    step: number;
+    step: string;
 }
 
 /**
@@ -2898,7 +2898,7 @@ export interface TuningOctave {
  * They are used in the staff-tuning and accord elements.
  */
 export interface TuningOctaveComplete {
-    step: number;
+    step: string;
 }
 
 /**
@@ -3652,7 +3652,7 @@ export interface RightDividerComplete extends PrintObjectComplete, PrintStyleAli
  * element, the values apply to all parts. This value is
  * ignored for the first staff in a system.
  */
-export interface StaffLayout extends String {}
+export interface StaffDistance extends String {}
 /**
  * Staff layout includes the vertical distance from the bottom
  * line of the previous staff in this system to the top line
@@ -3663,7 +3663,26 @@ export interface StaffLayout extends String {}
  * element, the values apply to all parts. This value is
  * ignored for the first staff in a system.
  */
-export interface StaffDistance extends String {}
+export interface StaffLayout {
+    staffDistance?: number;
+    num: number;
+}
+
+/**
+ * Staff layout includes the vertical distance from the bottom
+ * line of the previous staff in this system to the top line
+ * of the staff specified by the number attribute. The
+ * optional number attribute refers to staff numbers within
+ * the part, from top to bottom on the system. A value of 1
+ * is assumed if not present. When used in the defaults
+ * element, the values apply to all parts. This value is
+ * ignored for the first staff in a system.
+ */
+export interface StaffLayoutComplete {
+    staffDistance: number;
+    num: number;
+}
+
 /**
  * Measure layout includes the horizontal distance from the
  * previous measure. This value is only used for systems
@@ -4916,8 +4935,8 @@ export interface KeyComplete extends PrintStyleComplete, PrintObjectComplete {
  */
 export interface Time extends TimeSymbol, TimeSeparator, PrintStyleAlign, PrintObject {
     interchangeables?: Interchangeable[];
-    beats: string[];
-    beatTypes: string[];
+    beats: number[];
+    beatTypes: number[];
     senzaMisura: boolean;
 }
 
@@ -4959,8 +4978,8 @@ export interface Time extends TimeSymbol, TimeSeparator, PrintStyleAlign, PrintO
  */
 export interface TimeComplete extends TimeSymbolComplete, TimeSeparatorComplete, PrintStyleAlignComplete, PrintObjectComplete {
     interchangeables: Interchangeable[];
-    beats: string[];
-    beatTypes: string[];
+    beats: number[];
+    beatTypes: number[];
     senzaMisura: boolean;
 }
 
@@ -5001,8 +5020,8 @@ export interface TimeComplete extends TimeSymbolComplete, TimeSeparatorComplete,
  * part.
  */
 export interface Interchangeable extends TimeSymbol, TimeSeparator {
-    beats: string[];
-    beatTypes: string[];
+    beats: number[];
+    beatTypes: number[];
     timeRelation?: string;
 }
 
@@ -5043,8 +5062,8 @@ export interface Interchangeable extends TimeSymbol, TimeSeparator {
  * part.
  */
 export interface InterchangeableComplete extends TimeSymbolComplete, TimeSeparatorComplete {
-    beats: string[];
-    beatTypes: string[];
+    beats: number[];
+    beatTypes: number[];
     timeRelation: string;
 }
 
@@ -5182,11 +5201,11 @@ export interface Line extends String {}
  * additional attribute has been set to "yes".
  */
 export interface Clef extends PrintStyle, PrintObject {
-    clefOctaveChange: string;
+    clefOctaveChange?: string;
     sign: string;
     number_?: number;
     size?: SymbolSize;
-    line: number;
+    line?: number;
     afterBarline?: boolean;
     additional?: boolean;
 }
@@ -5563,7 +5582,7 @@ export interface MultipleRestComplete {
  */
 export interface MeasureRepeat {
     slashed?: number;
-    data: string;
+    data?: string;
     type: StartStop;
 }
 
@@ -5723,15 +5742,15 @@ export interface MeasureStyleComplete extends FontComplete, ColorComplete {
 export interface Attributes extends Editorial {
     divisions?: number;
     partSymbol?: PartSymbol;
-    clefs?: Clef[];
-    measureStyles?: MeasureStyle[];
-    times?: Time[];
-    staffDetails?: StaffDetails[];
-    transposes?: Transpose[];
+    clef?: Clef;
+    measureStyle?: MeasureStyle;
+    time?: Time;
+    staffDetails?: StaffDetails;
+    transpose?: Transpose;
     staves?: number;
     instruments?: string;
-    keys?: Key[];
-    directives?: Directive[];
+    keySignature?: Key;
+    directive?: Directive;
 }
 
 /**
@@ -5744,15 +5763,15 @@ export interface Attributes extends Editorial {
 export interface AttributesComplete extends EditorialComplete {
     divisions: number;
     partSymbol: PartSymbol;
-    clefs: Clef[];
-    measureStyles: MeasureStyle[];
-    times: Time[];
-    staffDetails: StaffDetails[];
-    transposes: Transpose[];
+    clef: Clef;
+    measureStyle: MeasureStyle;
+    time: Time;
+    staffDetails: StaffDetails;
+    transpose: Transpose;
     staves: number;
     instruments: string;
-    keys: Key[];
-    directives: Directive[];
+    keySignature: Key;
+    directive: Directive;
 }
 
 /**
@@ -5881,8 +5900,6 @@ export interface UnpitchedComplete {
     displayOctave: string;
 }
 
-export interface Step extends String {}
-
 export interface Alter extends String {}
 
 export interface Octave extends String {}
@@ -5899,8 +5916,8 @@ export interface Octave extends String {}
  * started by middle C.
  */
 export interface Pitch {
-    alter: number;
-    step: number;
+    alter?: number;
+    step?: string;
     octave: number;
 }
 
@@ -5917,7 +5934,7 @@ export interface Pitch {
  */
 export interface PitchComplete {
     alter: number;
-    step: number;
+    step: string;
     octave: number;
 }
 
@@ -6039,7 +6056,7 @@ export interface TieComplete extends TimeOnlyComplete {
  * to the score-instrument ID.
  */
 export interface Instrument {
-    id: number;
+    id: string;
 }
 
 /**
@@ -6049,7 +6066,7 @@ export interface Instrument {
  * to the score-instrument ID.
  */
 export interface InstrumentComplete {
-    id: number;
+    id: string;
 }
 
 /**
@@ -6085,16 +6102,15 @@ export interface InstrumentComplete {
  * pizzicato element which changes overall playback between
  * pizzicato and arco.
  */
-export interface Note extends EditorialVoice, PrintStyle, Printout, TimeOnly {
+export interface Note extends EditorialVoice, PrintStyle, Printout, TimeOnly, FullNote {
     noteheadText?: NoteheadText;
     timeModification?: TimeModification;
     accidental?: Accidental;
     instrument?: Instrument;
     attack?: number;
     endDynamics?: number;
-    fullNote?: FullNote;
-    dots?: Dot[];
     lyrics?: Lyric[];
+    dots?: Dot[];
     notations?: Notations[];
     stem?: Stem;
     noteType?: Type;
@@ -6143,16 +6159,15 @@ export interface Note extends EditorialVoice, PrintStyle, Printout, TimeOnly {
  * pizzicato element which changes overall playback between
  * pizzicato and arco.
  */
-export interface NoteComplete extends EditorialVoiceComplete, PrintStyleComplete, PrintoutComplete, TimeOnlyComplete {
+export interface NoteComplete extends EditorialVoiceComplete, PrintStyleComplete, PrintoutComplete, TimeOnlyComplete, FullNoteComplete {
     noteheadText: NoteheadText;
     timeModification: TimeModification;
     accidental: Accidental;
     instrument: Instrument;
     attack: number;
     endDynamics: number;
-    fullNote: FullNote;
-    dots: Dot[];
     lyrics: Lyric[];
+    dots: Dot[];
     notations: Notations[];
     stem: Stem;
     noteType: Type;
@@ -6168,6 +6183,23 @@ export interface NoteComplete extends EditorialVoiceComplete, PrintStyleComplete
     beams: Beam[];
 }
 
+export enum Count {
+    Quarter = 4,
+    Breve = 9990,
+    Long = 9991,
+    _1024th = 1024,
+    _32nd = 32,
+    _16th = 16,
+    Eighth = 8,
+    Maxima = 9992,
+    _512th = 512,
+    _64th = 64,
+    _256th = 256,
+    _128th = 128,
+    Half = 2,
+    Whole = 1,
+}
+
 /**
  * Type indicates the graphic note type, Valid values (from
  * shortest to longest) are 1024th, 512th, 256th, 128th,
@@ -6177,7 +6209,7 @@ export interface NoteComplete extends EditorialVoiceComplete, PrintStyleComplete
  * cue the default for cue and grace notes.
  */
 export interface Type {
-    durationStr: string;
+    duration: Count;
     size?: SymbolSize;
 }
 
@@ -6190,7 +6222,7 @@ export interface Type {
  * cue the default for cue and grace notes.
  */
 export interface TypeComplete {
-    durationStr: string;
+    duration: Count;
     size: SymbolSize;
 }
 
@@ -7212,7 +7244,7 @@ export interface TupletDotComplete extends FontComplete, ColorComplete {
  * printed alongside the line.
  */
 export interface Glissando extends LineType, DashedFormatting, PrintStyle {
-    text: string;
+    text?: string;
     type: StartStop;
     normal?: number;
 }
@@ -7244,7 +7276,7 @@ export interface GlissandoComplete extends LineTypeComplete, DashedFormattingCom
  * printed alongside the line.
  */
 export interface Slide extends LineType, DashedFormatting, PrintStyle, BendSound {
-    text: string;
+    text?: string;
     type: StartStop;
     normal?: number;
 }
@@ -7275,7 +7307,7 @@ export interface SlideComplete extends LineTypeComplete, DashedFormattingComplet
  */
 export interface OtherNotation extends PrintObject, PrintStyle, Placement {
     type: StartStopSingle;
-    data: string;
+    data?: string;
 }
 
 /**
@@ -7648,7 +7680,7 @@ export interface SchleiferComplete extends PrintStyleComplete, PlacementComplete
  * of MusicXML 3.0.
  */
 export interface Tremolo extends PrintStyle, Placement {
-    data: string;
+    data?: string;
     type: StartStopSingle;
 }
 
@@ -7685,7 +7717,7 @@ export interface TremoloComplete extends PrintStyleComplete, PlacementComplete {
  */
 export interface OtherOrnament extends PrintStyle, Placement {
     type: StartStopSingle;
-    data: string;
+    data?: string;
 }
 
 /**
@@ -7998,7 +8030,7 @@ export interface SnapPizzicatoComplete extends PrintStyleComplete, PlacementComp
 export interface HammerOn extends PrintStyle, Placement {
     number_?: number;
     type: StartStop;
-    data: string;
+    data?: string;
 }
 
 /**
@@ -8028,7 +8060,7 @@ export interface HammerOnComplete extends PrintStyleComplete, PlacementComplete 
 export interface PullOff extends PrintStyle, Placement {
     number_?: number;
     type: StartStop;
-    data: string;
+    data?: string;
 }
 
 /**
@@ -9197,7 +9229,7 @@ export interface Ending extends PrintObject, PrintStyle {
     number_: number;
     textY: number;
     type: StartStopDiscontinue;
-    ending: string;
+    ending?: string;
 }
 
 /**
@@ -9972,7 +10004,7 @@ export enum VoiceSymbol {
  */
 export interface PrincipalVoice extends PrintStyleAlign {
     symbol: VoiceSymbol;
-    data: string;
+    data?: string;
     type: StartStop;
 }
 
@@ -11004,7 +11036,7 @@ export interface Print {
     pageLayout: PageLayout;
     systemLayout: SystemLayout;
     staffSpacing: number;
-    staffLayouts: number[];
+    staffLayouts: StaffLayout[];
     pageNumber: string;
 }
 
@@ -11055,7 +11087,7 @@ export interface PrintComplete {
     pageLayout: PageLayout;
     systemLayout: SystemLayout;
     staffSpacing: number;
-    staffLayouts: number[];
+    staffLayouts: StaffLayout[];
     pageNumber: string;
 }
 
@@ -11349,7 +11381,7 @@ export interface Defaults {
     systemLayout: SystemLayout;
     appearance: Appearance;
     scaling: Scaling;
-    staffLayouts: number[];
+    staffLayouts: StaffLayout[];
     musicFont: MusicFont;
 }
 
@@ -11372,7 +11404,7 @@ export interface DefaultsComplete {
     systemLayout: SystemLayout;
     appearance: Appearance;
     scaling: Scaling;
-    staffLayouts: number[];
+    staffLayouts: StaffLayout[];
     musicFont: MusicFont;
 }
 

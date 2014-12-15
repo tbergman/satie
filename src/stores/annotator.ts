@@ -4,14 +4,15 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, September 2014
  */
 
-import _ = require("lodash");
-import assert = require("assert");
+import _                        = require("lodash");
+import assert               	= require("assert");
 
-import BarlineModel = require("./barline");
-import C = require("./contracts");
-import Model = require("./model");
-import NewlineModelType = require("./newline"); // Cyclic dependency. For types only.
-import PlaceholderModelType = require("./placeholder"); // Cyclic dependency. For types only.
+import AttributesModel      	= require("./attributes");
+import BarlineModel         	= require("./barline");
+import C                    	= require("./contracts");
+import Model                	= require("./model");
+import NewlineModelType     	= require("./newline");         // Cyclic.
+import PlaceholderModelType 	= require("./placeholder"); 	// Cyclic.
 
 /**
  * Annotator has two goals:
@@ -30,16 +31,16 @@ import PlaceholderModelType = require("./placeholder"); // Cyclic dependency. Fo
  */
 export class Context implements C.MetreContext {
     constructor(parts: Array<C.IPart>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
-        this._parts = parts;
-        this._layout = layout;
-        this._assertionPolicy = assertionPolicy;
-        this.songEditor = editor;
+        this._parts             = parts;
+        this._layout            = layout;
+        this._assertionPolicy   = assertionPolicy;
+        this.songEditor         = editor;
 
         if (layout) {
             if (layout.snapshot) {
                 _cpysnapshot(this, layout.snapshot);
             } else {
-                this.lines = [this.captureLine()];
+                this.lines      = [this.captureLine()];
             }
         }
     }
@@ -55,23 +56,23 @@ export class Context implements C.MetreContext {
     annotate(from: C.ILocation, mutation: ICustomAction,
             cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
-        Context._ANNOTATING = true;
-        var error: Error = null;
+        Context._ANNOTATING                 = true;
+        var error: Error                    = null;
         var result: C.IAnnotationResult;
         assert(from.bar !== 0);
         assert(this._parts, "Staves must be set!");
 
         try {
-            result = this._annotateImpl(from, mutation, cursor, disableRecording);
+            result                          = this._annotateImpl(from, mutation, cursor, disableRecording);
         } catch (err) {
             // Catch the error so we can set _ANNOTATING to false and thus allow future annotations.
             error = err;
         }
 
-        Context._ANNOTATING = false;
+        Context._ANNOTATING                 = false;
 
         if (error) {
-            dispatcher.PUT("/local/song/undo");
+            dispatcher.PUT("/webapp/song/undo");
             throw error;
         }
         return result;
@@ -83,38 +84,30 @@ export class Context implements C.MetreContext {
      * To restore an Annotator back to a state saved to by JSON.stringify(ctx.captureLine()), see _cpyline.
      */
     captureLine(): ILineSnapshot {
-        if (this.line !== 0) {
-            assert(this.prevClefByStave);
-        }
         return {
-            accidentalsByStave: JSON.parse(JSON.stringify(this.accidentalsByStave)),
-            bar: this.loc.bar,
-            barKeys: this.barKeys,
-            barlineX: this.barlineX,
-            beat: this.loc.beat,
-            clef: this.clef,
-            keySignature: this.keySignature,
-            timeSignature: this.timeSignature,
-            line: this.line,
-            pageLines: this.pageLines,
-            pageStarts: this.pageStarts,
-            prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
-            prevKeySignature: this.prevKeySignature,
-            partIdx: this.currStaveIdx,
-            x: this.x,
-            y: this.y
+            accidentalsByStave:     C.JSONx.clone(this.accidentalsByStave),
+            bar:                    this.loc.bar,
+            barKeys:                this.barKeys,
+            barlineX:               this.barlineX,
+            beat:                   this.loc.beat,
+            attributes:             this.attributes,
+            line:                   this.line,
+            pageLines:              this.pageLines,
+            pageStarts:             this.pageStarts,
+            partIdx:                this.currStaveIdx,
+            x:                      this.x,
+            y:                      this.y
         };
     }
 
     captureSnapshot(): IPartialSnapshot {
         return {
-            fontSize: this.fontSize,
-            maxX: this.maxX,
-            maxY: this.maxY,
-            prevClefByStave: JSON.parse(JSON.stringify(this.prevClefByStave)),
-            prevLine: this.lines[this.line - 1],
-            partialLine: this.lines[this.line],
-            timeSignature: this.timeSignature
+            fontSize:               this.fontSize,
+            maxX:                   this.maxX,
+            maxY:                   this.maxY,
+            prevLine:               this.lines[this.line - 1],
+            partialLine:            this.lines[this.line],
+            attributes:             this.attributes
         };
     }
 
@@ -128,9 +121,18 @@ export class Context implements C.MetreContext {
     }
 
     get staveSpacing(): number {
-        var print = C.getPrint(this._layout.header);
-        var staffSpacing = print.staffLayouts[this.currStaveIdx];
-        return isNaN(staffSpacing) ? print.staffSpacing : staffSpacing;
+        var print                   = C.getPrint(this._layout.header);
+        var staffLayout             = print.staffLayouts[this.currStaveIdx];
+        var staffSpacing            = staffLayout ? staffLayout.staffDistance : null;
+
+        switch(true) {
+            case !isNaN(staffSpacing):
+                return staffSpacing;
+            case !isNaN(print.staffSpacing):
+                return print.staffSpacing;
+            default:
+                return 0;
+        }
     }
 
     /**
@@ -374,8 +376,8 @@ export class Context implements C.MetreContext {
                 var vertical = this.findVertical(m => !m.placeholder, i);
                 if (vertical.length > 1 || vertical.length === 1 && vertical[0] !== this.body[i]) {
                     replaceWith = [<Model> new PlaceholderModel({
-                        _priority: C.Type[vertical[0].priority]
-                    }, vertical[0].source)].concat(replaceWith);
+                        priority: vertical[0].priority
+                    }, vertical[0].annotated)].concat(replaceWith);
                 }
             }
         }
@@ -410,14 +412,14 @@ export class Context implements C.MetreContext {
                                 part.body[vidx + j].priority === replaceWith[j].priority) {
                             if (vidx + j >= fidx) {
                                 placeholders.push(new PlaceholderModel({
-                                    _priority: C.Type[replaceWith[j].priority]
-                                }, replaceWith[j].source));
+                                    priority: replaceWith[j].priority
+                                }, replaceWith[j].annotated));
                             } else {
                                 placeholders.push(part.body[vidx + j]);
                                 if (splicePolicy === SplicePolicy.ShortenOtherParts) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
-                                    if (retained.getBeats(this) > fromMainPart.getBeats(this)) {
+                                    if (retained.calcBeats(this) > fromMainPart.calcBeats(this)) {
                                         assert(retained.isNote, "Only notes have durations");
                                         assert(replaceWith[j].isNote, "The retained and replaced notes should have the same priority");
                                         retained.note.count = fromMainPart.note.count;
@@ -428,8 +430,8 @@ export class Context implements C.MetreContext {
                             }
                         } else {
                             placeholders.push(new PlaceholderModel({
-                                _priority: C.Type[replaceWith[j].priority]
-                            }, replaceWith[j].source));
+                                priority: replaceWith[j].priority
+                            }, replaceWith[j].annotated));
                         }
                     }
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
@@ -475,7 +477,7 @@ export class Context implements C.MetreContext {
             }
             var tuplet: C.ITuplet = (<any>this.body[i]).tuplet; // TS
             if (tuplet && note) {
-                note.tuplet = JSON.parse(JSON.stringify(tuplet));
+                note.tuplet = C.JSONx.clone(tuplet);
             }
             this.removeFollowingBeam(i - 1, true);
             --this.idx;
@@ -521,7 +523,7 @@ export class Context implements C.MetreContext {
             }
             for (var j = 0; j < parts.length; ++j) {
                 if (parts[j].body && (!parts[j].body[i] || parts[j].body[i].priority !== bestPri)) {
-                    parts[j].body.splice(i, 0, new PlaceholderModel({ _priority: C.Type[bestPri] }, C.Source.Annotator));
+                    parts[j].body.splice(i, 0, new PlaceholderModel({ priority: bestPri }, true));
                 }
             }
         }
@@ -560,13 +562,13 @@ export class Context implements C.MetreContext {
                 if (reals[j].length && (cBeats[j] === thisBeat) && reals[j][0].priority === thisPriority) {
                     if (reals[j][0].isNote) {
                         // Beams have beats, but that's because it's usually processed instead of the notes beats.
-                        cBeats[j] += reals[j][0].getBeats(this);
+                        cBeats[j] += reals[j][0].calcBeats(this);
                     }
                     aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
                 } else {
                     if (!placeholders[j][0] || placeholders[j][0].priority !== thisPriority) {
                         console.warn("Sketchily adding a new placeholder to fix alignment (be worried)");
-                        aligned[j] = aligned[j].concat(new PlaceholderModel({ _priority: C.Type[thisPriority] }, C.Source.Annotator));
+                        aligned[j] = aligned[j].concat(new PlaceholderModel({ priority: thisPriority }, true));
                     } else {
                         aligned[j] = aligned[j].concat(placeholders[j].splice(0, 1));
                     }
@@ -602,7 +604,7 @@ export class Context implements C.MetreContext {
             .value();
     }
 
-    midiOutHint(out: Array<number>) {
+    midiOutHint(out: number[]) {
         this.songEditor.midiOutHint(out);
     }
 
@@ -622,6 +624,35 @@ export class Context implements C.MetreContext {
         }
     }
 
+    get ts(): C.ISimpleTimeSignature {
+        return this.attributes.time ? {
+            beats: this.attributes.time.beats[0],
+            beatType: this.attributes.time.beatTypes[0],
+            commonRepresentation: this.attributes.time.symbol !== C.MusicXML.TimeSymbolType.Normal
+        } : null;
+    }
+
+    set ts(ts: C.ISimpleTimeSignature) {
+        this.attributes.time = this.attributes.time || <any>{};
+        this.attributes.time.beats = [ts.beats];
+        this.attributes.time.beatTypes = [ts.beatType];
+        switch(true) {
+            case ts.commonRepresentation && ts.beats === 4 && ts.beatType === 4:
+                this.attributes.time.symbol = C.MusicXML.TimeSymbolType.Common;
+                break;
+            case ts.commonRepresentation && ts.beats === 2 && ts.beatType === 2:
+                this.attributes.time.symbol = C.MusicXML.TimeSymbolType.Cut;
+                break;
+            default:
+                console.warn("Unknown common TS");
+                // Pass through
+            case !ts.commonRepresentation:
+                this.attributes.time.symbol = C.MusicXML.TimeSymbolType.Normal;
+                break;
+        }
+    }
+
+
     /**
      * Makes C.IterationStatus.RETRY_FROM_ENTRY restart from the very beginning of the song.
      * 
@@ -638,7 +669,7 @@ export class Context implements C.MetreContext {
      * you're likely doing something dangerous.
      * @scope temporary
      */
-    body: C.IBody;
+    body: Model[];
 
     /**
      * @deprecated DO NOT USE
@@ -706,18 +737,6 @@ export class Context implements C.MetreContext {
         return false;
     }
 
-    /**
-     * The current clef.
-     * @scope temporary
-     */
-    clef: string;
-
-    /**
-     * The length of a Duration (rest or chord), if not specified in a Duration itself.
-     * @scope temporary
-     */
-    defaultCount: number = 4;
-
 
 
     /**
@@ -731,13 +750,6 @@ export class Context implements C.MetreContext {
      * @scope line
      */
     barlineX: Array<number> = [];
-
-    /**
-     * The key signature on the current line.
-     * @seeAlso prevKeySignature
-     * @scope line
-     */
-    keySignature: C.IKeySignature;
 
     /**
      * The current line number.
@@ -767,12 +779,6 @@ export class Context implements C.MetreContext {
     pageStarts: Array<number> = [0];
 
     /**
-     * The clef to add the current line in the current part, if one is not specified.
-     * @scope line
-     */
-    prevClefByStave: { [key: number]: string } = {};
-
-    /**
      * The smallest raw count (duration) in a line.
      * @scope line
      */
@@ -797,15 +803,6 @@ export class Context implements C.MetreContext {
     barKeys: Array<string>;
 
 
-
-    /**
-     * The current time signature on the page.
-     * @seeAlso prevTimeSignature
-     * @scope page
-     */
-    timeSignature: C.ITimeSignature;
-
-
     /**
      * The font size.
      * @scope layout
@@ -824,12 +821,6 @@ export class Context implements C.MetreContext {
      * 
      */
     maxY: number;
-
-    /**
-     * The key signature on the previous line, if any.
-     * @scope layout
-     */
-    prevKeySignature: C.IKeySignature;
 
     /**
      * The Flux store.
@@ -894,7 +885,7 @@ export class Context implements C.MetreContext {
 
     private _semiJustify(parts: Array<C.IPart>) {
         var NewlineModel: typeof NewlineModelType = require("./newline");
-        var bodies: Array<C.IBody> = [];
+        var bodies: Model[][] = [];
         for (var i = 0; i < parts.length; ++i) {
             if (parts[i].body) {
                 bodies.push(parts[i].body);
@@ -931,7 +922,7 @@ export class Context implements C.MetreContext {
     private _assertAligned() {
         if (this._assertionPolicy === AssertionPolicy.Strict) {
             var expectedLength = 0;
-            var bodies: Array<C.IBody> = [];
+            var bodies: Model[][] = [];
             for (var i = 0; i < this._parts.length; ++i) {
                 if (this._parts[i].body) {
                     expectedLength = expectedLength || this._parts[i].body.length;
@@ -970,6 +961,16 @@ export class Context implements C.MetreContext {
 
     _layout: ILayoutOpts;
     print: C.Print;
+    _attributes: C.MusicXML.Attributes;
+    get attributes() {
+        return this._attributes;
+    }
+    set attributes(a: C.MusicXML.Attributes) {
+        if(!!a && !(a instanceof AttributesModel)) {
+            a = new AttributesModel(a, true);
+        }
+        this._attributes = a;
+    }
 
     /**
      * @scope private
@@ -1032,14 +1033,9 @@ export interface ILineSnapshot {
     barKeys: Array<string>;
     barlineX: Array<number>;
     beat: number;
-    clef: string;
-    keySignature: C.IKeySignature;
-    timeSignature: C.ITimeSignature;
     line: number;
     pageLines: Array<number>;
     pageStarts: Array<number>;
-    prevClefByStave: { [key: number]: string };
-    prevKeySignature: C.IKeySignature;
     partIdx: number;
     x: number;
     y: number;
@@ -1054,10 +1050,9 @@ export interface IPartialSnapshot {
     fontSize: number;
     maxX: number;
     maxY: number;
-    prevClefByStave: { [key: number]: string };
+    attributes: C.MusicXML.Attributes;
     prevLine: ILineSnapshot;
     partialLine: ILineSnapshot;
-    timeSignature: C.ITimeSignature;
 }
 
 export interface ICompleteSnapshot extends IPartialSnapshot {
@@ -1066,8 +1061,22 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
 
 export function recordMetreData(parts: Array<C.IPart>) {
     "use strict";
+    try {
+        // Rumour is that the v8 optimizing compiler doesn't optimize functions
+        // with try-catch.
+        _recordMetreData(parts);
+    } catch (err) {
+        switch(true) {
+            case (err instanceof AttributesModel.AttributesUndefinedException):
+                return;
+            default:
+                throw err;
+        }
+    }
+}
 
-    var anyChange = false;
+function _recordMetreData(parts: Array<C.IPart>) {
+    "use strict";
     var i: number;
     var j: number;
     for (i = 0; i < parts.length; ++i) {
@@ -1075,17 +1084,8 @@ export function recordMetreData(parts: Array<C.IPart>) {
         if (!body) { continue; }
         var mctx1 = new C.MetreContext;
         for (j = 0; j < body.length; ++j) {
-            var prevhash = body[j].ctxData && (body[j].ctxData.bar * 10000 +
-                body[j].ctxData.beat * 2 + (body[j].ctxData.endMarker ? 1 : 0));
             body[j].recordMetreDataImpl(mctx1);
-            var newhash = body[j].ctxData.bar * 10000 +
-                body[j].ctxData.beat * 2 + (body[j].ctxData.endMarker ? 1 : 0);
-            anyChange = anyChange || prevhash !== newhash;
         }
-    }
-
-    if (!anyChange) {
-        return;
     }
 }
 
@@ -1106,7 +1106,7 @@ class PrivIterator {
         this._parts = parts;
         this._cursor = cursor;
         this._from = from;
-        this._parent.loc = JSON.parse(JSON.stringify(from));
+        this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
         this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         var visibleSidx = -1;
@@ -1133,7 +1133,7 @@ class PrivIterator {
         // Statuses with higher numbers go back further. Return the highest one.
         var maxStatus: C.IterationStatus = C.IterationStatus.ExitEarly;
 
-        var origSnapshot: ILineSnapshot = JSON.parse(JSON.stringify(this._parent.captureLine()));
+        var origSnapshot: ILineSnapshot = C.JSONx.clone(this._parent.captureLine());
         var componentSnapshots: Array<ILineSnapshot> = [];
         var filtered = false;
 
@@ -1160,7 +1160,6 @@ class PrivIterator {
             if (verbose) {
                 console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type],
                     C.Type[this._components[i].curr.priority],
-                    this._parent.songEditor.testly,
                     C.IterationStatus[componentStatus]);
             }
 
@@ -1184,7 +1183,7 @@ class PrivIterator {
             } else {
                 filtered = true;
             }
-            _cpyline(this._parent, origSnapshot, NewlineMode.MIDDLE_OF_LINE); // pop state
+            _cpyline(this._parent, origSnapshot, NewlineMode.MiddleOfLine); // pop state
         }
 
         this._assertOffsetsOK();
@@ -1205,64 +1204,59 @@ class PrivIterator {
      * @param filtered true if at least one placeholder has been removed from componentSnapshots
      */
     private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
-        ctx.bar = componentSnapshots[0].bar;
-        ctx.barKeys = componentSnapshots[0].barKeys || []; // TODO: make sure they're all the same.
-        ctx.barlineX = componentSnapshots[0].barlineX;
-        ctx.keySignature = componentSnapshots[0].keySignature;
-        ctx.line = componentSnapshots[0].line;
-        ctx.pageLines = componentSnapshots[0].pageLines;
-        ctx.pageStarts = componentSnapshots[0].pageStarts;
-        ctx.prevKeySignature = componentSnapshots[0].prevKeySignature;
-        ctx.timeSignature = componentSnapshots[0].timeSignature;
-        var mergePolicy = C.RectifyXPolicyFor[ctx.curr.priority];
-        assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
-        ctx.x = componentSnapshots[0].x;
-        for (var i = 1; i < componentSnapshots.length; ++i) {
-            ctx.x = (mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min)(ctx.x, componentSnapshots[i].x);
-        }
-        var otherContexts = ctx.findVertical(c => true);
+        // Most parameters should be the same in all components, so we just pick the first.
+        // It may be worthwhile to actually check them for consistency at some point...
+        ctx.bar                = componentSnapshots[0].bar;
+        ctx.barKeys            = componentSnapshots[0].barKeys || [];
+        ctx.barlineX           = componentSnapshots[0].barlineX;
+        ctx.line               = componentSnapshots[0].line;
+        ctx.pageLines          = componentSnapshots[0].pageLines;
+        ctx.pageStarts         = componentSnapshots[0].pageStarts;
 
-        // HACK HACK HACK: In case models on different parts disagree about how much space is needed,
-        // believe the real (not placeholder) model that reports the smallest number. This can still
-        // cause some strange (overly large) spacing for Durations that do not line up.
-        var minX = Infinity;
+        // When "filtered" is true, some placeholders have been removed, and the vertical location will be corrected
+        // later.
+        if (!filtered) {
+            ctx.y              = componentSnapshots[0].y;
+        }
+
+        // The current beat that the context records is the lagging (minimum from all parts) beat.
+        // Note: the maxiumum beat in any of the parts is tracked in ctx.__globalBeat__
+        ctx.beat               = _.min(componentSnapshots, "beat").beat;
+        for (var i = 0; i < this._components.length; ++i) {
+            if (    this._components[i].nextLocation.bar === ctx.bar &&
+                    this._components[i].nextLocation.beat  < ctx.beat) {
+                ctx.beat       = this._components[i].nextLocation.beat;
+            }
+        }
+
+        // The horizontal location usually depends on the mergePolicy of the Model.
+        // All models of a given type have the same priority.
+        var mergePolicy        = ctx.curr.xPolicy;
+        assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
+        ctx.x                  = componentSnapshots[0].x;
+        for (var i = 1; i < componentSnapshots.length; ++i) {
+            var fn             = mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min;
+            ctx.x              = fn(ctx.x, componentSnapshots[i].x);
+        }
+
+        // The exception to this rule occurs when different parts disagree about how much space is needed.
+        // We should usually believe the real (not placeholder) model that reports the smallest number.
+        // This can sadly cause some strange (overly large) spacing for Durations that do not line up.
+        var minX               = Infinity;
+        var otherContexts      = ctx.findVertical(c => true);
         for (var i = 0; i < otherContexts.length; ++i) {
-            minX = Math.min(otherContexts[i].x, minX);
+            minX               = Math.min(otherContexts[i].x, minX);
         }
         for (var i = 0; i < otherContexts.length; ++i) {
             otherContexts[i].x = minX;
         }
 
-        if (!filtered) {
-            ctx.y = componentSnapshots[0].y;
-        }
-
+        // Accidentals are kept seperate per part.
         ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
         for (var i = 1; i < componentSnapshots.length; ++i) {
-            var partIdx = componentSnapshots[i].partIdx;
-            ctx.accidentalsByStave[partIdx] = componentSnapshots[i].accidentalsByStave[partIdx];
-        }
-        // Note: also tracked per-staff. See also __globalBeat__
-        ctx.beat = _.min(componentSnapshots, "beat").beat;
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].nextLocation.bar === ctx.bar &&
-                    this._components[i].nextLocation.beat < ctx.beat) {
-                ctx.beat = this._components[i].nextLocation.beat;
-            }
-        }
-        if (!filtered) {
-            // Clef is never changed on types that can have placeholders.
-            // (If this changes, you're on your own)
-            ctx.prevClefByStave = ctx.prevClefByStave;
-            var visibleStaveIdx = -1;
-            for (var i = 0; i < ctx._parts.length; ++i) {
-                if (!ctx._parts[i].body) { continue; }
-                ++visibleStaveIdx;
-                if (componentSnapshots[visibleStaveIdx].prevClefByStave[i]) {
-                    ctx.prevClefByStave[i] = componentSnapshots[visibleStaveIdx].prevClefByStave[i];
-                    assert(ctx.prevClefByStave[i] !== null, "prevClefByStave is invalid");
-                }
-            }
+            var partIdx        = componentSnapshots[i].partIdx;
+            ctx.accidentalsByStave[partIdx]
+                               = componentSnapshots[i].accidentalsByStave[partIdx];
         }
     }
 
@@ -1382,12 +1376,8 @@ class PrivIterator {
     }
 
     private _rollbackLine(i: number) {
-        this._parent.line = i;
-        this._parent.timeSignature = null;
-        _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.START_OF_LINE);
-        for (var j = 0; j < this._components.length; ++j) {
-            this._components[j].resetLine();
-        }
+        this._parent.line               = i;
+        _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.StartOfLine);
     }
 
     private _increment() {
@@ -1501,7 +1491,6 @@ class PrivIteratorComponent {
         ctx.currStave = this._part;
         ctx.currStaveIdx = this._sidx;
         ctx.idx = this._idx;
-        ctx.clef = ctx.clef ? this._clef : "";
 
         var doCustomAction = this._shouldDoCustomAction(ctx);
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
@@ -1518,13 +1507,12 @@ class PrivIteratorComponent {
         var isNewline = this.curr && this.curr.type === C.Type.NewLine;
 
         if (status === C.IterationStatus.Success && shouldUpdateVC) {
-		    this._cursor.annotatedObj = this.curr;
+            this._cursor.annotatedObj = this.curr;
             this._cursor.annotatedStave = this._visibleSidx;
             this._cursor.annotatedLine = ctx.line;
-		    this._cursor.annotatedPage = ctx.pageStarts.length - 1;
-		}
+            this._cursor.annotatedPage = ctx.pageStarts.length - 1;
+        }
 
-        this._clef = ctx.clef;
 
         if (canExitAtNewline && isNewline && isClean) {
             return C.IterationStatus.ExitEarly;
@@ -1593,13 +1581,8 @@ class PrivIteratorComponent {
             var nextIsPlaceholder = this._body[this._idx + 1] && this._body[this._idx + 1].placeholder;
             var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
             this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
-                new PlaceholderModel({ _priority: C.Type[priority] },
-                    C.Source.Annotator /* ? */));
+                new PlaceholderModel({ priority: priority }, true /* ? */));
         }
-    }
-
-    resetLine() {
-        this._clef = "";
     }
 
     /**
@@ -1653,8 +1636,8 @@ class PrivIteratorComponent {
     private _addPadding(ctx: Context) {
         var PlaceholderModel = require("./placeholder");
         ctx.splice(ctx.idx, 0, [new PlaceholderModel({
-            _priority: C.Type[ctx.curr.priority]
-        }, C.Source.Annotator /* ? */)], SplicePolicy.Additive);
+            priority: ctx.curr.priority
+        }, true /* ? */)], SplicePolicy.Additive);
         ctx.beat = ctx.__globalBeat__;
         return C.IterationStatus.RetryCurrentNoOptimizations;
     }
@@ -1686,32 +1669,23 @@ class PrivIteratorComponent {
 
 
     private _doCustomAction(ctx: Context): C.IterationStatus {
-        if (this.curr.type === C.Type.TimeSignature) {
-            // HACK HACK HACK -- we don't want to annotate before the custom action, but
-            // some actions expect a valid time signature.
-            ctx.timeSignature = (<any>this.curr).timeSignature;
-        }
-
-        //
         var exitCode = this._mutation.toolFn(this.curr, ctx);
-        //
 
-        this._mutation = null;  // If we have to backtrack, don't repeat this action
+        this._mutation = null;  // Don't repeat this action, even if we backtrack.
         return exitCode;
     }
 
-    private _assertionPolicy: AssertionPolicy;
-    private _beat: number = null;
-    private _nextBeat: number = null;
-    private _body: C.IBody;
-    private _clef: string;
-    private _cursor: C.IVisualCursor;
-    _idx: number;
-    private _location: C.Location;
-    private _mutation: ICustomAction;
-    private _sidx: number;
-    private _visibleSidx: number;
-    private _part: C.IPart;
+    private _assertionPolicy:   AssertionPolicy;
+    private _beat:              number           = null;
+    private _nextBeat:          number			 = null;
+    private _body:              Model[];
+    private _cursor:            C.IVisualCursor;
+    public  _idx:               number;
+    private _location:          C.Location;
+    private _mutation:          ICustomAction;
+    private _sidx:              number;
+    private _visibleSidx:       number;
+    private _part:              C.IPart;
 }
 
 
@@ -1721,37 +1695,21 @@ class PrivIteratorComponent {
 function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     "use strict";
 
-    if (mode === NewlineMode.START_OF_LINE) {
-        ctx.clef = null;
-        ctx.defaultCount = 4;
-    } else if (line.clef) {
-        ctx.clef = line.clef;
-    }
-
-    if (line.accidentalsByStave !== null) { ctx.accidentalsByStave = line.accidentalsByStave; }
-    if (line.bar !== null) { ctx.bar = line.bar; }
-    if (line.barlineX !== null) { ctx.barlineX = line.barlineX; }
-    if (line.barKeys !== null) { ctx.barKeys = line.barKeys; }
-    if (line.beat !== null) { ctx.beat = line.beat; }
-    if (line.keySignature !== null) { ctx.keySignature = line.keySignature; }
-    if (line.timeSignature !== null) { ctx.timeSignature = line.timeSignature; }
-    if (line.line !== null) { ctx.line = line.line; }
-    if (line.pageLines !== null) { ctx.pageLines = line.pageLines; }
-    if (line.pageStarts !== null) { ctx.pageStarts = line.pageStarts; }
-    // XXX: Not having this line may mess with clef changes! Get it to work!
-    // if (line.prevClefByStave !== null) { ctx.prevClefByStave = line.prevClefByStave; }
-    if (line.prevKeySignature !== null) { ctx.prevKeySignature = line.prevKeySignature; }
-    if (line.x !== null) { ctx.x = line.x; }
-    if (line.y !== null) { ctx.y = line.y; }
-
-    if (ctx.line !== 0) {
-        assert(ctx.prevClefByStave);
-    }
+    if (!!line.accidentalsByStave  ) { ctx.accidentalsByStave = line.accidentalsByStave; }
+    if (  line.bar         !== null) { ctx.bar                = line.bar;                }
+    if (!!line.barlineX    !== null) { ctx.barlineX           = line.barlineX;           }
+    if (!!line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
+    if (  line.beat        !== null) { ctx.beat               = line.beat;               }
+    if (  line.line        !== null) { ctx.line               = line.line;               }
+    if (!!line.pageLines           ) { ctx.pageLines          = line.pageLines;          }
+    if (!!line.pageStarts          ) { ctx.pageStarts         = line.pageStarts;         }
+    if (  line.x           !== null) { ctx.x                  = line.x;                  }
+    if (  line.y           !== null) { ctx.y                  = line.y;                  }
 }
 
 enum NewlineMode {
-    START_OF_LINE,
-    MIDDLE_OF_LINE
+    StartOfLine,
+    MiddleOfLine
 }
 
 function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
@@ -1762,29 +1720,28 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             return;
         }
         switch (attrib) {
-            case "fontSize": ctx.fontSize = layout.fontSize; break;
             case "lines":
                 ctx.lines = layout.lines;
-                ctx.line = layout.lines.length - 1;
-                _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.START_OF_LINE);
+            	ctx.line  = layout.lines.length - 1;
+                _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.StartOfLine);
                 break;
-            case "maxX": ctx.maxX = layout.maxX; break;
-            case "maxY": ctx.maxY = layout.maxY; break;
-            case "partialLine": break; // skipped
-            case "prevClefByStave": ctx.prevClefByStave = layout.prevClefByStave;
-            case "prevLine": break; // skipped
-            case "timeSignature": ctx.timeSignature = layout.timeSignature; break;
-            default: assert(false, "Not reached");
+            case "fontSize":    ctx.fontSize   = layout.fontSize;   break;
+            case "maxX":        ctx.maxX       = layout.maxX;       break;
+            case "maxY":        ctx.maxY       = layout.maxY;       break;
+            case "attributes":  ctx.attributes = layout.attributes; break;
+            case "partialLine": /* pass */                          break;
+            case "prevLine":    /* pass */                          break;
+            default:            assert(false, "Not reached");
         }
     });
 }
 
 var MAX_LOCATION = new C.Location({
-    bar: C.MAX_NUM,
+    bar:  C.MAX_NUM,
     beat: C.MAX_NUM
 });
 
 var MIN_LOCATION = new C.Location({
-    bar: -1,
+    bar:  -1,
     beat: -1
 });

@@ -14,23 +14,20 @@ import TypedReact = require("typed-react");
 
 import C = require("../stores/contracts");
 import BarlineModel = require("../stores/barline");
-import Group = require("./_group");
 import Rect = require("./_rect");
 import Line = require("./_line");
 import SMuFL = require("../util/SMuFL");
-import hash = require("../util/hash");
 
 class Barline extends TypedReact.Component<Barline.IProps, {}> {
-    render() {
+    render(): any {
         var spec = this.props.spec;
         var defaults = SMuFL.bravuraMetadata.engravingDefaults;
-        this.hash = this.getHash(spec);
 
         var thickX = spec.x + defaults.barlineSeparation*10 +
             defaults.thickBarlineThickness*10;
 
         if (spec.barStyle.data === C.MusicXML.BarStyleType.LightHeavy) {
-            return <!Group.Component>
+            return <!g>
                 <!Line.Component
                     key={1}
                     x1={spec.x}
@@ -64,7 +61,7 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     fill={"#FFFFFF"}
                     height={spec.height*2 + 2}
                     width={4000} />
-            </Group.Component>;
+            </g>;
         }
 
         return <!Line.Component
@@ -77,34 +74,21 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             strokeWidth={defaults.thinBarlineThickness*10} />
     }
 
-    /**
-     * React lifecycle method.
-     */
-    shouldComponentUpdate(nextProps: Barline.IProps) {
-        return this.getHash(nextProps.spec) !== this.hash;
+    _hash: number;
+    shouldComponentUpdate(nextProps: Barline.IProps, nextState: {}) {
+        var oldHash = this._hash;
+        this._hash = C.JSONx.hash(nextProps);
+        return oldHash !== this._hash;
     }
-
-    /**
-     * Compute a hash for quickly checking whether the component needs updating.
-     */
-    getHash(spec: BarlineModel) {
-        return hash(JSON.stringify(spec));
-    }
-
-    /**
-     * Used to check if component needs updating.
-     */
-    hash: number = NaN;
 };
 
 module Barline {
     "use strict";
-    export var Component = TypedReact.createClass(React.createClass, Barline);
+    export var Component = TypedReact.createClass(Barline);
 
     export interface IProps {
         key: number;
         spec: BarlineModel;
-        fontSize: number;
     }
 }
 

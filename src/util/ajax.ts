@@ -2,6 +2,9 @@ import _ = require("lodash");
 
 var postJSON = function (withCredentials: boolean, verb: string, url: string, json: any,
         onload: (response: any, request: XMLHttpRequest) => void) {
+    if (typeof XMLHttpRequest === "undefined") {
+        return;
+    }
     if (url.indexOf("/api") === 0 && global.RipienoDesktop) {
         url = "http://ripieno.local:8000" + url;
     }
@@ -22,6 +25,9 @@ var postJSON = function (withCredentials: boolean, verb: string, url: string, js
 
 var getJSON = function (withCredentials: any, url: string,
         onload: (response: any, request: XMLHttpRequest) => void) {
+    if (typeof XMLHttpRequest === "undefined") {
+        return;
+    }
     if (url.indexOf("/api") === 0 && global.RipienoDesktop) {
         url = "http://ripieno.local:8000" + url;
     }

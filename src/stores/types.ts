@@ -9,6 +9,8 @@
 import C = require("./contracts");
 import Model = require("./model");
 
+import React = require("react");
+
 import BarlineModel = require("./barline");
 import BarlineView = require("../views/barline");
 import BeamGroupModel = require("./beamGroup");
@@ -55,8 +57,8 @@ export function ensureRegistered() {
     registerType(C.Type.TimeSignature, TimeSignatureModel, TimeSignatureView.Component);
     registerType(C.Type.Wedge, WedgeModel, WedgeView.Component);
 
-    function registerType(type: C.Type, model: any, view: C.IViewComponent) {
-        Model.constructorsByType[C.Type[type]] = function (spec: any) { return new model(spec); };
+    function registerType(type: C.Type, model: any, view: React.ReactComponentFactory<any>) {
+        Model.constructorsByType[type] = function (spec: any) { return new model(spec); };
         model.setView(view);
     }
 };

@@ -6,21 +6,31 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-import Model = require("./model");
+import Model        = require("./model");
 
-import C = require("./contracts");
-import Annotator = require("./annotator");
-import PrintModel = require("./print");
-
-import _ = require("lodash");
+import C            = require("./contracts");
+import Annotator    = require("./annotator");
+import PrintModel   = require("./print");
 
 class BeginModel extends Model {
+    /* Model */
+    get type()      { return C.Type.Begin; }
+    get xPolicy()   { return C.RectifyXPolicy.Min; }
+
+    /* BeginModel */
+    part:           C.IPart;
+    noMargin:       boolean;
+    braceY:         number;
+    braceY2:        number;
+    width:          number;
+
+    /* Lifecycle */
     recordMetreDataImpl(mctx: C.MetreContext) {
-        this.ctxData = new C.MetreContext(mctx);
+        this.ctxData            = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (!ctx.print) {
-            return ctx.insertPast(new PrintModel({}));
+            return ctx.insertPast(new PrintModel({}, true));
         }
 
         // BeginModel must only appear at the beginning of a song.
@@ -30,33 +40,33 @@ class BeginModel extends Model {
 
         /////////////////////////////////////////////////////////////
 
-        var print = ctx.print;
+        var print               = ctx.print;
 
-        var systemMargins = print.systemLayout.systemMargins;
-        var pageMargins = print.pageMarginsFor(ctx.page);
-        var pageLayout = print.pageLayout;
+        var systemMargins       = print.systemLayout.systemMargins;
+        var pageMargins         = print.pageMarginsFor(ctx.page);
+        var pageLayout          = print.pageLayout;
 
-        ctx.fontSize = ctx.calcFontSize();
-        ctx.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
-        ctx.maxY = pageLayout.pageHeight - pageMargins.topMargin;
-        ctx.x = systemMargins.leftMargin + pageMargins.leftMargin;
-        ctx.y = pageMargins.topMargin + print.systemLayout.topSystemDistance;
-        ctx.lines[ctx.line].y = ctx.y;
-        ctx.lines[ctx.line].x = ctx.x;
+        ctx.fontSize            = ctx.calcFontSize();
+        ctx.maxX                = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
+        ctx.maxY                = pageLayout.pageHeight - pageMargins.topMargin;
+        ctx.x                   = systemMargins.leftMargin + pageMargins.leftMargin;
+        ctx.y                   = pageMargins.topMargin + print.systemLayout.topSystemDistance;
+        ctx.lines[ctx.line].y   = ctx.y;
+        ctx.lines[ctx.line].x   = ctx.x;
 
         /////////////////////////////////////////////////////////////
 
-        this.x = ctx.x;
-        this.y = ctx.y;
-        this.width = ctx.maxX - ctx.x;
+        this.x                  = ctx.x;
+        this.y              	= ctx.y;
+        this.width          	= ctx.maxX - ctx.x;
 
         /*
          * Padding between beginning of part and the clef.
          * This value should also be changed in BeginModel.
          */
-        ctx.x += 8;
+        ctx.x                   += 8;
 
-        ctx.barKeys = [];
+        ctx.barKeys             = [];
 
         // Copy information from the context needed for the view
         // this.pianoSystemContinues = ctx.currStave.pianoSystemContinues; MXFIX
@@ -64,41 +74,22 @@ class BeginModel extends Model {
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
-            this.noMargin = true;
+            this.noMargin       = true;
         } else {
-            this.noMargin = false;
+            this.noMargin       = false;
         }
-        this.braceY = this.y;
-        this.braceY2 = this.y + ctx.staveSpacing * (ctx._parts.length - 1);
+        this.braceY             = this.y;
+        this.braceY2            = this.y + ctx.staveSpacing * (ctx._parts.length - 1);
+
+        /////////////////////////////////////////////////////////////
 
         return C.IterationStatus.Success;
     }
-    toLylite() {
-        // pass
-    }
-    visible() {
-        return true;
-    }
 
+    /* Static */
     static createBegin = (ctx: Annotator.Context) => {
-        return ctx.insertPast(new BeginModel(
-            {source: C.Source.Annotator}));
+        return ctx.insertPast(new BeginModel({source: true}, true));
     };
-
-    get type() {
-        return C.Type.Begin;
-    }
-
-    toJSON(): {} {
-        return _.extend(super.toJSON(), {
-        });
-    }
-
-    part: C.IPart;
-    noMargin : boolean;
-    braceY : number;
-    braceY2: number;
-    width: number;
 }
 
 export = BeginModel;
