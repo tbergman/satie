@@ -23,6 +23,78 @@ export import SMuFL      = require("../util/SMuFL");
 export import renderUtil = require("../util/renderUtil");
 export import strHash    = require("../util/hash");
 
+export interface IApi {
+    // Server methods
+    // ==============
+    "GET /api/v0/song"?                     (action: IServerAction<void, ISong[]>): void;
+    "GET /api/v0/song ERROR"?               (action: IServerAction<void, ISong[]>): void;
+    "PUT /api/v0/song"?                     (action: IServerAction<void, ISong>): void;
+    "PUT /api/v0/song ERROR"?               (action: IServerAction<void, ISong>): void;
+    "PUT /api/v0/song DONE"?                (action: IServerAction<void, ISong>): void;
+    "POST /api/v0/song DONE"?               (action: IServerAction<void, ISong>): void;
+    "POST /api/v0/song"?                    (action: IServerAction<void, ISong>): void;
+    "POST /api/v0/song ERROR"?              (action: IServerAction<void, ISong>): void;
+    "DELETE /api/v0/song"?                  (action: IServerAction<void, void>): void;
+    "POST /api/v0/user/login"?              (action: IServerAction<void, ISession>): void;
+    "POST /api/v0/user/login DONE"?         (action: IServerAction<void, ISession>): void;
+    "GET /api/v0/user/session"?             (action: IServerAction<void, ISession>): void;
+    "GET /api/v0/user/session ERROR"?       (action: IServerAction<void, ISession>): void;
+    "POST /api/v0/user/login ERROR"?        (action: IServerAction<void, {statusMessage: string}>): void;
+    "DELETE /api/v0/user/session DONE"?     (action: IServerAction<void, void>): void;
+    "DELETE /api/v0/user/session ERROR"?    (action: IServerAction<void, void>): void;
+    "POST /api/v0/synth"?                   (action: IServerAction<void, void>): void;
+    "POST /api/v0/synth DONE"?              (action: IServerAction<void, ISynthCallback>): void;
+
+    // Local (Flux) methods
+    // ========================
+    // You'll notice there's no "GET". To retrieve values, use the appropriate store.
+    // For example, to retrieve BPM, use PlaybackStore. You should also subscribe to updates from
+    // said store.
+    "PUT /webapp/bpm"?                      (action: IFluxAction<number>): void;
+    "POST /webapp/midiOut"?                 (action: IFluxAction<any>): void;
+    "PUT /webapp/visualCursor/togglePlay"?  (action: IFluxAction<void>): void;
+    "PUT /webapp/apiRole"?                  (action: IFluxAction<ApiRole>): void;
+    "PUT /webapp/song/show"?                (action: IFluxAction<void>): void;
+    "POST /webapp/giveFeedback"?            (action: IFluxAction<void>): void;
+    "PUT /webapp/sidebar/notations"?        (action: IFluxAction<void>): void;
+    "DELETE /webapp/sidebar/notations"?     (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/autosave"?           (action: IFluxAction<void>): void;
+    "DELETE /webapp/modal/autosave"?        (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/copy"?               (action: IFluxAction<void>): void;
+    "DELETE /webapp/modal/copy"?            (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/export"?             (action: IFluxAction<void>): void;
+    "DELETE /webapp/modal/export"?          (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/metadata"?           (action: IFluxAction<void>): void;
+    "DELETE /webapp/modal/metadata"?        (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/part"?               (action: IFluxAction<IPart>): void;
+    "DELETE /webapp/modal/part"?            (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/social"?             (action: IFluxAction<void>): void;
+    "DELETE /webapp/modal/social"?          (action: IFluxAction<void>): void;
+    "PUT /webapp/modal/midi"?               (action: IFluxAction<number>): void;
+    "DELETE /webapp/modal/midi"?            (action: IFluxAction<void>): void;
+    "PUT /webapp/selection"?                (action: IFluxAction<Model[]>): void;
+    "DELETE /webapp/selection"?             (action: IFluxAction<void>): void;
+    "DELETE /webapp/selection/contents"?    (action: IFluxAction<void>): void;
+    "PAT /webapp/song"?                     (action: IFluxAction<string>): void;
+    "PUT /webapp/song/dirty"?               (action: IFluxAction<void>): void;
+    "DELETE /webapp/song/dirty"?            (action: IFluxAction<void>): void;
+    "PUT /webapp/song/forceUpdate"?         (action: IFluxAction<void>): void;
+    "PUT /webapp/song/hmargin/increase"?    (action: IFluxAction<void>): void;
+    "PUT /webapp/song/hmargin/decrease"?    (action: IFluxAction<void>): void;
+    "PUT /webapp/song/indent/increase"?     (action: IFluxAction<void>): void;
+    "PUT /webapp/song/indent/decrease"?     (action: IFluxAction<void>): void;
+    "PUT /webapp/song/lineDirty"?           (action: IFluxAction<string>): void;
+    "DELETE /webapp/song/lineDirty"?        (action: IFluxAction<number>): void;
+    "PUT /webapp/song/pageSize"?            (action: IFluxAction<{width: number; height: number;}>): void;
+    "DELETE /webapp/song/show"?             (action: IFluxAction<void>): void;
+    "PUT /webapp/song/src"?                 (action: IFluxAction<string>): void;
+    "PUT /webapp/song/transpose"?           (action: IFluxAction<void>): void;
+    "PUT /webapp/song/undo"?                (action: IFluxAction<void>): void;
+    "PUT /webapp/song/redo"?                (action: IFluxAction<void>): void;
+    "PUT /webapp/staveHeight/increase"?     (action: IFluxAction<void>): void;
+    "PUT /webapp/staveHeight/decrease"?     (action: IFluxAction<void>): void;
+}
+
 /** 
  * Represents the client's policy for communicating changes with each other and saving them
  * to the server.
@@ -232,19 +304,11 @@ export interface IError {
     redirectTo:         string;
 };
 
-/** 
- * A request to the Ripieno server and/or internal store.
- */
-export interface IFluxAction<PostData, Response> {
+export interface IFluxAction<PostData>{
     /** 
      * The path and verb of the resource, such as "PUT /webapp/selection"
      */
     description:        string;
-
-    /** 
-     * The parsed JSON response from the server, if this is a server request.
-     */
-    response:           Response;
 
     /** 
      * For URIs containing '/_[a-zA-Z0-9-_]*', the part between the first
@@ -266,6 +330,16 @@ export interface IFluxAction<PostData, Response> {
     postData:           PostData;
 
     nested?:            boolean;
+}
+
+/** 
+ * A request to the Ripieno server and/or internal store.
+ */
+export interface IServerAction<PostData, Response> extends IFluxAction<PostData> {
+    /** 
+     * The parsed JSON response from the server, if this is a server request.
+     */
+    response:           Response;
 };
 
 /** 
@@ -414,7 +488,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         partGroups:                                 []
     };
 
-    /* Convienience */
+    /* Convenience */
     constructor(spec: ScoreHeader) {
         for(var key in spec) {
             if (spec.hasOwnProperty(key) && typeof key === "string" && !!(<any>spec)[key]) {
@@ -477,6 +551,11 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
     set title(title: string) {
         assert(false, "Not implemented");
     }
+}
+
+export function generateUUID(): string {
+    "use strict";
+    return (Math.random().toString(16) + "000000000").substr(2, 8);
 }
 
 export class Print implements MusicXML.Print {
@@ -710,16 +789,6 @@ export class Location implements ILocation {
 
 export var log2     = Math.log(2);
 
-/** 
- * The Lilypond name for a major key.
- */
-export var MAJOR    = "\\major";
-
-/** 
- * The Lilypond name for a minor key.
- */
-export var MINOR    = "\\minor";
-
 export var MAX_NUM  = 1000000000;
 
 export interface INotation {
@@ -874,22 +943,22 @@ export interface IPlaybackStore {
 
 export enum PreviewMode {
     ExcludePreviews             = 0,
-    IncludePreviews     		= 1
+    IncludePreviews             = 1
 }
 
 export interface IPointerAction {
     mouseData:                  IPointerData;
-    fn:                 		(obj: Model, ctx: Annotator.Context) => IterationStatus;
+    fn:                         (obj: Model, ctx: Annotator.Context) => IterationStatus;
 }
 
 export interface IPointerData {
     partIdx:                    number;
-    obj:                		Model;
-    idx:                		number;
-    visualIdx?:         		number;
-    musicLine?:         		number;
-    line?:              		number;
-    ctxData?:           		IVisualCursor;
+    obj:                        Model;
+    idx:                        number;
+    visualIdx?:                 number;
+    musicLine?:                 number;
+    line?:                      number;
+    ctxData?:                   IVisualCursor;
 };
 
 export enum RectifyXPolicy {
@@ -966,7 +1035,7 @@ export interface ISong {
 };
 
 export interface ISongEditor {
-    /* Lifecycle */
+    /* Life-cycle */
     destructor:                         () => void;
 
     addListener:                        (event: number, listener: Function) => void;
@@ -996,14 +1065,15 @@ export interface ISongEditor {
     visualCursor:                       IVisualCursor;
     legacyAudioID:                      number;
 
-    /* Sketch */
+    /* Sketchy */
+    abort:                              () => IAnnotationResult;
     dangerouslyHidePreview:             () => void;
     dangerouslyMarkRenderDone:          () => void;
     dangerouslyMarkRendererDirty:       () => void;
-    dangerouslyMarkRendererLineClean:   (action: IFluxAction<string, void>) => void; // request is $(PART)_$(LINE)
+    dangerouslyMarkRendererLineClean:   (action: IFluxAction<string>) => void; // request is $(PART)_$(LINE)
     dangerouslyMarkRendererLineDirty:   (line: number) => void;
     dangerouslySetVisualCursor:         (visualCursor: IVisualCursor) => void;
-    dangerouslyShowPreview:             (action: IFluxAction<IPointerAction, void>) => void;
+    dangerouslyShowPreview:             (action: IFluxAction<IPointerAction>) => void;
     dangerouslyTakeSnapshot:            (ctx: Annotator.Context) => void;
     ensureSoundfontLoaded:              (soundfont: string, avoidEvent?: boolean) => void;
 };
@@ -1021,29 +1091,30 @@ export enum EventType {
  * The subclass of a Model. Also doubles as a priority.
  */
 export enum Type {
-    Print                   = 50,         // C.MusicXML.Print
-    Attributes              = 60,         // C.MusicXML.Attributes
+    Print                   = 50,           // Implements C.MusicXML.Print
 
     START_OF_ATTRIBUTES     = 100,
-    EndMarker               = 110,
-    NewPage                 = 120,
-    NewLine                 = 130,
+    EndMarker               = 110,          // Need not be saved. Appears at end of bars and lines.
 
-    Begin                   = 140,
-    Clef                    = 150,
-    KeySignature            = 160,
-    TimeSignature           = 170,
+    NewPage                 = 120,          // Page break flag. Folds into Attributes.
+    NewLine                 = 130,          // Line break flag. Folds into Attributes.
+    Begin                   = 140,          // Need not be saved. Appears at start of 1st page.
+
+    Attributes              = 145,          // Implements C.MusicXML.Attributes
+    Clef                    = 150,          // Implements C.MusicXML.Clef
+    KeySignature            = 160,          // Implements C.MusicXML.Key
+    TimeSignature           = 170,          // Implements C.MusicXML.Time
     END_OF_ATTRIBUTES       = 199,
 
-    Barline                 = 300,
+    Barline                 = 300,          // Implements C.MusicXML.Barline
 
     START_OF_MODIFIERS      = 400,
-    Slur                    = 425,
-    BeamGroup               = 450,
-    Wedge                   = 475,
+    Slur                    = 425,          // Implements C.MusicXML.Slur
+    BeamGroup               = 450,          // Implements C.MusicXML.Beam
+    Wedge                   = 475,          // Implements C.MusicXML.Wedge
     END_OF_MODIFIERS        = 499,
 
-    Duration                = 600,
+    Duration                = 600,          // ._notes implements C.MusicXML.Note[]
 
     Placeholder             = 999,
 
@@ -1292,6 +1363,12 @@ export module NoteUtil {
 }
 
 export var InvalidAccidental = 9001;
+
+export interface ISynthCallback {
+    tmpRef:     string;
+    forExport:  boolean;
+    cb:         string;
+}
 
 export module JSONx {
     "use strict";

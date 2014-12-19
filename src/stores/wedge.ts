@@ -13,22 +13,22 @@ import C            = require("./contracts");
 import assert       = require("assert");
 
 class WedgeModel extends Model /* implements C.MusicXML.Wedge */ {
-    //
-    // I.1 Model
-    //
+    ///////////////
+    // I.1 Model //
+    ///////////////
     get type()                      { return C.Type.Wedge; }
     get xPolicy()                   { return C.RectifyXPolicy.Min; }
     get fields(): string[]          { return ["wedgeType"]; }
 
-    //
-    // I.2 WedgeModel
-    //
+    ////////////////////
+    // I.2 WedgeModel //
+    ////////////////////
     wedgeType: C.MusicXML.WedgeType;
     endpoint: WedgeModel;
 
-    //
-    // II. Lifecycle
-    //
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);

@@ -1,10 +1,12 @@
 var browserify          = require("browserify");
 var concat              = require("gulp-concat");
+var exec                = require("child_process").exec;
 var exit                = require("gulp-exit");
+var fs                  = require("fs");
 var generateSuite       = require("gulp-mocha-browserify-sweet");
 var gulp                = require("gulp");
 var gutil               = require("gulp-util");
-var jasmine             = require('gulp-jasmine');
+var jasmine             = require("gulp-jasmine");
 var karma               = require("gulp-karma");
 var newer               = require("gulp-newer");
 var path                = require("path");
@@ -15,6 +17,8 @@ var tslint              = require("gulp-tslint");
 var typescript          = require("gulp-typescript");
 var uglify              = require("gulp-uglify");
 var watchify            = require("watchify");
+
+var packageJSON         = require("./package.json");
 
 var browserifyOpts = {
     debug: {
@@ -48,6 +52,32 @@ var files = {
     mainWebapp:         "./.partialBuild/main.js",
     mainTablet:         "./.partialBuild/tablet/main.js"
 };
+
+function gitSHA(callback) {
+    exec("git rev-parse HEAD", {}, puts);
+    function puts(error, stdout, stderr) {
+        if (error) {
+            console.log("ERROR GETTING GIT SHA:", error);
+            console.log("stdout:", stdout);
+            console.log("stderr:", stderr);
+        }
+        callback(stdout);
+    }
+}
+var recordedSHA = false;
+gulp.task("record-sha", [], function(done) {
+    if (recordedSHA) {
+        done();
+        return;
+    }
+    recordedSHA = true;
+    gitSHA(function(sha) {
+        fs.writeFile(
+            path.join(__dirname, "./.partialBuild/version.js"),
+            "module.exports = \"" + packageJSON.name + "-" + packageJSON.version + "-" + sha.slice(0, 8) + "\";",
+            done);
+    });
+});
 
 gulp.task("watch", ["watch-prebuild", "chores", "lint"], function() {
     var nginx           = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
@@ -177,7 +207,7 @@ var sharedTypescriptProject = typescript.createProject({
     noExternalResolve:  true
 });
 
-gulp.task("typescript", function() {
+gulp.task("typescript", ["record-sha"], function() {
     var ts = gulp.src([files.ts, files.typings])
         .pipe(typescript(sharedTypescriptProject)).js
         .pipe(gulp.dest(dirs.build));

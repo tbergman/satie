@@ -72,7 +72,11 @@ export class Context implements C.MetreContext {
         Context._ANNOTATING                 = false;
 
         if (error) {
-            dispatcher.PUT("/webapp/song/undo");
+            // Clear any render flags to avoid rendering the current (broken) state
+            this.songEditor.dangerouslyMarkRenderDone();
+            _.defer(() => {
+                dispatcher.PUT("/webapp/song/undo");     // Un-break the state.
+            });
             throw error;
         }
         return result;
@@ -834,6 +838,19 @@ export class Context implements C.MetreContext {
         this._recordings[model.key] = model;
     }
 
+    /**
+     * This structure is unwieldy. Serialize Context for debugging only!
+     */
+    toJSON() : {} {
+        var serializable: {[key: string]: any} = {};
+        for (var key in this) {
+            if (this.hasOwnProperty(key) && key !== "songEditor") {
+                serializable[key] = (<any>this)[key];
+            }
+        }
+        return serializable;
+    }
+
     private _annotateImpl(from?: C.ILocation, mutation?: ICustomAction,
                 cursor?: C.IVisualCursor, disableRecordings?: boolean):
             C.IAnnotationResult {
@@ -963,7 +980,7 @@ export class Context implements C.MetreContext {
     print: C.Print;
     _attributes: C.MusicXML.Attributes;
     get attributes() {
-        return this._attributes;
+        return this._attributes || {};
     }
     set attributes(a: C.MusicXML.Attributes) {
         if(!!a && !(a instanceof AttributesModel)) {
@@ -1062,7 +1079,7 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
 export function recordMetreData(parts: Array<C.IPart>) {
     "use strict";
     try {
-        // Rumour is that the v8 optimizing compiler doesn't optimize functions
+        // Rumor is that the v8 optimizing compiler doesn't optimize functions
         // with try-catch.
         _recordMetreData(parts);
     } catch (err) {

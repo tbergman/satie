@@ -69,7 +69,7 @@ import Tool              = require("./tool");
  * 
  * [       |     |        |      | PUT] /webapp/instrument
  */
-class SongEditorStore extends TSEE implements C.ISongEditor {
+class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
     constructor(dispatcher: C.IDispatcher, session: C.ISessionStore) {
         super();
         dispatcher.register(this._handleAction);
@@ -213,6 +213,14 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
+    abort(): C.IAnnotationResult {
+        var state = this._history.goodState();
+        var res = this._reparse(state.src);
+        this._visualCursorIs(state.visualCursor);
+        this.dangerouslyMarkRendererDirty();
+        return res;
+    }
+
     /**
      * Should not be any different than going through dispatcher,
      * but skips checks and routing to save time and attain 60 Hz.
@@ -320,37 +328,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     // FLUX METHODS // 
     //////////////////
 
-    "GET /api/v0/song"(action: C.IFluxAction<void, void>) {
-        var activeSong = this._session.activeSong;
-        if (usingLegacyAudio) {
-            _.defer(() => {
-                 this._dispatcher.POST("/api/v0/synth", {
-                     data: this.dragonAudio,
-                     cb: "" + ++PlaybackStore.latestID,
-                     forExport: false
-                 });
-            });
-        }
-        if (activeSong !== this._prevActiveSong) {
-            this.dangerouslyMarkRendererDirty();
-            this._clear();
-            this._prevActiveSong = activeSong;
-            this._reparse(activeSong.src);
-            this._activatePeerRelay(activeSong._id);
-            this.emit(C.EventType.Change);
-            this.emit(C.EventType.Annotate);
-        }
-
-        _.each(this.parts, (part: C.IPart) => {
-            if (part.body) {
-                var instrument: C.IInstrument = part.instrument;
-                this.ensureSoundfontLoaded(instrument.soundfont, /*avoidEvent*/ true);
-            }
-        });
-        this.emit(C.EventType.ClearHistory);
+    "GET /api/v0/song"(action: C.IServerAction<void, C.ISong[]>) {
+        this._checkActiveSong();
     }
 
-    "PUT /api/v0/song"(action: C.IFluxAction<void, void>) {
+    "PUT /api/v0/song"(action: C.IServerAction<void, C.ISong>) {
         var activeSong: C.ISong = this._session.activeSong;
         var activeID: string = activeSong ? activeSong._id : null;
         if (action.resource === activeID) {
@@ -359,7 +341,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._allChangesSent = true;
     } // Continued...
 
-    "PUT /api/v0/song DONE"(action: C.IFluxAction<void, void>) {
+    "PUT /api/v0/song DONE"(action: C.IServerAction<void, C.ISong>) {
         var activeSong = this._session.activeSong;
         var activeID = activeSong ? activeSong._id : null;
         if (action.resource === activeID) {
@@ -371,7 +353,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    "PUT /api/v0/song ERROR"(action: C.IFluxAction<void, void>) {
+    "PUT /api/v0/song ERROR"(action: C.IServerAction<void, C.ISong>) {
         alert("Could not save changes. Check your Internet connection.");
         var activeSong = this._session.activeSong;
         var activeID = activeSong ? activeSong._id : null;
@@ -381,93 +363,93 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.changesPending = true;
     }
 
-    "PUT /webapp/sidebar/notations"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/sidebar/notations"(action: C.IFluxAction<void>) {
         this._notationsSidebarVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/sidebar/notations"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/sidebar/notations"(action: C.IFluxAction<void>) {
         this._notationsSidebarVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/autosave"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/modal/autosave"(action: C.IFluxAction<void>) {
         this._autosaveModalVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/autosave"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/autosave"(action: C.IFluxAction<void>) {
         this._autosaveModalVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/copy"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/modal/copy"(action: C.IFluxAction<void>) {
         this._copyModalVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/copy"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/copy"(action: C.IFluxAction<void>) {
         this._copyModalVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/export"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/modal/export"(action: C.IFluxAction<void>) {
         this._exportModalVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/export"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/export"(action: C.IFluxAction<void>) {
         this._exportModalVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/metadata"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/modal/metadata"(action: C.IFluxAction<void>) {
         this._metadataModalVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/metadata"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/metadata"(action: C.IFluxAction<void>) {
         this._metadataModalVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/part"(action: C.IFluxAction<C.IPart, void>) {
+    "PUT /webapp/modal/part"(action: C.IFluxAction<C.IPart>) {
         this._partModalStave = action.postData;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/part"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/part"(action: C.IFluxAction<void>) {
         this._partModalStave = null;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/social"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/modal/social"(action: C.IFluxAction<void>) {
         this._socialModalVisible = true;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/social"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/social"(action: C.IFluxAction<void>) {
         this._socialModalVisible = false;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/modal/midi"(action: C.IFluxAction<number, void>) {
+    "PUT /webapp/modal/midi"(action: C.IFluxAction<number>) {
         this._midiModalTab = action.postData;
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/modal/midi"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/modal/midi"(action: C.IFluxAction<void>) {
         this._midiModalTab = null;
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/selection"(action: C.IFluxAction<Model[], void>) {
+    "PUT /webapp/selection"(action: C.IFluxAction<Model[]>) {
         this._selection = action.postData;
         this.dangerouslyMarkRendererDirty();
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/selection"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/selection"(action: C.IFluxAction<void>) {
         this._selection = null;
         this.dangerouslyMarkRendererDirty();
         this.emit(C.EventType.Change);
@@ -475,33 +457,33 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "DELETE /webapp/selection/contents" = this._eraseSelection;
 
-    "PATCH /webapp/song"(action: C.IFluxAction<string, void>) {
+    "PATCH /webapp/song"(action: C.IFluxAction<string>) {
         var lines = Collab.patch(action.postData, this.parts[0].body); // XXX: MULTISTAVE
         _.each(lines, line => this.dangerouslyMarkRendererLineDirty(line));
         this._annotate(null, null, null, null, true);
         this.emit(C.EventType.Annotate);
     }
 
-    "PUT /webapp/song/dirty"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/dirty"(action: C.IFluxAction<void>) {
         this.dangerouslyMarkRendererDirty();
         // don"t emit.
     }
 
-    "DELETE /webapp/song/dirty"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/song/dirty"(action: C.IFluxAction<void>) {
         _.defer(() => {
             this.dangerouslyMarkRenderDone();
             // don"t emit.
         });
     }
 
-    "PUT /webapp/song/forceUpdate"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/forceUpdate"(action: C.IFluxAction<void>) {
         this._clear();
         var activeSong = this._session.activeSong;
         this._reparse(activeSong.src);
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/song/hmargin/increase"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/hmargin/increase"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var margins = this.header.defaults.pageLayout.pageMargins[0];
         if (margins.leftMargin < 500) {
@@ -511,7 +493,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /webapp/song/hmargin/decrease"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/hmargin/decrease"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var margins = this.header.defaults.pageLayout.pageMargins[0];
         if (margins.leftMargin < 500) {
@@ -521,7 +503,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /webapp/song/indent/increase"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/indent/increase"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var firstPotentialPrint = this.parts[0].body[0];
         if (firstPotentialPrint.priority === C.Type.Print) {
@@ -533,7 +515,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /webapp/song/indent/decrease"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/indent/decrease"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var firstPotentialPrint = this.parts[0].body[0];
         if (firstPotentialPrint.priority === C.Type.Print) {
@@ -545,17 +527,17 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /webapp/song/lineDirty"(action: C.IFluxAction<string, void>) {
+    "PUT /webapp/song/lineDirty"(action: C.IFluxAction<string>) {
         this._linesToUpdate[action.postData] = true;
         // don"t emit.
     }
 
-    "DELETE /webapp/song/lineDirty"(action: C.IFluxAction<number, void>) {
+    "DELETE /webapp/song/lineDirty"(action: C.IFluxAction<number>) {
         this._linesToUpdate[action.postData] = false;
         // don"t emit.
     }
 
-    "PUT /webapp/song/pageSize"(action: C.IFluxAction<{width: number; height: number;}, void>) {
+    "PUT /webapp/song/pageSize"(action: C.IFluxAction<{width: number; height: number;}>) {
         this.emit(C.EventType.History);
         var pageSize = action.postData;
         this.dangerouslyMarkRendererDirty();
@@ -572,15 +554,17 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     }
 
 
-    "PUT /webapp/song/show" = this["GET /api/v0/song"];
+    "PUT /webapp/song/show"(action: C.IFluxAction<void>) {
+        this._checkActiveSong();
+    }
 
-    "DELETE /webapp/song/show"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/song/show"(action: C.IFluxAction<void>) {
         this._clear();
         this.emit(C.EventType.Change);
         this.emit(C.EventType.ClearHistory);
     }
 
-    "PUT /webapp/song/src"(action: C.IFluxAction<string, void>) {
+    "PUT /webapp/song/src"(action: C.IFluxAction<string>) {
         // XXX: create patches
         if (this._cleanupFn) {
             this._cleanupFn();
@@ -592,21 +576,21 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Annotate);
     }
 
-    "PUT /webapp/song/transpose"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/transpose"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         this._transpose(action.postData);
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/song/undo"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/undo"(action: C.IFluxAction<void>) {
         this._history.undo();
     }
 
-    "PUT /webapp/song/redo"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/redo"(action: C.IFluxAction<void>) {
         this._history.redo();
     }
 
-    "PUT /webapp/staveHeight/increase"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/staveHeight/increase"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var scaling = this._header.defaults.scaling;
         var scale40 = scaling.millimeters/scaling.tenths*40;
@@ -627,7 +611,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this._everythingIsDirty();
     }
 
-    "PUT /webapp/staveHeight/decrease"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/staveHeight/decrease"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         var scaling = this._header.defaults.scaling;
         var scale40 = scaling.millimeters/scaling.tenths*40;
@@ -668,7 +652,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         });
     }
 
-    "PUT /webapp/tool"(action: C.IFluxAction<Tool, void>) {
+    "PUT /webapp/tool"(action: C.IFluxAction<Tool>) {
         if (this._cleanupFn) {
             this._cleanupFn();
         }
@@ -689,7 +673,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Change);
     }
 
-    "DELETE /webapp/tool"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/tool"(action: C.IFluxAction<void>) {
         if (this._cleanupFn) {
             this._cleanupFn();
         }
@@ -697,7 +681,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Change);
     }
 
-    "PUT /webapp/tool/action"(action: C.IFluxAction<C.IPointerAction, void>) {
+    "PUT /webapp/tool/action"(action: C.IFluxAction<C.IPointerAction>) {
         var isPreview = action.description.indexOf("preview") !== -1;
         var isAction = action.description.indexOf("action") !== -1;
         assert(isPreview && !isAction || !isPreview && isAction);
@@ -724,7 +708,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Annotate);
     }
 
-    "DELETE /webapp/tool/preview"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/tool/preview"(action: C.IFluxAction<void>) {
         if (this._cleanupFn) {
             this._cleanupFn();
             this.emit(C.EventType.Annotate);
@@ -733,12 +717,15 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
 
     "PUT /webapp/tool/preview" = this["PUT /webapp/tool/action"];
 
-    "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor, void>) {
-        // Simply move cursor
+    "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor>) {
         this._visualCursorIs(action.postData);
+        if (!this._visualCursor.annotatedObj) {
+            this._annotate(null, null, null, null, true);
+        }
+        this.emit(C.EventType.Annotate);
     }
 
-    "PUT /webapp/visualCursor/step"(action: C.IFluxAction<SongEditorStore.IStepCursorSpec, void>) {
+    "PUT /webapp/visualCursor/step"(action: C.IFluxAction<SongEditorStore.IStepCursorSpec>) {
         this._stepCursor({
             step: action.postData.step,
             loopThroughEnd: action.postData.loopThroughEnd,
@@ -750,13 +737,13 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Annotate);
     }
 
-    "DELETE /webapp/visualCursor"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/visualCursor"(action: C.IFluxAction<void>) {
         this._visualCursor = null;
         this.emit(C.EventType.Change);
         this._annotate(null, null, null, null, true);
     }
 
-    "PUT /webapp/visualCursor/after"(action: C.IFluxAction<string, void>) {
+    "PUT /webapp/visualCursor/after"(action: C.IFluxAction<string>) {
         // Post data can be "a-g", "r", or "dot" (!!)
         if (this._tool.instance(Tool.Null)) {
             return;
@@ -825,7 +812,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    "DELETE /webapp/visualCursor/after"(action: C.IFluxAction<void, void>) {
+    "DELETE /webapp/visualCursor/after"(action: C.IFluxAction<void>) {
         this.emit(C.EventType.History);
         // Remove the item directly before the context.
         for (var h = 0; h < this._parts.length; ++h) {
@@ -882,11 +869,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         }
     }
 
-    "PUT /webapp/visualCursor/before/octave"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/visualCursor/before/octave"(action: C.IFluxAction<void>) {
         // TODO
     }
 
-    "PUT /webapp/instrument"(action: C.IFluxAction<{instrument: C.IInstrument; part: C.IPart}, void>) {
+    "PUT /webapp/instrument"(action: C.IFluxAction<{instrument: C.IInstrument; part: C.IPart}>) {
         var instrument: C.IInstrument = action.postData.instrument;
         var part: C.IPart = action.postData.part;
 
@@ -904,6 +891,37 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
     /////////////
     // PRIVATE //
     /////////////
+
+    private _checkActiveSong() {
+        var activeSong = this._session.activeSong;
+        if (usingLegacyAudio) {
+            _.defer(() => {
+                 this._dispatcher.POST("/api/v0/synth", {
+                     data: this.dragonAudio,
+                     cb: "" + ++PlaybackStore.latestID,
+                     forExport: false
+                 });
+            });
+        }
+        if (activeSong !== this._prevActiveSong) {
+            this.dangerouslyMarkRendererDirty();
+            this._clear();
+            this._prevActiveSong = activeSong;
+            this._reparse(activeSong.src);
+            this._activatePeerRelay(activeSong._id);
+            this.emit(C.EventType.Change);
+            this.emit(C.EventType.Annotate);
+        }
+
+        _.each(this.parts, (part: C.IPart) => {
+            if (part.body) {
+                var instrument: C.IInstrument = part.instrument;
+               this.ensureSoundfontLoaded(instrument.soundfont, /*avoidEvent*/ true);
+            }
+        });
+        this.emit(C.EventType.ClearHistory);
+        this.emit(C.EventType.History);
+    }
 
     private _activatePeerRelay(id: string) {
         if (!global.WebSocket) {
@@ -1011,6 +1029,8 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             // For legacy audio, invalidate the current mp3.
             this.legacyAudioID = -1;
         }
+
+        return result;
     }
 
     private _broadcastPatch(diff: Array<string>, origBars: Array<string>, newBars: Array<string>) {
@@ -1112,7 +1132,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
         this.emit(C.EventType.Change);
     }
 
-    private _handleAction = (action: C.IFluxAction<void, void>) => {
+    private _handleAction = (action: C.IServerAction<void, void>) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
@@ -1197,12 +1217,13 @@ class SongEditorStore extends TSEE implements C.ISongEditor {
             SongEditorStore.PROFILER_ENABLED = true;
         }
 
-        this._annotate(null, null, null, null, true, null, Annotator.AssertionPolicy.NoAssertions);
+        var res = this._annotate(null, null, null, null, true, null, Annotator.AssertionPolicy.NoAssertions);
         this._markLKG();
 
         if (profile) {
             SongEditorStore.PROFILER_ENABLED = origPE;
         }
+        return res;
     }
 
     private _stepCursor(spec: SongEditorStore.IStepCursorSpec) {

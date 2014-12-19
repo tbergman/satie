@@ -37,7 +37,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
     _annotatedSpacing:              number;
     temporary:                      boolean;
     selected:                       boolean;
-    private _displayTimeSignature:  C.ISimpleTimeSignature  = null;
+    _displayTimeSignature:          C.ISimpleTimeSignature; // See prototype.
 
     ////////////////////////////////
     // I.2 TimeSignature (simple) //
@@ -148,9 +148,9 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
 
     printObject:                    boolean;
 
-    ///////////////////
-    // II. Lifecycle //
-    ///////////////////
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: C.MusicXML.Time, annotated: boolean) {
         super(spec, annotated);
@@ -175,7 +175,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
         }
 
         // Time signatures must not be redundant
-        if (ctx.ts && TimeSignatureModel.isEqual(this.ts, ctx.ts)) {
+        if (ctx.ts && ctx.attributes.time !== this && TimeSignatureModel.isEqual(this.ts, ctx.ts)) {
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
         }
@@ -217,5 +217,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
                 ts1.commonRepresentation === ts2.commonRepresentation);
     }
 }
+
+TimeSignatureModel.prototype._displayTimeSignature = null;
 
 export = TimeSignatureModel;

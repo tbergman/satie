@@ -8,33 +8,35 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import assert = require("assert");
+import React                = require("react");
+import TypedReact       	= require("typed-react");
+import assert           	= require("assert");
 
-import Bezier = require("./_bezier");
-import C = require("../stores/contracts");
-import Note = require("./_note");
-import SlurGroupModel = require("../stores/slur");
-import getFontOffset = require("./_getFontOffset");
+import Bezier           	= require("./_bezier");
+import C                	= require("../stores/contracts");
+import Note             	= require("./_note");
+import PureModelViewMixin   = require("./pureModelViewMixin");
+import SlurGroupModel       = require("../stores/slur");
+import getFontOffset    	= require("./_getFontOffset");
 
 var getExtremeLine = Note.getExtremeLine;
 
 class Slur extends TypedReact.Component<Slur.IProps, {}> {
     render() {
-        var x2: number = this.getX2();
-        var x1: number = this.getX1();
-        var y2: number = this.getY2(0);
-        var y1: number = this.getY1(0);
-        var dir: number = this.direction();
+        var x2: number      = this.getX2();
+        var x1: number      = this.getX1();
+        var y2: number      = this.getY2(0);
+        var y1: number      = this.getY1(0);
+        var dir: number     = this.direction();
+        console.log("S>", x1, x2, y1, y2);
 
-        var x2mx1: number = x2 - x1;
-        var x1mx2: number = -x2mx1;
-        var relw: number = 0.08;
-        var y1my2: number = y1 - y2;
-        var absw: number = -dir*0.2080307/Math.max(1, (Math.abs(y1my2)));
+        var x2mx1: number   = x2 - x1;
+        var x1mx2: number   = -x2mx1;
+        var relw: number    = 3.2; // How "curved" it is
+        var y1my2: number   = y1 - y2;
+        var absw: number    = -dir*8.321228/Math.max(1, (Math.abs(y1my2)));
         if ((y1my2 > 0 ? -1 : 1)*dir === 1) {
-            absw *= 2;
+            absw            = absw * 2;
         }
 
         assert(!isNaN(x2));
@@ -68,15 +70,15 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
             y6={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
 
             fill="#000000"
-            strokeWidth={0.03}
+            strokeWidth={1.2}
             stroke="#000000" />
     }
 
     getYOffset() {
         if (this.direction() === -1) {
-            return -0.25;
+            return -10;
         }
-        return 0.25;
+        return 10;
     }
     direction() {
         return this.props.spec.direction;
@@ -91,25 +93,18 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
     getY1(idx: number) {
         return this.props.spec.y -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.lines1, -this.direction) - 3)/4;
+            (getExtremeLine(this.props.spec.lines1, -this.direction) - 3)*10;
     }
     getY2(idx: number) {
         return this.props.spec.y -
             this.getYOffset() -
-            (getExtremeLine(this.props.spec.lines2, -this.direction) - 3)/4;
-    }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
+            (getExtremeLine(this.props.spec.lines2, -this.direction) - 3)*10;
     }
 }
 
 module Slur {
     "use strict";
-    export var Component = TypedReact.createClass(Slur);
+    export var Component = TypedReact.createClass(Slur, [PureModelViewMixin]);
 
     export interface IProps {
         spec: SlurGroupModel;

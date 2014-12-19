@@ -35,6 +35,7 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
     _annotatedSpacing:  number;
     temporary:          boolean;
     selected:           boolean;
+    locked:             boolean;
 
     /* C.MusicXML.KeySignature */
     cancel:             C.MusicXML.Cancel;
@@ -67,12 +68,13 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
     /* C.MusicXML.PrintObject */
     printObject:        boolean;
 
-    /* Lifecycle */
-    constructor(spec: {clef?: C.MusicXML.Clef; x?: number; y?: number}, annotated: boolean) {
+    /* Life-cycle */
+    constructor(spec: {clef?: C.MusicXML.Clef; x?: number; y?: number; locked?: boolean;}, annotated: boolean) {
         super(spec, annotated);
         if (spec.clef) {
             this.clef                               = spec.clef;
         }
+        this.locked                                 = spec.locked === true;
     }
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
@@ -118,11 +120,8 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
 
     /* Static */
     static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
-        // MXFIX
-        var keySignature: C.MusicXML.Key;
-        return ctx.insertPast(new KeySignatureModel({
-            keySignature: keySignature
-        }, true));
+        var keySignature = ctx.prev(c => c.type === C.Type.KeySignature);
+        return ctx.insertPast(new KeySignatureModel(keySignature, true));
     };
 }
 

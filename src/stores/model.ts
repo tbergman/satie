@@ -50,7 +50,7 @@ class Model {
      */
     spacing:            number                  = 0;
 
-    /** Caclculated. The bar, beat of this model */
+    /** Calculated. The bar, beat of this model */
     ctxData:            C.MetreContext          = null;
 
     get isModifier() {
@@ -64,6 +64,7 @@ class Model {
     private _flags:     number                  = 0;
     get inBeam():       boolean     { return this._getFlag(Flags.InBeam); }
     set inBeam(b:       boolean)    {        this._setFlag(Flags.InBeam, b); }
+
 
     get placeholder():  boolean     { return this._getFlag(Flags.Placeholder); }
     set placeholder(b:  boolean)    {        this._setFlag(Flags.Placeholder, b); }
@@ -107,13 +108,13 @@ class Model {
 
     calcBeats(ctx: C.MetreContext)              { return 0; }
 
-    ///////////////////
-    // II. Lifecycle //
-    ///////////////////
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: any, annotated: boolean) {
-        // By only setting attributes in jsonWhitelist, we make bugs in
-        // jsonWhitelist more obvious.
+        // By only setting attributes in jsonWhitelist, we make ommisions in
+        // fields more obvious.
         for (var idx in this.fields) {
             if (spec.hasOwnProperty(this.fields[idx])) {
                 var key = this.fields[idx];
@@ -121,16 +122,17 @@ class Model {
             }
         }
 
-        if (spec._) {
-            spec.key        = spec._[0];
-            spec.flags      = spec._[2];
+        if (spec.key) {
+            this.key        = spec.key;
+            this._flags     = spec._flags;
         }
+
         if (spec.x) {
             this.x          = spec.x;
             this.y          = spec.y;
         }
 
-        spec.annotated      = annotated;
+        this.annotated      = annotated;
     }
 
     modelDidLoad(body: Array<Model>, idx: number) {
@@ -140,15 +142,17 @@ class Model {
     annotate(ctx: Annotator.Context): C.IterationStatus {
         if (!this.inBeam) {
             // Beamed notes are placed by the BeamGroupModel
-            this.x          = ctx.x;
-            this.y          = ctx.y;
-            this.spacing    = 0;
+            this.x              = ctx.x;
+            this.y              = ctx.y;
+            if (!this.isNote || !this.note.temporary) {
+                // Temporary (preview) notes retain their old spacing.
+                this.spacing    = 0;
+            }
         }
-        this.idx            = ctx.idx;
 
-        var status          = this.annotateImpl(ctx);
-
-        this.proposed       = false;
+        this.idx                = ctx.idx;
+        var status              = this.annotateImpl(ctx);
+        this.proposed           = false;
 
         assert(status !== undefined);
         return status;
@@ -166,9 +170,9 @@ class Model {
         throw "No view has been set for " + C.Type[this.type] + ". See Model.setView(...)";
     }
 
-    //
-    // III. Util
-    //
+    //////////////////////
+    // III. Convenience //
+    //////////////////////
 
     toJSON(): {} {
         var json: {} = {
@@ -197,11 +201,11 @@ class Model {
         this._flags = v ? (this._flags | f) : (this._flags & ~f);
     }
 
-    //
-    // IV. Static
-    //
+    ////////////////
+    // IV. Static //
+    ////////////////
 
-    static _sessionId:  string                  = _sessionId();
+    static _sessionId:  string                  = C.generateUUID();
     static _lastKey:    number                  = 0;
 
     /**
@@ -258,18 +262,32 @@ class Model {
 
     static fromJSON(json: any, existingObjects?: { [key: string]: Model } ): Model {
         var spec: any;
-        if (typeof json === "string" || json instanceof String) {
+
+        if (json instanceof Model) {
+            json = C.JSONx.clone(json);
+        } else if (typeof json === "string" || json instanceof String) {
             spec = JSON.parse(<string> json);
         } else {
             spec = json;
         }
-        // _[1] is the type. See toJSON.
-        var model = (existingObjects && existingObjects[spec.key]) || Model.constructorsByType[spec._[1]](spec);
+
+        var _data = spec._;
+        delete spec._;
+        spec.key        = _data[0];
+        var type        = _data[1];
+        spec._flags     = _data[2];
+
+        var model = (existingObjects && existingObjects[spec.key]) || Model.constructorsByType[type](spec);
+        assert(model);
+
         var modelObj: { [key: string]: any } = <any> model;
         assert(model);
         _.each(spec, (value: any, key: string) => {
-            modelObj[key] = value;
+            if (modelObj[key] !== value) {
+                console.warn("Not loading saved key \"" + key + "\" in type " + C.Type[model.type] + ":", value);
+            }
         });
+
         return model;
     }
 
@@ -315,7 +333,7 @@ module Model {
 
             return super.annotate(ctx);
         }
-        retryStatus = C.IterationStatus.RetryCurrent;
+        get retryStatus() { return C.IterationStatus.RetryCurrent; }
     }
 }
 
@@ -326,11 +344,6 @@ enum Flags {
     Annotator       	= 2 << 3,
     Proposed        	= 2 << 4
     // Model-specific  >= 2 << 6
-}
-
-function _sessionId(): string {
-    "use strict";
-    return (Math.random().toString(16) + "000000000").substr(2, 8);
 }
 
 export = Model;

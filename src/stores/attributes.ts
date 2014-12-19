@@ -60,9 +60,9 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     footnote:       C.MusicXML.Footnote;
     level:          C.MusicXML.Level;
 
-    ///////////////////
-    // II. Lifecycle //
-    ///////////////////
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     recordMetreDataImpl(mctx: C.MetreContext) {
         // Note: this is thrown away by BeginModel.

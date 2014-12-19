@@ -36,7 +36,9 @@ class PlaceholderModel extends Model {
 
     get visible()                                       { return false; }
     get xPolicy()                                       { return C.RectifyXPolicy.Invalid; }
-    get fields()                                        { return ["priority"]; }
+    get fields()                                        { return ["priority",
+                                                                  "item" /* For Renderer */,
+                                                                  "musicLine" /* ditto */]; }
     get type():             C.Type                      { return C.Type.Placeholder; }
     get placeholder()                                   { return true; }
     set placeholder(b: boolean) {
@@ -47,11 +49,13 @@ class PlaceholderModel extends Model {
     // I.2 PlaceholderModel //
     //////////////////////////
 
-    priority:               C.Type                      = C.Type.Unknown;
+    _priority:              C.Type;                     // See Object.prototype._priority
+    get priority()                                      { return this._priority; }
+    set priority(c: C.Type)                             { this._priority = c; }
 
-    ///////////////////
-    // II. Lifecycle //
-    ///////////////////
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: {priority: number}, annotated: boolean) {
         super(spec, annotated);
@@ -186,7 +190,7 @@ class PlaceholderModel extends Model {
 
     static fillMissingBeats(ctx: Annotator.Context, extraBeats?: number): C.IterationStatus {
         extraBeats = extraBeats || 0;
-        var rest: {} = { chord: [{ pitch: "r", octave: null, acc: null }] };
+        var rest: {} = { chord: [{ step: "r", octave: null, acc: null }] };
         var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
@@ -195,5 +199,7 @@ class PlaceholderModel extends Model {
         return C.IterationStatus.RetryLine;
     }
 }
+
+PlaceholderModel.prototype._priority = C.Type.Unknown;
 
 export = PlaceholderModel;

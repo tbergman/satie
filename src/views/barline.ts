@@ -9,14 +9,15 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
+import React                = require("react");
+import TypedReact       	= require("typed-react");
 
-import C = require("../stores/contracts");
-import BarlineModel = require("../stores/barline");
-import Rect = require("./_rect");
-import Line = require("./_line");
-import SMuFL = require("../util/SMuFL");
+import C                	= require("../stores/contracts");
+import BarlineModel     	= require("../stores/barline");
+import Rect             	= require("./_rect");
+import Line             	= require("./_line");
+import PureModelViewMixin   = require("./pureModelViewMixin");
+import SMuFL                = require("../util/SMuFL");
 
 class Barline extends TypedReact.Component<Barline.IProps, {}> {
     render(): any {
@@ -73,18 +74,11 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             fill={spec.barStyle.color}
             strokeWidth={defaults.thinBarlineThickness*10} />
     }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: Barline.IProps, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
-    }
 };
 
 module Barline {
     "use strict";
-    export var Component = TypedReact.createClass(Barline);
+    export var Component = TypedReact.createClass(Barline, [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

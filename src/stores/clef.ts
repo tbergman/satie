@@ -38,7 +38,7 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
     isChange:                   boolean;
     isVisible:                  boolean;
     selected:                   boolean;
-    retryStatus                                         = C.IterationStatus.RetryLine;
+    get retryStatus()                                   { return C.IterationStatus.RetryLine; }
     private _displayedClef:     C.MusicXML.ClefComplete;
 
     /* Extensions */
@@ -85,7 +85,7 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Songs must have attributes to put the clef in.
-        if (!ctx.attributes) {
+        if (!(ctx.attributes instanceof AttributesModel)) {
             return ctx.insertPast(new AttributesModel({}, true));
         }
 

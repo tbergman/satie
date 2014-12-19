@@ -6,17 +6,18 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
-import assert = require("assert");
+import React                = require("react");
+import TypedReact           = require("typed-react");
+import _                    = require("lodash");
+import assert               = require("assert");
 
-import Beam = require("./_beam");
-import BeamGroupModel = require("../stores/beamGroup");
-import C = require("../stores/contracts");
-import Duration = require("./duration");
-import DurationModel = require("../stores/duration");
-import Note = require("./_note");
+import Beam                 = require("./_beam");
+import BeamGroupModel       = require("../stores/beamGroup");
+import C                    = require("../stores/contracts");
+import Duration             = require("./duration");
+import DurationModel        = require("../stores/duration");
+import Note                 = require("./_note");
+import PureModelViewMixin   = require("./pureModelViewMixin");
 
 /**
  * React component which draws notes and a beam given a collection
@@ -124,14 +125,6 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
                 y={Ys[0]/* should assert all are equal */} />
             {children}
         </g>;
-    }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: BeamGroup.IProps, nextState: {}) {
-        // I'm not sure if this is actually faster... it's a fairly expensive hash.
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps) + C.JSONx.hash(nextProps.spec.beam);
-        return oldHash !== this._hash;
     }
 };
 

@@ -20,7 +20,7 @@ class NewPageModel extends Model {
     get type()          { return C.Type.NewPage; }
     get xPolicy()       { return C.RectifyXPolicy.Max; }
 
-    /* Lifecycle */
+    /* Life-cycle */
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData    = new C.MetreContext(mctx);
     }

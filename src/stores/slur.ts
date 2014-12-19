@@ -29,20 +29,20 @@ class SlurGroupModel extends Model {
     // I.2 SlurGroupModel
     //
 
-    slur:           number              = null;
-    _beam:          BeamGroupModel      = null;
-    _notes:         DurationModel[]     = null;
-    isEmpty:        boolean             = true;
-    direction:      number              = NaN;
-    lines1:         number[]            = null;
-    lines2:         number[]            = null;
-    width:          number              = NaN;
-    m_x:            number              = NaN;
-    m_y:            number              = NaN;
+    slur:           number;             // See prototype.
+    _beam:          BeamGroupModel      = null; // Cannot be added to fields() with initializer.
+    _notes:         DurationModel[]     = null; // Cannot be added to fields() with initializer.
+    isEmpty:        boolean;            // See prototype.
+    direction:      number;             // See prototype.
+    lines1:         number[];           // See prototype.
+    lines2:         number[];           // See prototype.
+    width:          number;             // See prototype.
+    m_x:            number;             // See prototype.
+    m_y:            number;             // See prototype.
 
-    //
-    // II. Lifecycle
-    //
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (ctx.prev().type === C.Type.Placeholder) {
             this.x          = ctx.prev().x;
@@ -94,5 +94,14 @@ class SlurGroupModel extends Model {
         return C.IterationStatus.Success;
     }
 }
+
+SlurGroupModel.prototype.slur       = null;
+SlurGroupModel.prototype.isEmpty    = true;
+SlurGroupModel.prototype.direction  = NaN;
+SlurGroupModel.prototype.lines1     = null;
+SlurGroupModel.prototype.lines2     = null;
+SlurGroupModel.prototype.width      = NaN;
+SlurGroupModel.prototype.m_x        = NaN;
+SlurGroupModel.prototype.m_y        = NaN;
 
 export = SlurGroupModel;

@@ -17,7 +17,7 @@
         "lodash": "2.4.1",
         "midi": "http://nettek.ca/midi-0.3.0.tgz",
         "node-lessify": "0.0.5",
-        "react": "0.12.1",
+        "react": "0.12.2",
         "react-bootstrap": "0.13.0",
         "react-disqus-thread": "git://github.com/mzabriskie/react-disqus-thread#aa8a1e3995d49f63",
         "react-draggable": "git://github.com/contra/react-draggable#de6580b3956e11",

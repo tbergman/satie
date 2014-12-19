@@ -15,6 +15,7 @@ var    PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMix
 
 import C                    = require("../stores/contracts");
 import Glyph                = require("./_glyph");
+import PureModelViewMixin   = require("./pureModelViewMixin");
 import TimeSignatureModel   = require("../stores/timeSignature");
 
 class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
@@ -75,18 +76,11 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
         }
         return 0;
     }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
-    }
 };
 
 module TimeSignature {
     "use strict";
-    export var Component = TypedReact.createClass(TimeSignature);
+    export var Component = TypedReact.createClass(TimeSignature, [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

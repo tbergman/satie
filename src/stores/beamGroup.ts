@@ -26,20 +26,25 @@ import TimeSignatureModel   = require("./timeSignature");
  * independently, just as any other model would be.
  */
 class BeamGroupModel extends Model {
-    //
-    // I.1 Model
-    //
+    ///////////////
+    // I.1 Model //
+    ///////////////
 
     get type()                          { return C.Type.BeamGroup; }
     get xPolicy()                   	{ return C.RectifyXPolicy.Min; }
-    get fields() { return ["beamCount", "variableBeams", "tuplet", "tupletsTemporary"]; }
+    get fields() { return ["beamCount", "variableBeams"]; }
 
-    //
-    // I.2 BeamGroupModel
-    //
+    ////////////////////////
+    // I.2 BeamGroupModel //
+    ////////////////////////
 
-    get beamCount()                     { return this.beam.length; }
-    set beamCount(l: number)        	{ this.beam.length = l; }
+    get beamCount()                     { return this.beam ? this.beam.length : 0; }
+    set beamCount(l: number) {
+        if (!this.beam) {
+            this.beam = [];
+        }
+        this.beam.length = l;
+    }
 
     /** Pointers to notes in the beam */
     beam:               DurationModel[];
@@ -50,25 +55,30 @@ class BeamGroupModel extends Model {
     /** The beam counts if beams is VARIABLE.  */
     variableBeams:      number[];
 
-    tuplet:             C.ITuplet       = null;
+    tuplet:             C.ITuplet       // See BeamGroupModel.prototype.tuplet.
     tupletsTemporary:   boolean;
 
-    //
-    // II. Lifecycle
-    //
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: any, placeholder: boolean) {
         super(spec, placeholder);
+        if (spec.beam) {
+            this.beam = spec.beam;
+        }
     }
 
     modelDidLoad(body: Array<Model>, idx: number) {
         var beamCount       = this.beamCount;
         var toMark          = beamCount;
+        var gotTuplet       = false;
 
         for (var i = idx; toMark; ++i) {
             assert(body[i]);
             if (body[i].isNote) {
-                body[i].note.tuplet = C.JSONx.clone(this.tuplet);
+                this.tuplet = gotTuplet ? C.JSONx.clone(body[i].note.tuplet) : this.tuplet;
+                gotTuplet   = true;
                 --toMark;
             }
         }
@@ -179,9 +189,9 @@ class BeamGroupModel extends Model {
         return <any> _.map(this.beam, (b, idx) => b.render(options[idx]));
     }
 
-    //
-    // III. Util
-    //
+    ///////////////
+    // III. Util //
+    ///////////////
 
     calcBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
         var sum = 0;
@@ -191,9 +201,9 @@ class BeamGroupModel extends Model {
         return sum;
     }
 
-    //
-    // IV. Static
-    //
+    ////////////////
+    // IV. Static //
+    ////////////////
 
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
         var replaceMode         = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BeamGroup;
@@ -219,5 +229,7 @@ class BeamGroupModel extends Model {
         return avgLine >= 3 ? -1 : 1;
     };
 }
+
+BeamGroupModel.prototype.tuplet = null;
 
 export = BeamGroupModel;

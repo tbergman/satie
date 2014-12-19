@@ -15,7 +15,6 @@ import C                		= require("./contracts");
 import Instruments      		= require("./instruments");
 import Metre            		= require("./metre");
 import Model 		   	        = require("./model");
-import TimeSignatureModelType   = require("./timeSignature");   // Cyclic
 
 var enabled                     = typeof document !== "undefined";
 var usingLegacyAudio    		= !global.AudioContext && enabled;
@@ -35,7 +34,7 @@ enum EventType {
     Load
 }
 
-class PlaybackStore extends TSEE implements C.IPlaybackStore {
+class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     constructor(dispatcher: C.IDispatcher, songEditor?: C.ISongEditor) {
         super();
         this._dispatcher = dispatcher;
@@ -114,11 +113,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
     // FLUX METHODS // 
     //////////////////
 
-    "POST /api/v0/synth"(action: C.IFluxAction<void, void>) {
+    "POST /api/v0/synth"(action: C.IServerAction<void, void>) {
         _legacyAudioReady = false;
         this.emit(EventType.Change);
     }
-    "POST /api/v0/synth DONE"(action: C.IFluxAction<void, PlaybackStore.ISynthCallback>) {
+    "POST /api/v0/synth DONE"(action: C.IServerAction<void, C.ISynthCallback>) {
         var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
         if (action.response.forExport) {
             window.location = <any> url;
@@ -137,7 +136,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this.emit(EventType.Change);
     }
 
-    "PUT /webapp/bpm"(action: C.IFluxAction<number, void>) {
+    "PUT /webapp/bpm"(action: C.IServerAction<number, void>) {
         assert(!isNaN(action.postData));
 
         this._bpm = action.postData;
@@ -148,29 +147,27 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this.emit(EventType.Change);
     }
 
-    "POST /webapp/midiOut"(action: C.IFluxAction<any, void>) { // IFluxAction<number | number[]>
+    "POST /webapp/midiOut"(action: C.IServerAction<any, void>) { // IServerAction<number | number[]>
         if (!this._pendingInstruments) {
             hit(action.postData);
         }
     }
 
-    "PUT /webapp/song/show"(action: C.IFluxAction<void, void>) {
+    "PUT /webapp/song/show"(action: C.IServerAction<void, void>) {
         // Stops the current playback stream when a new song will be shown.
         this._play(false);
     }
     "DELETE /webapp/song/show" = this["PUT /webapp/song/show"].bind(this);
-    "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor, void>) {
-        if (!this._pendingInstruments) {
+
+    "PUT /webapp/visualCursor"(action: C.IServerAction<C.IVisualCursor, void>) {
+        if (!this._pendingInstruments && this._playing && action.postData) {
             this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
         }
     }
 
-    "PUT /webapp/visualCursor/togglePlay"(action: C.IFluxAction<void, void>) {
-        if (action.resource === "togglePlay") {
-            this._play(!this._playing);
-
-            this.emit(EventType.Change);
-        }
+    "PUT /webapp/visualCursor/togglePlay"(action: C.IServerAction<void, void>) {
+        this._play(!this._playing);
+        this.emit(EventType.Change);
     }
 
     static latestID: number = 0;
@@ -229,8 +226,13 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
                         });
                     }
 
-                    if (obj.type === C.Type.TimeSignature) {
-                        ctx.ts = (<TimeSignatureModelType>obj).ts;
+                    switch (obj.type) {
+                        case C.Type.Attributes:
+                            ctx.attributes = obj;
+                            break;
+                        case C.Type.TimeSignature:
+                            ctx.attributes.time = <any> obj;
+                            break;
                     }
 
                     if (foundIdx && obj.isNote) {
@@ -347,7 +349,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         this._getInstrument("acoustic_grand_piano", true);
     }
 
-    private _handleAction = (action: C.IFluxAction<any, any>) => {
+    private _handleAction = (action: C.IServerAction<any, any>) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
@@ -390,15 +392,15 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore {
         return !usingLegacyAudio || this._songEditor.legacyAudioID === PlaybackStore.latestID;
     }
 
-    private _bpm: number = 120;
+    private _bpm: number                                                    = 120;
     private _dispatcher: C.IDispatcher;
-    private _lastChannel: number = -1;
-    private _loadedSoundfonts: { [sfName: string]: boolean } = {};
-    private _pendingInstruments: number = 0;
+    private _lastChannel: number                                			= -1;
+    private _loadedSoundfonts: { [sfName: string]: boolean }    			= {};
+    private _pendingInstruments: number                         			= 0;
     private _playing: boolean;
-    private _remainingActions: Array<any> = [];
+    private _remainingActions: Array<any>                       			= [];
     private _songEditor: C.ISongEditor;
-    private _soundfontToChannel: { [soundfontToChannel: string]: number } = {};
+    private _soundfontToChannel: { [soundfontToChannel: string]: number }   = {};
     private _timeoutId: number;
 }
 
@@ -417,15 +419,6 @@ function hit(note: any, velocity?: number, duration?: any) {
         }
     }
 };
-
-module PlaybackStore {
-    "use strict";
-    export interface ISynthCallback {
-        tmpRef:     string;
-        forExport:  boolean;
-        cb:         string;
-    }
-}
 
 var _legacyAudioReady   = false;
 var audio5js: any       = null;

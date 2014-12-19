@@ -6,12 +6,12 @@
 
 import Model                = require("./model");
 
-import _                	= require("lodash");
-import assert           	= require("assert");
+import _                    = require("lodash");
+import assert               = require("assert");
 
-import Annotator        	= require("./annotator");
-import AttributesModel  	= require("./attributes");
-import BarlineModel     	= require("./barline");
+import Annotator            = require("./annotator");
+import AttributesModel      = require("./attributes");
+import BarlineModel         = require("./barline");
 import BeamGroupModelType   = require("./beamGroup");       // Cyclic
 import C                    = require("./contracts");
 import EndMarkerModel       = require("./endMarker");
@@ -21,15 +21,18 @@ import NewlineModel         = require("./newline");
 import TimeSignatureModel   = require("./timeSignature");
 
 /**
- * A duration is a chord (if chord is set, and pitch is null), a pitch
- * (if pitch is [a-g]), or a rest (if pitch is "r").
+ * A DurationModel represents 0 (for a rest), 1, or more (for a chord) pitches that occur at
+ * the same time in the same part and voice.
  *
- * Unlike MusicXML Notes, the entirity of a chord is held in a DurationModel.
- * 
- * In addition, since the MusicXML Note type is complicated, there is a simplified interface
- * in addition to the standard MusicXML interface.
+ * DurationModel exposes two APIs, one simple, and one full-featured and MusicXML.Note-compliant.
+ * To access the simple API, see DurationModel.chord, and convenience properties such as "rest".
+ * To access the MusicXML-compliant API, see DurationModel._notes.
+ *
+ * Note that MusicXML "chords" do not need to all have the same duration. Ripieno does not support this
+ * (the notes must be in separate parts).
  */
 class DurationModel extends Model implements C.IPitchDuration {
+
     ///////////////
     // I.1 Model //
     ///////////////
@@ -108,8 +111,8 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     set tuplet(t: C.ITuplet) {
-        this._tuplet = t;
-        this._displayTuplet = null;
+        this._tuplet            = t;
+        this._displayTuplet     = null;
     }
 
     get displayTuplet() {
@@ -117,7 +120,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     set displayTuplet(t: C.ITuplet) {
-        this._displayTuplet = t;
+        this._displayTuplet     = t;
     }
 
 
@@ -126,7 +129,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     get temporary(): boolean    { return    this._getFlag(Flags.TEMPORARY); }
-    set temporary(v: boolean)   {          	this._setFlag(Flags.TEMPORARY, v); }
+    set temporary(v: boolean)   {           this._setFlag(Flags.TEMPORARY, v); }
 
     ////////////////////////
     // I.3 Duration Model //
@@ -142,6 +145,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     set extraWidth(w: number) {
+        assert(isFinite(w));
         this._extraWidth = w;
     }
 
@@ -168,7 +172,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayNotation = m;
     }
 
-    getFlag() {
+    get flag() {
         return !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
             DurationModel.countToFlag[this.displayCount];
     }
@@ -209,7 +213,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     /** @deprecated */
     private _displayCount: number;
     /** @deprecated */
-    private _displayDots: number = undefined;
+    private _displayDots: number;
     /** @deprecated */
     private _displayNotation: C.MusicXML.Notations[];
     /** @deprecated */
@@ -273,18 +277,16 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._p_notes     = <any> notes;
     }
 
-    ///////////////////
-    // II. Lifecycle //
-    ///////////////////
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: C.IPitchDuration, annotated: boolean) {
-        super({}, annotated);
-        this.annotated = annotated;
+        super(spec, annotated);
 
+        // TODO: Remove this {
         var self : {[key:string]: any} = <any> this;
-        // TODO: The only properties should be key, _notes and maybe _flags
         var properties                 = [
-            "key", "_flags",
             "count", "dots", "displayCount", "displayDots", "displayNotation", "isRest", "tuplet",
             "displayTuplet", "chord", "_notes"
         ];
@@ -305,6 +307,18 @@ class DurationModel extends Model implements C.IPitchDuration {
                 self[property]  = <any> (<any>spec)[property];
             }
         }
+        // }
+    }
+
+    modelDidLoad(body: Array<Model>, idx: number) {
+        for (var i = 0; i < this.chord.length; ++i) {
+            if (this.chord[i].temporary) {
+                this.chord.splice(i, 1);
+                if (this._p_notes && i < this._p_notes.length) {
+                    this._p_notes.splice(i, 1);
+                }
+            }
+        }
     }
 
     recordMetreDataImpl(mctx: C.MetreContext) {
@@ -312,6 +326,30 @@ class DurationModel extends Model implements C.IPitchDuration {
         if (!mctx.attributes) {
             throw new AttributesModel.AttributesUndefinedException();
         }
+
+        if (!this.chord.length && !this._p_notes.length) {
+            this.isRest = true;
+            assert(this.chord.length);
+        }
+        if (this.chord.length !== this._p_notes.length) {
+            // The _notes setter updates chord, so unless this has just been created,
+            // this branch means that this.chord was modified.
+            // Note: the chord property should be a getter and setter, and should update
+            // it auto-magically. Otherwise, you'll get mismatched properties.
+            var notes: MNote[]  = this._p_notes;
+            for (var i = 0; i < this.chord.length; ++i) {
+                if (!(notes[i] instanceof MNote)) {
+                    notes[i]    = new MNote(this, i, notes[i] || {
+                        pitch:  this.chord[i],
+                        dots:   this.dots,
+                        count:  this.count
+                    }, false /* Don't update parent */);
+                }
+            }
+            notes.length        = this.chord.length;
+            this._p_notes       = <any> notes;
+        }
+
 
         // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
         assert(this._count === this._notes[0].noteType.duration);
@@ -321,8 +359,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(isFinite(this._count));
 
         this._beats = this.calcBeats(mctx, null, true);
-        assert(isFinite(this._beats));
-        assert(this._beats !== null);
+        assert(isFinite(this._beats) && this._beats !== null);
         mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.ts.beats);
         mctx.beat = (mctx.beat + this._beats) % mctx.ts.beats;
 
@@ -330,17 +367,20 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        var status: C.IterationStatus = C.IterationStatus.Success;
         var i: number;
         var j: number;
 
         // A key signature must exist on each line;
         // The key signature ensures a clef exists.
-        if (!ctx.attributes.keySignature) { return KeySignatureModel.createKeySignature(ctx); }
+        if (!ctx.attributes.keySignature) {
+            return KeySignatureModel.createKeySignature(ctx);
+        }
 
         // A time signature must exist on the first line of every page.
         this.impliedTS = ctx.ts;
-        if (!this.impliedTS) { return TimeSignatureModel.createTS(ctx); }
+        if (!this.impliedTS) {
+            return TimeSignatureModel.createTS(ctx);
+        }
 
         assert(this._beats !== null, "Unknown beat count");
 
@@ -384,11 +424,12 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
 
                 // Check rhythmic spelling
-                status = Metre.rhythmicSpellcheck(ctx);
+                var status = Metre.rhythmicSpellcheck(ctx);
                 if (status !== C.IterationStatus.Success) { return status; }
             }
 
             // All notes, chords, and rests throughout a line on a given part must have the same scale.
+            assert(isFinite(this._beats) && this._beats !== null);
             if (ctx.smallest > this._beats) {
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
@@ -400,9 +441,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
             // The width of a line must not exceed that specified by the page layout.
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
-                status = NewlineModel.createNewline(ctx);
+                return NewlineModel.createNewline(ctx);
             }
-            if (status !== C.IterationStatus.Success) { return status; }
         }
 
         // Beams must follow the beam patterns
@@ -434,19 +474,20 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         // The document must end with a marker.
         if (!ctx.next()) {
-            status = ctx.insertFuture(new EndMarkerModel({endMarker: true}, true));
+            ctx.insertFuture(new EndMarkerModel({endMarker: true}, true));
         }
-        if (status !== C.IterationStatus.Success) { return status; }
 
         // Middle note directions are set by surrounding notes.
         if (DurationModel.getAverageLine(this, ctx) === 3) {
+            this.forceMiddleNoteDirection = this.calcMiddleNoteDirection(ctx);
+        } else {
             this.forceMiddleNoteDirection = NaN;
-            status = this.decideMiddleLineStemDirection(ctx);
         }
-        if (status !== C.IterationStatus.Success) { return status; }
 
         // Copy information the view needs from the context.
         this.lines = DurationModel.getLines(this, ctx);
+        assert(this.lines);
+        assert(_.forEach(this.lines, l => isFinite(l)));
 
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
@@ -487,7 +528,9 @@ class DurationModel extends Model implements C.IPitchDuration {
     ///////////////
 
     getWidth(ctx: Annotator.Context) {
-        return 22.8 + (this.extraWidth || 0) + (this._displayedAccidentals ? 9.6 : 0);
+        var width = 22.8 + (this.extraWidth || 0) + (this._displayedAccidentals ? 9.6 : 0);
+        assert(isFinite(width));
+        return width;
     }
 
     calcBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
@@ -548,7 +591,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return !rebeamable;
     }
 
-    decideMiddleLineStemDirection(ctx: Annotator.Context): C.IterationStatus {
+    calcMiddleNoteDirection(ctx: Annotator.Context) {
         var prevLine: number = ctx.prev() && ctx.prev().isNote ?
                 DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
         var nextLine: number = ctx.next() && ctx.next().isNote ?
@@ -588,9 +631,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
         }
 
-        this.forceMiddleNoteDirection = (check === undefined || check >= 3) ? -1 : 1;
-
-        return C.IterationStatus.Success;
+        return (check === undefined || check >= 3) ? -1 : 1;
     }
 
     private getDisplayedAccidentals(ctx: Annotator.Context) {
@@ -699,9 +740,9 @@ class DurationModel extends Model implements C.IPitchDuration {
     static BEAMDATA: Array<DurationModel>;
 
     static clefOffsets: { [key: string]: number } = {
-        g: -3.5,
-        f: 2.5,
-        c: -0.5
+        G: -3.5,
+        F: 2.5,
+        C: -0.5
     };
 
     static chromaticScale: { [key: string]: number } = {
@@ -819,6 +860,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                     DurationModel.pitchOffsets[note.chord[i].step]);
             }
         }
+        for (var i = 0; i < ret.length; ++i) {
+            assert(!isNaN(ret[i]));
+        }
         return ret;
     };
 
@@ -864,7 +908,7 @@ class MNote implements C.MusicXML.NoteComplete {
     _parent: DurationModel;
     _idx : number;
 
-    constructor(parent: DurationModel, idx: number, note: C.MusicXML.Note) {
+    constructor(parent: DurationModel, idx: number, note: C.MusicXML.Note, updateParent: boolean = true) {
         var self : {[key:string]: any} = <any> this;
 
         /* Link to parent */
@@ -872,14 +916,21 @@ class MNote implements C.MusicXML.NoteComplete {
         this._idx               =   idx;
 
         /* Properties owned by parent */
-        parent.chord[idx]       =   note.pitch;
-        parent.dots       		=  (note.dots || []).length;
-        parent.isRest     		= !!note.rest || parent.isRest;
-        parent.count      		=   note.noteType ? note.noteType.duration : (parent.count || 4);
+        if (updateParent) {
+            parent.chord[idx]   =   note.pitch;
+            parent.dots         =  (note.dots || []).length;
+            parent.isRest       = !!note.rest || parent.isRest;
+            parent.count        =   note.noteType ? note.noteType.duration : (parent.count || 4);
+
+            parent.tuplet       =   note.timeModification ? {
+                num:                note.timeModification.normalNotes.count,
+                den:                note.timeModification.actualNotes.count
+            }                           : parent.tuplet;
+        }
 
         /* Properties owned by MNote */
         var properties          = [
-            "unpitched", "noteheadText", "timeModification", "accidental", "instrument",
+            "unpitched", "noteheadText", "accidental", "instrument",
             "attack", "endDynamics", "lyrics", "notations", "stem", "cue", "ties", "dynamics", "duration",
             "play", "staff", "grace", "notehead", "release", "beams", "voice", "footnote", "level",
             "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle", "fontSize",
@@ -913,6 +964,9 @@ class MNote implements C.MusicXML.NoteComplete {
         }
         if (this.noteType) {
             clone["noteType"]           = this.noteType;
+        }
+        if (this.timeModification) {
+            clone["timeModification"]   = this.timeModification;
         }
 
         /* Properties owned by MNote */
@@ -973,13 +1027,35 @@ class MNote implements C.MusicXML.NoteComplete {
     }
 
     set noteType(type: C.MusicXML.Type) {
+        // TODO: grace, cue
         this._parent.count = type.duration;
+    }
+
+    get timeModification(): C.MusicXML.TimeModification {
+        return this._parent.tuplet ? {
+            normalNotes: {
+                count:      this._parent.tuplet.num
+            },
+            actualNotes: {
+                count:      this._parent.tuplet.den
+            },
+            normalDots:     [],
+            normalType:     "eighth"    // MXFIX
+        } : null;
+    }
+
+    set timeModification(tm: C.MusicXML.TimeModification) {
+        // TODO: normalDots
+        // TODO: normalType
+        this._parent.tuplet = {
+            num: tm.normalNotes.count,
+            den: tm.actualNotes.count
+        };
     }
 
     /* C.MusicXML.Note > Extended */
     unpitched:          C.MusicXML.Unpitched;
     noteheadText:       C.MusicXML.NoteheadText;
-    timeModification:   C.MusicXML.TimeModification;
     accidental:         C.MusicXML.Accidental;
     instrument:         C.MusicXML.Instrument;
     attack:             number;
@@ -988,7 +1064,7 @@ class MNote implements C.MusicXML.NoteComplete {
     notations:          C.MusicXML.Notations[];
     stem:               C.MusicXML.Stem;
     cue:                C.MusicXML.Cue;
-    duration:           number;                     // Currently ignored!
+    duration:           number;                     // Currently ignored! We just use the note appearance for timing!
     ties:               C.MusicXML.Tie[];
     dynamics:           number;
     play:               C.MusicXML.Play;

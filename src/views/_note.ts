@@ -11,21 +11,21 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
-import assert = require("assert");
-var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+import React            = require("react");
+import TypedReact       = require("typed-react");
+import _                = require("lodash");
+import assert           = require("assert");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Accidental = require("./_accidental");
-import Dot = require("./_dot");
-import Flag = require("./_flag");
-import LedgerLine = require("./_ledgerLine");
-import NoteHead = require("./_noteHead");
-import NoteNotation = require("./_noteNotation");
-import NoteStem = require("./_noteStem");
-import SlurType = require("./slur"); // Recursive.
-import SlurModel = require("../stores/slur");
+import Accidental       = require("./_accidental");
+import Dot              = require("./_dot");
+import Flag             = require("./_flag");
+import LedgerLine       = require("./_ledgerLine");
+import NoteHead         = require("./_noteHead");
+import NoteNotation     = require("./_noteNotation");
+import NoteStem         = require("./_noteStem");
+import SlurType         = require("./slur");            // Cyclic.
+import SlurModel        = require("../stores/slur");
 
 class Note extends TypedReact.Component<Note.IProps, {}> {
     render() {
@@ -39,6 +39,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             linesObj[lines[i]] = true;
         }
         for (i = 0; i < lines.length; ++i) {
+            assert (!isNaN(lines[i]));
             if (linesObj[lines[i] - 0.5]) {
                 var x = 0.5;
                 for (var j = lines[i] - 1; linesObj[j]; j -= 0.5) {
@@ -163,13 +164,11 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             return this.props.stemHeight;
         }
 
-        var heightFromCount = Math.max(0, (Math.log(this.props.heightDeterminingCount) / Math.log(2)) - 4)*10 / 2;
-
         var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 10;
-        var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
-        var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes + heightFromCount;
+        var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes;
+        var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes;
 
-        var start = this.getHeightDeterminingLine();
+        var start = this.getHeightDeterminingLine()*10;
         var idealExtreme = start + this.direction()*idealStemHeight;
 
         if (idealExtreme >= 65) {
@@ -270,6 +269,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
     tie() {
         var Slur: typeof SlurType = require("./slur"); // Recursive.
+        console.log("@", this.props.tieTo);
         if (!this.props.tieTo) {
             return null;
         }
@@ -279,11 +279,11 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             key={0}
             spec={<SlurModel>{
                 direction: -this.direction(),
-                x: this.props.x + fullWidth*5 + 6,
+                x: this.props.x + fullWidth/8 + 6,
                 y: this.props.y,
                 lines1: [this.getStartingLine()],
                 lines2: [this.getStartingLine()],
-                width: fullWidth*30}} />;
+                width: fullWidth*0.75}} />;
     }
 };
 
@@ -314,7 +314,6 @@ module Note {
         idx?: number;
         flag?: string;
         hasStem?: boolean;
-        heightDeterminingCount?: number;
         key?: string;
         line?: any;
         notehead?: string;

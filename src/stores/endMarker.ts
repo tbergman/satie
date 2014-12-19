@@ -19,12 +19,16 @@ import Metre                = require("./metre");
  * positioning and other logic. It is not rendered.
  */
 class EndMarkerModel extends Model {
-    /* Model */
+    //////////////
+    // I. Model //
+    //////////////
     get visible()           { return false; }
     get type()              { return C.Type.EndMarker; }
     get xPolicy()           { return C.RectifyXPolicy.Max; }
 
-    /* Lifecycle */
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,

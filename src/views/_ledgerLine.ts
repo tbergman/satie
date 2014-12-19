@@ -22,9 +22,9 @@ class LedgerLine extends TypedReact.Component<LedgerLine.IProps, {}> {
         var xOffset = (east - west)*10;
         return <!Line.Component
             x1                          = {this.props.x - 3.2}
-            x2						     ={this.props.x + xOffset + 3.2}
-            y1						     ={this.props.y - (this.props.line - 3)*10}
-            y2						     ={this.props.y - (this.props.line - 3)*10}
+            x2                          = {this.props.x + xOffset - 0.2}
+            y1                          = {this.props.y - (this.props.line - 3)*10}
+            y2                          = {this.props.y - (this.props.line - 3)*10}
             victoriaXStrokeWidthFactor  = {0}
             stroke                      = {"#000000"}
             strokeWidth                 = {2.2} />

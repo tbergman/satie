@@ -160,7 +160,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
             var offset = this._getX2() - this._getX1();
             var y = (this._getY1(1, this.props.beams - 1) +
                         this._getY2(1, this.props.beams - 1))/2 -
-                    (1 + 2*this.props.beams)*this.direction() + 13;
+                    (4 + 8*this.props.beams)*this.direction() + 5.2;
 
             // XXX: all tuplets are drawn as triplets.
             return <!Glyph.Component

@@ -20,21 +20,32 @@ import PrintModel       = require("./print");
  * piano part for everything but the first line of each page. See also begin.ts.
  */
 class NewlineModel extends Model {
-    /* Model */
+
+    ///////////////
+    // I.1 Model //
+    ///////////////
+
     get type()          { return C.Type.NewLine; }
     get xPolicy()       { return C.RectifyXPolicy.Max; }
 
-    /* NewlineModel */
+    //////////////////////
+    // I.2 NewlineModel //
+    //////////////////////
+
     extraWidth:         number;
     braceY:             number;
     braceY2:            number;
     lineSpacing:        number;
     width:              number;
 
-    /* Lifecycle */
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (ctx.prev().priority !== C.Type.Print) {
             return ctx.insertPast(new PrintModel({}, true));
@@ -73,73 +84,73 @@ class NewlineModel extends Model {
         }
 
         // Copy information from the context that the view needs.
-        this.lineSpacing = ctx.calcLineSpacing();
-        this.braceY = this.y;
-        this.braceY2 = this.y + C.renderUtil.staveSeperation;
+        this.lineSpacing        = ctx.calcLineSpacing();
+        this.braceY             = this.y;
+        this.braceY2            = this.y + C.renderUtil.staveSeperation;
 
-        ctx.lines[ctx.line].y = ctx.y;
-        ctx.lines[ctx.line].x = ctx.x;
+        ctx.lines[ctx.line].y   = ctx.y;
+        ctx.lines[ctx.line].x   = ctx.x;
 
         /////////////////////////////////////////////////////////////
-        var print = ctx.print;
+        var print               = ctx.print;
 
-        var systemMargins = print.systemLayout.systemMargins;
-        var pageMargins = print.pageMarginsFor(ctx.page);
-        var pageLayout = print.pageLayout;
+        var systemMargins       = print.systemLayout.systemMargins;
+        var pageMargins         = print.pageMarginsFor(ctx.page);
+        var pageLayout          = print.pageLayout;
 
-        ctx.fontSize = ctx.calcFontSize();
-        ctx.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
-        ctx.maxY = pageLayout.pageHeight - pageMargins.topMargin;
-        ctx.x = systemMargins.leftMargin + pageMargins.leftMargin;
-        ctx.y += ctx.calcLineSpacing(print);
+        ctx.fontSize            = ctx.calcFontSize();
+        ctx.maxX                = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
+        ctx.maxY                = pageLayout.pageHeight - pageMargins.topMargin;
+        ctx.x                   = systemMargins.leftMargin + pageMargins.leftMargin;
+        ctx.y                   = ctx.y + ctx.calcLineSpacing(print);
 
-        ++ctx.line;
+        ctx.line                = ctx.line + 1;
         /////////////////////////////////////////////////////////////
 
-        ctx.smallest = 10000;
+        ctx.smallest            = 10000;
 
-        this.x = ctx.x;
-        this.width = ctx.maxX - ctx.x;
+        this.x                  = ctx.x;
+        this.width              = ctx.maxX - ctx.x;
 
         /*
          * 8 is the padding between beginning of part and the clef.
          * This value should also be changed in BeginModel.
          */
-        ctx.x += 8;
+        ctx.x                   = ctx.x + 8;
 
         var lattributes: C.MusicXML.Attributes = new AttributesModel({
-            time: ctx.attributes.time
+            time:               ctx.attributes.time
         }, true);
         ctx.attributes = null;
 
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
-                accidentalsByStave: C.JSONx.clone(ctx.accidentalsByStave),
-                attributes: lattributes,
-                bar: null,
-                barKeys: null,
-                barlineX: null,
-                beat: null,
-                keySignature: null,
-                line: ctx.line,
-                pageLines: null,
-                pageStarts: null,
-                prevClefByStave: {},
-                partIdx: ctx.currStaveIdx,
-                x: null,
-                y: null
+                accidentalsByStave:     C.JSONx.clone(ctx.accidentalsByStave),
+                attributes:             lattributes,
+                bar:                    null,
+                barKeys:                null,
+                barlineX:               null,
+                beat:                   null,
+                keySignature:           null,
+                line:                   ctx.line,
+                pageLines:              null,
+                pageStarts:             null,
+                prevClefByStave:        {},
+                partIdx:                ctx.currStaveIdx,
+                x:                      null,
+                y:						null
             };
         }
 
-        ctx.lines[ctx.line].accidentalsByStave = [];
-        ctx.lines[ctx.line].bar = ctx.bar;
-        ctx.lines[ctx.line].barlineX = [];
-        ctx.lines[ctx.line].barKeys = C.JSONx.clone(ctx.barKeys);
-        ctx.lines[ctx.line].beat = 0;
-        ctx.lines[ctx.line].x = ctx.x;
-        ctx.lines[ctx.line].y = ctx.y;
-        ctx.lines[ctx.line].pageLines = ctx.pageLines;
-        ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
+        ctx.lines[ctx.line].accidentalsByStave  = [];
+        ctx.lines[ctx.line].bar                 = ctx.bar;
+        ctx.lines[ctx.line].barlineX            = [];
+        ctx.lines[ctx.line].barKeys             = C.JSONx.clone(ctx.barKeys);
+        ctx.lines[ctx.line].beat                = 0;
+        ctx.lines[ctx.line].x                   = ctx.x;
+        ctx.lines[ctx.line].y					= ctx.y;
+        ctx.lines[ctx.line].pageLines           = ctx.pageLines;
+        ctx.lines[ctx.line].pageStarts          = ctx.pageStarts;
 
         if (ctx.songEditor) {
             ctx.songEditor.dangerouslyTakeSnapshot(ctx);
@@ -148,7 +159,9 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    /* Convienience */
+    //////////////////////
+    // III. Convenience //
+    //////////////////////
 
     /**
      * Spaces things out to fill the entire page width, while maintaining
@@ -236,6 +249,10 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
+    ////////////////
+    // IV. Static //
+    ////////////////
+
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
         if (ctx.songEditor) {
             ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line + 1);
@@ -269,8 +286,6 @@ class NewlineModel extends Model {
 
         return C.IterationStatus.LineCreated;
     };
-
-    /* Static */
 
     /**
      * Given an incomplete line ending at current index, spreads out the line
@@ -331,6 +346,9 @@ class NewlineModel extends Model {
             var offset = 0;
             if (body[i].type === C.Type.TimeSignature) {
                 offset += 0.7/4;
+            }
+            if (body[i].isNote && body[i].note.temporary) {
+                continue;
             }
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
                 (bbox[0] + bbox[3]) / 8 - toCenter[j].x;

@@ -20,9 +20,10 @@ import TimeSignatureModel   = require("./timeSignature");
  * The model for single and double barlines.
  */
 class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
-    //
-    // I.1 Model
-    //
+
+    ///////////////
+    // I.1 Model //
+    ///////////////
 
     get type()                                      { return C.Type.Barline; }
     get xPolicy()                                   { return C.RectifyXPolicy.Max; }
@@ -46,22 +47,22 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ];
     }
 
-    //
-    // I.2 Collab and Change Tracking
-    //
+    ///////////////////////////////////////////
+    // I.2 Collaboration and Change Tracking //
+    ///////////////////////////////////////////
 
-    __history__:                string              = "";
-    __lkg__:                    string              = "";
-    __revision__:               string              = BarlineModel._sessionId + "-0";
+    __history__:                string;             // See also BarlineModel.prototype.__history__.
+    __lkg__:                    string              // See also BarlineModel.prototype.__lkg__.
+    __revision__:               string              // See also BarlineModel.prototype.__revision__.
     get revision()                                  { return this.__revision__; }
     set revision(r: string)                         { this.__revision__ = r; }
     incrRevision() {
         return this.revision                        = Model._sessionId + "-" + ++BarlineModel._lastRev;
     }
 
-    //
-    // I.3 Ripieno Internal and annotated
-    //
+    ////////////////////////////////////////
+    // I.3 Ripieno Internal and annotated //
+    ////////////////////////////////////////
 
     annotatedAccidentalSpacing: number;
     height:                     number;
@@ -70,9 +71,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     temporary:                  boolean;
     yOffset:                    number;
 
-    //
-    // I.4 C.MusicXML.Barline
-    //
+    ////////////////////////////
+    // I.4 C.MusicXML.Barline //
+    ////////////////////////////
 
     segno:                      C.MusicXML.Segno;
     coda:                       C.MusicXML.Coda;
@@ -87,23 +88,20 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     fermatas:                   C.MusicXML.Fermata[];
     segnoAttrib:                string;
     divisions:                  string;
-    barStyle:                   C.MusicXML.BarStyle         = {
-        color:                                                  "#000000",
-        data:                                                   C.MusicXML.BarStyleType.Regular
-    }
+    barStyle:                   C.MusicXML.BarStyle         // See also BarlineModel.prototype.barStyle
     ending:                     C.MusicXML.Ending;
     repeat: 					C.MusicXML.Repeat;
 
-    //
-    // I.5 C.MusicXML.Editorial
-    //
+    //////////////////////////////
+    // I.5 C.MusicXML.Editorial //
+    //////////////////////////////
 
     footnote:                   C.MusicXML.Footnote;
     level:                      C.MusicXML.Level;
 
-    //
-    // II. Lifecycle
-    //
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
 
     constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean) {
         super(spec, annotated);
@@ -236,9 +234,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return C.IterationStatus.Success;
     }
 
-    //
-    // III. Util
-    //
+    //////////////////////
+    // III. Convenience //
+    //////////////////////
 
     markLKG(currIdx: number, body: Model[]) {
         // See songEditor.ts
@@ -263,9 +261,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return history.reverse().join("\n") + "\n";
     }
 
-    //
-    // IV. Static
-    //
+    /////////////////
+    // IV. Statics //
+    /////////////////
 
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
@@ -307,6 +305,18 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     };
 
     private static _lastRev = 0;
+}
+
+BarlineModel.prototype.__history__ = "";
+BarlineModel.prototype.__lkg__ = "";
+BarlineModel.prototype.__revision__ = BarlineModel._sessionId + "-0";
+BarlineModel.prototype.barStyle = {
+    color:                                                  "#000000",
+    data:                                                   C.MusicXML.BarStyleType.Regular
+};
+
+if ("production" !== process.env.NODE_ENV) {
+    Object.freeze(BarlineModel.prototype.barStyle);
 }
 
 export = BarlineModel;

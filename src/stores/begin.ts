@@ -13,18 +13,28 @@ import Annotator    = require("./annotator");
 import PrintModel   = require("./print");
 
 class BeginModel extends Model {
-    /* Model */
+
+    ///////////////
+    // I.1 Model //
+    ///////////////
+
     get type()      { return C.Type.Begin; }
     get xPolicy()   { return C.RectifyXPolicy.Min; }
 
-    /* BeginModel */
+    ////////////////////
+    // I.2 BeginModel //
+    ////////////////////
+
     part:           C.IPart;
     noMargin:       boolean;
     braceY:         number;
     braceY2:        number;
     width:          number;
 
-    /* Lifecycle */
+    ////////////////////
+    // II. Life-cycle //
+    ////////////////////
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData            = new C.MetreContext(mctx);
     }
@@ -86,7 +96,11 @@ class BeginModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    /* Static */
+
+    ////////////////
+    // IV. Static //
+    ////////////////
+
     static createBegin = (ctx: Annotator.Context) => {
         return ctx.insertPast(new BeginModel({source: true}, true));
     };

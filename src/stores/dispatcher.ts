@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file Dispatcher based on the Flux TodoMVC Tutorial.
  * http://facebook.github.io/react/docs/flux-todo-list.html
  * 
@@ -157,7 +157,7 @@ class Dispatcher implements C.IDispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData, Response>) {
+    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData>) {
         if (FLUX_DEBUG) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
@@ -166,12 +166,38 @@ class Dispatcher implements C.IDispatcher {
         }
 
         if (global.localStorage && localStorage["superCowPowers"]) {
-            if (this._events.length > 6000) {
-                this._events = this._events.substr(this._events.length - 6000);
+            if (this._events.length > 12000) {
+                this._events = this._events.substr(this._events.length - 12000);
             }
-            this._events += action.description + " " + JSON.stringify(action.resource ? " " + action.resource : "") + " " +
-                JSON.stringify(action.query ? " " + action.query : "") + " " +
-                JSON.stringify(action.postData) + "\n";
+            var done = action.description.indexOf(" DONE") !== -1;
+            var errord = action.description.indexOf(" ERROR") !== -1;
+            this._events += action.description.replace(" DONE", "").replace(" ERROR", "");
+            if (action.resource) {
+                this._events += "/_" + action.resource;
+            }
+            if (action.query) {
+                this._events += "?" + action.query;
+            }
+            if (done) {
+                this._events += " ✓";
+            }
+            if (errord) {
+                this._events += " ✗";
+            }
+            if (action.postData) {
+                var data = JSON.stringify(action.postData, null, 2);
+                if (data.length > 400) {
+                    this._events += "(" + data.length + " characters omitted…)";
+                } else {
+                    var lines = data.split("\n");
+                    if (lines.length > 1) {
+                        this._events += "(" + lines.map((v, i) => (i ? "  " : "") + v).join("\n") + ")";
+                    } else if (lines.length === 1) {
+                        this._events += "(" + lines[0] + ")";
+                    }
+                }
+            }
+            this._events += "\n";
         }
 
         if (this._inAction && !action.nested) {

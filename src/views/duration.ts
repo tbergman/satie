@@ -6,16 +6,17 @@
 
 /* tslint:disable */
 
-import TypedReact = require("typed-react");
-import React = require("react");
-import _ = require("lodash");
-import assert = require("assert");
+import React                = require("react");
+import TypedReact           = require("typed-react");
+import _                    = require("lodash");
+import assert               = require("assert");
 
-import C = require("../stores/contracts");
-import DurationModel = require("../stores/duration");
-import Note = require("./_note");
-import NoteNotation = require("./_noteNotation");
-import Rest = require("./_rest");
+import C                    = require("../stores/contracts");
+import DurationModel        = require("../stores/duration");
+import Note                 = require("./_note");
+import NoteNotation         = require("./_noteNotation");
+import PureModelViewMixin   = require("./pureModelViewMixin");
+import Rest                 = require("./_rest");
 
 /**
  * This is a pseudo-component to maintain compatibility with
@@ -68,7 +69,6 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     accStrokes={spec.accStrokes}
                     direction={this.props.direction || spec.direction}
                     dotted={spec.displayDots}
-                    heightDeterminingCount={spec.count}
                     flag={spec.flag}
                     hasStem={spec.hasStem}
                     isNote={true}
@@ -96,17 +96,10 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
             return note;
         }
     }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
-    }
 }
 
 module Duration {
-    export var Component = TypedReact.createClass(Duration);
+    export var Component = TypedReact.createClass(Duration, [PureModelViewMixin]);
     export interface IProps {
         key: number;
         spec: DurationModel;

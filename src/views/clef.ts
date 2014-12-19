@@ -8,14 +8,15 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import assert = require("assert");
+import React                = require("react");
+import TypedReact           = require("typed-react");
+import assert               = require("assert");
 
-import C = require("../stores/contracts");
-import ClefModel = require("../stores/clef");
-import ClefToolType = require("../stores/clefTool"); // Potentially recursive. For types only.
-import Glyph = require("./_glyph");
+import C                    = require("../stores/contracts");
+import ClefModel            = require("../stores/clef");
+import ClefToolType         = require("../stores/clefTool");    // Cyclic.
+import Glyph                = require("./_glyph");
+import PureModelViewMixin   = require("./pureModelViewMixin");
 
 class Clef extends TypedReact.Component<Clef.IProps, {}> {
     render(): any {
@@ -53,18 +54,11 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
     line(): number {
         return this.props.spec.displayedClef.line;
     }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
-    }
 };
 
 module Clef {
     "use strict";
-    export var Component = TypedReact.createClass(Clef);
+    export var Component = TypedReact.createClass(Clef, [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

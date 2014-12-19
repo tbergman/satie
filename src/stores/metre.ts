@@ -285,7 +285,7 @@ export function subtract(durr1: any, beats: number,
 
     var tsName = getTSString(ctx.ts);
     var replaceWith: Array<C.IDuration> = [];
-    var durr1Beats: number = isNaN(<any>durr1) ? durr1.getBeats(ctx) : <number> durr1;
+    var durr1Beats: number = isNaN(<any>durr1) ? calcBeats2(durr1, ctx) : <number> durr1;
     var beatsToFill = durr1Beats - beats;
     var bp = beamingPatterns[tsName];
     var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.ts.beats;

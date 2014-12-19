@@ -8,13 +8,14 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
+import React                = require("react");
+import TypedReact       	= require("typed-react");
+import _                	= require("lodash");
 
-import Accidental = require("./_accidental");
-import C = require("../stores/contracts");
-import KeySignatureModel = require("../stores/keySignature");
+import Accidental       	= require("./_accidental");
+import C                	= require("../stores/contracts");
+import PureModelViewMixin   = require("./pureModelViewMixin");
+import KeySignatureModel    = require("../stores/keySignature");
 
 class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
     render() {
@@ -47,13 +48,6 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
                 accidental: "accidentalFlat"
             }));
         }
-    }
-
-    _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
-        var oldHash = this._hash;
-        this._hash = C.JSONx.hash(nextProps);
-        return oldHash !== this._hash;
     }
 };
 
@@ -93,7 +87,7 @@ var flats: { [key: string]: Array<number> } = {
 
 module KeySignature {
     "use strict";
-    export var Component = TypedReact.createClass(KeySignature);
+    export var Component = TypedReact.createClass(KeySignature, [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

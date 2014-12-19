@@ -20,6 +20,7 @@ import Annotator        = require("../stores/annotator");
 import C                = require("../stores/contracts");
 import Header           = require("../views/_header");
 import Model            = require("../stores/model");
+import PlaceholderModel = require("../stores/placeholder");
 import Tool             = require("../stores/tool");
 import Rect             = require("../views/_rect");
 import Line             = require("../views/_line");
@@ -493,42 +494,17 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                             mouse: mouse,
                             line: dynLine,
                             idx: j,
-                            partIdx: info.partIdx,
-                            musicLine: info.musicLine,
-                            ctxData: item.ctxData,
-                            visualIdx: info.visualIdx,
-                            obj: new Model({
-                                placeholder: true,
-                                idx: j,
-                                item: item,
-                                musicLine: info.musicLine,
-                                annotated: true,
-                                proposed: false,
-                                fontSize: 0,
-                                _key: null,
-                                x: () => NaN,
-                                y: () => NaN,
-                                setX: null,
-                                setY: null,
-                                _x: NaN,
-                                _y: NaN,
-                                ctxData: null,
-                                endMarker: false,
-                                intersects: [],
-                                inBeam: false,
-                                isNote: false,
-                                isRest: false,
-                                selected: false,
-                                type: null,
-                                note: null,
-                                annotate: null,
-                                _generateKey: null,
-                                key: null,
-                                annotateImpl: null,
-                                visible: () => false,
-                                render: null
+                            partIdx:        info.partIdx,
+                            musicLine:      info.musicLine,
+                            ctxData:        item.ctxData,
+                            visualIdx:      info.visualIdx,
+                            obj: new PlaceholderModel({
+                                priority:   C.Type.Unknown,
+                                item:       item,
+                                musicLine:  info.musicLine,
                             }, true)
                         };
+                        _pointerData.obj.idx = j;
                         return _pointerData;
                     }
                 }
@@ -738,7 +714,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
             });
             var rect = this.state.selectionRect;
             var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
-            if (area > 1 && this.props.tool) {
+            if (area > 1 && !this.props.tool.instance(Tool.Null)) {
                 this.props.dispatcher.DELETE("/webapp/tool");
             }
             return;
@@ -829,7 +805,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
             case 32: // space
                 event.preventDefault(); // don't navigate backwards
-                this.props.dispatcher.PUT("/webapp/visualCursor/_togglePlay", null);
+                this.props.dispatcher.PUT("/webapp/visualCursor/togglePlay", null);
                 break;
             case 27: // escape
                 this.props.dispatcher.PUT("/webapp/tool", null);
