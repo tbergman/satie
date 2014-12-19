@@ -622,9 +622,8 @@ export function cssSizeToTenths(scaling40: number, css: string) {
 }
 
 /**
- *
  * Converts a length in tenths of a stave length to mm.
- *
+ * 
  * @param scaling40 the standard stave height
  */
 export function tenthsToMM(scaling40: number, tenths: number) {

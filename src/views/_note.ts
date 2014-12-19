@@ -269,7 +269,6 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
     }
     tie() {
         var Slur: typeof SlurType = require("./slur"); // Recursive.
-        console.log("@", this.props.tieTo);
         if (!this.props.tieTo) {
             return null;
         }

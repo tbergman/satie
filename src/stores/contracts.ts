@@ -169,7 +169,7 @@ export enum BeamCount {
 
 /** 
  * Standard clefs or sets of clefs.
- *
+ * 
  * TODO(jnetterf): Deprecate this in favour of MusicXML.
  */
 export enum Clef {
@@ -893,7 +893,7 @@ export interface IPitch extends MusicXML.Pitch {
 
     /**
      * True if is a rest.
-     *
+     * 
      * @annotated
      * @readOnly
      */
@@ -901,7 +901,7 @@ export interface IPitch extends MusicXML.Pitch {
 
     /** 
      * Calculated line.
-     *
+     * 
      * @annotated
      * @readOnly
      */

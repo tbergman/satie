@@ -27,7 +27,7 @@ import Tool              = require("./tool");
  * Flux store for the song being edited. Processes the following methods:
  * 
  * [DELETE | GET |        |      | PUT] /api/v0/song
- * 
+ *  
  * [DELETE |     |        |      | PUT] /webapp/modal/autosave
  * [DELETE |     |        |      | PUT] /webapp/modal/copy
  * [DELETE |     |        |      | PUT] /webapp/modal/export
@@ -636,7 +636,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
      * Scales content that should be measured in mm rather than stave height by the ratio specified.
      * IMPORTANT: Does not mark document dirty or reannotate. The caller should
      * do this sometime after calling this.
-     *
+     * 
      * @param ratio old width : new width
      */
     private _rescale(ratio: number) {

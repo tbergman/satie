@@ -23,11 +23,11 @@ import TimeSignatureModel   = require("./timeSignature");
 /**
  * A DurationModel represents 0 (for a rest), 1, or more (for a chord) pitches that occur at
  * the same time in the same part and voice.
- *
+ * 
  * DurationModel exposes two APIs, one simple, and one full-featured and MusicXML.Note-compliant.
  * To access the simple API, see DurationModel.chord, and convenience properties such as "rest".
  * To access the MusicXML-compliant API, see DurationModel._notes.
- *
+ * 
  * Note that MusicXML "chords" do not need to all have the same duration. Ripieno does not support this
  * (the notes must be in separate parts).
  */

@@ -28,7 +28,6 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
         var y2: number      = this.getY2(0);
         var y1: number      = this.getY1(0);
         var dir: number     = this.direction();
-        console.log("S>", x1, x2, y1, y2);
 
         var x2mx1: number   = x2 - x1;
         var x1mx2: number   = -x2mx1;
