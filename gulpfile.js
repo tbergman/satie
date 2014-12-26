@@ -29,13 +29,6 @@ var browserifyOpts = {
     },
     prod: {
         debug:          false
-    },
-    chore: {
-        debug:          false,
-        noparse:        ["startExpressServer.js"],
-        builtins:       false,
-        commondir:      false,
-        detectGlobals:  false
     }
 };
 
@@ -49,8 +42,7 @@ var files = {
     typings:            path.join(dirs.typings, "*.d.ts"),
     nonTsSources:       path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,vs}"),
     allSrc:             path.join(__dirname, "src", "**", "*.{fs,jison,js,json,jsx,less,ts,vs}"),
-    mainWebapp:         "./.partialBuild/main.js",
-    mainTablet:         "./.partialBuild/tablet/main.js"
+    mainWebapp:         "./.partialBuild/satie.js"
 };
 
 function gitSHA(callback) {
@@ -79,19 +71,13 @@ gulp.task("record-sha", [], function(done) {
     });
 });
 
-gulp.task("watch", ["watch-prebuild", "chores", "lint"], function() {
-    var nginx           = spawn("nginx", ["-c", "./nginx.dev.conf", "-p", "./nginx"], {cwd: process.cwd()});
-
-    nginx.stderr.on("data", function(data) {
-        console.log(data.toString());
-    });
-
+gulp.task("watch", ["watch-prebuild", "lint"], function() {
+    // SERVER GOES HERE
     gulp.watch(files.allSrc, ["typescript"]);
 });
 
 gulp.task("watch-prebuild", ["typescript"], function() {
     watch(files.mainWebapp, "browser-bundle.js");
-    watch(files.mainTablet, "tablet-bundle.js");
 });
 
 function watch(main, output) {
@@ -170,34 +156,6 @@ function buildAndRunTest(daemonize, karmalize) {
 
     return retest();
 };
-
-gulp.task("build-chores", ["typescript"], function() {
-    return browserify("./.partialBuild/choreServer.js", browserifyOpts.chore).bundle()
-        .on("error", gutil.log.bind(gutil, "Browserify Error"))
-        .pipe(source("chore-server.js"))
-        .pipe(streamify(uglify()))
-        .pipe(gulp.dest("./build"));
-});
-
-gulp.task("chores", ["build-chores"], function() {
-    run_cmd("bash", ["-c", "cat ./build/chore-server.js | node"]);
-
-    function run_cmd(cmd, args, callback) {
-        var spawn   = require('child_process').spawn;
-        var child   = spawn(cmd, args);
-
-        child.stdout.on('data', function (buffer) {
-            console.log(buffer.toString());
-        });
-
-        child.stdout.on('end', function() {
-        });
-
-        child.stdout.on('error', function(err) {
-            console.log("ERROR!!!" + err.toString());
-        });
-    }
-});
 
 var sharedTypescriptProject = typescript.createProject({
     removeComments:     true,

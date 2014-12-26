@@ -47,19 +47,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ];
     }
 
-    ///////////////////////////////////////////
-    // I.2 Collaboration and Change Tracking //
-    ///////////////////////////////////////////
-
-    __history__:                string;             // See also BarlineModel.prototype.__history__.
-    __lkg__:                    string              // See also BarlineModel.prototype.__lkg__.
-    __revision__:               string              // See also BarlineModel.prototype.__revision__.
-    get revision()                                  { return this.__revision__; }
-    set revision(r: string)                         { this.__revision__ = r; }
-    incrRevision() {
-        return this.revision                        = Model._sessionId + "-" + ++BarlineModel._lastRev;
-    }
-
     ////////////////////////////////////////
     // I.3 Ripieno Internal and annotated //
     ////////////////////////////////////////
@@ -234,33 +221,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return C.IterationStatus.Success;
     }
 
-    //////////////////////
-    // III. Convenience //
-    //////////////////////
-
-    markLKG(currIdx: number, body: Model[]) {
-        // See songEditor.ts
-        this.__history__ = this.__lkg__ = this._state(currIdx, body);
-    }
-
-    createPatch(currIdx: number, body: Model[]) {
-        var lastHistory = this.__history__;
-
-        this.__history__ = this._state(currIdx, body);
-        if (lastHistory === this.__history__) {
-            return;
-        }
-        return diff.createPatch(this.key, lastHistory, this.__history__, this.revision, this.incrRevision());
-    }
-
-    private _state(currIdx: number, body: Model[]) {
-        var history: string[] = [];
-        for (var i = currIdx - 1; i >= 0 && body[i].type !== C.Type.Barline; --i) {
-            history.push(JSON.stringify(body[i]).replace("\n", "")); // the spec does not specify whether there are \ns
-        }
-        return history.reverse().join("\n") + "\n";
-    }
-
     /////////////////
     // IV. Statics //
     /////////////////
@@ -307,9 +267,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     private static _lastRev = 0;
 }
 
-BarlineModel.prototype.__history__ = "";
-BarlineModel.prototype.__lkg__ = "";
-BarlineModel.prototype.__revision__ = BarlineModel._sessionId + "-0";
 BarlineModel.prototype.barStyle = {
     color:                                                  "#000000",
     data:                                                   C.MusicXML.BarStyleType.Regular

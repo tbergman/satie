@@ -53,8 +53,8 @@ export class Context implements C.MetreContext {
      * 'mutation'. The mutation must be after 'from'. All modifications to parts must go through
      * Annotator.annotate.
      */
-    annotate(from: C.ILocation, mutation: ICustomAction,
-            cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult {
+    annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean,
+            dispatcher: C.IDispatcher): C.IAnnotationResult {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
         Context._ANNOTATING                 = true;
         var error: Error                    = null;
@@ -63,7 +63,7 @@ export class Context implements C.MetreContext {
         assert(this._parts, "Staves must be set!");
 
         try {
-            result                          = this._annotateImpl(from, mutation, cursor, disableRecording);
+            result                          = this._annotateImpl(from, cursor, disableRecording);
         } catch (err) {
             // Catch the error so we can set _ANNOTATING to false and thus allow future annotations.
             error = err;
@@ -851,8 +851,7 @@ export class Context implements C.MetreContext {
         return serializable;
     }
 
-    private _annotateImpl(from?: C.ILocation, mutation?: ICustomAction,
-                cursor?: C.IVisualCursor, disableRecordings?: boolean):
+    private _annotateImpl(from?: C.ILocation, cursor?: C.IVisualCursor, disableRecordings?: boolean):
             C.IAnnotationResult {
         from = from || { bar: 1, beat: 0 };
 
@@ -866,7 +865,7 @@ export class Context implements C.MetreContext {
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._parts, mutation, cursor, this._assertionPolicy);
+        for (var it = new PrivIterator(this, from, this._parts, cursor, this._assertionPolicy);
                 !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
@@ -882,21 +881,12 @@ export class Context implements C.MetreContext {
             this._semiJustify(this._parts);
         }
 
-        var patch = _.map(this._recordings, (model: BarlineModel) => {
-            var p = model.createPatch(model.idx, this.body /* XXX: BROKEN FOR MULTISTAVE */);
-            if (p) {
-                p += "\n";
-            }
-            return p;
-        }).filter(p => !!p);
-
         return {
             cursor: null,
             operations: 5,
             resetY: false,
             skip: status === C.IterationStatus.ExitEarly, // If skip is true, context is not updated.
-            success: true,
-            patch: patch
+            success: true
         };
     }
 
@@ -1027,11 +1017,6 @@ export enum AssertionPolicy {
     NoAssertions = 1
 }
 
-export interface ICustomAction {
-    toolFn?: (obj: Model, ctx: Context) => C.IterationStatus;
-    pointerData: C.IPointerData;
-}
-
 export interface ILayoutOpts {
     header: C.ScoreHeader;
     snapshot?: ICompleteSnapshot;
@@ -1118,26 +1103,23 @@ function _recordMetreData(parts: Array<C.IPart>) {
  */
 class PrivIterator {
     constructor(parent: Context, from: C.ILocation, parts: Array<C.IPart>,
-            mutation: ICustomAction, cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
+            cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._parent = parent;
         this._parts = parts;
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
-        this._canExitAtNewline = !!mutation && !!mutation.toolFn;
         var visibleSidx = -1;
         recordMetreData(this._parts);
         for (var i = 0; i < parts.length; ++i) {
             if (parts[i].body) {
                 ++visibleSidx;
-                var isMutable = mutation && mutation.pointerData && mutation.pointerData.partIdx === i;
                 this._components.push(new PrivIteratorComponent(
                     /* starting location*/ from,
                     /* part */ parts[i],
                     /* part index */ i,
                     /* visible part index*/ visibleSidx,
-                    /* custom action */ isMutable ? mutation : null,
                     /* visual cursor */ cursor,
                     this._assertionPolicy));
             }
@@ -1485,7 +1467,7 @@ class PrivIterator {
  * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
  */
 class PrivIteratorComponent {
-    constructor(from: C.ILocation, part: C.IPart, idx: number, visibleIdx: number, mutation: ICustomAction,
+    constructor(from: C.ILocation, part: C.IPart, idx: number, visibleIdx: number,
             cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._part = part;
         this._body = part.body;
@@ -1496,7 +1478,6 @@ class PrivIteratorComponent {
         this.reset(from);
 
         assert(this._location.eq(from));
-        this._mutation = mutation;
     }
 
     annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
@@ -1509,18 +1490,17 @@ class PrivIteratorComponent {
         ctx.currStaveIdx = this._sidx;
         ctx.idx = this._idx;
 
-        var doCustomAction = this._shouldDoCustomAction(ctx);
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
         if (this._aheadOfSchedule(ctx)) {
             return this._addPadding(ctx);
         }
 
         ///
-        var status = doCustomAction ? this._doCustomAction(ctx) : this._body[this._idx].annotate(ctx);
+        var status = this._body[this._idx].annotate(ctx);
         this._nextBeat = ctx.beat;
         ///
 
-        var isClean = status === C.IterationStatus.Success && !this._mutation && (!this._cursor || this._cursor.annotatedObj);
+        var isClean = status === C.IterationStatus.Success && (!this._cursor || this._cursor.annotatedObj);
         var isNewline = this.curr && this.curr.type === C.Type.NewLine;
 
         if (status === C.IterationStatus.Success && shouldUpdateVC) {
@@ -1664,13 +1644,6 @@ class PrivIteratorComponent {
         return this._body[this._idx + 1];
     }
 
-    private _shouldDoCustomAction(ctx: Context): boolean {
-        if (!this._mutation) { return false; }
-
-        var target = this._mutation.pointerData.obj;
-        return target === this.curr || (target.placeholder && target.idx === this._idx);
-    }
-
     private _shouldUpdateVC(ctx: Context): boolean {
         if (!this._cursor) { return false; }
         if (!ctx.curr) { return false; }
@@ -1680,17 +1653,9 @@ class PrivIteratorComponent {
         var beatMatches = (!target.beat && !target.annotatedObj) || ctx.beat === target.beat;
         var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.EndMarker);
 
-        return !this._mutation && // Wait until mutation has occurred & _mutation is unset.
-            barMatches && beatMatches && typeMatches && !target.annotatedObj;
+        return barMatches && beatMatches && typeMatches && !target.annotatedObj;
     }
 
-
-    private _doCustomAction(ctx: Context): C.IterationStatus {
-        var exitCode = this._mutation.toolFn(this.curr, ctx);
-
-        this._mutation = null;  // Don't repeat this action, even if we backtrack.
-        return exitCode;
-    }
 
     private _assertionPolicy:   AssertionPolicy;
     private _beat:              number           = null;
@@ -1699,7 +1664,6 @@ class PrivIteratorComponent {
     private _cursor:            C.IVisualCursor;
     public  _idx:               number;
     private _location:          C.Location;
-    private _mutation:          ICustomAction;
     private _sidx:              number;
     private _visibleSidx:       number;
     private _part:              C.IPart;

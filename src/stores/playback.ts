@@ -48,25 +48,6 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
             songEditor.addListener(C.EventType.MidiOut, hit);
         }
 
-        if (PlaybackStore.usingLegacyAudio) {
-            var store = this;
-            _.defer(() => {
-                global.audio5js = audio5js = new Audio5js({
-                    swf_path: "/node_modules/audio5/swf/audio5js.swf",
-                    throw_errors: true,
-                    ready: function (player: any) {
-                        this.on("canplay", function () {
-                            _legacyAudioReady = true;
-                            store.emit(EventType.Change);
-                        });
-                        if (this.pending) {
-                            this.pending();
-                        }
-                    }
-                });
-            });
-        }
-
         if (enabled) {
             _.defer(() => this._getPiano());
         }
@@ -107,36 +88,13 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         return this._playing; }
 
     get ready(): boolean {
-        return !this._pendingInstruments && (!PlaybackStore.usingLegacyAudio || _legacyAudioReady); }
+        return !this._pendingInstruments; }
 
     //////////////////
     // FLUX METHODS // 
     //////////////////
 
-    "POST /api/v0/synth"(action: C.IServerAction<void, void>) {
-        _legacyAudioReady = false;
-        this.emit(EventType.Change);
-    }
-    "POST /api/v0/synth DONE"(action: C.IServerAction<void, C.ISynthCallback>) {
-        var url = "/api/v0/synth/RipienoExport.mp3?tmpRef=" + action.response.tmpRef;
-        if (action.response.forExport) {
-            window.location = <any> url;
-        } else if (action.response.cb === "" + PlaybackStore.latestID) {
-            _legacyAudioReady = false;
-            var play = function () {
-                audio5js.load(url);
-            };
-            if (audio5js.ready) {
-                play();
-            } else {
-                audio5js.pending = play;
-            }
-            this._songEditor.legacyAudioID = PlaybackStore.latestID;
-        }
-        this.emit(EventType.Change);
-    }
-
-    "PUT /webapp/bpm"(action: C.IServerAction<number, void>) {
+    "PUT /webapp/bpm"(action: C.IFluxAction<number>) {
         assert(!isNaN(action.postData));
 
         this._bpm = action.postData;
@@ -147,25 +105,25 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         this.emit(EventType.Change);
     }
 
-    "POST /webapp/midiOut"(action: C.IServerAction<any, void>) { // IServerAction<number | number[]>
+    "POST /webapp/midiOut"(action: C.IFluxAction<any>) { // IFluxAction<number | number[]>
         if (!this._pendingInstruments) {
             hit(action.postData);
         }
     }
 
-    "PUT /webapp/song/show"(action: C.IServerAction<void, void>) {
+    "PUT /webapp/song/show"(action: C.IFluxAction<void>) {
         // Stops the current playback stream when a new song will be shown.
         this._play(false);
     }
     "DELETE /webapp/song/show" = this["PUT /webapp/song/show"].bind(this);
 
-    "PUT /webapp/visualCursor"(action: C.IServerAction<C.IVisualCursor, void>) {
+    "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor>) {
         if (!this._pendingInstruments && this._playing && action.postData) {
             this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
         }
     }
 
-    "PUT /webapp/visualCursor/togglePlay"(action: C.IServerAction<void, void>) {
+    "PUT /webapp/visualCursor/togglePlay"(action: C.IFluxAction<void>) {
         this._play(!this._playing);
         this.emit(EventType.Change);
     }
@@ -349,7 +307,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         this._getInstrument("acoustic_grand_piano", true);
     }
 
-    private _handleAction = (action: C.IServerAction<any, any>) => {
+    private _handleAction = (action: C.IFluxAction<any>) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
@@ -361,35 +319,12 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     private _play(on: boolean) {
         this._playing = on;
         if (this._playing) {
-            if (!this.upToDate) {
-                if (isNaN(this._songEditor.legacyAudioID)) {
-                    return;
-                }
-                this._songEditor.legacyAudioID = NaN;
-                _.defer(() => {
-                    this._playing = false;
-                    this._dispatcher.POST("/api/v0/synth",
-                        {
-                            data: this._songEditor.dragonAudio,
-                            cb: "" + ++PlaybackStore.latestID,
-                            forExport: false
-                        });
-                });
-            } else {
-                this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
-            }
+            this._timeoutId = global.setTimeout(this._continuePlay.bind(this), 0);
         } else {
             (this._remainingActions || []).forEach(m => {
                 m();
             });
         }
-    }
-
-    /**
-     * For legacy audio.
-     */
-    get upToDate() {
-        return !usingLegacyAudio || this._songEditor.legacyAudioID === PlaybackStore.latestID;
     }
 
     private _bpm: number                                                    = 120;
@@ -420,7 +355,6 @@ function hit(note: any, velocity?: number, duration?: any) {
     }
 };
 
-var _legacyAudioReady   = false;
 var audio5js: any       = null;
 
 export = PlaybackStore;

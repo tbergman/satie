@@ -14,7 +14,6 @@ import assert               = require("assert");
 
 import C                    = require("../stores/contracts");
 import ClefModel            = require("../stores/clef");
-import ClefToolType         = require("../stores/clefTool");    // Cyclic.
 import Glyph                = require("./_glyph");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 
@@ -28,22 +27,7 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
             opacity     = {this.props.opacity}
             fill        = {spec.color}
             glyphName   = {this.sign() + (spec.isChange ? "Change" : "")} />
-        var ClefTool: typeof ClefToolType = require("../stores/clefTool");
-        if (this.props.spec.isLocked && global.SongEditor.tool instanceof ClefTool) {
-            return <!g>
-                <!Glyph.Component
-                    x={x + 10}
-                    y={spec.y - 39.2}
-                    opacity={0.2}
-                    fill={"#000000"}
-                    scale={3.5}
-                    glyphName={"fa-lock"}
-                    code={"\uF023" /*fa-lock*/} />
-                {clef}
-            </g>;
-        } else {
-            return clef;
-        }
+        return clef;
     }
 
     sign() {

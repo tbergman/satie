@@ -6,13 +6,11 @@
 
 /* tslint:disable */ 
 
-import Bootstrap        = require("react-bootstrap");
 import React        	= require("react");
 import TypedReact   	= require("typed-react");
 import _            	= require("lodash");
 import assert       	= require("assert");
 (<any>Object).assign    = require("react/lib/Object.assign");   // For DisqusThread
-var    DisqusThread     = require("react-disqus-thread");
 
 import Molasses         = require("./molasses");
 
@@ -21,11 +19,8 @@ import C                = require("../stores/contracts");
 import Header           = require("../views/_header");
 import Model            = require("../stores/model");
 import PlaceholderModel = require("../stores/placeholder");
-import Tool             = require("../stores/tool");
 import Rect             = require("../views/_rect");
 import Line             = require("../views/_line");
-import RipienoFooter    = require("../ui/ripienoFooter");
-import SelectionRect	= require("./selectionRect");
 
 var    isBrowser        = typeof window !== "undefined";
 var    useGL            = (typeof global.libripienoclient !== "undefined") ||
@@ -88,7 +83,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
             return <!RenderEngine
                     onClick={this.handleMouseClick}
                     onMouseDown={this.handleMouseDown}
-                    onMouseUp={this.handleMouseUp}
                     onMouseLeave={this.handleMouseLeave}
                     onMouseMove={this.handleMouseMove}
                     page={page}
@@ -100,7 +94,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                     editMode={this.props.editMode}
                     fontSize={scale40}
                     key="HEADER"
-                    tool={this.props.tool}
                     model={this.props.header} />}
                 {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */}
@@ -162,18 +155,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                         )}
                     </g>
                 })}
-                {this.props.tool && this.props.tool.render(
-                    this.getCtx(),
-                    this.state.mouse,
-                    _pointerData,
-                    scale40,
-                    pidx)}
-                {this.state.selectionRect && <!SelectionRect.Component
-                    fontSize={scale40}
-                    x={Math.min(this.state.selectionRect.start.x, this.state.selectionRect.end.x)}
-                    y={Math.min(this.state.selectionRect.start.y, this.state.selectionRect.end.y)}
-                    width={Math.abs(this.state.selectionRect.start.x - this.state.selectionRect.end.x)}
-                    height={Math.abs(this.state.selectionRect.start.y - this.state.selectionRect.end.y)} />}
                 {(pidx === this.state.visualCursor.annotatedPage) &&
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && <!g
                             style={{fontSize: scale40 + "px"}}>
@@ -210,25 +191,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                     yPtr.y += 40 + this.props.height;
                     return page;
                 })}
-                {this.props.comments && this.props.header.movementTitle && <!div
-                        className="commentBox"
-                        style={{
-                            width: this.props.width + "px",
-                            marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
-                            marginTop: yPtr.y + 13 + "px" }}>
-                    <!DisqusThread
-                        shortname={(global.document &&
-                            document.location.hostname === "ripieno.io" ||
-                                document.location.hostname === "ripienostaging.me") ? "ripieno" : "ripieno-dev"}
-                        identifier={"usermedia-" + this.props.songId}
-                        title={this.props.header.movementTitle}
-                        categoryId={<any>null}
-                        url={"ripieno.io/songs/" + this.props.songId} />
-                    </div>}
-                {this.props.showFooter ? <!RipienoFooter.Component
-                    marginTop={123}
-                    dispatcher={this.props.dispatcher}
-                    noShadow={this.props.comments} /> : null}
             </div>;
         } else {
             ret = <any> rawPages[0]; // TRFIX
@@ -244,137 +206,17 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         return ret;
     }
 
-    _alerts(yptr: {y: number}) {
-        var alerts: any[] = [];
-        var NoteTool = require("../stores/noteTool");
-
-        var pianostyle = {
-            height: 13,
-            marginTop: -2,
-            marginRight: 6
-        };
-
-        if (this.props.editMode &&
-                this._midiInputs.filter(mi => !localStorage["midiConnected" + mi.manufacturer + "_" + mi.name]).length) {
-            var currY = yptr.y;
-            yptr.y += 135;
-
-            alerts.push(<!div
-                className="commentBox"
-                key="midiConnected"
-                style={{
-                    fontFamily: "Overlock",
-                    fontSize: "14px",
-                    position: "absolute",
-                    width: this.props.width + "px",
-                    marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
-                    marginTop: currY + 13 + "px" }}>
-                <!div style={{float: "right"}}>
-                    <!a href="javascript:void(0);"
-                            onClick={() => {
-                                _.forEach(this._midiInputs, mi => {
-                                    localStorage["midiConnected"+mi.manufacturer+"_"+mi.name] = "dismissed";
-                                });
-                                this.forceUpdate();
-                            }}>
-                        <!i className="fa-close fa" />
-                    </a>
-                </div>
-                <!b style={{fontSize: "20px"}}><!i className="fa-check-circle fa" /> You're connected!</b> <!br /><!br />
-                You can start entering notes on<!span style={{marginRight: 8}} />
-                {_.map(this._midiInputs, (mi, idx) =>
-                    <!Bootstrap.Label bsStyle="primary" key={"" + idx} style={{marginRight: 18}} >
-                        <!img src="/res/piano.svg" style={pianostyle} />
-                        {mi.manufacturer + " " + mi.name}
-                    </Bootstrap.Label>)}
-            </div>);
-        }
-        if (this.props.editMode &&
-                this.props.tool.instance(NoteTool) &&
-                !this._midiInputs.length &&
-                !localStorage["midiEntry"]) {
-            var currY = yptr.y;
-            yptr.y += 185;
-
-            alerts.push(<!div
-                className="commentBox"
-                key="midiSetup"
-                style={{
-                    fontFamily: "Overlock",
-                    fontSize: "14px",
-                    position: "absolute",
-                    width: this.props.width + "px",
-                    marginLeft: "calc(50% - " + this.props.width / 2 + "px)",
-                    marginTop: currY + 13 + "px" }}>
-                <!div style={{float: "right"}}>
-                    <!a href="javascript:void(0);" onClick={this._hideMidiEntry}>
-                        <!i className="fa-close fa" />
-                    </a>
-                </div>
-                <!b style={{fontSize: "20px"}}>Enter music up to 3x faster!</b> <!br /><!br />
-                <!Bootstrap.Button
-                            onClick={() => {
-                                this.props.dispatcher.PUT("/webapp/modal/midi", 1);
-                                this._hideMidiEntry();
-                            }}
-                            style={{width: 200}}
-                            bsStyle="danger">
-                        <!img src="/res/piano.svg" style={pianostyle} />
-                        Connect your MIDI device
-                </Bootstrap.Button>
-                <!span style={{marginLeft: 8, marginRight: 9}}>or</span>
-                <!Bootstrap.Button
-                            onClick={() => {
-                                this.props.dispatcher.PUT("/webapp/modal/midi", 2);
-                                this._hideMidiEntry();
-                            }}
-                            style={{width: 200}}
-                            bsStyle="default">
-                    <!i className="fa-mobile-phone fa-rotate-90 fa" style={{marginRight: 8}}/>
-                    Connect a tablet or big phone</Bootstrap.Button>
-                <!div style={{height: 10}} />
-                <!Bootstrap.Button bsStyle="link"
-                            onClick={() => {
-                                this.props.dispatcher.PUT("/webapp/modal/midi", 4);
-                                this._hideMidiEntry();
-                            }}>
-                    keyboard shortcuts</Bootstrap.Button>
-            </div>);
-        }
-
-        return alerts;
-    }
-
     private _hideMidiEntry = () => {
         localStorage["midiEntry"] = "closed";
         this.forceUpdate();
-    }
-
-    componentWillReceiveProps(newProps: Renderer.IProps) {
-        if (this.props.tool !== newProps.tool) {
-            if (this.props.tool) {
-                this.props.tool.toolWillBeUnactive(this.props.store);
-            }
-            if (newProps.tool) {
-                newProps.tool.toolWillBeActive(this.props.store);
-            }
-        }
     }
 
     componentDidMount() {
         if (isBrowser && this.props.dispatcher) {
             this._attachToBrowser();
         }
-        if (typeof navigator !== "undefined" && (<any>navigator).requestMIDIAccess) {
-            this._attachToMIDI();
-        }
         if (this.props.store) {
             this.props.store.addListener(C.EventType.Annotate, this.update);
-            this.props.store.addListener(C.EventType.MidiIn, this._handleMidiEvent);
-        }
-
-        if (this.props.tool) {
-            this.props.tool.toolWillBeActive(this.props.store);
         }
     }
 
@@ -382,73 +224,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         if (isBrowser) {
             this._detachFromBrowser();
         }
-        if (this._midiInputs.length) {
-            this._detachFromMIDI();
-        }
         if (this.props.store) {
             this.props.store.removeListener(C.EventType.Annotate, this.update);
-            this.props.store.removeListener(C.EventType.MidiIn, this._handleMidiEvent);
-        }
-    }
-
-    private _midiAccess: any
-    private _midiInputs: Array<any> = [];
-
-    _attachToMIDI() {
-        (<any>navigator).requestMIDIAccess({sysex: false}).then((midiAccess: any) => {
-            this._midiAccess = midiAccess;
-            var registerInput = (input: any) => {
-                this._midiInputs.push(input);
-                input.addEventListener("midimessage", this._handleMidiEvent);
-            }
-            if (typeof midiAccess.inputs === "function") { // Legacy API
-                var inputs = midiAccess.inputs();
-                for (var i = 0; i < inputs.length; ++i) {
-                    registerInput(inputs[i]);
-                }
-            } else { // New ugly API
-                var inputs = midiAccess.inputs.values();
-                for (var input = inputs.next(); input && !input.done; input = inputs.next()) {
-                    registerInput(input.value);
-                }
-            }
-            this.forceUpdate();
-        });
-    }
-    _detachFromMIDI() {
-        _.forEach(this._midiInputs, input => {
-            input.removeEventListener("midimessage", this._handleMidiEvent);
-        });
-        this._midiInputs = [];
-        this._midiAccess = undefined;
-    }
-
-    // Bind manually because Jazz MIDI also wants to bind, and React doesn't like that.
-    _handleMidiEvent = (ev: {data: number[]; currentTarget: any}) => {
-        switch(true) {
-            case(ev.data[0] < 128):
-                // unknown
-                break;
-            case(ev.data[0] < 144 || ev.data[0] < 160 && ev.data[2] === 0):
-                // note off
-                this.props.tool.handleMidiEvent({
-                    type: C.MidiEventType.NoteOff,
-                    channel: ev.data[0] - 144,
-                    note: ev.data[1],
-                    velocity: 0
-                }, this.props.dispatcher);
-                break;
-            case(ev.data[0] < 160):
-                // note on
-                if (this.props.tool) {
-                    this.props.tool.handleMidiEvent({
-                        type: C.MidiEventType.NoteOn,
-                        channel: ev.data[0] - 144,
-                        note: ev.data[1],
-                        velocity: ev.data[2]
-                    }, this.props.dispatcher);
-                }
-                break;
         }
     }
 
@@ -619,40 +396,18 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
     handleMouseClick(event: React.MouseEvent) {
         var mouse = this.getPositionForMouse(event);
         var data = this._getPointerData(mouse);
-        // No tool is also known as the "select" tool.
-        if (this.props.tool.instance(Tool.Null) && data.ctxData) {
+        if (data.ctxData) {
             this.props.dispatcher.PUT("/webapp/visualCursor", {
                 bar: data.ctxData.bar,
                 beat: data.ctxData.beat,
                 endMarker: data.ctxData.endMarker
             });
         }
-        try {
-            var fn = this.props.tool.handleMouseClick(mouse, data.line, data.obj);
-        } catch(err) {
-            if (err instanceof C.DispatcherRedirect) {
-                var redirect = <C.DispatcherRedirect> err;
-                (<any>this.props.dispatcher)[redirect.verb](redirect.newUrl);
-            } else {
-                throw err;
-            }
-        }
-        if (fn) {
-            this.props.dispatcher.PUT("/webapp/tool/action", {mouseData: data, fn: fn});
-        }
         this.forceUpdate();
     }
 
     handleMouseDown(event: React.MouseEvent) {
         if (event.button === 0) {
-            if (this.props.selection) {
-                _.each(_selection, function(s: Model)  {
-                    s.selected = null;
-                });
-                if (this.props.store) {
-                    this.props.store.dangerouslyMarkRendererDirty();
-                }
-            }
             var pos = this.getPositionForMouse(event);
             if (this.props.selection && this.props.selection.length) {
                 // Bottleneck: detect lines with selected content
@@ -672,69 +427,11 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         }
     }
 
-    handleMouseUp(event: React.MouseEvent) {
-        if (event.button === 0 && this.state.selectionRect) {
-            var rect = this.state.selectionRect;
-            var bbox = {
-                left: Math.min(rect.start.x, rect.end.x),
-                right: Math.max(rect.start.x, rect.end.x),
-                top: Math.min(rect.start.y, rect.end.y),
-                bottom: Math.max(rect.start.y, rect.end.y),
-                width: Math.abs(rect.end.x - rect.start.x),
-                height: Math.abs(rect.end.y - rect.start.y)
-            };
-            _selection = this._elementsInBBox(bbox, this.getPositionForMouse(event));
-            if (_selection.length) {
-                _.each(_selection, function (s: Model) {
-                    s.selected = true;
-                });
-                // Bottleneck: detect lines with selected content
-                if (this.props.store) {
-                    this.props.store.dangerouslyMarkRendererDirty();
-                }
-            } else {
-                _selection = null;
-            }
-            this.setState({
-                selectionRect: null
-            });
-            if (_selection) {
-                this.props.dispatcher.PUT("/webapp/selection", _selection.length ? _selection : null);
-            }
-        }
-    }
-
     handleMouseMove(event: React.MouseEvent) {
-        if (this.state.selectionRect) {
-            this.setState({
-                selectionRect: {
-                    start: this.state.selectionRect.start,
-                    end: this.getPositionForMouse(event)
-                }
-            });
-            var rect = this.state.selectionRect;
-            var area = Math.abs((rect.start.x - rect.end.x)*(rect.start.y - rect.end.y));
-            if (area > 1 && !this.props.tool.instance(Tool.Null)) {
-                this.props.dispatcher.DELETE("/webapp/tool");
-            }
-            return;
-        }
-        if (this.props.tool.instance(Tool.Null)) {
-            if (this.state.mouse) {
-                this.setState({
-                    mouse: null
-                });
-            }
-            return;
-        }
         this.handleMouseMoveThrottled(this.getPositionForMouse(event));
     }
 
     handleMouseLeave() {
-        if (this._cleanup) {
-            this._cleanup();
-        }
-
         this.setState({
             mouse: null
         });
@@ -742,25 +439,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
 
     handleMouseMoveThrottled = _.throttle((mouse: Renderer.IPosInfo) => {
         var data = this._getPointerData(mouse);
-        var fn = this.props.tool.handleMouseMove(mouse, data.line, data.obj);
-        if (fn === "hide" || !data.obj) {
-            // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            if (this.props.store) {
-                this.props.store.dangerouslyHidePreview();
-            }
-        } else if (fn && this.props.store) {
-            // Skip the dispatcher and unneeded stores (potentially dangerous!)
-            this.props.store.dangerouslyShowPreview({
-                description: "PUT /webapp/tool/preview",
-                response: null,
-                query: null,
-                postData: {
-                    mouseData: data,
-                    fn: fn
-                }
-            });
-        }
-
         this.setState({
             mouse: mouse
         });
@@ -780,14 +458,12 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
 
     _attachToBrowser() {
         document.addEventListener("keydown", this._handleKeyDown);
-        document.addEventListener("keypress", this._handleKeyPress);
         this._oldTitle = document.title;
         document.title = this.props.header.movementTitle;
     }
 
     _detachFromBrowser() {
         document.removeEventListener("keydown", this._handleKeyDown);
-        document.removeEventListener("keypress", this._handleKeyPress);;
         if (global.DISQUS) {
             global.DISQUS.reset();
         }
@@ -795,33 +471,13 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
     }
 
     private _handleKeyDown(event: KeyboardEvent) {
-        var NoteTool = require("../stores/noteTool");
-
-        if (document.activeElement.tagName === "INPUT" ||
-                this.props.store.metadataModalVisible) {
-            return;
-        }
         var keyCode = event.keyCode || event.charCode || 0;
         switch(keyCode) { // Relevant tool: http://ryanflorence.com/keycodes/
             case 32: // space
                 event.preventDefault(); // don't navigate backwards
                 this.props.dispatcher.PUT("/webapp/visualCursor/togglePlay", null);
                 break;
-            case 27: // escape
-                this.props.dispatcher.PUT("/webapp/tool", null);
-                break;
             case 8: // backspace
-            case 46: // DELETE
-                event.preventDefault(); // don't navigate backwards
-                if (_selection) {
-                    this.props.dispatcher.DELETE("/webapp/selection/contents");
-                } else if (this.props.tool.instance(Tool.Null)) {
-                    this.props.dispatcher.PUT("/webapp/tool", new NoteTool("note8thUp"));
-                }
-                if (this.props.tool) {
-                    this.props.tool.handleKeyPressEvent("backspace", event, this.props.dispatcher);
-                }
-                break;
             case 37: // left arrow
                 event.preventDefault(); // don't scroll (shouldn't happen anyway!)
                 this.props.dispatcher.PUT("/webapp/visualCursor/step", {step: -1});
@@ -830,92 +486,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                 event.preventDefault(); // don't scroll (shouldn't happen anyway!)
                 this.props.dispatcher.PUT("/webapp/visualCursor/step", {step: 1});
                 break;
-            case 38: // up arrow
-                if (this.props.tool instanceof NoteTool) {
-                    event.preventDefault(); // scroll by mouse only
-                    this.props.dispatcher.PUT("/webapp/visualCursor/before/octave", { delta: 1 });
-                }
-                break;
-            case 40: // down arrow
-                if (this.props.tool instanceof NoteTool) {
-                    event.preventDefault(); // scroll by mouse only
-                    this.props.dispatcher.PUT("/webapp/visualCursor/before/octave", { delta: -1 });
-                }
-                break;
-            case 90: // 'z'
-                event.preventDefault(); // we control all undo behavior
-                if (event.ctrlKey || event.metaKey) {
-                    if (event.shiftKey) {
-                        this.props.dispatcher.PUT("/webapp/song/redo");
-                    } else {
-                        this.props.dispatcher.PUT("/webapp/song/undo");
-                    }
-                }
-                break;
         }
     }
-
-    private _handleKeyPress = _.throttle((event: KeyboardEvent) => {
-        var AccidentalTool = require("../stores/accidentalTool");
-        var DotTool = require("../stores/dotTool");
-        var NoteTool = require("../stores/noteTool");
-        var RestTool = require("../stores/restTool");
-        var TieTool = require("../stores/tieTool");
-
-        var keyCode = event.keyCode || event.charCode || 0;
-
-        var key = String.fromCharCode(keyCode);
-        if (event.ctrlKey || event.metaKey) {
-            // Rudely prevent tab switches on Chrome/Firefox on Windows (+Linux?)
-            event.stopPropagation();
-            event.preventDefault();
-
-            switch (key) {
-                case "1": this.props.setRibbonTabFn(1); break;
-                case "2": this.props.setRibbonTabFn(2); break;
-                case "3": this.props.setRibbonTabFn(3); break;
-                case "4": this.props.setRibbonTabFn(4); break;
-            }
-            return;
-        }
-
-        // Tools don't apply here.
-        if (document.activeElement.tagName === "INPUT" ||
-            this.props.store.metadataModalVisible) {
-            return;
-        }
-
-        // Tools
-        var keyToTool: { [key: string]: () => Tool } = {
-            "1": function () { return new NoteTool("noteWhole"); },
-            "2": function () { return new NoteTool("noteHalfUp"); },
-            "3": function () { return new NoteTool("noteQuarterUp"); },
-            "4": function () { return new NoteTool("note8thUp"); },
-            "5": function () { return new NoteTool("note16thUp"); },
-            "6": function () { return new NoteTool("note32ndUp"); },
-            "7": function () { return new NoteTool("note64thUp"); },
-            "~": function () { return new TieTool(); },
-            "=": function () { return new AccidentalTool(1); },
-            "-": function () { return new AccidentalTool(-1); },
-            "0": function () { return new AccidentalTool(0); }
-        };
-        if (this.props.tool.instance(Tool.Null)) {
-            if (key.charCodeAt(0) >= "a".charCodeAt(0) &&
-                key.charCodeAt(0) <= "g".charCodeAt(0)) {
-                this.props.dispatcher.PUT("/webapp/tool", new NoteTool("note8thUp"));
-            } else if (key === "r") {
-                this.props.dispatcher.PUT("/webapp/tool", new RestTool());
-            } else if (key === ".") {
-                this.props.dispatcher.PUT("/webapp/tool", new DotTool());
-            }
-        }
-        var toolFn = keyToTool[key];
-        if (toolFn) {
-            this.props.dispatcher.PUT("/webapp/tool", toolFn());
-        } else if (this.props.tool) {
-            this.props.tool.handleKeyPressEvent(key, event, this.props.dispatcher);
-        }
-    }, 70);
 
     update() {
         this.setState({
@@ -928,8 +500,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
             marginTop: 20
         };
     }
-
-    _cleanup: () => void = null;
 }
 
 module Renderer {
@@ -937,7 +507,6 @@ module Renderer {
     export var Component = TypedReact.createClass(Renderer);
 
     export interface IProps {
-        comments?: boolean;
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
         dispatcher?: C.IDispatcher;
@@ -945,18 +514,14 @@ module Renderer {
         marginTop?: number;
         marginBottom?: number;
         raw?: boolean;
-        sessionInfo?: C.ISession;
         header: C.ScoreHeader;
         parts?: Array<C.IPart>;
         songId?: string;
         store?: C.ISongEditor;
-        tool?: Tool;
         top?: number;
         selection?: Array<Model>;
         width?: number;
-        showFooter?: boolean;
         height?: number;
-        history?: History;
         setRibbonTabFn: (tab: number) => void;
     }
 
@@ -1076,8 +641,6 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
 };
 
 var LineContainerComponent = TypedReact.createClass(LineContainer);
-
-var _selection: Array<Model> = null;
 
 interface ILineProps {
     generate: () => any;

@@ -1,5 +1,5 @@
 ﻿/** 
- * @file Holds interfaces, enumerations, and utilities used throughout Ripieno.
+ * @file Holds interfaces, enumerations, and utilities used throughout Satie.
  * 
  * @copyright (C) Joshua Netterfield. Proprietary and confidential.
  * Unauthorized copying of this file, via any medium is strictly prohibited.
@@ -24,27 +24,6 @@ export import renderUtil = require("../util/renderUtil");
 export import strHash    = require("../util/hash");
 
 export interface IApi {
-    // Server methods
-    // ==============
-    "GET /api/v0/song"?                     (action: IServerAction<void, ISong[]>): void;
-    "GET /api/v0/song ERROR"?               (action: IServerAction<void, ISong[]>): void;
-    "PUT /api/v0/song"?                     (action: IServerAction<void, ISong>): void;
-    "PUT /api/v0/song ERROR"?               (action: IServerAction<void, ISong>): void;
-    "PUT /api/v0/song DONE"?                (action: IServerAction<void, ISong>): void;
-    "POST /api/v0/song DONE"?               (action: IServerAction<void, ISong>): void;
-    "POST /api/v0/song"?                    (action: IServerAction<void, ISong>): void;
-    "POST /api/v0/song ERROR"?              (action: IServerAction<void, ISong>): void;
-    "DELETE /api/v0/song"?                  (action: IServerAction<void, void>): void;
-    "POST /api/v0/user/login"?              (action: IServerAction<void, ISession>): void;
-    "POST /api/v0/user/login DONE"?         (action: IServerAction<void, ISession>): void;
-    "GET /api/v0/user/session"?             (action: IServerAction<void, ISession>): void;
-    "GET /api/v0/user/session ERROR"?       (action: IServerAction<void, ISession>): void;
-    "POST /api/v0/user/login ERROR"?        (action: IServerAction<void, {statusMessage: string}>): void;
-    "DELETE /api/v0/user/session DONE"?     (action: IServerAction<void, void>): void;
-    "DELETE /api/v0/user/session ERROR"?    (action: IServerAction<void, void>): void;
-    "POST /api/v0/synth"?                   (action: IServerAction<void, void>): void;
-    "POST /api/v0/synth DONE"?              (action: IServerAction<void, ISynthCallback>): void;
-
     // Local (Flux) methods
     // ========================
     // You'll notice there's no "GET". To retrieve values, use the appropriate store.
@@ -53,68 +32,12 @@ export interface IApi {
     "PUT /webapp/bpm"?                      (action: IFluxAction<number>): void;
     "POST /webapp/midiOut"?                 (action: IFluxAction<any>): void;
     "PUT /webapp/visualCursor/togglePlay"?  (action: IFluxAction<void>): void;
-    "PUT /webapp/apiRole"?                  (action: IFluxAction<ApiRole>): void;
-    "PUT /webapp/song/show"?                (action: IFluxAction<void>): void;
-    "POST /webapp/giveFeedback"?            (action: IFluxAction<void>): void;
-    "PUT /webapp/sidebar/notations"?        (action: IFluxAction<void>): void;
-    "DELETE /webapp/sidebar/notations"?     (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/autosave"?           (action: IFluxAction<void>): void;
-    "DELETE /webapp/modal/autosave"?        (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/copy"?               (action: IFluxAction<void>): void;
-    "DELETE /webapp/modal/copy"?            (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/export"?             (action: IFluxAction<void>): void;
-    "DELETE /webapp/modal/export"?          (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/metadata"?           (action: IFluxAction<void>): void;
-    "DELETE /webapp/modal/metadata"?        (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/part"?               (action: IFluxAction<IPart>): void;
-    "DELETE /webapp/modal/part"?            (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/social"?             (action: IFluxAction<void>): void;
-    "DELETE /webapp/modal/social"?          (action: IFluxAction<void>): void;
-    "PUT /webapp/modal/midi"?               (action: IFluxAction<number>): void;
-    "DELETE /webapp/modal/midi"?            (action: IFluxAction<void>): void;
-    "PUT /webapp/selection"?                (action: IFluxAction<Model[]>): void;
-    "DELETE /webapp/selection"?             (action: IFluxAction<void>): void;
-    "DELETE /webapp/selection/contents"?    (action: IFluxAction<void>): void;
-    "PAT /webapp/song"?                     (action: IFluxAction<string>): void;
     "PUT /webapp/song/dirty"?               (action: IFluxAction<void>): void;
     "DELETE /webapp/song/dirty"?            (action: IFluxAction<void>): void;
     "PUT /webapp/song/forceUpdate"?         (action: IFluxAction<void>): void;
-    "PUT /webapp/song/hmargin/increase"?    (action: IFluxAction<void>): void;
-    "PUT /webapp/song/hmargin/decrease"?    (action: IFluxAction<void>): void;
-    "PUT /webapp/song/indent/increase"?     (action: IFluxAction<void>): void;
-    "PUT /webapp/song/indent/decrease"?     (action: IFluxAction<void>): void;
     "PUT /webapp/song/lineDirty"?           (action: IFluxAction<string>): void;
     "DELETE /webapp/song/lineDirty"?        (action: IFluxAction<number>): void;
-    "PUT /webapp/song/pageSize"?            (action: IFluxAction<{width: number; height: number;}>): void;
-    "DELETE /webapp/song/show"?             (action: IFluxAction<void>): void;
     "PUT /webapp/song/src"?                 (action: IFluxAction<string>): void;
-    "PUT /webapp/song/transpose"?           (action: IFluxAction<void>): void;
-    "PUT /webapp/song/undo"?                (action: IFluxAction<void>): void;
-    "PUT /webapp/song/redo"?                (action: IFluxAction<void>): void;
-    "PUT /webapp/staveHeight/increase"?     (action: IFluxAction<void>): void;
-    "PUT /webapp/staveHeight/decrease"?     (action: IFluxAction<void>): void;
-}
-
-/** 
- * Represents the client's policy for communicating changes with each other and saving them
- * to the server.
- */
-export enum ApiRole {
-    /** 
-     * All changes are cached until the client can reconnect to the relay.
-     */
-    Offline             = 0,
-
-    /** 
-     * In charged of accepting or rejecting changes from peers, PUTs official version to
-     * the server.
-     */
-    Primary             = 1,
-
-    /** 
-     * Sends all requests to PRIMARY peer via the relay. Does not save.
-     */
-    Secondary           = 2
 }
 
 /** 
@@ -133,7 +56,6 @@ export interface IAnnotationResult {
     resetY:             boolean;
     skip:               boolean;
     success:            boolean;
-    patch:              string[];
 }
 
 /** 
@@ -147,7 +69,6 @@ export interface IAnnotationOpts {
     cursorBeat?:        number;
     cursorStave?:       number;
     pointerData?:       IPointerData;
-    toolFn?:            (obj: Model, ctx: Annotator.Context) => IterationStatus;
 };
 
 /** 
@@ -331,16 +252,6 @@ export interface IFluxAction<PostData>{
 
     nested?:            boolean;
 }
-
-/** 
- * A request to the Ripieno server and/or internal store.
- */
-export interface IServerAction<PostData, Response> extends IFluxAction<PostData> {
-    /** 
-     * The parsed JSON response from the server, if this is a server request.
-     */
-    response:           Response;
-};
 
 /** 
  * A header is a child of parts, and includes the title and other basic
@@ -938,7 +849,6 @@ export interface IPlaybackStore {
     bpm:                        number;
     playing:                    boolean;
     ready:                      boolean;
-    upToDate:                   boolean;
 }
 
 export enum PreviewMode {
@@ -965,33 +875,6 @@ export enum RectifyXPolicy {
     Invalid                     = 0,
     Max                         = 1,
     Min                         = 2
-}
-
-/** 
- * A session, directly from the server.
- * 
- * See also "session.d".
- */
-export interface ISession {
-    user:                   IUser;
-    remoteSongsSynced:      boolean;
-    isLoading:              boolean;
-    /** 
-     * Either LoggedIn or LoggedOut
-     */
-    state:                  string;
-    csrf:                   string;
-};
-
-export interface ISessionStore {
-    addChangeListener:      (callback: () => void) => void;
-    removeChangeListener:   (callback: () => void) => void;
-
-    activeSong:             ISong;
-    apiRole:                ApiRole;
-    errors:                 Array<IError>;
-    info:                   ISession;
-    songs:                  Array<ISong>;
 }
 
 /** 
@@ -1042,38 +925,21 @@ export interface ISongEditor {
     removeListener:                     (event: number, listener: Function) => void;
 
     /* Properties */
-    notationsSidebarVisible:            boolean;
-
-    autosaveModalVisible:               boolean;
-    changesPending:                     boolean;
-    copyModalVisible:                   boolean;
-    midiModalTab:                       number;
     dirty:                              boolean;
-    dragonAudio:                        string[];
-    exportModalVisible:                 boolean;
     finalCtx:                           Annotator.Context;
     getLineDirty:                       (idx: number, h: number) => void;
-    metadataModalVisible:               boolean;
     midiOutHint:                        (out: Array<number>) => void;
-    partModalStave:                     IPart;
-    selection:                          Model[];
-    socialModalVisible:                 boolean;
     header:                             ScoreHeader;
     parts:                              IPart[];
     src:                                string;
-    tool:                               any;
     visualCursor:                       IVisualCursor;
-    legacyAudioID:                      number;
 
     /* Sketchy */
-    abort:                              () => IAnnotationResult;
-    dangerouslyHidePreview:             () => void;
     dangerouslyMarkRenderDone:          () => void;
     dangerouslyMarkRendererDirty:       () => void;
     dangerouslyMarkRendererLineClean:   (action: IFluxAction<string>) => void; // request is $(PART)_$(LINE)
     dangerouslyMarkRendererLineDirty:   (line: number) => void;
     dangerouslySetVisualCursor:         (visualCursor: IVisualCursor) => void;
-    dangerouslyShowPreview:             (action: IFluxAction<IPointerAction>) => void;
     dangerouslyTakeSnapshot:            (ctx: Annotator.Context) => void;
     ensureSoundfontLoaded:              (soundfont: string, avoidEvent?: boolean) => void;
 };

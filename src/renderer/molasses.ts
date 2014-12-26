@@ -41,7 +41,7 @@ module Molasses {
         onMouseDown: (evt: React.MouseEvent) => void;
         onMouseLeave: (evt: React.MouseEvent) => void;
         onMouseMove: (evt: React.MouseEvent) => void;
-        onMouseUp: (evt: React.MouseEvent) => void;
+        onMouseUp?: (evt: React.MouseEvent) => void;
         page: {
             idx: number;
         };

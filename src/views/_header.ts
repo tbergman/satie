@@ -8,8 +8,6 @@ import React            = require("react");
 import TypedReact       = require("typed-react");
 
 import C                = require("../stores/contracts");
-import Tool             = require("../stores/tool");
-import TextTool         = require("../stores/textTool");
 
 /**
  * Renders the title, author, etc. of a song.
@@ -20,7 +18,7 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
         this._editNodes = [];
 
         var model: C.ScoreHeader = this.props.model;
-        var editMode = this.props.editMode && !!this.props.tool.instance(TextTool);
+        var editMode = this.getEditMode();
         var style = {
             fontSize: this.props.fontSize + "px"
         };
@@ -104,6 +102,10 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
         }
     }
 
+    getEditMode(): string {
+        return null;
+    }
+
     componentDidMount() {
         this._renderForeigns();
     }
@@ -172,7 +174,6 @@ module Header {
         editMode:   boolean;
         fontSize:   number;
         model:      C.ScoreHeader;
-        tool:       Tool;
     }
 }
 
