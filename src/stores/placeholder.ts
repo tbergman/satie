@@ -130,7 +130,7 @@ class PlaceholderModel extends Model {
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Clef:
                 if (!ctx.attributes.clef) {
-                    ctx.body.splice(ctx.idx, 1, new ClefModel({ clef: "detect" }, true));
+                    ctx.body.splice(ctx.idx, 1, new ClefModel(null, true)); // FIXME
                     ctx.body[ctx.idx].annotated = this.annotated;
                     ctx.body[ctx.idx].proposed  = this.proposed;
                     return C.IterationStatus.RetryCurrent;
@@ -190,7 +190,7 @@ class PlaceholderModel extends Model {
 
     static fillMissingBeats(ctx: Annotator.Context, extraBeats?: number): C.IterationStatus {
         extraBeats = extraBeats || 0;
-        var rest: {} = { chord: [{ step: "r", octave: null, acc: null }] };
+        var rest: {} = { chord: [{ step: "R", octave: null, acc: null }] };
         var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
             ctx.beat, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),

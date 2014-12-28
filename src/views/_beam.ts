@@ -12,7 +12,7 @@ import _                = require("lodash");
 var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Glyph			= require("./_glyph");
+import Glyph            = require("./_glyph");
 import getFontOffset    = require("./_getFontOffset");
 
 /**
@@ -93,7 +93,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
         return this.props.direction;
     }
 
-    getFontOffset = getFontOffset;
+    private getFontOffset = getFontOffset;
 
     private _withXOffset(x: number) {
         // Note that we use notehadBlack regardless of the notehead.

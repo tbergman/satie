@@ -185,7 +185,7 @@ class BeamGroupModel extends Model {
     /**
      * Renders the beam. See also Model.generate.
      */
-    generate(options: Array<Duration.IProps>): Array<React.ReactElement<any, any>> {
+    generate(options: Array<Duration.IProps>): Array<React.ReactElement<any>> {
         return <any> _.map(this.beam, (b, idx) => b.render(options[idx]));
     }
 

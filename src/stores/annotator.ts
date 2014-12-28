@@ -7,7 +7,7 @@
 import _                        = require("lodash");
 import assert               	= require("assert");
 
-import AttributesModel      	= require("./attributes");
+import AttributesModelType  	= require("./attributes");      // Cyclic.
 import BarlineModel         	= require("./barline");
 import C                    	= require("./contracts");
 import Model                	= require("./model");
@@ -72,14 +72,13 @@ export class Context implements C.MetreContext {
         Context._ANNOTATING                 = false;
 
         if (error) {
-            // Clear any render flags to avoid rendering the current (broken) state
-            this.songEditor.dangerouslyMarkRenderDone();
-            _.defer(() => {
-                dispatcher.PUT("/webapp/song/undo");     // Un-break the state.
-            });
-            throw error;
+            this.abort();
         }
         return result;
+    }
+
+    abort() {
+        assert(false, "Could not render");
     }
 
     /**
@@ -314,6 +313,7 @@ export class Context implements C.MetreContext {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
         this.splice(index, 0, [obj], obj.isNote ? SplicePolicy.Masked : SplicePolicy.Additive);
+        recordMetreData(this._parts);
 
         return C.IterationStatus.Success;
     }
@@ -789,6 +789,15 @@ export class Context implements C.MetreContext {
     smallest: number = 10000;
 
     /**
+     * The smallest acceptable amount of padding between parts.
+     * Used to prevent collisions.
+     *
+     * @scope line
+     */
+    minBottomPaddings: number[] = [];
+    minTopPaddings: number[] = [];
+
+    /**
      * The current position (x)
      * @scope line
      */
@@ -923,7 +932,7 @@ export class Context implements C.MetreContext {
         return scaling.millimeters / scaling.tenths * 40;
     }
     calcLineSpacing(print: C.Print = C.getPrint(this._layout.header)): number {
-        return print.systemLayout.systemDistance;
+        return Math.max(print.systemLayout.systemDistance, this.minBottomPaddings[this.currStaveIdx]);
     }
 
     private _assertAligned() {
@@ -973,6 +982,7 @@ export class Context implements C.MetreContext {
         return this._attributes || {};
     }
     set attributes(a: C.MusicXML.Attributes) {
+        var AttributesModel: typeof AttributesModelType = require("./attributes");
         if(!!a && !(a instanceof AttributesModel)) {
             a = new AttributesModel(a, true);
         }
@@ -1031,6 +1041,7 @@ export interface ILayoutOpts {
  */
 export interface ILineSnapshot {
     accidentalsByStave: Array<C.IAccidentals>;
+    attributes: C.MusicXML.Attributes;
     bar: number;
     barKeys: Array<string>;
     barlineX: Array<number>;
@@ -1068,6 +1079,7 @@ export function recordMetreData(parts: Array<C.IPart>) {
         // with try-catch.
         _recordMetreData(parts);
     } catch (err) {
+        var AttributesModel: typeof AttributesModelType = require("./attributes");
         switch(true) {
             case (err instanceof AttributesModel.AttributesUndefinedException):
                 return;

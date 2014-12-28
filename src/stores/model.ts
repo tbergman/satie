@@ -92,6 +92,7 @@ class Model {
     get xPolicy():      C.RectifyXPolicy        { throw "Not implemented"; }
     get type():         C.Type                  { throw "Not implemented"; }
     get fields():       string[]                { return []; }
+    get mxmlJsonOnlyFields(): string[]          { return []; }
 
     get extraWidth(): number                    { return 0; }
     set extraWidth(w: number) {
@@ -113,12 +114,14 @@ class Model {
     ////////////////////
 
     constructor(spec: any, annotated: boolean) {
-        // By only setting attributes in jsonWhitelist, we make ommisions in
+        // By only setting attributes in the white-lists, we make omissions in
         // fields more obvious.
-        for (var idx in this.fields) {
-            if (spec.hasOwnProperty(this.fields[idx])) {
-                var key = this.fields[idx];
-                (<any>this)[key] = spec[key];
+        var _this: any = this;
+        var allFields = this.fields.concat(this.mxmlJsonOnlyFields);
+        for (var i = 0; i < allFields.length; ++i) {
+            if (spec.hasOwnProperty(allFields[i])) {
+                var key     = allFields[i];
+                _this[key]  = spec[key];
             }
         }
 
@@ -166,7 +169,7 @@ class Model {
         assert(false, "Not implemented");
     }
 
-    render(options?: any): React.ReactComponentElement<any> {
+    render(options?: any): React.ReactElement<any> {
         throw "No view has been set for " + C.Type[this.type] + ". See Model.setView(...)";
     }
 

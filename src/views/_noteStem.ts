@@ -45,7 +45,7 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
         return this.direction() * - stemThickness/2;
     }
 
-    getFontOffset = getFontOffset;
+    private getFontOffset = getFontOffset;
 
     getDefaultProps() {
         return {

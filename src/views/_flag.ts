@@ -50,7 +50,7 @@ class Flag extends TypedReact.Component<Flag.IProps, {}> {
         return this.props.flag + this.directionString();
     }
 
-    getFontOffset = getFontOffset;
+    private getFontOffset = getFontOffset;
     getDefaultProps() {
         return {
             x: 0,

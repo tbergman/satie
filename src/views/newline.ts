@@ -14,6 +14,7 @@ import C                    = require("../stores/contracts");
 import NewlineModel         = require("../stores/newline");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import StaveLines           = require("./_staveLines");
+import BarNumber            = require("./_barNumber");
 
 /**
  * Appears at the very beginning of a line, except the first line.
@@ -22,7 +23,8 @@ import StaveLines           = require("./_staveLines");
  */
 class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
     render() {
-        var spec = this.props.spec;
+        var spec        = this.props.spec;
+        var barNumber   = spec.ctxData.bar + "";
 
         return <!g>
             <!StaveLines.Component
@@ -30,6 +32,10 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
                 width={this.props.spec.width}
                 x={spec.x}
                 y={spec.braceY + spec.lineSpacing} />
+            <!BarNumber.Component 
+                x={spec.x - 0}
+                y={spec.braceY + spec.lineSpacing - 30}
+                barNumber={barNumber} />
         </g>;
 
         // {spec.pianoSystemContinues && <!Brace.Component MXFIX

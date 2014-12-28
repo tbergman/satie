@@ -6,19 +6,14 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, September 2014
  */
 
-/// <reference path="../../references/diff.d.ts" />
-/// <reference path="../../references/es6-promise.d.ts" />
-/// <reference path="../../references/lodash.d.ts" />
-/// <reference path="../../references/node.d.ts" />
-
+export import MusicXML   = require("musicxml-interfaces");
+import        _          = require("lodash");
 import        assert     = require("assert");
 var           assign     = require("react/lib/Object.assign");
-import        _          = require("lodash");
 
 import        Annotator  = require("./annotator");
 import        Model      = require("./model");
 
-export import MusicXML   = require("./musicxml");
 export import SMuFL      = require("../util/SMuFL");
 export import renderUtil = require("../util/renderUtil");
 export import strHash    = require("../util/hash");
@@ -263,11 +258,11 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
 
     identification:     MusicXML.Identification = {
         creators:                                   [],
-        encodings:                                  [],
+        encoding:                                   null,
         miscellaneous:                              [],
         relations:                                  [],
         rights:                                     [],
-        sources:                                    []
+        source:                                     null
     }
 
     defaults:           MusicXML.Defaults = {
@@ -375,7 +370,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
                 leftMargin:                         0,
                 rightMargin:                        0
             },
-            topSystemDistance:                      70
+            topSystemDistance:                      0
         },
         wordFont: {
             fontSize:                               "12",
@@ -400,7 +395,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
     };
 
     /* Convenience */
-    constructor(spec: ScoreHeader) {
+    constructor(spec: MusicXML.ScoreHeader) {
         for(var key in spec) {
             if (spec.hasOwnProperty(key) && typeof key === "string" && !!(<any>spec)[key]) {
                 (<any>this)[key] = (<any>spec)[key];
@@ -408,6 +403,9 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         }
     }
     get composer() {
+        if (!(this.identification.creators||[]).length) {
+            return "";
+        }
         var idComposer = this.identification.creators
             .filter(c => c.type === "composer")
             .map(c => c.creator)
@@ -421,27 +419,34 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
             .join(", ");
     }
     set composer(composer: string) {
+        this.identification.creators = this.identification.creators || [];
+
         // This is not as powerful as manually setting creators... It only supports a single composer.
         if (!_.any(this.identification.creators, c => {
                     var isComposer = c.type === "composer";
+                    // Replace the composer...
                     c.creator = isComposer ? composer : c.creator;
                     return isComposer;
                 })) {
+            // ...or add a composer
             this.identification.creators.push({
                 creator: composer,
                 type: "composer"
             });
         }
 
+        this.credits = this.credits || [];
         if (!_.any(this.credits, c => {
                     if (!c.creditWords.length) {
                         return false;
                     }
+                    // Replace a credit...
                     var isComposer = !!~c.creditTypes.indexOf("composer");
                     c.creditWords[0].words = isComposer ? composer : c.creditWords[0].words;
                     return isComposer;
                 })) {
             this.credits.push({
+                // ... or add a credit
                 creditImage: null,
                 creditTypes: ["composer"],
                 creditWords: [{
@@ -449,7 +454,8 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
                     defaultX: renderUtil.mmToTenths(renderUtil.defaultStaveHeight,
                         renderUtil.defaultPageSize().width - renderUtil.defaultMargins.right),
                     justify: MusicXML.LeftCenterRight.Right,
-                    defaultY: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, 2)
+                    defaultY: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, 2),
+                    fontSize: "18px"
                 }],
                 page: 1
             });
@@ -457,10 +463,38 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
     }
 
     get title() {
-        return "";
+        return this.movementTitle;
     }
     set title(title: string) {
-        assert(false, "Not implemented");
+        // Set meta-data
+        this.movementTitle = title;
+
+        // Set image
+        this.credits = this.credits || [];
+        if (!_.any(this.credits, c => {
+                    if (!c.creditWords.length) {
+                        return false;
+                    }
+                    // Replace a credit...
+                    var isComposer = !!~c.creditTypes.indexOf("title");
+                    c.creditWords[0].words = isComposer ? title : c.creditWords[0].words;
+                    return isComposer;
+                })) {
+            this.credits.push({
+                // ... or add a credit
+                creditImage: null,
+                creditTypes: ["title"],
+                creditWords: [{
+                    words: title,
+                    defaultX: renderUtil.mmToTenths(renderUtil.defaultStaveHeight,
+                        renderUtil.defaultPageSize().width/2),
+                    justify: MusicXML.LeftCenterRight.Center,
+                    defaultY: renderUtil.mmToTenths(renderUtil.defaultStaveHeight, renderUtil.defaultMargins.top/2),
+                    fontSize: "24px"
+                }],
+                page: 1
+            });
+        }
     }
 }
 
@@ -877,46 +911,6 @@ export enum RectifyXPolicy {
     Min                         = 2
 }
 
-/** 
- * A song, directly from the server.
- * 
- * See also "song.d".
- */
-export interface ISong {
-    /** 
-     * MongoDB ID for the song.
-     */
-    _id:            string;
-
-    /** 
-     * MongoDB ID for the IUser who created the song.
-     */
-    _owner:         string;
-
-    /** 
-     * Lylite source for the song.
-     */
-    src:            string;
-
-    /** 
-     * The title. This should always match the title at the top of the page.
-     */
-    title:          string;
-
-    /** 
-     * The composer. Should match the composer in the header.
-     */
-    composer:       string;
-
-    subtitle?:      string;
-    arranger?:      string;
-    lyricist?:      string;
-    copyright?:     string;
-    secret?:        boolean;
-    path?:          string;
-    clefs?:         string;
-};
-
 export interface ISongEditor {
     /* Life-cycle */
     destructor:                         () => void;
@@ -1166,13 +1160,13 @@ export module NoteUtil {
 
         var idealSteps = idealStepsPerInterval[halfStepsFromScaleRoot];
         var notesInv: {[key: string]: number} = {
-            "c": 0,
-            "d": 1,
-            "e": 2,
-            "f": 3,
-            "g": 4,
-            "a": 5,
-            "b": 6
+            "C": 0,
+            "D": 1,
+            "E": 2,
+            "F": 3,
+            "G": 4,
+            "A": 5,
+            "B": 6
         };
         var notes = _.invert(notesInv);
 

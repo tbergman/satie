@@ -10,8 +10,8 @@
 import Model                    = require("./model");
 
 import Annotator                = require("./annotator");
+import AttributesModelType      = require("./attributes");  // Cyclic.
 import BarlineModelType         = require("./barline");     // Cyclic.
-import AttributesModel          = require("./attributes");
 import C                        = require("./contracts");
 
 class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplete {
@@ -79,12 +79,18 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
     // II. Life-cycle //
     ////////////////////
 
+    constructor(spec: C.MusicXML.Clef, annotated: boolean) {
+        super(spec, annotated);
+        this.sign = this.sign.toUpperCase();
+    }
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Songs must have attributes to put the clef in.
+        var AttributesModel: typeof AttributesModelType = require("./attributes");
         if (!(ctx.attributes instanceof AttributesModel)) {
             return ctx.insertPast(new AttributesModel({}, true));
         }
@@ -169,7 +175,7 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
 
     /* Static */
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
-        var clef = ctx.prev(c => c.type === C.Type.Clef);
+        var clef: C.MusicXML.Clef = <any> ctx.prev(c => c.type === C.Type.Clef);
         return ctx.insertPast(new ClefModel(clef, true));
     };
 

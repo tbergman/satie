@@ -75,7 +75,7 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         }
         return this.props.direction;
     }
-    getFontOffset = getFontOffset;
+    private getFontOffset = getFontOffset;
     xOffset() {
         // MXFIX
         // if (this.props.notation.indexOf("caesura") === 0) {

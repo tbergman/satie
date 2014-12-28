@@ -26,7 +26,7 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
         return React.DOM.g({style: style},
             model.credits.map((credit, idx) =>
                 React.DOM.g({key: "w_" + idx},
-                    credit.creditWords.map((editMode ? getEditNode : getViewNode).bind(this, this._editNodes, credit))
+                    credit.creditWords.map((editMode ? this.getEditNode : getViewNode).bind(this, this._editNodes, credit))
                 )
             )
         );
@@ -42,48 +42,7 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
             }
         }
 
-        function getEditNode(editNodes: IEditNode[], credit: C.MusicXML.Credit, words: C.MusicXML.CreditWords, idx: number) {
-            var width                   = 200;
-            var height      			= 80;
-            editNodes[idx] = {
-                ref:    "_foreign_" + idx,
-                credit: credit,
-                words:  words
-            };
-            return React.DOM.g(
-                {
-                    key:                "_" + idx,
-                    ref:                "_foreign_" + idx,
-                    x:                  (words.defaultX + (words.relativeX || 0)) - width/2,
-                    y:      			(words.defaultY + (words.relativeY || 0)) - height/2,
-                    width:  			width,
-                    height: 			height,
-                    fontSize:   		C.renderUtil.cssSizeToTenths(this.props.fontSize, words.fontSize),
-                    dangerouslySetInnerHTML: {
-                        __html:         "<foreignObject" +
-                            " x=" +         parseFloat(<any>((words.defaultX + (words.relativeX || 0)) - width/2)) +
-                            " y=" +     	parseFloat(<any>((words.defaultY + (words.relativeY || 0)) - height/2)) +
-                            " width=" + 	parseFloat(<any>width) +
-                            " height=" +	parseFloat(<any>height) +
-                        "><xhtml:body id=\"_credits_" + this._uuid + "_" + idx + "\"></xhtml:body></foreignObject>"
-                    }
-                }
-                // React.DOM.createElement("body", {xmlns: "http://www.w3.org/1999/xhtml"},
-                // React.DOM.input({
-                //     type:       		"text",
-                //     className:  		"form-control",
-                //     id:         		"newsong_title",
-                //     placeholder:        "",
-                //     onChange: (event: React.SyntheticEvent) => this.setState({
-                //         composer:       (<HTMLInputElement>event.target).value
-                //     }),
-                //     value:              words.words
-                // })
-                // )
-            );
-        }
-
-        function getViewNode(editNodes: IEditNode[], credit: C.MusicXML.Credit, words: C.MusicXML.CreditWords, idx: number) {
+        function getViewNode(editNodes: Header.INode[], credit: C.MusicXML.Credit, words: C.MusicXML.CreditWords, idx: number) {
             editNodes[idx] = null;
             return React.DOM.text(
                 {
@@ -103,6 +62,10 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
     }
 
     getEditMode(): string {
+        return null;
+    }
+    getEditNode(editNodes: Header.INode[], credit: C.MusicXML.Credit,
+            words: C.MusicXML.CreditWords, idx: number): any {
         return null;
     }
 
@@ -129,9 +92,9 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
                 var words = node.words;
                 React.render(
                     React.DOM.input({
-                        type:       		"text",
-                        className:  		"form-control",
-                        id:         		"newsong_title",
+                        type:               "text",
+                        className:          "form-control",
+                        id:                 "newsong_title",
                         placeholder:        "",
                         onChange: (event: React.SyntheticEvent) => this.setState({
                             composer:       (<HTMLInputElement>event.target).value
@@ -158,7 +121,7 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
     _uuid: string           = C.generateUUID();
     _listeners: any[]       = [];
     _hash: number;
-    _editNodes: IEditNode[];
+    _editNodes: Header.INode[];
     shouldComponentUpdate(nextProps: Header.IProps, nextState: {}) {
         var oldHash             = this._hash;
         this._hash              = C.JSONx.hash(nextProps);
@@ -170,17 +133,18 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
 module Header {
     "use strict";
     export var Component = TypedReact.createClass(Header);
+
+    export interface INode {
+        credit:         C.MusicXML.Credit;
+        words:          C.MusicXML.CreditWords;
+        ref:            string;
+    }
+
     export interface IProps {
         editMode:   boolean;
         fontSize:   number;
         model:      C.ScoreHeader;
     }
-}
-
-interface IEditNode {
-    credit:         C.MusicXML.Credit;
-    words:  	   	C.MusicXML.CreditWords;
-    ref:            string;
 }
 
 export = Header;

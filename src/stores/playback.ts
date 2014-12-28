@@ -17,9 +17,7 @@ import Metre            		= require("./metre");
 import Model 		   	        = require("./model");
 
 var enabled                     = typeof document !== "undefined";
-var usingLegacyAudio    		= !global.AudioContext && enabled;
 
-var Audio5js:   any     		= enabled && usingLegacyAudio && require("audio5");
 var MIDI:       any     		= enabled && _.extend(require("midi/js/MIDI/Plugin.js"), {
                         		    audioDetect: require("midi/js/MIDI/AudioDetect.js"),
                         		    loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
@@ -129,7 +127,6 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     }
 
     static latestID: number = 0;
-    static usingLegacyAudio = usingLegacyAudio;
 
     private _continuePlay() {
         var Annotator: typeof AnnotatorType = require("./annotator");
@@ -150,8 +147,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         }
 
         var seek = 0;
-        var foundLegacyStart = false;
-        var startTime = PlaybackStore.usingLegacyAudio ? null : MIDI.Player.ctx.currentTime + 0.01;
+        var startTime = MIDI.Player.ctx.currentTime + 0.01;
 
         for (var h = 0; h < this._songEditor.parts.length; ++h) {
             var body: Model[] = this._songEditor.parts[h].body;
@@ -175,14 +171,6 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
                     var obj: Model = body[i];
                     foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
                             visualCursor.bar === obj.ctxData.bar);
-                    if (foundIdx && PlaybackStore.usingLegacyAudio && !foundLegacyStart) {
-                        audio5js.seek(seek);
-                        audio5js.play();
-                        foundLegacyStart = true;
-                        this._remainingActions.push(() => {
-                            audio5js.pause();
-                        });
-                    }
 
                     switch (obj.type) {
                         case C.Type.Attributes:
@@ -195,7 +183,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
 
                     if (foundIdx && obj.isNote) {
                         beats = Metre.calcBeats2(obj.note, ctx);
-                        if (!PlaybackStore.usingLegacyAudio && !obj.isRest) {
+                        if (!obj.isRest) {
                             _.each(obj.note.chord.map(C.NoteUtil.pitchToMidiNumber), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
@@ -265,8 +253,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     }
 
     private _getInstrument(soundfont: string, avoidEvent: boolean) {
-        if (!enabled || PlaybackStore.usingLegacyAudio && soundfont !== "acoustic_grand_piano") {
-            return; // Sorry IE, you only get a piano.
+        if (!enabled) {
+            return;
         }
 
         if (this._loadedSoundfonts[soundfont] && typeof console !== "undefined") {
@@ -354,7 +342,5 @@ function hit(note: any, velocity?: number, duration?: any) {
         }
     }
 };
-
-var audio5js: any       = null;
 
 export = PlaybackStore;

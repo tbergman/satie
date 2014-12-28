@@ -24,7 +24,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
         assert.deepEqual(line, [3]);
         return <!g>
             <!Glyph.Component
-                key="r"
+                key="R"
                 x={this.props.x + this.props.spacing}
                 y={this.props.y}
                 fill={this.props.stroke}

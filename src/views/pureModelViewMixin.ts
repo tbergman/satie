@@ -7,11 +7,11 @@
 import TypedReact   = require("typed-react");
 
 import C            = require("../stores/contracts");
-import Model        = require("../stores/model");
 
-class PureModelViewMixin extends TypedReact.Mixin<{spec: Model}, {}> {
+// spec should be a model, but this is not enforced because of TypeScript export restrictions.
+class PureModelViewMixin extends TypedReact.Mixin<{spec: any}, {}> {
     _hash: number;
-    shouldComponentUpdate(nextProps: {spec: Model}, nextState: {}) {
+    shouldComponentUpdate(nextProps: {spec: any}, nextState: {}) {
         var oldHash = this._hash;
         this._hash = C.JSONx.hash(nextProps) + nextProps.spec.x*9973 + nextProps.spec.y*997;
         return oldHash !== this._hash;

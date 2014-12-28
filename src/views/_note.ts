@@ -96,7 +96,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     notehead={this.props.notehead}
                     direction={direction} />}
                 {this.props.children && _.map(this.props.children,
-                    (component: React.ReactComponentElement<NoteNotation.IProps>, idx: number) => {
+                    (component: React.ReactElement<NoteNotation.IProps>, idx: number) => {
                         component.key = "_4_" + idx;
                         component.props.direction = direction;
                         component.props.line = this.getStartingLine();
@@ -188,7 +188,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         if (!this.isOnLedger()) { // check is here to force isOnLedgerLine to be accurate
             return false;
         }
-        var ret: Array<React.ReactElement<any, any>> = [];
+        var ret: Array<React.ReactElement<any>> = [];
         var lowest = this.getLowestLine();
         var highest = this.getHighestLine();
         if (lowest < 0.5) {
@@ -267,7 +267,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             }
         });
     }
-    tie() {
+    tie(): any {
         var Slur: typeof SlurType = require("./slur"); // Recursive.
         if (!this.props.tieTo) {
             return null;
@@ -307,7 +307,7 @@ module Note {
     export interface IProps {
         accidentals?: any;
         accStrokes?: string[];
-        children?: Array<React.ReactComponentElement<NoteNotation.IProps>>;
+        children?: Array<React.ReactElement<NoteNotation.IProps>>;
         direction?: number;
         dotted?: number;
         idx?: number;

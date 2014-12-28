@@ -13,9 +13,6 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
  */
 
-/// <reference path="../../references/es6-promise.d.ts" />
-/// <reference path="../../references/node.d.ts" />
-
 import Promise = require("es6-promise");
 import _ = require("lodash");
 import assert = require("assert");

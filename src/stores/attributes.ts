@@ -4,10 +4,13 @@
  * Written by Joshua Netterfield <joshua@nettek.ca>, December 2014
  */
 
-import Model            = require("./model");
+import Model                = require("./model");
 
-import Annotator        = require("./annotator");
-import C                = require("./contracts");
+import Annotator        	= require("./annotator");
+import C                	= require("./contracts");
+import ClefModel        	= require("./clef");
+import KeySignatureModel    = require("./keySignature");
+import TimeSignatureModel   = require("./timeSignature");
 
 /**
  * Model representing a MusicXML attributes element.
@@ -29,6 +32,12 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         return [
             "divisions", "partSymbol", "measureStyle", "staffDetails", "transpose", "staves",
             "instruments", "directive", "footnote", "level"
+        ];
+    }
+
+    get mxmlJsonOnlyFields() {
+        return [
+            "clef", "time", "keySignature"
         ];
     }
 
@@ -74,8 +83,46 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         ctx.attributes =     this;
 
+        if (!this.time && ctx.lines[ctx.line - 1] && ctx.lines[ctx.line - 1].attributes) {
+            this.time = ctx.lines[ctx.line - 1].attributes.time;
+        }
+
+        if (this.time && !(this.time instanceof Model)) {
+            ctx.insertFuture(new TimeSignatureModel(this.time, false));
+            ctx.next().ctxData = this.ctxData;
+            this.time = null;
+        }
+        if (this.keySignature && !(this.keySignature instanceof Model)) {
+            ctx.insertFuture(new KeySignatureModel(this.keySignature, false));
+            ctx.next().ctxData = this.ctxData;
+            this.keySignature = null;
+        }
+        if (this.clef && !(this.clef instanceof Model)) {
+            ctx.insertFuture(new ClefModel(this.clef, false));
+            ctx.next().ctxData = this.ctxData;
+            this.clef = null;
+        }
+
         this.updateAttached(ctx);
         return C.IterationStatus.Success;
+    }
+
+    toMXMLObject(): C.MusicXML.AttributesComplete {
+        return C.JSONx.clone({
+            clef:           this.clef,
+            directive:      this.directive,
+            divisions:      this.divisions,
+            footnote:       this.footnote,
+            instruments:    this.instruments,
+            keySignature:   this.keySignature,
+            level:          this.level,
+            measureStyle:   this.measureStyle,
+            partSymbol:     this.partSymbol,
+            staffDetails:   this.staffDetails,
+            staves:         this.staves,
+            time:           this.time,
+            transpose:      this.transpose
+        });
     }
 
     ///////////////
@@ -84,7 +131,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
 
     updateAttached(ctx: Annotator.Context) {
         this.clef         = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef          || c.type > C.Type.END_OF_ATTRIBUTES));
-        this.time 		  = <any> ifAttribute(ctx.next(c => c.type === C.Type.TimeSignature || c.type > C.Type.END_OF_ATTRIBUTES));
+        this.time 		  = <any> ifAttribute(ctx.next(c => c.type === C.Type.TimeSignature || c.type > C.Type.END_OF_ATTRIBUTES)) || this.time;
         this.keySignature = <any> ifAttribute(ctx.next(c => c.type === C.Type.KeySignature  || c.type > C.Type.END_OF_ATTRIBUTES));
 
         function ifAttribute(m: Model) {

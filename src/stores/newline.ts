@@ -64,7 +64,6 @@ class NewlineModel extends Model {
             this._justify(ctx);
             for (var i = 0; i < ctx._parts.length; ++i) {
                 var body = ctx._parts[i].body;
-                if (!body) { continue; }
                 if (body !== ctx.body) {
                     var len = Math.min(ctx.body.length, body.length);
                     for (var j = 0; j < len; ++j) {
@@ -83,8 +82,10 @@ class NewlineModel extends Model {
             }
         }
 
+        NewlineModel.pushDownIfNeeded(ctx);
+
         // Copy information from the context that the view needs.
-        this.lineSpacing        = ctx.calcLineSpacing();
+        this.lineSpacing        = ctx.calcLineSpacing(print);
         this.braceY             = this.y;
         this.braceY2            = this.y + C.renderUtil.staveSeperation;
 
@@ -102,12 +103,15 @@ class NewlineModel extends Model {
         ctx.maxX                = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
         ctx.maxY                = pageLayout.pageHeight - pageMargins.topMargin;
         ctx.x                   = systemMargins.leftMargin + pageMargins.leftMargin;
-        ctx.y                   = ctx.y + ctx.calcLineSpacing(print);
+        ctx.y                   = ctx.y + this.lineSpacing;
+        ctx.lines[ctx.line].attributes.time = ctx.attributes.time;
 
         ctx.line                = ctx.line + 1;
         /////////////////////////////////////////////////////////////
 
         ctx.smallest            = 10000;
+        ctx.minBottomPaddings   = _.times(ctx._parts.length, () => 0);
+        ctx.minTopPaddings      = _.times(ctx._parts.length, () => 0);
 
         this.x                  = ctx.x;
         this.width              = ctx.maxX - ctx.x;
@@ -126,12 +130,11 @@ class NewlineModel extends Model {
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
                 accidentalsByStave:     C.JSONx.clone(ctx.accidentalsByStave),
-                attributes:             lattributes,
+                attributes:             {},
                 bar:                    null,
                 barKeys:                null,
                 barlineX:               null,
                 beat:                   null,
-                keySignature:           null,
                 line:                   ctx.line,
                 pageLines:              null,
                 pageStarts:             null,
@@ -143,6 +146,7 @@ class NewlineModel extends Model {
         }
 
         ctx.lines[ctx.line].accidentalsByStave  = [];
+        ctx.lines[ctx.line].attributes          = {};
         ctx.lines[ctx.line].bar                 = ctx.bar;
         ctx.lines[ctx.line].barlineX            = [];
         ctx.lines[ctx.line].barKeys             = C.JSONx.clone(ctx.barKeys);
@@ -353,6 +357,24 @@ class NewlineModel extends Model {
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
                 (bbox[0] + bbox[3]) / 8 - toCenter[j].x;
         }
+    }
+
+    static pushDownIfNeeded(ctx: Annotator.Context) {
+        for (var i = 0; i < ctx._parts.length; ++i) {
+            var body = ctx._parts[i].body;
+
+            for (var l = ctx.idx; l + 1 === ctx.idx || !body[l + 1] ||
+                    body[l] && body[l + 1].priority !== C.Type.NewLine; --l) {
+                body[l].y += ctx.minTopPaddings[i];
+                var bodyl: any = body[l];
+                // Hack: Fix brace.
+                if (bodyl.braceY) {
+                    bodyl.braceY += ctx.minTopPaddings[i];
+                    bodyl.braceY2 += ctx.minTopPaddings[i];
+                }
+            }
+        }
+        ctx.y = ctx.curr.y;
     }
 }
 

@@ -25,7 +25,7 @@ import Rest                 = require("./_rest");
  * of components here.
  */
 class Duration extends TypedReact.Component<Duration.IProps, {}> {
-    render(): React.ReactElement<any, any> {
+    render(): React.ReactElement<any> {
         var props = this.props;
         var spec = props.spec;
         assert(spec instanceof DurationModel);
@@ -48,7 +48,6 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
 
         if (spec.isRest) {
             return <!Rest.Component
-                    children={[]}
                     dotted={spec.displayDots}
                     line={[3]}
                     key={spec.key}

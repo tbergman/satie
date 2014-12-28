@@ -14,10 +14,6 @@ var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin")
 import assert           = require("assert");
 import C                = require("../stores/contracts");
 
-if (typeof window !== "undefined") {
-    require("./_glyph.less");
-}
-
 class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
     render() {
         var px = this.props.x;
@@ -39,7 +35,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
             assert(!this.props.code);
         }
 
-        var text: React.ReactElement<any, any> = React.DOM.text({
+        var text: React.ReactElement<any> = React.DOM.text({
                 x: px,
                 y: py,
                 fill: this.props.fill,

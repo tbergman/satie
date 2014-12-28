@@ -9,6 +9,7 @@ import assert            = require("assert");
 import TSEE              = require("./tsee");
 
 import Annotator         = require("./annotator");
+import BeginModel        = require("./begin");
 import C                 = require("./contracts");
 import Instruments       = require("./instruments");
 import Model             = require("./model");
@@ -176,6 +177,102 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         return song;
     }
 
+    static extractMXMLHeader(m: C.MusicXML.ScoreTimewise): C.ScoreHeader {
+        var header = new C.ScoreHeader({
+            work:           m.work,
+            movementNumber: m.movementNumber,
+            movementTitle:  m.movementTitle,
+            identification: m.identification,
+            defaults:       m.defaults,
+            credits:        m.credits,
+            partList:       m.partList
+        });
+
+        // Some systems, especially small open source projects, don't record credits,
+        // but do record movementTitle. So add credits for them.
+        if ((!header.credits || !header.credits.length) && header.movementTitle) {
+            header.title = header.movementTitle;
+        }
+
+        return header;
+    }
+
+    static extractMXMLParts(m: C.MusicXML.ScoreTimewise): C.IPart[] {
+        var idxToPart: {[key: number]: string} = {};
+
+        var partCount = 0;
+        _.forEach(m.partList.scoreParts, (part, idx) => {
+            idxToPart[partCount++] = part.id;
+        });
+
+        var partToIdx = _.invert(idxToPart);
+
+        assert(partCount, "At least one part is needed.");
+
+        var parts: C.IPart[] = _.times(partCount, () => new Object({
+                instrument: Instruments.List[0],
+                body: <Model[]> [new BeginModel({}, true)]
+            }));
+
+        var mxmlClassToType: {[key: string]: C.Type} = {
+            "Note": C.Type.Duration,
+            "Attributes": C.Type.Attributes,
+            "Barline": C.Type.Barline
+        };
+
+        // Hackily convert MXMLJSON types to Models
+        // Note that the caller should not be able to detect any mutation
+        // (aside from object property ordering, which is always undefined)
+        _.forEach(m.measures, (measure) => {
+            var minPriority: number;
+            var idxPerPart = _.map(parts, part => 0);
+            do {
+                // Constraint: all parts at a given index have the same type. We add placeholders
+                // so that this is true.
+                var elements: any[]         = _.map(measure.parts, (p, partID) => p[idxPerPart[partToIdx[partID]]] || <any> {});
+                var priorities              = _.map(elements, element => mxmlClassToType[<string>element._class] || C.MAX_NUM);
+                minPriority                 = _.min(priorities);
+
+                _.forEach(elements, (element, partIdx) => {
+                    if (mxmlClassToType[element._class] === minPriority) {
+                        if (minPriority === C.Type.Duration) {
+                            var note = <C.MusicXML.Note> element;
+                            element = {
+                                _notes:     [note],
+                                _class:     element._class,
+                                dots:       note.dots       // FIXME
+                            };
+                            if (note.chord) {
+                                assert(false, "TODO");
+                            }
+                        }
+
+                        var _class = element._class;
+                        delete element._class;
+                        element._ = [Model.newKey(), minPriority, 0];
+                        parts[partIdx].body.push(Model.fromJSON(element));
+                        element._class = _class;
+                        delete element._;
+
+                        ++idxPerPart[partIdx];
+                    } else {
+                    }
+                });
+
+            } while(minPriority !== C.MAX_NUM);
+        });
+
+        // Call model hooks
+        _.forEach(parts, part => {
+            _.forEach(part.body, (model, j) => {
+                model.modelDidLoad(part.body, j);
+            });
+        });
+
+        return parts;
+    }
+
+
     static PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
     //////////////////
@@ -189,6 +286,20 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
 
     "PUT /webapp/song/src"(action: C.IFluxAction<string>) {
         this._reparse(action.postData);
+        this.dangerouslyMarkRendererDirty();
+        this.emit(C.EventType.Change);
+        this.emit(C.EventType.Annotate);
+    }
+
+    "PUT /webapp/song/mxmlJSON"(action: C.IFluxAction<C.MusicXML.ScoreTimewise>) {
+        var mxml                = C.JSONx.clone(action.postData);
+
+        this._header            = SongEditorStore.extractMXMLHeader(mxml);
+        this._parts             = SongEditorStore.extractMXMLParts(mxml);
+
+        Annotator.recordMetreData(this._parts);
+
+        this._annotate(null, null, null, null, true, null, Annotator.AssertionPolicy.NoAssertions);
         this.dangerouslyMarkRendererDirty();
         this.emit(C.EventType.Change);
         this.emit(C.EventType.Annotate);
@@ -292,8 +403,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         var context = this.ctxFromSnapshot(pointerData, parts, assertionPolicy) ||
             new Annotator.Context(parts, layout, this, assertionPolicy);
 
-        var y = C.renderUtil.getHeaderHeight(this.header);
-
         // Annotate the part.
         var location = {
             bar: context.lines ? context.lines[context.line].bar : 1,
@@ -301,8 +410,6 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         };
 
         var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
-
-        y = result.resetY ? 0 : y;
 
         if (SongEditorStore.PROFILER_ENABLED) {
             console.log("I broke the profiler");
@@ -312,13 +419,11 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
 
         if (!result.skip) {
             this._ctx = context;
-            y += 2.25;
         }
 
         if (SongEditorStore.PROFILER_ENABLED) {
             console.timeEnd("annotate");
         }
-
 
         return result;
     }

@@ -5,25 +5,25 @@
 
     "author": "Josh Netterfield",
     "license": "AGPLv3",
-    "private": true,
 
     "dependencies": {
         "es5-shim": "4.0.5",
         "es6-promise": "2.0.1",
+        "musicxml-interfaces": "0.0.3-alpha1",
         "lodash": "2.4.1",
         "react": "0.12.2",
-        "react-bootstrap": "0.13.0",
         "typed-react": "3.2.0"
     },
     "devDependencies": {
         "browserify": "7.0.3",
+        "dts-bundle": "0.2.0",
+        "event-stream": "3.1.7",
         "gulp": "3.8.10",
         "gulp-concat": "2.4.2",
         "gulp-exit": "0.0.2",
         "gulp-jasmine": "1.0.1",
         "gulp-karma": "git://github.com/jimthedev/gulp-karma.git",
         "gulp-newer": "0.5.0",
-        "gulp-mocha": "2.0.0",
         "gulp-mocha-browserify-sweet": "0.2.1",
         "gulp-streamify": "0.0.5",
         "gulp-tslint": "1.4.1",
@@ -36,9 +36,13 @@
         "watchify": "2.2.1"
     },
 
-    "main": "./src/satie.ts",
+    "main": "./dist/satie.js",
+    "typescript": {
+        "definition": "dist/satie.d.ts"
+    },
     "scripts": {
         "build": "NODE_ENV=production gulp build",
+        "buildDev": "gulp build",
         "start": "gulp watch",
         "test": "gulp test"
     }

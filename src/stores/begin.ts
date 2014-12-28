@@ -8,6 +8,8 @@
 
 import Model        = require("./model");
 
+import _            = require("lodash");
+
 import C            = require("./contracts");
 import Annotator    = require("./annotator");
 import PrintModel   = require("./print");
@@ -63,6 +65,8 @@ class BeginModel extends Model {
         ctx.y                   = pageMargins.topMargin + print.systemLayout.topSystemDistance;
         ctx.lines[ctx.line].y   = ctx.y;
         ctx.lines[ctx.line].x   = ctx.x;
+        ctx.minBottomPaddings   = _.times(ctx._parts.length, () => 0);
+        ctx.minTopPaddings      = _.times(ctx._parts.length, () => 0);
 
         /////////////////////////////////////////////////////////////
 

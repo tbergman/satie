@@ -7,7 +7,6 @@
 import Model                = require("./model");
 
 import _                    = require("lodash");
-import diff                 = require("diff");
 
 import Annotator            = require("./annotator");
 import C                    = require("./contracts");
@@ -42,8 +41,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             "ending",
             "repeat",
             "footnote",
-            "level",
-            "revision"
+            "level"
         ];
     }
 
@@ -77,7 +75,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     divisions:                  string;
     barStyle:                   C.MusicXML.BarStyle         // See also BarlineModel.prototype.barStyle
     ending:                     C.MusicXML.Ending;
-    repeat: 					C.MusicXML.Repeat;
+    repeat:                     C.MusicXML.Repeat;
 
     //////////////////////////////
     // I.5 C.MusicXML.Editorial //
@@ -105,6 +103,10 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
             return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true));
+        }
+
+        if (!ctx.next()) {
+            ctx.insertFuture(new EndMarkerModel({endMarker: true}, true));
         }
 
         var i: number;
@@ -167,7 +169,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
                 var DurationModel: typeof DurationModelType = require("./duration");
                 var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, true));
                 for (i = 0; i < whole.length; ++i) {
-                    whole[i].chord = [{ step: "r", alter: null, octave: null }];
+                    whole[i].chord = [{ step: "R", alter: null, octave: null }];
                     whole[i].tie = false;
                 }
                 // This is dangerous, and probably wrong.
@@ -187,7 +189,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
         if (nextNonPlaceholder.isNote) {
-            this.annotatedAccidentalSpacing = 2 * (_.any(intersectingNotes,
+            this.annotatedAccidentalSpacing = 10 * (_.any(intersectingNotes,
                 n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx)) ? 1 : 0);
         } else {
             this.annotatedAccidentalSpacing = 0;
@@ -263,8 +265,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
 
         ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true), null, true);
     };
-
-    private static _lastRev = 0;
 }
 
 BarlineModel.prototype.barStyle = {

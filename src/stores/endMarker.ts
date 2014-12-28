@@ -13,6 +13,7 @@ import BarlineModelType 	= require("./barline");     // Cyclic
 import C                	= require("./contracts");
 import DurationModelType    = require("./duration");    // Cyclic
 import Metre                = require("./metre");
+import NewlineModel         = require("./newline");
 
 /**
  * A marker for the end of lines and bars. Its purpose is to help with
@@ -81,7 +82,7 @@ class EndMarkerModel extends Model {
 
             var toAdd = Metre.subtract(ctx.ts.beats, ctx.beat, ctx)
                 .map((beat: C.IPitchDuration) => {
-                    beat.chord = [{ step: "r", octave: 0, alter: null }];
+                    beat.chord = [{ step: "R", octave: 0, alter: null }];
                     beat.tie = false;
                     return new DurationModel(beat, true);
                 });
@@ -101,6 +102,10 @@ class EndMarkerModel extends Model {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.LightHeavy);
             }
+        }
+
+        if (!ctx.next()) {
+            NewlineModel.pushDownIfNeeded(ctx);
         }
 
         this.endMarker = true;

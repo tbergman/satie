@@ -9,15 +9,14 @@
 /* tslint:disable */
 
 import React                = require("react");
-import TypedReact       	= require("typed-react");
-import assert           	= require("assert");
+import TypedReact           = require("typed-react");
+import assert               = require("assert");
 
-import Bezier           	= require("./_bezier");
-import C                	= require("../stores/contracts");
-import Note             	= require("./_note");
+import Bezier               = require("./_bezier");
+import C                    = require("../stores/contracts");
+import Note                 = require("./_note");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import SlurGroupModel       = require("../stores/slur");
-import getFontOffset    	= require("./_getFontOffset");
 
 var getExtremeLine = Note.getExtremeLine;
 
@@ -82,7 +81,6 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
     direction() {
         return this.props.spec.direction;
     }
-    getFontOffset = getFontOffset;
     getX1() {
         return this.props.spec.x;
     }

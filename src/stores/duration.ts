@@ -50,13 +50,13 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     chord: C.IPitch[];
     get isRest() {
-        return (this.chord && this.chord.length === 1 && this.chord[0].step === "r");
+        return (this.chord && this.chord.length === 1 && this.chord[0].step === "R");
     }
 
     set isRest(r: boolean) {
         if (!!r) {
             this.chord = [{
-                step: "r",
+                step: "R",
                 alter: null,
                 octave: null
             }];
@@ -261,7 +261,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     // I.4 C.MusicXML.* //
     //////////////////////
 
-    _p_notes: MNote[];
+    _p_notes: DurationModel.MNote[];
     get _notes(): C.MusicXML.Note[] {
         return this._p_notes;
     }
@@ -270,8 +270,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.chord.length = notes.length;
 
         for (var i = 0; i < notes.length; ++i) {
-            if (!(notes[i] instanceof MNote)) {
-                notes[i]  = new MNote(this, i, notes[i]);
+            if (!(notes[i] instanceof DurationModel.MNote)) {
+                notes[i]  = new DurationModel.MNote(this, i, notes[i]);
             }
         }
         this._p_notes     = <any> notes;
@@ -295,7 +295,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         if (!this._p_notes) {
             this._p_notes = _.map(this.chord, (pitch, idx) => {
-                return new MNote(this, idx, {
+                return new DurationModel.MNote(this, idx, {
                     pitch: pitch
                 });
             });
@@ -336,10 +336,10 @@ class DurationModel extends Model implements C.IPitchDuration {
             // this branch means that this.chord was modified.
             // Note: the chord property should be a getter and setter, and should update
             // it auto-magically. Otherwise, you'll get mismatched properties.
-            var notes: MNote[]  = this._p_notes;
+            var notes: DurationModel.MNote[]  = this._p_notes;
             for (var i = 0; i < this.chord.length; ++i) {
-                if (!(notes[i] instanceof MNote)) {
-                    notes[i]    = new MNote(this, i, notes[i] || {
+                if (!(notes[i] instanceof DurationModel.MNote)) {
+                    notes[i]    = new DurationModel.MNote(this, i, notes[i] || {
                         pitch:  this.chord[i],
                         dots:   this.dots,
                         count:  this.count
@@ -488,6 +488,11 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.lines = DurationModel.getLines(this, ctx);
         assert(this.lines);
         assert(_.forEach(this.lines, l => isFinite(l)));
+
+        for (var i = 0; i < this.lines.length; ++i) {
+            ctx.minBottomPaddings[i] = Math.max(ctx.minBottomPaddings[i], -(this.lines[i] - 3)*10);
+            ctx.minTopPaddings[i] = Math.max(ctx.minTopPaddings[i], (this.lines[i] - 4)*10);
+        }
 
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
@@ -671,7 +676,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 }
 
-                // 3. The note has the same accidental on other part with the same note(right now!)
+                // 3. The note has the same accidental on other part with the same note (right now!)
                 var concurrentNotes = ctx.findVertical(c => c.isNote);
                 for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
                     var otherChord = concurrentNotes[j].note.chord;
@@ -856,7 +861,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             if (!options.filterTemporary || !note.chord[i].temporary) {
                 ret.push(note.isRest ? 3 :
                     DurationModel.clefOffsets[ctx.attributes.clef.sign] +
-                    (note.chord[i].octave || 0) * 3.5 +
+                    ((note.chord[i].octave || 0) - 3) * 3.5 +
                     DurationModel.pitchOffsets[note.chord[i].step]);
             }
         }
@@ -883,261 +888,272 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
 
     static offsetToPitch: { [key: string]: string } = {
-        0: "c",
-        0.5: "d",
-        1: "e",
-        1.5: "f",
-        2: "g",
-        2.5: "a",
-        3: "b"
+        0: "C",
+        0.5: "D",
+        1: "E",
+        1.5: "F",
+        2: "G",
+        2.5: "A",
+        3: "B"
     };
 
     static pitchOffsets: { [key: string]: number } = {
-        c: 0,
-        d: 0.5,
-        e: 1,
-        f: 1.5,
-        g: 2,
-        a: 2.5,
-        b: 3
+        C: 0,
+        D: 0.5,
+        E: 1,
+        F: 1.5,
+        G: 2,
+        A: 2.5,
+        B: 3
     };
 }
 
-class MNote implements C.MusicXML.NoteComplete {
-    /* Parent */
-    _parent: DurationModel;
-    _idx : number;
+module DurationModel {
+    export class MNote implements C.MusicXML.NoteComplete {
+        /* Parent */
+        _parent: DurationModel;
+        _idx : number;
 
-    constructor(parent: DurationModel, idx: number, note: C.MusicXML.Note, updateParent: boolean = true) {
-        var self : {[key:string]: any} = <any> this;
+        constructor(parent: DurationModel, idx: number, note: C.MusicXML.Note, updateParent: boolean = true) {
+            var self : {[key:string]: any} = <any> this;
 
-        /* Link to parent */
-        this._parent            =   parent;
-        this._idx               =   idx;
+            /* Link to parent */
+            this._parent            =   parent;
+            this._idx               =   idx;
 
-        /* Properties owned by parent */
-        if (updateParent) {
-            parent.chord[idx]   =   note.pitch;
-            parent.dots         =  (note.dots || []).length;
-            parent.isRest       = !!note.rest || parent.isRest;
-            parent.count        =   note.noteType ? note.noteType.duration : (parent.count || 4);
+            if (note.pitch) {
+                note.pitch.step     = note.pitch.step.toUpperCase();
+            }
 
-            parent.tuplet       =   note.timeModification ? {
-                num:                note.timeModification.normalNotes.count,
-                den:                note.timeModification.actualNotes.count
-            }                           : parent.tuplet;
-        }
+            /* Properties owned by parent */
+            if (updateParent) {
+                parent.chord[idx]   =   note.pitch;
+                parent.dots         =  (note.dots || []).length;
+                if (note.rest) {
+                    parent.isRest   =   true;
+                }
+                parent.count        =   note.noteType ? note.noteType.duration : (parent.count || 4);
 
-        /* Properties owned by MNote */
-        var properties          = [
-            "unpitched", "noteheadText", "accidental", "instrument",
-            "attack", "endDynamics", "lyrics", "notations", "stem", "cue", "ties", "dynamics", "duration",
-            "play", "staff", "grace", "notehead", "release", "beams", "voice", "footnote", "level",
-            "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle", "fontSize",
-            "color", "printDot", "printLyric", "printObject", "printSpacing", "timeOnly" ];
+                parent.tuplet       =   note.timeModification ? {
+                    num:                note.timeModification.normalNotes.count,
+                    den:                note.timeModification.actualNotes.count
+                }                           : parent.tuplet;
+            }
 
-        _.forEach(properties, setIfDefined);
+            /* Properties owned by MNote */
+            var properties          = [
+                "unpitched", "noteheadText", "accidental", "instrument",
+                "attack", "endDynamics", "lyrics", "notations", "stem", "cue", "ties", "dynamics", "duration",
+                "play", "staff", "grace", "notehead", "release", "pizzicato", "beams", "voice", "footnote", "level",
+                "relativeY", "defaultY", "relativeX", "fontFamily", "fontWeight", "fontStyle", "fontSize",
+                "color", "printDot", "printLyric", "printObject", "printSpacing", "timeOnly" ];
 
-        function setIfDefined(property: string) {
-            if (note.hasOwnProperty(property)) {
-                self[property]  = <any> (<any>note)[property];
+            _.forEach(properties, setIfDefined);
+
+            function setIfDefined(property: string) {
+                if (note.hasOwnProperty(property)) {
+                    self[property]  = <any> (<any>note)[property];
+                }
             }
         }
-    }
 
-    /* JSON */
-    toJSON(): {} {
-        var clone: {[key: string]: any} = {};
+        /* JSON */
+        toJSON(): {} {
+            var clone: {[key: string]: any} = {};
 
-        /* Properties owned by parent */
-        if (this.pitch) {
-            clone["pitch"]              = this.pitch;
-        }
-        if (this.rest) {
-            clone["rest"]               = this.rest;
-        }
-        if (this.chord) {
-            clone["chord"]              = this.chord;
-        }
-        if (this.color) {
-            clone["color"]              = this.color;
-        }
-        if (this.noteType) {
-            clone["noteType"]           = this.noteType;
-        }
-        if (this.timeModification) {
-            clone["timeModification"]   = this.timeModification;
+            /* Properties owned by parent */
+            if (this.pitch) {
+                clone["pitch"]              = this.pitch;
+            }
+            if (this.rest) {
+                clone["rest"]               = this.rest;
+            }
+            if (this.chord) {
+                clone["chord"]              = this.chord;
+            }
+            if (this.color) {
+                clone["color"]              = this.color;
+            }
+            if (this.noteType) {
+                clone["noteType"]           = this.noteType;
+            }
+            if (this.timeModification) {
+                clone["timeModification"]   = this.timeModification;
+            }
+
+            /* Properties owned by MNote */
+            for (var key in this) {
+                if (this.hasOwnProperty(key) && key[0] !== "_" && !!(<any>this)[key]) {
+                    clone[key] = (<any>this)[key];
+                }
+            }
+            return clone;
         }
 
-        /* Properties owned by MNote */
-        for (var key in this) {
-            if (this.hasOwnProperty(key) && key[0] !== "_" && !!(<any>this)[key]) {
-                clone[key] = (<any>this)[key];
+        /* C.MusicXML.Note */
+
+        /* C.MusicXML.Note > Core */
+        get chord(): C.MusicXML.Chord {
+            return this._idx + 1 !== this._parent.chord.length;
+        }
+
+
+        get pitch(): C.MusicXML.Pitch {
+            return this._parent.isRest ? null : this._parent.chord[this._idx ];
+        }
+        set pitch(pitch: C.MusicXML.Pitch) {
+            this._parent.chord[this._idx ].alter  = pitch.alter;
+            this._parent.chord[this._idx ].step   = pitch.step;
+            this._parent.chord[this._idx ].octave = pitch.octave;
+        }
+
+        get rest(): C.MusicXML.Rest {
+            // TODO: full measure
+            // TODO: display step
+            // TODO: display octave
+            return this._parent.isRest ? {
+                measure: this._parent.isWholebar,
+                displayStep: null, // TODO
+                displayOctave: null
+            } : null;
+        }
+        set rest(rest: C.MusicXML.Rest) {
+            this._parent.isRest = !!rest;
+        }
+
+        get dots(): C.MusicXML.Dot[] {
+            return _.times(this._parent.dots, idx => <C.MusicXML.Dot> {
+                // TODO: save/restore dot formatting
+                // TODO: display dot formatting
+            });
+        }
+        set dots(dots: C.MusicXML.Dot[]) {
+            this._parent.dots = dots.length;
+        }
+
+        get noteType(): C.MusicXML.Type {
+            return {
+                duration: this._parent.count,
+                size: C.MusicXML.SymbolSize.Full // TODO: grace, cue
+            };
+        }
+
+        set noteType(type: C.MusicXML.Type) {
+            // TODO: grace, cue
+            this._parent.count = type.duration;
+        }
+
+        get timeModification(): C.MusicXML.TimeModification {
+            return this._parent.tuplet ? {
+                normalNotes: {
+                    count:      this._parent.tuplet.num
+                },
+                actualNotes: {
+                    count:      this._parent.tuplet.den
+                },
+                normalDots:     [],
+                normalType:     "eighth"    // MXFIX
+            } : null;
+        }
+
+        set timeModification(tm: C.MusicXML.TimeModification) {
+            // TODO: normalDots
+            // TODO: normalType
+            this._parent.tuplet = {
+                num: tm.normalNotes.count,
+                den: tm.actualNotes.count
+            };
+        }
+
+        /* C.MusicXML.Note > Extended */
+        unpitched:          C.MusicXML.Unpitched;
+        noteheadText:       C.MusicXML.NoteheadText;
+        accidental:         C.MusicXML.Accidental;
+        instrument:         C.MusicXML.Instrument;
+        attack:             number;
+        endDynamics:        number;
+        lyrics:             C.MusicXML.Lyric[];
+        notations:          C.MusicXML.Notations[];
+        stem:               C.MusicXML.Stem;
+        cue:                C.MusicXML.Cue;
+        duration:           number;                     // Currently ignored! We just use the note appearance for timing!
+        ties:               C.MusicXML.Tie[];
+        dynamics:           number;
+        play:               C.MusicXML.Play;
+        staff:              C.MusicXML.Staff;
+        grace:              C.MusicXML.Grace;
+        notehead:           C.MusicXML.Notehead;
+        release:            number;
+        pizzicato:          boolean;
+        beams:              C.MusicXML.Beam[];
+
+
+        /* C.MusicXML.PrintStyle */
+
+        /* C.MusicXML.PrintStyle >> EditorialVoice */
+        voice:              string;
+        footnote:           C.MusicXML.Footnote;
+        level:              C.MusicXML.Level;
+
+        /* C.MusicXML.PrintStyle >> Position */
+        get defaultX(): number {
+            return this._parent.x;
+        }
+        relativeY:          number;
+        defaultY:           number;
+        relativeX:          number;
+
+        /* C.MusicXML.PrintStyle >> Font */
+        fontFamily:         string;
+        fontWeight:         C.MusicXML.NormalBold;
+        fontStyle:          C.MusicXML.NormalItalic;
+        fontSize:           string;
+
+        /* C.MusicXML.PrintStyle >> Color */
+        get color(): string {
+            var hex = this._color.toString(16);
+            return "#" + "000000".substr(0, 6 - hex.length) + hex;
+        }
+        set color(a: string) {
+            switch(true) {
+                case !a:
+                    this._color = 0;
+                    break;
+                case a[0] === "#":
+                    a = a.slice(1);
+                    // passthrough
+                default:
+                    this._color = parseInt(a, 16);
+                    break;
             }
         }
-        return clone;
+
+
+        /* C.MusicXML.Printout */
+        printDot:           boolean;
+        printLyric:         boolean;
+
+        /* C.MusicXML.Printout >> PrintObject */
+        printObject:        boolean;
+
+        /* C.MusicXML.Printout >> PrintSpacing */
+        printSpacing:       boolean;
+
+
+        /* C.MusicXML.TimeOnly */
+        timeOnly:           string;
+
+
+        private _color:     number = 0x000000;
     }
-
-    /* C.MusicXML.Note */
-
-    /* C.MusicXML.Note > Core */
-    get chord(): C.MusicXML.Chord {
-        return this._idx + 1 !== this._parent.chord.length;
-    }
-
-
-    get pitch(): C.MusicXML.Pitch {
-        return this._parent.isRest ? null : this._parent.chord[this._idx ];
-    }
-    set pitch(pitch: C.MusicXML.Pitch) {
-        this._parent.chord[this._idx ].alter  = pitch.alter;
-        this._parent.chord[this._idx ].step   = pitch.step;
-        this._parent.chord[this._idx ].octave = pitch.octave;
-    }
-
-    get rest(): C.MusicXML.Rest {
-        // TODO: full measure
-        // TODO: display step
-        // TODO: display octave
-        return this._parent.isRest ? {
-            measure: this._parent.isWholebar,
-            displayStep: null, // TODO
-            displayOctave: null
-        } : null;
-    }
-    set rest(rest: C.MusicXML.Rest) {
-        this._parent.isRest = !!rest;
-    }
-
-    get dots(): C.MusicXML.Dot[] {
-        return _.times(this._parent.dots, idx => <C.MusicXML.Dot> {
-            // TODO: save/restore dot formatting
-            // TODO: display dot formatting
-        });
-    }
-    set dots(dots: C.MusicXML.Dot[]) {
-        this._parent.dots = dots.length;
-    }
-
-    get noteType(): C.MusicXML.Type {
-        return {
-            duration: this._parent.count,
-            size: C.MusicXML.SymbolSize.Full // TODO: grace, cue
-        };
-    }
-
-    set noteType(type: C.MusicXML.Type) {
-        // TODO: grace, cue
-        this._parent.count = type.duration;
-    }
-
-    get timeModification(): C.MusicXML.TimeModification {
-        return this._parent.tuplet ? {
-            normalNotes: {
-                count:      this._parent.tuplet.num
-            },
-            actualNotes: {
-                count:      this._parent.tuplet.den
-            },
-            normalDots:     [],
-            normalType:     "eighth"    // MXFIX
-        } : null;
-    }
-
-    set timeModification(tm: C.MusicXML.TimeModification) {
-        // TODO: normalDots
-        // TODO: normalType
-        this._parent.tuplet = {
-            num: tm.normalNotes.count,
-            den: tm.actualNotes.count
-        };
-    }
-
-    /* C.MusicXML.Note > Extended */
-    unpitched:          C.MusicXML.Unpitched;
-    noteheadText:       C.MusicXML.NoteheadText;
-    accidental:         C.MusicXML.Accidental;
-    instrument:         C.MusicXML.Instrument;
-    attack:             number;
-    endDynamics:        number;
-    lyrics:             C.MusicXML.Lyric[];
-    notations:          C.MusicXML.Notations[];
-    stem:               C.MusicXML.Stem;
-    cue:                C.MusicXML.Cue;
-    duration:           number;                     // Currently ignored! We just use the note appearance for timing!
-    ties:               C.MusicXML.Tie[];
-    dynamics:           number;
-    play:               C.MusicXML.Play;
-    staff:              C.MusicXML.Staff;
-    grace:              C.MusicXML.Grace;
-    notehead:           C.MusicXML.Notehead;
-    release:            number;
-    beams:              C.MusicXML.Beam[];
-
-
-    /* C.MusicXML.PrintStyle */
-
-    /* C.MusicXML.PrintStyle >> EditorialVoice */
-    voice:              string;
-    footnote:           C.MusicXML.Footnote;
-    level:              C.MusicXML.Level;
-
-    /* C.MusicXML.PrintStyle >> Position */
-    get defaultX(): number {
-        return this._parent.x;
-    }
-    relativeY:          number;
-    defaultY:           number;
-    relativeX:          number;
-
-    /* C.MusicXML.PrintStyle >> Font */
-    fontFamily:         string;
-    fontWeight:         C.MusicXML.NormalBold;
-    fontStyle:          C.MusicXML.NormalItalic;
-    fontSize:           string;
-
-    /* C.MusicXML.PrintStyle >> Color */
-    get color(): string {
-        var hex = this._color.toString(16);
-        return "#" + "000000".substr(0, 6 - hex.length) + hex;
-    }
-    set color(a: string) {
-        switch(true) {
-            case !a:
-                this._color = 0;
-                break;
-            case a[0] === "#":
-                a = a.slice(1);
-                // passthrough
-            default:
-                this._color = parseInt(a, 16);
-                break;
-        }
-    }
-
-
-    /* C.MusicXML.Printout */
-    printDot:           boolean;
-    printLyric:         boolean;
-
-    /* C.MusicXML.Printout >> PrintObject */
-    printObject:        boolean;
-
-    /* C.MusicXML.Printout >> PrintSpacing */
-    printSpacing:       boolean;
-
-
-    /* C.MusicXML.TimeOnly */
-    timeOnly:           boolean;
-
-
-    private _color:     number = 0x000000;
 }
 
-function _hasConflict(otherChord: Array<C.IPitch>, pitch: string, target: number) {
+function _hasConflict(otherChord: Array<C.IPitch>, step: string, target: number) {
     "use strict";
     for (var k = 0; k < otherChord.length; ++k) {
-        if (otherChord[k].step === pitch && otherChord[k].alter !== target) {
+        var actual = (otherChord[k].alter !== otherChord[k].alter) ? NaN : (otherChord[k].alter || 0);
+        var target = (target !== target) ? NaN : (target || 0);
+        if (otherChord[k].step === step && actual !== target) {
             return true;
         }
     }

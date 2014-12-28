@@ -7,22 +7,22 @@
  */
 
 import C                    = require("./contracts");
-import React            	= require("react");
+import React                = require("react");
 
-import Model            	= require("./model");
+import Model                = require("./model");
 
-import AttributesModel  	= require("./attributes");
-import BarlineModel     	= require("./barline");
-import BarlineView      	= require("../views/barline");
-import BeamGroupModel   	= require("./beamGroup");
-import BeamGroupView    	= require("../views/beamGroup");
-import BeginModel       	= require("./begin");
-import BeginView        	= require("../views/begin");
-import ClefModel        	= require("./clef");
-import ClefView         	= require("../views/clef");
-import DurationModel    	= require("./duration");
-import DurationView     	= require("../views/duration");
-import EndMarkerModel   	= require("./endMarker");
+import AttributesModel      = require("./attributes");
+import BarlineModel         = require("./barline");
+import BarlineView          = require("../views/barline");
+import BeamGroupModel       = require("./beamGroup");
+import BeamGroupView        = require("../views/beamGroup");
+import BeginModel           = require("./begin");
+import BeginView            = require("../views/begin");
+import ClefModel            = require("./clef");
+import ClefView             = require("../views/clef");
+import DurationModel        = require("./duration");
+import DurationView         = require("../views/duration");
+import EndMarkerModel       = require("./endMarker");
 import KeySignatureModel    = require("./keySignature");
 import KeySignatureView     = require("../views/keySignature");
 import NewlineModel         = require("./newline");
@@ -59,7 +59,7 @@ export function ensureRegistered() {
     registerType(C.Type.TimeSignature, TimeSignatureModel, TimeSignatureView.Component);
     registerType(C.Type.Wedge, WedgeModel, WedgeView.Component);
 
-    function registerType(type: C.Type, model: any, view: React.ReactComponentFactory<any>) {
+    function registerType(type: C.Type, model: any, view: React.ComponentClass<any>) {
         Model.constructorsByType[type] = function (spec: any) { return new model(spec); };
         model.setView(view);
     }

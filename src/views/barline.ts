@@ -10,12 +10,12 @@
 /* tslint:disable */
 
 import React                = require("react");
-import TypedReact       	= require("typed-react");
+import TypedReact           = require("typed-react");
 
-import C                	= require("../stores/contracts");
-import BarlineModel     	= require("../stores/barline");
-import Rect             	= require("./_rect");
-import Line             	= require("./_line");
+import C                    = require("../stores/contracts");
+import BarlineModel         = require("../stores/barline");
+import Rect                 = require("./_rect");
+import Line                 = require("./_line");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import SMuFL                = require("../util/SMuFL");
 

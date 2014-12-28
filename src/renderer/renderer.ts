@@ -30,16 +30,12 @@ C.renderUtil.useGL      = useGL;
 var RenderEngine        = Molasses.Component;
 var profilerEnabled     = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-if (typeof window !== "undefined") {
-    require("web-midi-api/WebMIDIAPI.js"); // Inserts itself if WebMIDI isn't present.
-}
-
 /**
  * The main home of the renderer. The renderer accepts annotated Models and
  * either uses Molasses (the SVG engine) or Victoria (the OpenGL ES engine)
  * to draw some sheet music.
  */
-class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
+class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     render() {
         if (profilerEnabled) {
             console.time("render");
@@ -82,7 +78,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return <!RenderEngine
                     onClick={this.handleMouseClick}
-                    onMouseDown={this.handleMouseDown}
                     onMouseLeave={this.handleMouseLeave}
                     onMouseMove={this.handleMouseMove}
                     page={page}
@@ -108,13 +103,13 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                             return memo;
                         }, [[]]).splice(page.idx ? 1 : 0 /* BUG!! */).map(
                             (s: Array<Model>, lidx: number) => {
-                                return <!LineContainerComponent
-                                    parts={this.props.parts}
-                                    isCurrent={this.state.visualCursor.annotatedLine ===
-                                        lidx + pageLines[page.idx]}
-                                    store={this.props.store}
-                                    h={idx}
-                                    generate={function () {
+                                return React.createElement(LineContainerComponent, {
+                                    parts: this.props.parts,
+                                    isCurrent: this.state.visualCursor.annotatedLine ===
+                                        lidx + pageLines[page.idx],
+                                    store: this.props.store,
+                                    h: idx,
+                                    generate: function generate() {
                                         var components = new Array(s.length * 2);
                                         var h = 0;
                                         // I think selected items currently HAVE to
@@ -148,9 +143,11 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                                         }
                                         components.length = h;
                                         return components;
-                                    }}
-                                    idx={lidx + pageLines[page.idx]}
-                                    key={lidx} />;
+                                        return null;
+                                    },
+                                idx: lidx + pageLines[page.idx],
+                                key: lidx
+                            });
                             }
                         )}
                     </g>
@@ -170,7 +167,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
                     </g>}
                 </RenderEngine>});
 
-        var ret: React.ReactElement<any, any>;
+        var ret: React.ReactElement<any>;
         var yPtr = {y: this.props.marginTop};
         if (!this.props.raw) {
             ret = <!div className="workspace" onScroll={this.handleScroll} style={{top: "" + this.props.top}}>
@@ -406,27 +403,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, IState> {
         this.forceUpdate();
     }
 
-    handleMouseDown(event: React.MouseEvent) {
-        if (event.button === 0) {
-            var pos = this.getPositionForMouse(event);
-            if (this.props.selection && this.props.selection.length) {
-                // Bottleneck: detect lines with selected content
-                if (this.props.store) {
-                    this.props.store.dangerouslyMarkRendererDirty();
-                }
-            }
-            this.setState({
-                selectionRect: {
-                    start: pos,
-                    end: pos
-                }
-            });
-            if (this.props.selection) {
-                this.props.dispatcher.DELETE("/webapp/selection");
-            }
-        }
-    }
-
     handleMouseMove(event: React.MouseEvent) {
         this.handleMouseMoveThrottled(this.getPositionForMouse(event));
     }
@@ -506,6 +482,11 @@ module Renderer {
     "use strict";
     export var Component = TypedReact.createClass(Renderer);
 
+    export interface IState {
+        visualCursor?:  C.IVisualCursor;
+        mouse?:         C.IMouse;
+    }
+
     export interface IProps {
         context?: Annotator.Context;
         cursor?: C.IVisualCursor;
@@ -519,10 +500,8 @@ module Renderer {
         songId?: string;
         store?: C.ISongEditor;
         top?: number;
-        selection?: Array<Model>;
         width?: number;
         height?: number;
-        setRibbonTabFn: (tab: number) => void;
     }
 
     export interface IPosInfo {
@@ -542,12 +521,6 @@ module Renderer {
             y: number;
         };
     }
-}
-
-interface IState {
-    selectionRect?: Renderer.IRect;
-    visualCursor?:  C.IVisualCursor;
-    mouse?:         C.IMouse;
 }
 
 /**
