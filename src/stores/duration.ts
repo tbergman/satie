@@ -517,7 +517,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             // Set the octave specific accidental
             ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
             // If needed, invalidate the default accidental
-            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]||null) !== this.chord[i].alter) {
+            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]) !== this.chord[i].alter) {
                 ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] = C.InvalidAccidental;
             }
         }
@@ -549,16 +549,22 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nonAccidentals = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var pitches: Array<C.IPitch> = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
-            if ((nonAccidentals[pitches[i].step]||0) !== (pitches[i].alter||0)) {
+            if ((nonAccidentals[pitches[i].alter]||0) !== (pitches[i].alter||0)) {
                 return true;
             }
-            // Make sure there's no ambiguity from the previous note 
+
+            /*
+                Make sure there's no ambiguity from the previous note 
+                This should probably be on by default when editing. Or, at the least, for non-imported notes,
+                it should be default.
+
             var prevNote = ctx.prev(c => c.isNote && !c.isRest);
             if (prevNote) {
                 if (_hasConflict(prevNote.note.chord, pitches[i].step, nonAccidentals[pitches[i].step]||null)) {
                     return true;
                 }
             }
+            */
         }
 
         return false;
@@ -684,13 +690,14 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
 
                 // 4. Ambiguity could not be caused by being directly after a barline
-                var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
-                if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
-                    var prevNote = ctx.prev(c => c.isNote && !c.isRest);
-                    if (prevNote) {
-                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
-                    }
-                }
+                //    This should be on by default (at least parenthesised) in edit mode.
+                // var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
+                // if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
+                //     var prevNote = ctx.prev(c => c.isNote && !c.isRest);
+                //     if (prevNote) {
+                //         noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
+                //     }
+                // }
 
                 if (noConflicts) {
                     result[i] = NaN; // no accidental

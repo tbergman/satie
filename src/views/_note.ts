@@ -171,13 +171,23 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         var start = this.getHeightDeterminingLine()*10;
         var idealExtreme = start + this.direction()*idealStemHeight;
 
+        var result: number;
         if (idealExtreme >= 65) {
-            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
+            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
         } else if (idealExtreme <= -15) {
-            return Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
+            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
+        } else {
+            result = 35;
         }
 
-        return 35;
+        // All stems should in the main voice should touch the center line.
+        if (start > 30 && this.direction() === -1 && start - result > 30) {
+            result = start - 30;
+        } else if (start < 30 && this.direction() === 1 && start + result < 30) {
+            result = 30 - start;
+        }
+
+        return result;
     }
     isOnLedger() {
         var lowest = this.getLowestLine();

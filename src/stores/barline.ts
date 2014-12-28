@@ -185,7 +185,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
 
         // Barlines followed by accidentals have additional padding. We check all
         // parts for following accidentals.
-        var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
+        var intersectingNotes = ctx.intersects(C.Type.Duration, ctx.idx, true, false);
         var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
         if (nextNonPlaceholder.isNote) {

@@ -124,7 +124,7 @@ var BarlineModel = (function (_super) {
         }
         var next = ctx.next(function (c) { return c.type !== 50 /* Print */; });
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (next.type === 130 /* NewLine */ || next.type === 120 /* NewPage */);
-        var intersectingNotes = _.filter(ctx.intersects(600 /* Duration */), function (l) { return l.isNote; });
+        var intersectingNotes = ctx.intersects(600 /* Duration */, ctx.idx, true, false);
         var nextNonPlaceholderIdx = ctx.nextIdx(function (c) { return !c.placeholder; });
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
         if (nextNonPlaceholder.isNote) {

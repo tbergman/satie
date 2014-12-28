@@ -135,31 +135,37 @@ var Context = (function () {
         }
         return this.idx + i;
     };
-    Context.prototype.intersects = function (type, idx) {
+    Context.prototype.intersects = function (type, idx, after, before) {
         if (idx === void 0) { idx = this.idx; }
+        if (after === void 0) { after = true; }
+        if (before === void 0) { before = true; }
         var intersects = [];
         for (var i = 0; i < this._parts.length; ++i) {
             var body = this._parts[i].body;
             if (!body) {
                 continue;
             }
-            for (var j = idx - 1; j >= 0; --j) {
-                if (body[j].type === type) {
-                    intersects.push(body[j]);
-                }
-                if (body[j].priority === 600 /* Duration */) {
-                    break;
+            if (before) {
+                for (var j = idx - 1; j >= 0; --j) {
+                    if (body[j].type === type) {
+                        intersects.push(body[j]);
+                    }
+                    if (body[j].priority === 600 /* Duration */) {
+                        break;
+                    }
                 }
             }
             if (body[idx].type === type) {
                 intersects.push(body[idx]);
             }
-            for (var j = idx + 1; j < body.length; ++j) {
-                if (body[j].type === type) {
-                    intersects.push(body[j]);
-                }
-                if (body[j].priority === 600 /* Duration */) {
-                    break;
+            if (after) {
+                for (var j = idx + 1; j < body.length; ++j) {
+                    if (body[j].type === type) {
+                        intersects.push(body[j]);
+                    }
+                    if (body[j].priority === 600 /* Duration */) {
+                        break;
+                    }
                 }
             }
         }

@@ -196,22 +196,26 @@ export class Context implements C.MetreContext {
      * 
      * @param idx?: Index to search from.
      */
-    intersects(type: C.Type, idx: number = this.idx) {
+    intersects(type: C.Type, idx: number = this.idx, after = true, before = true) {
         var intersects: Array<Model> = [];
         for (var i = 0; i < this._parts.length; ++i) {
             var body = this._parts[i].body;
             if (!body) { continue; }
             // Before
-            for (var j = idx - 1; j >= 0; --j) {
-                if (body[j].type === type) { intersects.push(body[j]); }
-                if (body[j].priority === C.Type.Duration) { break; }
+            if (before) {
+                for (var j = idx - 1; j >= 0; --j) {
+                    if (body[j].type === type) { intersects.push(body[j]); }
+                    if (body[j].priority === C.Type.Duration) { break; }
+                }
             }
             // Current
             if (body[idx].type === type) { intersects.push(body[idx]); }
             // After
-            for (var j = idx + 1; j < body.length; ++j) {
-                if (body[j].type === type) { intersects.push(body[j]); }
-                if (body[j].priority === C.Type.Duration) { break; }
+            if (after) {
+                for (var j = idx + 1; j < body.length; ++j) {
+                    if (body[j].type === type) { intersects.push(body[j]); }
+                    if (body[j].priority === C.Type.Duration) { break; }
+                }
             }
         }
         return intersects;

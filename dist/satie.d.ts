@@ -384,7 +384,7 @@ declare module '__satie/stores/annotator' {
         page: number;
         next(condition?: (model: Model) => boolean, skip?: number, allowModifiers?: boolean): Model;
         nextIdx(cond?: (model: Model, idx?: number) => boolean, skip?: number, allowModifiers?: boolean): number;
-        intersects(type: C.Type, idx?: number): Model[];
+        intersects(type: C.Type, idx?: number, after?: boolean, before?: boolean): Model[];
         beamFollows(idx?: number): {
             inBeam: boolean;
             tuplet: C.ITuplet;

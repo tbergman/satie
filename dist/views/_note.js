@@ -118,13 +118,23 @@ var Note = (function (_super) {
         var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes;
         var start = this.getHeightDeterminingLine() * 10;
         var idealExtreme = start + this.direction() * idealStemHeight;
+        var result;
         if (idealExtreme >= 65) {
-            return Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
+            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
         }
         else if (idealExtreme <= -15) {
-            return Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
+            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
         }
-        return 35;
+        else {
+            result = 35;
+        }
+        if (start > 30 && this.direction() === -1 && start - result > 30) {
+            result = start - 30;
+        }
+        else if (start < 30 && this.direction() === 1 && start + result < 30) {
+            result = 30 - start;
+        }
+        return result;
     };
     Note.prototype.isOnLedger = function () {
         var lowest = this.getLowestLine();

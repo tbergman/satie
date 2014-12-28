@@ -495,7 +495,7 @@ var DurationModel = (function (_super) {
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
-            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] || null) !== this.chord[i].alter) {
+            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]) !== this.chord[i].alter) {
                 ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] = C.InvalidAccidental;
             }
         }
@@ -518,14 +518,8 @@ var DurationModel = (function (_super) {
         var nonAccidentals = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var pitches = this.chord;
         for (var i = 0; i < pitches.length; ++i) {
-            if ((nonAccidentals[pitches[i].step] || 0) !== (pitches[i].alter || 0)) {
+            if ((nonAccidentals[pitches[i].alter] || 0) !== (pitches[i].alter || 0)) {
                 return true;
-            }
-            var prevNote = ctx.prev(function (c) { return c.isNote && !c.isRest; });
-            if (prevNote) {
-                if (_hasConflict(prevNote.note.chord, pitches[i].step, nonAccidentals[pitches[i].step] || null)) {
-                    return true;
-                }
             }
         }
         return false;
@@ -630,13 +624,6 @@ var DurationModel = (function (_super) {
                 for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
                     var otherChord = concurrentNotes[j].note.chord;
                     noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
-                }
-                var prevBarOrNote = ctx.prev(function (c) { return c.isNote && !c.isRest || c.type === 300 /* Barline */; });
-                if (prevBarOrNote && prevBarOrNote.type === 300 /* Barline */) {
-                    var prevNote = ctx.prev(function (c) { return c.isNote && !c.isRest; });
-                    if (prevNote) {
-                        noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
-                    }
                 }
                 if (noConflicts) {
                     result[i] = NaN;

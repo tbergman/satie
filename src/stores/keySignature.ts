@@ -93,7 +93,6 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
-                console.log("!");
                 this._annotatedSpacing              = 25;
             } else {
                 this._annotatedSpacing              = 15;
