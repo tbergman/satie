@@ -5,11 +5,12 @@
 declare module 'satie' {
     import C = require("__satie/stores/contracts");
     export import MusicXML = require("musicxml-interfaces");
-    export var MusicXMLView: React.ComponentClass<{
+    export interface ISatieProps {
         musicXML: C.MusicXML.ScoreTimewise;
         width: number;
         height: number;
-    }>;
+    }
+    export var MusicXMLView: React.ComponentClass<ISatieProps>;
 }
 
 declare module '__satie/stores/contracts' {

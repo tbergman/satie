@@ -33,12 +33,7 @@ import SongEditor   = require("./stores/songEditor");
 
 export import MusicXML = require("musicxml-interfaces");
 
-class Satie extends TypedReact.Component<
-        {
-            musicXML: C.MusicXML.ScoreTimewise;
-            width: number;
-            height: number;
-        }, IState> {
+class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
 
     render(): any {
         var body: any;
@@ -70,7 +65,7 @@ class Satie extends TypedReact.Component<
         );
     }
 
-    getInitialState(): IState {
+    getInitialState(): ISatieState {
         var dispatcher = new Dispatcher;
         var songEditor = new SongEditor(dispatcher);
         songEditor.addListener(C.EventType.Annotate, this._updateFromStore);
@@ -91,6 +86,15 @@ class Satie extends TypedReact.Component<
         this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
     }
 
+    componentDidUpdate(prevProps: ISatieProps) {
+        if (prevProps.musicXML !== this.props.musicXML) {
+            this.setState({
+                context: null
+            });
+            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+        }
+    }
+
     componentWillUnmount() {
         this.state.songEditor.removeListener(C.EventType.Annotate, this._updateFromStore);
         this.state.songEditor.destructor();
@@ -103,7 +107,7 @@ class Satie extends TypedReact.Component<
     }
 }
 
-interface IState {
+interface ISatieState {
     context?: Annotator.Context;
     songEditor?: SongEditor;
     dispatcher?: C.IDispatcher;
@@ -143,5 +147,11 @@ function injectCSS() {
         "}";
 }
 
+export interface ISatieProps {
+    musicXML: C.MusicXML.ScoreTimewise;
+    width: number;
+    height: number;
+}
 
 export var MusicXMLView = TypedReact.createClass(Satie);
+

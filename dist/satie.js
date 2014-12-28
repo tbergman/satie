@@ -61,6 +61,14 @@ var Satie = (function (_super) {
     Satie.prototype.componentDidMount = function () {
         this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
     };
+    Satie.prototype.componentDidUpdate = function (prevProps) {
+        if (prevProps.musicXML !== this.props.musicXML) {
+            this.setState({
+                context: null
+            });
+            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+        }
+    };
     Satie.prototype.componentWillUnmount = function () {
         this.state.songEditor.removeListener(1 /* Annotate */, this._updateFromStore);
         this.state.songEditor.destructor();
