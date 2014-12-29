@@ -865,10 +865,22 @@ class DurationModel extends Model implements C.IPitchDuration {
         var ret: Array<number> = [];
         for (var i = 0; i < note.chord.length; ++i) {
             if (!options.filterTemporary || !note.chord[i].temporary) {
-                ret.push(note.isRest ? 3 :
-                    DurationModel.clefOffsets[ctx.attributes.clef.sign] +
-                    ((note.chord[i].octave || 0) - 3) * 3.5 +
-                    DurationModel.pitchOffsets[note.chord[i].step]);
+                if (note.isRest) {
+                    var durr = <DurationModel> note;
+                    if (durr._notes && durr._notes[i].rest.displayStep) {
+                        ret.push(
+                            DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+                            ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
+                            DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    } else {
+                        ret.push(3);
+                    }
+                } else {
+                    ret.push(
+                        DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+                        ((note.chord[i].octave || 0) - 3) * 3.5 +
+                        DurationModel.pitchOffsets[note.chord[i].step]);
+                }
             }
         }
         for (var i = 0; i < ret.length; ++i) {
@@ -936,7 +948,7 @@ module DurationModel {
                 parent.chord[idx]   =   note.pitch;
                 parent.dots         =  (note.dots || []).length;
                 if (note.rest) {
-                    parent.isRest   =   true;
+                    this.rest       =   note.rest; // Assigns parent
                 }
                 var count           =   note.noteType ? note.noteType.duration : parent.count;
                 if (count) {
@@ -1017,18 +1029,26 @@ module DurationModel {
         }
 
         get rest(): C.MusicXML.Rest {
-            // TODO: full measure
-            // TODO: display step
-            // TODO: display octave
             return this._parent.isRest ? {
                 measure: this._parent.isWholebar,
-                displayStep: null, // TODO
-                displayOctave: null
+                displayStep: this._restDisplayStep,
+                displayOctave: this._restDisplayOctave
             } : null;
         }
         set rest(rest: C.MusicXML.Rest) {
             this._parent.isRest = !!rest;
+            if (rest) {
+                this._restDisplayStep = rest.displayStep;
+                this._restDisplayOctave = rest.displayOctave;
+            } else {
+                if (this._restDisplayStep || this._restDisplayOctave) {
+                    this._restDisplayStep = undefined;
+                    this._restDisplayOctave = undefined;
+                }
+            }
         }
+        _restDisplayStep: string;
+        _restDisplayOctave: string;
 
         get dots(): C.MusicXML.Dot[] {
             return _.times(this._parent.dots, idx => <C.MusicXML.Dot> {

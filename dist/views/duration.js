@@ -45,7 +45,7 @@ var Duration = (function (_super) {
             return text;
         }).flatten().value();
         if (spec.isRest) {
-            return React.createElement(Rest.Component, { dotted: spec.displayDots, line: [3], key: spec.key, isNote: true, notehead: spec.restHead, spacing: spec.spacing, stroke: spec.color, x: spec.x, y: spec.y }, notations);
+            return React.createElement(Rest.Component, { dotted: spec.displayDots, line: spec.lines, key: spec.key, isNote: true, notehead: spec.restHead, spacing: spec.spacing, stroke: spec.color, x: spec.x, y: spec.y }, notations);
         }
         assert(spec.count);
         var note = React.createElement(Note.Component, { accidentals: spec._displayedAccidentals, accStrokes: spec.accStrokes, direction: this.props.direction || spec.direction, dotted: spec.displayDots, flag: spec.flag, hasStem: spec.hasStem, isNote: true, key: spec.key, lyrics: lyrics, line: spec.lines, notehead: spec.noteheadGlyph, secondaryStroke: spec.color, stemHeight: this.props.stemHeight, strokes: spec.strokes, tieTo: spec.tieTo && spec.tieTo.x, x: zeroOffsetMode ? 0 : spec.x, y: zeroOffsetMode ? 0 : spec.y }, notations);

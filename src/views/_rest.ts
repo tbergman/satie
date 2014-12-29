@@ -20,13 +20,12 @@ import NoteNotation = require("./_noteNotation");
 
 class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
-        var line = this.props.line;
-        assert.deepEqual(line, [3]);
+        var line = this.props.line[0];
         return <!g>
             <!Glyph.Component
                 key="R"
                 x={this.props.x + this.props.spacing}
-                y={this.props.y}
+                y={this.props.y + (3 - line)*10}
                 fill={this.props.stroke}
                 glyphName={this.props.notehead} />
             {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
@@ -36,7 +35,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 stroke={this.props.stroke}
                 x={this.props.x + this.props.spacing}
                 y={this.props.y}
-                line={3} />): null}
+                line={line} />): null}
             {this.props.children && _.map(this.props.children, (element, idx) => {
                 element.props.direction = this.direction();
                 element.props.line = this.startingLine();
@@ -55,7 +54,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
 
     startingLine() {
         // TODO: stub
-        return 3;
+        return this.props.line[0];
     }
 }
 

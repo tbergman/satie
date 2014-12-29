@@ -82,7 +82,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         if (spec.isRest) {
             return <!Rest.Component
                     dotted={spec.displayDots}
-                    line={[3]}
+                    line={spec.lines}
                     key={spec.key}
                     isNote={true /* In this context, we mean not a wrapper. */}
                     notehead={spec.restHead}

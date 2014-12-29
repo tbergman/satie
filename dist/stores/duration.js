@@ -789,7 +789,18 @@ var DurationModel = (function (_super) {
         var ret = [];
         for (var i = 0; i < note.chord.length; ++i) {
             if (!options.filterTemporary || !note.chord[i].temporary) {
-                ret.push(note.isRest ? 3 : DurationModel.clefOffsets[ctx.attributes.clef.sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                if (note.isRest) {
+                    var durr = note;
+                    if (durr._notes && durr._notes[i].rest.displayStep) {
+                        ret.push(DurationModel.clefOffsets[ctx.attributes.clef.sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    }
+                    else {
+                        ret.push(3);
+                    }
+                }
+                else {
+                    ret.push(DurationModel.clefOffsets[ctx.attributes.clef.sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                }
             }
         }
         for (var i = 0; i < ret.length; ++i) {
@@ -844,7 +855,7 @@ var DurationModel;
                 parent.chord[idx] = note.pitch;
                 parent.dots = (note.dots || []).length;
                 if (note.rest) {
-                    parent.isRest = true;
+                    this.rest = note.rest;
                 }
                 var count = note.noteType ? note.noteType.duration : parent.count;
                 if (count) {
@@ -950,12 +961,22 @@ var DurationModel;
             get: function () {
                 return this._parent.isRest ? {
                     measure: this._parent.isWholebar,
-                    displayStep: null,
-                    displayOctave: null
+                    displayStep: this._restDisplayStep,
+                    displayOctave: this._restDisplayOctave
                 } : null;
             },
             set: function (rest) {
                 this._parent.isRest = !!rest;
+                if (rest) {
+                    this._restDisplayStep = rest.displayStep;
+                    this._restDisplayOctave = rest.displayOctave;
+                }
+                else {
+                    if (this._restDisplayStep || this._restDisplayOctave) {
+                        this._restDisplayStep = undefined;
+                        this._restDisplayOctave = undefined;
+                    }
+                }
             },
             enumerable: true,
             configurable: true
