@@ -245,9 +245,10 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
             if (!isNaN(<any>acc)) {
                 var glyphName: string;
                 switch(acc) {
+                    // Standard
                     case 2:
                         glyphName = "accidentalDoubleSharp";
-                        glyphOffset = 18;
+                        glyphOffset = 14;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -262,6 +263,23 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                         glyphName = "accidentalDoubleFlat";
                         glyphOffset = 18;
                         break;
+
+                    //Stein-Ziemmermann
+                    case -0.5:
+                        glyphName = "accidentalQuarterToneFlatStein";
+                        break;
+                    case -1.5:
+                        glyphName = "accidentalThreeQuarterTonesFlatZimmermann";
+                        glyphOffset = 22;
+                        break;
+                    case 0.5:
+                        glyphName = "accidentalQuarterToneSharpStein";
+                        break;
+                    case 1.5:
+                        glyphName = "accidentalThreeQuarterTonesSharpStein";
+                        glyphOffset = 18;
+                        break;
+
                     default:
                         assert(0, "Not reached");
                 }

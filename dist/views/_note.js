@@ -181,7 +181,7 @@ var Note = (function (_super) {
                 switch (acc) {
                     case 2:
                         glyphName = "accidentalDoubleSharp";
-                        glyphOffset = 18;
+                        glyphOffset = 14;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -194,6 +194,20 @@ var Note = (function (_super) {
                         break;
                     case -2:
                         glyphName = "accidentalDoubleFlat";
+                        glyphOffset = 18;
+                        break;
+                    case -0.5:
+                        glyphName = "accidentalQuarterToneFlatStein";
+                        break;
+                    case -1.5:
+                        glyphName = "accidentalThreeQuarterTonesFlatZimmermann";
+                        glyphOffset = 22;
+                        break;
+                    case 0.5:
+                        glyphName = "accidentalQuarterToneSharpStein";
+                        break;
+                    case 1.5:
+                        glyphName = "accidentalThreeQuarterTonesSharpStein";
                         glyphOffset = 18;
                         break;
                     default:
