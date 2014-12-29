@@ -95,6 +95,7 @@ var NewlineModel = (function (_super) {
                 barKeys: null,
                 barlineX: null,
                 beat: null,
+                invisibleForBars: null,
                 line: ctx.line,
                 pageLines: null,
                 pageStarts: null,
@@ -124,7 +125,7 @@ var NewlineModel = (function (_super) {
         var i;
         var l = 0;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].isNote) {
+            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
                 ++l;
             }
             if (i + 1 !== ctx.body.length) {
@@ -140,7 +141,7 @@ var NewlineModel = (function (_super) {
             if (ctx.body[i].priority === 130 /* NewLine */) {
                 break;
             }
-            if (ctx.body[i].isNote) {
+            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
                 ctx.body[i].extraWidth = (ctx.body[i].extraWidth || 0) + diff / l;
                 xOffset -= diff / l;
             }
@@ -152,27 +153,27 @@ var NewlineModel = (function (_super) {
                     var j;
                     var noteCount = 0;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== 300 /* Barline */; --j) {
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== 300 /* Barline */; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             remaining -= offset / noteCount;
                         }
                     }
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !== 300 /* Barline */; ++j) {
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !== 300 /* Barline */; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             remaining -= offset / noteCount;
                         }
                     }
@@ -182,7 +183,7 @@ var NewlineModel = (function (_super) {
             ctx.body[i].x = newX;
         }
         for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== 130 /* NewLine */; --i) {
-            if (ctx.body[i].type === 300 /* Barline */) {
+            if (ctx.body[i].type === 300 /* Barline */ && ctx.body[i].visible) {
                 NewlineModel.centerWholeBarRests(ctx.body, i);
             }
         }
@@ -190,8 +191,8 @@ var NewlineModel = (function (_super) {
     };
     NewlineModel.centerWholeBarRests = function (body, idx) {
         var toCenter = [];
-        for (var i = idx - 2; i >= 0 && body[i].type > 300 /* Barline */; --i) {
-            if (body[i].isRest && body[i].note.isWholebar) {
+        for (var i = idx - 2; i >= 0 && (body[i].type > 300 /* Barline */ || body[i].soundOnly); --i) {
+            if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
                 toCenter.push(body[i]);
             }
         }
@@ -204,7 +205,7 @@ var NewlineModel = (function (_super) {
             if (body[i].isNote && body[i].note.temporary) {
                 continue;
             }
-            toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 - (bbox[0] + bbox[3]) / 8 - toCenter[j].x;
+            toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 - (bbox[0] + bbox[3]) / 2 - toCenter[j].x;
         }
     };
     NewlineModel.pushDownIfNeeded = function (ctx) {
@@ -257,7 +258,7 @@ var NewlineModel = (function (_super) {
         }
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== 130 /* NewLine */); --i) {
-            if (ctx.body[i].priority === 600 /* Duration */) {
+            if (ctx.body[i].priority === 600 /* Duration */ && !ctx.body[i].soundOnly) {
                 ++n;
             }
             if (i + 1 !== ctx.body.length) {
@@ -277,7 +278,7 @@ var NewlineModel = (function (_super) {
                 lw = nw * n;
             }
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== 130 /* NewLine */; --i) {
-                if (ctx.body[i].priority === 600 /* Duration */) {
+                if (ctx.body[i].priority === 600 /* Duration */ && !ctx.body[i].soundOnly) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;

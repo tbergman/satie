@@ -222,6 +222,13 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         if (!ctx.disableRecordings) {
             ctx.record(this);
         }
+
+        if (ctx.invisibleForBars) {
+            --ctx.invisibleForBars;
+        } else if (ctx.invisibleForBars === 0) {
+            delete ctx.invisibleForBars;
+        }
+
         return C.IterationStatus.Success;
     }
 
@@ -238,7 +245,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
-                    var newBarline = new BarlineModel({ barStyle: {data: type }}, true);
+                    var newBarline = new BarlineModel({ barStyle: { data: type }}, true);
                     if (j === ctx.idx) {
                         ctx.insertPast(newBarline);
                     } else {

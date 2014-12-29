@@ -64,6 +64,7 @@ var Context = (function () {
             beat: this.loc.beat,
             attributes: this.attributes,
             line: this.line,
+            invisibleForBars: this.invisibleForBars,
             pageLines: this.pageLines,
             pageStarts: this.pageStarts,
             partIdx: this.currStaveIdx,
@@ -791,6 +792,7 @@ var PrivIterator = (function () {
         ctx.barKeys = componentSnapshots[0].barKeys || [];
         ctx.barlineX = componentSnapshots[0].barlineX;
         ctx.line = componentSnapshots[0].line;
+        ctx.invisibleForBars = componentSnapshots[0].invisibleForBars;
         ctx.pageLines = componentSnapshots[0].pageLines;
         ctx.pageStarts = componentSnapshots[0].pageStarts;
         if (!filtered) {

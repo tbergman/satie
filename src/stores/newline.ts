@@ -135,6 +135,7 @@ class NewlineModel extends Model {
                 barKeys:                null,
                 barlineX:               null,
                 beat:                   null,
+                invisibleForBars:       null,
                 line:                   ctx.line,
                 pageLines:              null,
                 pageStarts:             null,
@@ -176,7 +177,7 @@ class NewlineModel extends Model {
         var i: number;
         var l = 0;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].isNote) {
+            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
                 ++l;
             }
             // Calculate width BEFORE centering whole bars.
@@ -193,7 +194,7 @@ class NewlineModel extends Model {
             if (ctx.body[i].priority === C.Type.NewLine) {
                 break;
             }
-            if (ctx.body[i].isNote) {
+            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
                 ctx.body[i].extraWidth =
                     (ctx.body[i].extraWidth || 0) +
                     diff/l;
@@ -213,14 +214,14 @@ class NewlineModel extends Model {
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             remaining -= offset/noteCount;
                         }
                     }
@@ -230,7 +231,7 @@ class NewlineModel extends Model {
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.Barline; ++j) {
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             ++noteCount;
                         }
                     }
@@ -238,7 +239,7 @@ class NewlineModel extends Model {
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.Barline; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote) {
+                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
                             remaining -= offset/noteCount;
                         }
                     }
@@ -250,7 +251,7 @@ class NewlineModel extends Model {
         }
 
         for (i = ctx.idx - 1; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
-            if (ctx.body[i].type === C.Type.Barline) {
+            if (ctx.body[i].type === C.Type.Barline && ctx.body[i].visible) {
                 NewlineModel.centerWholeBarRests(ctx.body, i);
             }
         }
@@ -310,7 +311,7 @@ class NewlineModel extends Model {
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
                     C.Type.NewLine); --i) {
-            if (ctx.body[i].priority === C.Type.Duration) {
+            if (ctx.body[i].priority === C.Type.Duration && !ctx.body[i].soundOnly) {
                 ++n;
             }
 
@@ -331,7 +332,7 @@ class NewlineModel extends Model {
                 lw = nw * n;
             }
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
-                if (ctx.body[i].priority === C.Type.Duration) {
+                if (ctx.body[i].priority === C.Type.Duration && !ctx.body[i].soundOnly) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
@@ -349,8 +350,8 @@ class NewlineModel extends Model {
         // Whole-bar rests are centered.
         var toCenter: Array<Model> = [];
         // -2 because we want to avoid BARLINE and END_MARKER
-        for (var i = idx - 2; i >= 0 && body[i].type > C.Type.Barline; --i) {
-            if (body[i].isRest && body[i].note.isWholebar) {
+        for (var i = idx - 2; i >= 0 && (body[i].type > C.Type.Barline || body[i].soundOnly); --i) {
+            if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
                 toCenter.push(body[i]);
             }
         }
@@ -364,7 +365,7 @@ class NewlineModel extends Model {
                 continue;
             }
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
-                (bbox[0] + bbox[3]) / 8 - toCenter[j].x;
+                (bbox[0] + bbox[3]) / 2 - toCenter[j].x;
         }
     }
 

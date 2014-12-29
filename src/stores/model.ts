@@ -47,6 +47,9 @@ class Model {
     /** Calculated. Distance between this item and the next. */
     w:                  number                  = NaN;
 
+    /** Calculated. True if the item has no width and is not rendered. See prototype. */
+    soundOnly:          boolean;
+
     /**
      * Calculated. Offset due to right or center justification, in tenths of a
      * stave space. Note that Model.x takes spacing into account.
@@ -90,7 +93,7 @@ class Model {
     get note():         C.IPitchDuration        { throw "Not a Duration"; }
     get isNote():       boolean                 { return false; }
     get isRest():       boolean                 { return false; }
-    get visible():      boolean                 { return true; }
+    get visible():      boolean                 { return !this.soundOnly; }
 
     get xPolicy():      C.RectifyXPolicy        { throw "Not implemented"; }
     get type():         C.Type                  { throw "Not implemented"; }
@@ -128,7 +131,7 @@ class Model {
             }
         }
 
-        if (spec.key) {
+        if (spec.key && !(spec instanceof Model)) {
             this.key        = spec.key;
             this._flags     = spec._flags;
         }
@@ -156,9 +159,20 @@ class Model {
             }
         }
 
+        var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== C.Type.Barline);
+        if (invisible) {
+            this.soundOnly = true;
+        } else if (this.soundOnly) {
+            delete this.soundOnly;
+        }
+
         this.idx                = ctx.idx;
         var status              = this.annotateImpl(ctx);
         this.proposed           = false;
+
+        if (invisible) { // The value before "annotateImpl"
+            ctx.x               = this.x;
+        }
 
         assert(status !== undefined);
         return status;
@@ -304,6 +318,8 @@ class Model {
         return Model._sessionId + "-" + ++Model._lastKey;
     }
 }
+
+Model.prototype.soundOnly = false;
 
 module Model {
     "use strict";

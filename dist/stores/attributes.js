@@ -5,6 +5,7 @@ var __extends = this.__extends || function (d, b) {
     d.prototype = new __();
 };
 var Model = require("./model");
+var assert = require("assert");
 var C = require("./contracts");
 var ClefModel = require("./clef");
 var KeySignatureModel = require("./keySignature");
@@ -64,12 +65,94 @@ var AttributesModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(AttributesModel.prototype, "divisions", {
+        get: function () {
+            return this._divisions === undefined && this._parent ? this._parent.divisions : this._divisions;
+        },
+        set: function (m) {
+            this._divisions = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "partSymbol", {
+        get: function () {
+            return this._partSymbol === undefined && this._parent ? this._parent.partSymbol : this._partSymbol;
+        },
+        set: function (m) {
+            this._partSymbol = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "measureStyle", {
+        get: function () {
+            return this._measureStyle === undefined && this._parent ? this._parent.measureStyle : this._measureStyle;
+        },
+        set: function (m) {
+            this._measureStyle = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "staffDetails", {
+        get: function () {
+            return this._staffDetails === undefined && this._parent ? this._parent.staffDetails : this._staffDetails;
+        },
+        set: function (m) {
+            this._staffDetails = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "transpose", {
+        get: function () {
+            return this._transpose === undefined && this._parent ? this._parent.transpose : this._transpose;
+        },
+        set: function (m) {
+            this._transpose = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "staves", {
+        get: function () {
+            return this._staves === undefined && this._parent ? this._parent.staves : this._staves;
+        },
+        set: function (m) {
+            this._staves = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "instruments", {
+        get: function () {
+            return this._instruments === undefined && this._parent ? this._parent.instruments : this._instruments;
+        },
+        set: function (m) {
+            this._instruments = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(AttributesModel.prototype, "directive", {
+        get: function () {
+            return this._directive === undefined && this._parent ? this._parent.directive : this._directive;
+        },
+        set: function (m) {
+            this._directive = m;
+        },
+        enumerable: true,
+        configurable: true
+    });
     AttributesModel.prototype.recordMetreDataImpl = function (mctx) {
+        this._parent = mctx.attributes;
+        this.divisions = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60;
         mctx.attributes = this;
-        this.divisions = this.divisions || 60;
         this.ctxData = new C.MetreContext(mctx);
     };
     AttributesModel.prototype.annotateImpl = function (ctx) {
+        assert(this._parent !== this);
         ctx.attributes = this;
         if (!this.time && ctx.lines[ctx.line - 1] && ctx.lines[ctx.line - 1].attributes) {
             this.time = ctx.lines[ctx.line - 1].attributes.time;
@@ -90,6 +173,11 @@ var AttributesModel = (function (_super) {
             this.clef = null;
         }
         this.updateAttached(ctx);
+        if (this._parent) {
+            this.time = this.time || this._parent.time;
+            this.keySignature = this.keySignature || this._parent.keySignature;
+            this.clef = this.clef || this._parent.clef;
+        }
         return 10 /* Success */;
     };
     AttributesModel.prototype.toMXMLObject = function () {

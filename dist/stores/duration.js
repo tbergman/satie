@@ -58,7 +58,7 @@ var DurationModel = (function (_super) {
     });
     Object.defineProperty(DurationModel.prototype, "visible", {
         get: function () {
-            return !this.inBeam;
+            return !this.inBeam && !this.soundOnly;
         },
         enumerable: true,
         configurable: true
@@ -258,13 +258,6 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DurationModel.prototype, "isMultibar", {
-        get: function () {
-            return this.count < 1;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(DurationModel.prototype, "noteheadGlyph", {
         get: function () {
             return DurationModel.countToNotehead[this.displayCount];
@@ -274,6 +267,9 @@ var DurationModel = (function (_super) {
     });
     Object.defineProperty(DurationModel.prototype, "restHead", {
         get: function () {
+            if (!isNaN(this.multiRest)) {
+                return "restHBar";
+            }
             if (this.isWholebar) {
                 return DurationModel.countToRest[1];
             }
@@ -375,6 +371,9 @@ var DurationModel = (function (_super) {
         }
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+            if (this._count === 60) {
+                debugger;
+            }
         }
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
@@ -391,9 +390,18 @@ var DurationModel = (function (_super) {
         if (!ctx.attributes.keySignature) {
             return KeySignatureModel.createKeySignature(ctx);
         }
-        this.impliedTS = ctx.ts;
-        if (!this.impliedTS) {
+        if (!ctx.ts) {
             return TimeSignatureModel.createTS(ctx);
+        }
+        var measureStyle = ctx.attributes._measureStyle;
+        delete this.multiRest;
+        if (measureStyle && !ctx.invisibleForBars) {
+            if (measureStyle.multipleRest) {
+                var lastPotentialNote = ctx.prev(function (c) { return c.priority === 600 /* Duration */ || c.priority === 145 /* Attributes */; });
+                if (lastPotentialNote.priority !== 600 /* Duration */) {
+                    this.multiRest = measureStyle.multipleRest.count;
+                }
+            }
         }
         assert(this._beats !== null, "Unknown beat count");
         this.isWholebar = this._beats === ctx.ts.beats;
@@ -401,7 +409,7 @@ var DurationModel = (function (_super) {
             if (this._beats > ctx.ts.beats && ctx.beat >= ctx.ts.beats) {
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
             }
-            else if (!this.isMultibar) {
+            else {
                 if (ctx.beat + this._beats > ctx.ts.beats) {
                     var overfill = ctx.beat + this._beats - ctx.ts.beats;
                     if (this._beats === overfill) {
@@ -479,8 +487,8 @@ var DurationModel = (function (_super) {
         assert(this.lines);
         assert(_.forEach(this.lines, function (l) { return isFinite(l); }));
         for (var i = 0; i < this.lines.length; ++i) {
-            ctx.minBottomPaddings[i] = Math.max(ctx.minBottomPaddings[i], -(this.lines[i] - 3) * 10);
-            ctx.minTopPaddings[i] = Math.max(ctx.minTopPaddings[i], (this.lines[i] - 4) * 10);
+            ctx.minBottomPaddings[ctx.currStaveIdx] = Math.max(ctx.minBottomPaddings[ctx.currStaveIdx], -(this.lines[i] - 3) * 10);
+            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], (this.lines[i] - 4) * 10);
         }
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
@@ -504,6 +512,10 @@ var DurationModel = (function (_super) {
         }
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        if (this.multiRest !== undefined) {
+            ctx.invisibleForBars = this.multiRest;
+            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], 40);
+        }
         return 10 /* Success */;
     };
     DurationModel.prototype.getWidth = function (ctx) {

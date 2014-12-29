@@ -139,6 +139,12 @@ function injectCSS() {
     		"pointer-events: none;"+
     		"text-rendering: optimizeSpeed;"+
     	"}" +
+        ".mmn_ {"+
+            "font-family: 'Alegreya';" +
+            "font-style: italic;" +
+            "text-anchor: middle;" +
+            "stroke: #7a7a7a;" +
+        "}" +
         ".bn_ {"+
             "font-family: 'Alegreya';" +
             "font-style: italic;" +

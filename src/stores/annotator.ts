@@ -95,6 +95,7 @@ export class Context implements C.MetreContext {
             beat:                   this.loc.beat,
             attributes:             this.attributes,
             line:                   this.line,
+            invisibleForBars:       this.invisibleForBars,
             pageLines:              this.pageLines,
             pageStarts:             this.pageStarts,
             partIdx:                this.currStaveIdx,
@@ -679,6 +680,8 @@ export class Context implements C.MetreContext {
      */
     body: Model[];
 
+    invisibleForBars: number;
+
     /**
      * @deprecated DO NOT USE
      * 
@@ -1050,6 +1053,7 @@ export interface ILineSnapshot {
     barKeys: Array<string>;
     barlineX: Array<number>;
     beat: number;
+    invisibleForBars: number;
     line: number;
     pageLines: Array<number>;
     pageStarts: Array<number>;
@@ -1225,6 +1229,7 @@ class PrivIterator {
         ctx.barKeys            = componentSnapshots[0].barKeys || [];
         ctx.barlineX           = componentSnapshots[0].barlineX;
         ctx.line               = componentSnapshots[0].line;
+        ctx.invisibleForBars   = componentSnapshots[0].invisibleForBars;
         ctx.pageLines          = componentSnapshots[0].pageLines;
         ctx.pageStarts         = componentSnapshots[0].pageStarts;
 

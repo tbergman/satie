@@ -8,19 +8,21 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import _ = require("lodash");
-import assert = require("assert");
+import React        = require("react");
+import TypedReact   = require("typed-react");
+import _            = require("lodash");
+import assert       = require("assert");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Dot = require("./_dot");
-import Glyph = require("./_glyph");
+import C            = require("../stores/contracts");
+import Dot          = require("./_dot");
+import Glyph        = require("./_glyph");
 import NoteNotation = require("./_noteNotation");
 
 class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
         var line = this.props.line[0];
+        var width = C.SMuFL.bravuraBBoxes[this.props.notehead][0]*10;
         return <!g>
             <!Glyph.Component
                 key="R"
@@ -28,6 +30,13 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 y={this.props.y + (3 - line)*10}
                 fill={this.props.stroke}
                 glyphName={this.props.notehead} />
+            {this.props.multiRest && <!text
+                    x={this.props.x + this.props.spacing + width/2}
+                    y={this.props.y - 30}
+                    fontSize={48}
+                    className="mmn_"
+                    textAnchor="middle"
+                    line={line}>{this.props.multiRest}</text>}
             {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
                 idx={idx}
                 key={idx + "d"}
@@ -66,6 +75,7 @@ module Rest {
         children: NoteNotation[];
         dotted: number;
         line: Array<number>;
+        multiRest?: number;
         notehead: string;
         spacing: number;
         stroke: string;

@@ -408,6 +408,7 @@ declare module '__satie/stores/annotator' {
         ts: C.ISimpleTimeSignature;
         markEntireSongDirty(): void;
         body: Model[];
+        invisibleForBars: number;
         idx: number;
         currStave: C.IPart;
         currStaveIdx: number;
@@ -471,6 +472,7 @@ declare module '__satie/stores/annotator' {
         barKeys: string[];
         barlineX: number[];
         beat: number;
+        invisibleForBars: number;
         line: number;
         pageLines: number[];
         pageStarts: number[];
@@ -501,6 +503,7 @@ declare module '__satie/stores/model' {
         x: number;
         y: number;
         w: number;
+        soundOnly: boolean;
         spacing: number;
         ctxData: C.MetreContext;
         isModifier: boolean;

@@ -17,7 +17,7 @@ import C                        = require("./contracts");
 class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplete {
     /* Model */
     get type()                                          { return C.Type.Clef; }
-    get visible():              boolean                 { return this.isVisible !== false; }
+    get visible():              boolean                 { return this.isVisible !== false && !this.soundOnly; }
     get xPolicy()                                       { return C.RectifyXPolicy.Max; }
 
     get fields() {
@@ -122,13 +122,13 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
         this.isChange = ctx.attributes.clef !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
-            if (barCandidate && barCandidate.type === C.Type.Barline) {
-                ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
-                for (var i = 0; i < ctx._parts.length; ++i) {
-                    ctx._parts[i].body.splice(ctx.idx, 1);
-                }
-                return C.IterationStatus.RetryLine;
-            }
+            // if (barCandidate && barCandidate.type === C.Type.Barline) {
+            //     ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
+            //     for (var i = 0; i < ctx._parts.length; ++i) {
+            //         ctx._parts[i].body.splice(ctx.idx, 1);
+            //     }
+            //     return C.IterationStatus.RetryLine;
+            // }
         } else {
             // Otherwise, barlines should be before clefs when either is possible.
             if (ctx.ts && ctx.beat >= ctx.ts.beats) {

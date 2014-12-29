@@ -38,7 +38,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     ///////////////
 
     get fields()                            { return [ "_notes", "dots" ]; }
-    get visible()                           { return !this.inBeam; }
+    get visible()                           { return !this.inBeam && !this.soundOnly; }
     get isNote():  boolean                  { return true; }
     get note():    C.IPitchDuration         { return this; }
     get type()                              { return C.Type.Duration; }
@@ -185,15 +185,17 @@ class DurationModel extends Model implements C.IPitchDuration {
         return DurationModel.countToHasStem[this.displayCount];
     }
 
-    get isMultibar() {
-        return this.count < 1;
-    }
-
     get noteheadGlyph() {
         return DurationModel.countToNotehead[this.displayCount];
     }
 
     get restHead() {
+        if (!isNaN(this.multiRest)) {
+            // TODO: MusicXML useSymbol if specified
+            // TODO: Old style multi-measure rests
+            // TODO: SMuFL says we're supposed to draw HBars ourselves...
+            return "restHBar";
+        }
         if (this.isWholebar) {
             return DurationModel.countToRest[1];
         }
@@ -223,10 +225,6 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     _displayedAccidentals: Array<number>;
     forceMiddleNoteDirection: number;
-    impliedTS: {
-        beats: number;
-        beatType: number;
-    };
     lines: Array<number>;
     tieTo: DurationModel;
 
@@ -353,7 +351,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-            // FIXME: Round this to something sensible
+            if (this._count === 60) {
+                debugger;
+            }
+            // FIXME: Round this to something sensible for MIDI imports.
         }
 
         assert(this._count === this._notes[0].noteType.duration);
@@ -370,6 +371,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         Metre.correctRoundingErrors(mctx);
     }
 
+    multiRest: number;
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var i: number;
         var j: number;
@@ -381,9 +384,20 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
 
         // A time signature must exist on the first line of every page.
-        this.impliedTS = ctx.ts;
-        if (!this.impliedTS) {
+        if (!ctx.ts) {
             return TimeSignatureModel.createTS(ctx);
+        }
+
+        // Hack. Get the measureStyle owned by the most recent attribute.
+        var measureStyle = (<any>ctx.attributes)._measureStyle;
+        delete this.multiRest;
+        if (measureStyle && !ctx.invisibleForBars) { // Either 0 or undefined
+            if (measureStyle.multipleRest) {
+                var lastPotentialNote = ctx.prev(c => c.priority === C.Type.Duration || c.priority === C.Type.Attributes);
+                if (lastPotentialNote.priority !== C.Type.Duration) {
+                    this.multiRest = measureStyle.multipleRest.count;
+                }
+            }
         }
 
         assert(this._beats !== null, "Unknown beat count");
@@ -396,7 +410,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
                 // start at beat 0.
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
-            } else if (!this.isMultibar) {
+            } else {
                 // The number of beats in a bar must not exceed that specified by the time signature.
                 if (ctx.beat + this._beats > ctx.ts.beats) {
                     var overfill = ctx.beat + this._beats - ctx.ts.beats;
@@ -494,8 +508,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(_.forEach(this.lines, l => isFinite(l)));
 
         for (var i = 0; i < this.lines.length; ++i) {
-            ctx.minBottomPaddings[i] = Math.max(ctx.minBottomPaddings[i], -(this.lines[i] - 3)*10);
-            ctx.minTopPaddings[i] = Math.max(ctx.minTopPaddings[i], (this.lines[i] - 4)*10);
+            ctx.minBottomPaddings[ctx.currStaveIdx] =
+                Math.max(ctx.minBottomPaddings[ctx.currStaveIdx], -(this.lines[i] - 3)*10);
+            ctx.minTopPaddings[ctx.currStaveIdx] =
+                Math.max(ctx.minTopPaddings[ctx.currStaveIdx], (this.lines[i] - 4)*10);
         }
 
         if (!ctx.isBeam) {
@@ -528,6 +544,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+
+        if (this.multiRest !== undefined) {
+            ctx.invisibleForBars = this.multiRest;
+            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], 40);
+        }
 
         return C.IterationStatus.Success;
     }

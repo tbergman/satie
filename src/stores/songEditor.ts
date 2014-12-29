@@ -9,6 +9,7 @@ import assert            = require("assert");
 import TSEE              = require("./tsee");
 
 import Annotator         = require("./annotator");
+import BarlineModel      = require("./barline");
 import BeginModel        = require("./begin");
 import C                 = require("./contracts");
 import Instruments       = require("./instruments");
@@ -223,7 +224,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         // Hackily convert MXMLJSON types to Models
         // Note that the caller should not be able to detect any mutation
         // (aside from object property ordering, which is always undefined)
-        _.forEach(m.measures, (measure) => {
+        _.forEach(m.measures, (measure, measureIdx) => {
             var minPriority: number;
             var idxPerPart = _.map(parts, part => 0);
             do {
@@ -260,6 +261,16 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
                 });
 
             } while(minPriority !== C.MAX_NUM);
+
+            if (measureIdx !== m.measures.length - 1) { 
+                for (var i = 0; i < partCount; ++i) {
+                    parts[i].body.push(new BarlineModel({
+                        barStyle: {
+                            data: C.MusicXML.BarStyleType.Regular
+                        }
+                    }, true));
+                }
+            }
         });
 
         // Call model hooks

@@ -27,7 +27,7 @@ var Model = (function () {
                 _this[key] = spec[key];
             }
         }
-        if (spec.key) {
+        if (spec.key && !(spec instanceof Model)) {
             this.key = spec.key;
             this._flags = spec._flags;
         }
@@ -117,7 +117,7 @@ var Model = (function () {
     });
     Object.defineProperty(Model.prototype, "visible", {
         get: function () {
-            return true;
+            return !this.soundOnly;
         },
         enumerable: true,
         configurable: true
@@ -195,9 +195,19 @@ var Model = (function () {
                 this.spacing = 0;
             }
         }
+        var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== 300 /* Barline */);
+        if (invisible) {
+            this.soundOnly = true;
+        }
+        else if (this.soundOnly) {
+            delete this.soundOnly;
+        }
         this.idx = ctx.idx;
         var status = this.annotateImpl(ctx);
         this.proposed = false;
+        if (invisible) {
+            ctx.x = this.x;
+        }
         assert(status !== undefined);
         return status;
     };
@@ -292,6 +302,7 @@ var Model = (function () {
     };
     return Model;
 })();
+Model.prototype.soundOnly = false;
 var Model;
 (function (Model) {
     "use strict";

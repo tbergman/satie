@@ -8,6 +8,7 @@ var _ = require("lodash");
 var assert = require("assert");
 var TSEE = require("./tsee");
 var Annotator = require("./annotator");
+var BarlineModel = require("./barline");
 var BeginModel = require("./begin");
 var C = require("./contracts");
 var Instruments = require("./instruments");
@@ -197,7 +198,7 @@ var SongEditorStore = (function (_super) {
             "Attributes": 145 /* Attributes */,
             "Barline": 300 /* Barline */
         };
-        _.forEach(m.measures, function (measure) {
+        _.forEach(m.measures, function (measure, measureIdx) {
             var minPriority;
             var idxPerPart = _.map(parts, function (part) { return 0; });
             do {
@@ -229,6 +230,15 @@ var SongEditorStore = (function (_super) {
                     }
                 });
             } while (minPriority !== C.MAX_NUM);
+            if (measureIdx !== m.measures.length - 1) {
+                for (var i = 0; i < partCount; ++i) {
+                    parts[i].body.push(new BarlineModel({
+                        barStyle: {
+                            data: 0 /* Regular */
+                        }
+                    }, true));
+                }
+            }
         });
         _.forEach(parts, function (part) {
             _.forEach(part.body, function (model, j) {

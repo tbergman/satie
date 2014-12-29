@@ -148,6 +148,12 @@ var BarlineModel = (function (_super) {
         if (!ctx.disableRecordings) {
             ctx.record(this);
         }
+        if (ctx.invisibleForBars) {
+            --ctx.invisibleForBars;
+        }
+        else if (ctx.invisibleForBars === 0) {
+            delete ctx.invisibleForBars;
+        }
         return 10 /* Success */;
     };
     BarlineModel.createBarline = function (ctx, type) {

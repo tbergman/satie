@@ -86,6 +86,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     key={spec.key}
                     isNote={true /* In this context, we mean not a wrapper. */}
                     notehead={spec.restHead}
+                    multiRest={spec.multiRest}
                     spacing={spec.spacing}
                     stroke={spec.color}
                     x={spec.x}

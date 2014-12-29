@@ -22,7 +22,7 @@ var ClefModel = (function (_super) {
     });
     Object.defineProperty(ClefModel.prototype, "visible", {
         get: function () {
-            return this.isVisible !== false;
+            return this.isVisible !== false && !this.soundOnly;
         },
         enumerable: true,
         configurable: true
@@ -105,13 +105,6 @@ var ClefModel = (function (_super) {
         this.isChange = ctx.attributes.clef !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(function (m) { return m.type === 300 /* Barline */ || m.isNote && !m.isRest; });
-            if (barCandidate && barCandidate.type === 300 /* Barline */) {
-                ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
-                for (var i = 0; i < ctx._parts.length; ++i) {
-                    ctx._parts[i].body.splice(ctx.idx, 1);
-                }
-                return 60 /* RetryLine */;
-            }
         }
         else {
             if (ctx.ts && ctx.beat >= ctx.ts.beats) {
