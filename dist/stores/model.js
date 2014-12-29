@@ -15,6 +15,7 @@ var Model = (function () {
         this.idx = NaN;
         this.x = NaN;
         this.y = NaN;
+        this.w = NaN;
         this.spacing = 0;
         this.ctxData = null;
         this._flags = 0;

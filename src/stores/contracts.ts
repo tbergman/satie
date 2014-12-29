@@ -386,7 +386,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         workTitle:                                  ""
     }
 
-    movementTitle:      string =                    "Untitled";
+    movementTitle:      string =                    "";
     movementNumber:     string =                    "";
 
     partList:           MusicXML.PartList = {

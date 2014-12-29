@@ -25,11 +25,30 @@ var Duration = (function (_super) {
         assert(spec instanceof DurationModel);
         var notations = _.map(spec.displayNotation || [], function (m, idx) { return React.createElement(NoteNotation.Component, { idx: 1, direction: props.direction, notation: m, key: idx, line: 3, notehead: props.spec.noteheadGlyph, x: NaN, y: NaN }); });
         var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest && !spec.tie;
+        var lyKey = 0;
+        var lyrics = _.chain(spec._notes).map(function (n) { return n.lyrics; }).filter(function (l) { return !!l; }).flatten(true).filter(function (l) { return !!l; }).map(function (l) {
+            var text = [];
+            var currSyllabic = 0 /* Single */;
+            for (var i = 0; i < l.lyricParts.length; ++i) {
+                switch (l.lyricParts[i]._class) {
+                    case "Syllabic":
+                        var syllabic = l.lyricParts[i];
+                        currSyllabic = syllabic.data;
+                        break;
+                    case "Text":
+                        var textPt = l.lyricParts[i];
+                        var width = C.SMuFL.bravuraBBoxes[props.spec.noteheadGlyph][0] * 10;
+                        text.push(React.createElement("text", { textAnchor: "middle", fontSize: textPt.fontSize || "22", key: ++lyKey, x: width / 2 + (zeroOffsetMode ? 0 : spec.x), y: 60 + (zeroOffsetMode ? 0 : spec.y) }, textPt.data));
+                }
+            }
+            ;
+            return text;
+        }).flatten().value();
         if (spec.isRest) {
             return React.createElement(Rest.Component, { dotted: spec.displayDots, line: [3], key: spec.key, isNote: true, notehead: spec.restHead, spacing: spec.spacing, stroke: spec.color, x: spec.x, y: spec.y }, notations);
         }
         assert(spec.count);
-        var note = React.createElement(Note.Component, { accidentals: spec._displayedAccidentals, accStrokes: spec.accStrokes, direction: this.props.direction || spec.direction, dotted: spec.displayDots, flag: spec.flag, hasStem: spec.hasStem, isNote: true, key: spec.key, line: spec.lines, notehead: spec.noteheadGlyph, secondaryStroke: spec.color, stemHeight: this.props.stemHeight, strokes: spec.strokes, tieTo: spec.tieTo && spec.tieTo.x, x: zeroOffsetMode ? 0 : spec.x, y: zeroOffsetMode ? 0 : spec.y }, notations);
+        var note = React.createElement(Note.Component, { accidentals: spec._displayedAccidentals, accStrokes: spec.accStrokes, direction: this.props.direction || spec.direction, dotted: spec.displayDots, flag: spec.flag, hasStem: spec.hasStem, isNote: true, key: spec.key, lyrics: lyrics, line: spec.lines, notehead: spec.noteheadGlyph, secondaryStroke: spec.color, stemHeight: this.props.stemHeight, strokes: spec.strokes, tieTo: spec.tieTo && spec.tieTo.x, x: zeroOffsetMode ? 0 : spec.x, y: zeroOffsetMode ? 0 : spec.y }, notations);
         if (zeroOffsetMode) {
             return React.createElement("g", { key: spec.key, x: spec.x, y: spec.y, transform: "translate(" + spec.x + "," + spec.y + ")" }, note);
         }

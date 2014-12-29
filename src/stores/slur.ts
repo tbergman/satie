@@ -36,7 +36,7 @@ class SlurGroupModel extends Model {
     direction:      number;             // See prototype.
     lines1:         number[];           // See prototype.
     lines2:         number[];           // See prototype.
-    width:          number;             // See prototype.
+    slurW:          number;             // See prototype.
     m_x:            number;             // See prototype.
     m_y:            number;             // See prototype.
 
@@ -88,7 +88,7 @@ class SlurGroupModel extends Model {
             this.m_y    	= first.y;
             this.lines1 	= DurationModel.getLines(first, ctx);
             this.lines2 	= DurationModel.getLines(last, ctx);
-            this.width  	= last.x - first.x;
+            this.slurW  	= last.x - first.x;
         }
 
         return C.IterationStatus.Success;
@@ -100,7 +100,7 @@ SlurGroupModel.prototype.isEmpty    = true;
 SlurGroupModel.prototype.direction  = NaN;
 SlurGroupModel.prototype.lines1     = null;
 SlurGroupModel.prototype.lines2     = null;
-SlurGroupModel.prototype.width      = NaN;
+SlurGroupModel.prototype.slurW      = NaN;
 SlurGroupModel.prototype.m_x        = NaN;
 SlurGroupModel.prototype.m_y        = NaN;
 

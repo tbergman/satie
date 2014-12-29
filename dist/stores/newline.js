@@ -81,7 +81,7 @@ var NewlineModel = (function (_super) {
         ctx.minBottomPaddings = _.times(ctx._parts.length, function () { return 0; });
         ctx.minTopPaddings = _.times(ctx._parts.length, function () { return 0; });
         this.x = ctx.x;
-        this.width = ctx.maxX - ctx.x;
+        this.staveW = ctx.maxX - ctx.x;
         ctx.x = ctx.x + 8;
         var lattributes = new AttributesModel({
             time: ctx.attributes.time
@@ -126,6 +126,9 @@ var NewlineModel = (function (_super) {
         for (i = ctx.idx - 1; i >= 0; --i) {
             if (ctx.body[i].isNote) {
                 ++l;
+            }
+            if (i + 1 !== ctx.body.length) {
+                ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
             if (ctx.body[i].priority === 130 /* NewLine */) {
                 break;
@@ -256,6 +259,9 @@ var NewlineModel = (function (_super) {
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== 130 /* NewLine */); --i) {
             if (ctx.body[i].priority === 600 /* Duration */) {
                 ++n;
+            }
+            if (i + 1 !== ctx.body.length) {
+                ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
         }
         if (n) {

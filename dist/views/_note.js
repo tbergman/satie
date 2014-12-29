@@ -61,7 +61,7 @@ var Note = (function (_super) {
             component.props.idx = idx;
             component.props.notehead = _this.props.notehead;
             return component;
-        }), _this.accidentals(), _this.ledgerLines(), _this.tie()); }));
+        }), _this.accidentals(), _this.ledgerLines(), _this.tie(), _this.props.lyrics); }));
     };
     Note.prototype.getDefaultProps = function () {
         return {
@@ -218,7 +218,7 @@ var Note = (function (_super) {
             y: this.props.y,
             lines1: [this.getStartingLine()],
             lines2: [this.getStartingLine()],
-            width: fullWidth * 0.75
+            slurW: fullWidth * 0.75
         } });
     };
     return Note;

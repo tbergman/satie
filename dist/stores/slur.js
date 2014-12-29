@@ -75,7 +75,7 @@ var SlurGroupModel = (function (_super) {
             this.m_y = first.y;
             this.lines1 = DurationModel.getLines(first, ctx);
             this.lines2 = DurationModel.getLines(last, ctx);
-            this.width = last.x - first.x;
+            this.slurW = last.x - first.x;
         }
         return 10 /* Success */;
     };
@@ -86,7 +86,7 @@ SlurGroupModel.prototype.isEmpty = true;
 SlurGroupModel.prototype.direction = NaN;
 SlurGroupModel.prototype.lines1 = null;
 SlurGroupModel.prototype.lines2 = null;
-SlurGroupModel.prototype.width = NaN;
+SlurGroupModel.prototype.slurW = NaN;
 SlurGroupModel.prototype.m_x = NaN;
 SlurGroupModel.prototype.m_y = NaN;
 module.exports = SlurGroupModel;

@@ -161,7 +161,7 @@ var ScoreHeader = (function () {
             workNumber: "",
             workTitle: ""
         };
-        this.movementTitle = "Untitled";
+        this.movementTitle = "";
         this.movementNumber = "";
         this.partList = {
             scoreParts: [],

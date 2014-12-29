@@ -1266,7 +1266,7 @@ class PrivIterator {
             otherContexts[i].x = minX;
         }
 
-        // Accidentals are kept seperate per part.
+        // Accidentals are kept separate per part.
         ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
         for (var i = 1; i < componentSnapshots.length; ++i) {
             var partIdx        = componentSnapshots[i].partIdx;

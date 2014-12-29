@@ -44,6 +44,9 @@ class Model {
     /** Calculated. From bottom, in tenths of a stave space */
     y:                  number                  = NaN;
 
+    /** Calculated. Distance between this item and the next. */
+    w:                  number                  = NaN;
+
     /**
      * Calculated. Offset due to right or center justification, in tenths of a
      * stave space. Note that Model.x takes spacing into account.

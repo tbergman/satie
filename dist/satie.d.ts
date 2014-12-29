@@ -500,6 +500,7 @@ declare module '__satie/stores/model' {
         idx: number;
         x: number;
         y: number;
+        w: number;
         spacing: number;
         ctxData: C.MetreContext;
         isModifier: boolean;

@@ -46,6 +46,39 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
          */
         var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest && !spec.tie;
 
+        var lyKey = 0;
+        var lyrics = _.chain(spec._notes)
+                        .map(n => n.lyrics)
+                        .filter(l => !!l)
+                        .flatten(true)
+                        .filter((l: C.MusicXML.Lyric) => !!l)
+                        .map((l: C.MusicXML.Lyric) => {
+                            var text: any[] = [];
+                            var currSyllabic = C.MusicXML.SyllabicType.Single;
+                            for (var i = 0; i < l.lyricParts.length; ++i) {
+                                switch(l.lyricParts[i]._class) {
+                                    case "Syllabic":
+                                        var syllabic = <C.MusicXML.Syllabic> l.lyricParts[i];
+                                        currSyllabic = syllabic.data;
+                                        break;
+                                    case "Text":
+                                        var textPt = <C.MusicXML.Text> l.lyricParts[i];
+                                        var width = C.SMuFL.bravuraBBoxes[props.spec.noteheadGlyph][0]*10;
+                                        text.push(<!text
+                                                textAnchor="middle"
+                                                fontSize={textPt.fontSize || "22"}
+                                                key={++lyKey}
+                                                x={width/2 + (zeroOffsetMode ? 0 : spec.x)}
+                                                y={60      + (zeroOffsetMode ? 0 : spec.y)}>
+                                            {textPt.data}
+                                        </text>);
+                                }
+                            };
+                            return text;
+                        })
+                        .flatten()
+                        .value();
+
         if (spec.isRest) {
             return <!Rest.Component
                     dotted={spec.displayDots}
@@ -72,6 +105,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     hasStem={spec.hasStem}
                     isNote={true}
                     key={spec.key}
+                    lyrics={lyrics}
                     line={spec.lines}
                     notehead={spec.noteheadGlyph}
                     secondaryStroke={spec.color}

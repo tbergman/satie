@@ -27,7 +27,7 @@ class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
         return <!g>
             <!StaveLines.Component
                 key="StaveLines"
-                width={this.props.spec.width}
+                width={this.props.spec.staveW}
                 x={spec.x}
                 y={spec.braceY} />
         </g>

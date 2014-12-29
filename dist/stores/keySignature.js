@@ -103,7 +103,7 @@ var KeySignatureModel = (function (_super) {
     };
     KeySignatureModel.createKeySignature = function (ctx) {
         var keySignature = ctx.prev(function (c) { return c.type === 160 /* KeySignature */; });
-        return ctx.insertPast(new KeySignatureModel(keySignature, true));
+        return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
     };
     return KeySignatureModel;
 })(Model.StateChangeModel);

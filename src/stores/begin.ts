@@ -31,7 +31,7 @@ class BeginModel extends Model {
     noMargin:       boolean;
     braceY:         number;
     braceY2:        number;
-    width:          number;
+    staveW:         number;
 
     ////////////////////
     // II. Life-cycle //
@@ -72,7 +72,7 @@ class BeginModel extends Model {
 
         this.x                  = ctx.x;
         this.y              	= ctx.y;
-        this.width          	= ctx.maxX - ctx.x;
+        this.staveW          	= ctx.maxX - ctx.x;
 
         /*
          * Padding between beginning of part and the clef.

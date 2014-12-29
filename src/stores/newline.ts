@@ -36,7 +36,7 @@ class NewlineModel extends Model {
     braceY:             number;
     braceY2:            number;
     lineSpacing:        number;
-    width:              number;
+    staveW:             number;
 
     ////////////////////
     // II. Life-cycle //
@@ -114,7 +114,7 @@ class NewlineModel extends Model {
         ctx.minTopPaddings      = _.times(ctx._parts.length, () => 0);
 
         this.x                  = ctx.x;
-        this.width              = ctx.maxX - ctx.x;
+        this.staveW             = ctx.maxX - ctx.x;
 
         /*
          * 8 is the padding between beginning of part and the clef.
@@ -178,6 +178,10 @@ class NewlineModel extends Model {
         for (i = ctx.idx - 1; i >= 0; --i) {
             if (ctx.body[i].isNote) {
                 ++l;
+            }
+            // Calculate width BEFORE centering whole bars.
+            if (i + 1 !== ctx.body.length) {
+                ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
             if (ctx.body[i].priority === C.Type.NewLine) {
                 break;
@@ -308,6 +312,11 @@ class NewlineModel extends Model {
                     C.Type.NewLine); --i) {
             if (ctx.body[i].priority === C.Type.Duration) {
                 ++n;
+            }
+
+            // Calculate width BEFORE justifying.
+            if (i + 1 !== ctx.body.length) {
+                ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
         }
         if (n) {

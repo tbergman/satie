@@ -124,7 +124,7 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
     /* Static */
     static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
         var keySignature = ctx.prev(c => c.type === C.Type.KeySignature);
-        return ctx.insertPast(new KeySignatureModel(keySignature, true));
+        return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
     };
 }
 

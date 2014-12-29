@@ -110,6 +110,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                 {this.accidentals()}
                 {this.ledgerLines()}
                 {this.tie()}
+                {this.props.lyrics}
             </g>)}
         </g>;
     }
@@ -292,7 +293,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                 y: this.props.y,
                 lines1: [this.getStartingLine()],
                 lines2: [this.getStartingLine()],
-                width: fullWidth*0.75}} />;
+                slurW: fullWidth*0.75}} />;
     }
 };
 
@@ -325,6 +326,7 @@ module Note {
         hasStem?: boolean;
         key?: string;
         line?: any;
+        lyrics?: any;
         notehead?: string;
         secondaryStroke?: string;
         stemHeight?: number;

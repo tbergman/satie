@@ -17,7 +17,7 @@ var NewlineView = (function (_super) {
     NewlineView.prototype.render = function () {
         var spec = this.props.spec;
         var barNumber = spec.ctxData.bar + "";
-        return React.createElement("g", null, React.createElement(StaveLines.Component, { key: "StaveLines", width: this.props.spec.width, x: spec.x, y: spec.braceY + spec.lineSpacing }), React.createElement(BarNumber.Component, { x: spec.x - 0, y: spec.braceY + spec.lineSpacing - 30, barNumber: barNumber }));
+        return React.createElement("g", null, React.createElement(StaveLines.Component, { key: "StaveLines", width: this.props.spec.staveW, x: spec.x, y: spec.braceY + spec.lineSpacing }), React.createElement(BarNumber.Component, { x: spec.x - 0, y: spec.braceY + spec.lineSpacing - 30, barNumber: barNumber }));
     };
     return NewlineView;
 })(TypedReact.Component);
