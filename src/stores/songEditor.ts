@@ -240,7 +240,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
                             element = {
                                 _notes:     [note],
                                 _class:     element._class,
-                                dots:       note.dots       // FIXME
+                                dots:       note.dots ? note.dots.length : 0 // FIXME
                             };
                             if (note.chord) {
                                 assert(false, "TODO");

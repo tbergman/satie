@@ -304,10 +304,10 @@ function wholeNote(ctx) {
 exports.wholeNote = wholeNote;
 function correctRoundingErrors(mctx) {
     "use strict";
-    var huge = 10000000;
+    var huge = 1000000000;
     var rounded = Math.round(mctx.beat * huge) / huge;
     if (Math.abs(rounded - mctx.beat) < 0.00000001) {
-        mctx.beat = Math.round(mctx.beat * 10000) / 10000;
+        mctx.beat = Math.round(mctx.beat * 10000000) / 10000000;
     }
 }
 exports.correctRoundingErrors = correctRoundingErrors;

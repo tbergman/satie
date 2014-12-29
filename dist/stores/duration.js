@@ -373,6 +373,9 @@ var DurationModel = (function (_super) {
             notes.length = this.chord.length;
             this._p_notes = notes;
         }
+        if (!isFinite(this._count)) {
+            this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+        }
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
         assert(isFinite(this._count));
@@ -843,7 +846,10 @@ var DurationModel;
                 if (note.rest) {
                     parent.isRest = true;
                 }
-                parent.count = note.noteType ? note.noteType.duration : (parent.count || 4);
+                var count = note.noteType ? note.noteType.duration : parent.count;
+                if (count) {
+                    parent.count = count;
+                }
                 parent.tuplet = note.timeModification ? {
                     num: note.timeModification.normalNotes.count,
                     den: note.timeModification.actualNotes.count

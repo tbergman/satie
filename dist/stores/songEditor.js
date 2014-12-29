@@ -211,7 +211,7 @@ var SongEditorStore = (function (_super) {
                             element = {
                                 _notes: [note],
                                 _class: element._class,
-                                dots: note.dots
+                                dots: note.dots ? note.dots.length : 0
                             };
                             if (note.chord) {
                                 assert(false, "TODO");

@@ -489,10 +489,10 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
 export function correctRoundingErrors(mctx: C.MetreContext): void {
     "use strict";
     // Correct rounding errors
-    var huge = 10000000;
+    var huge = 1000000000;
     var rounded = Math.round(mctx.beat * huge) / huge;
     if (Math.abs(rounded - mctx.beat) < 0.00000001) {
-        mctx.beat = Math.round(mctx.beat * 10000) / 10000;
+        mctx.beat = Math.round(mctx.beat * 10000000) / 10000000;
     }
 }
 

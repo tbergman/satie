@@ -350,8 +350,12 @@ class DurationModel extends Model implements C.IPitchDuration {
             this._p_notes       = <any> notes;
         }
 
-
         // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
+        if (!isFinite(this._count)) {
+            this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+            // FIXME: Round this to something sensible
+        }
+
         assert(this._count === this._notes[0].noteType.duration);
 
         // Guess bar and beat (annotation could add rests and shift it!)
@@ -934,7 +938,10 @@ module DurationModel {
                 if (note.rest) {
                     parent.isRest   =   true;
                 }
-                parent.count        =   note.noteType ? note.noteType.duration : (parent.count || 4);
+                var count           =   note.noteType ? note.noteType.duration : parent.count;
+                if (count) {
+                    parent.count    =   count;
+                }
 
                 parent.tuplet       =   note.timeModification ? {
                     num:                note.timeModification.normalNotes.count,
