@@ -241,14 +241,19 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         var l = this.getLines();
         var glyphOffset = 0;
 
-        return _.map(accidentals, (acc, idx) => {
+        return _.map(accidentals, (acc: any, idx: number) => {
+            var paren = false;
+            if (typeof acc === "string") {
+                paren = !!~acc.indexOf("p");
+                acc = acc.replace("p", "")*1;
+            }
             if (!isNaN(<any>acc)) {
                 var glyphName: string;
                 switch(acc) {
                     // Standard
                     case 2:
                         glyphName = "accidentalDoubleSharp";
-                        glyphOffset = 14;
+                        glyphOffset += 14;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -261,27 +266,34 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                         break;
                     case -2:
                         glyphName = "accidentalDoubleFlat";
-                        glyphOffset = 18;
+                        glyphOffset += 18;
                         break;
 
-                    //Stein-Ziemmermann
+                    //Stein-Zimmermann
                     case -0.5:
                         glyphName = "accidentalQuarterToneFlatStein";
                         break;
                     case -1.5:
-                        glyphName = "accidentalThreeQuarterTonesFlatZimmermann";
-                        glyphOffset = 22;
+                        glyphName = "accidentalNarrowReversedFlatAndFlat";
+                        glyphOffset += 18;
                         break;
                     case 0.5:
                         glyphName = "accidentalQuarterToneSharpStein";
                         break;
                     case 1.5:
                         glyphName = "accidentalThreeQuarterTonesSharpStein";
-                        glyphOffset = 18;
+                        glyphOffset += 18;
                         break;
 
                     default:
                         assert(0, "Not reached");
+                }
+                if (paren) {
+                    if (glyphOffset >= 18) {
+                        glyphOffset += 5;
+                    } else {
+                        glyphOffset = 18;
+                    }
                 }
                 return <!Accidental.Component
                     x={this.props.x - (glyphOffset || this.accidentalSpacing())}
@@ -290,6 +302,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     line={l[idx]}
                     key={"acc_" + idx}
                     idx={idx}
+                    paren={paren}
                     accidental={glyphName} />;
             } else {
                 return null;

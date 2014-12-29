@@ -189,8 +189,10 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         var nextNonPlaceholderIdx = ctx.nextIdx(c => !c.placeholder);
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
         if (nextNonPlaceholder.isNote) {
-            this.annotatedAccidentalSpacing = 10 * (_.any(intersectingNotes,
-                n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx)) ? 1 : 0);
+            this.annotatedAccidentalSpacing = _.chain(intersectingNotes)
+                .map(n => (<DurationModelType>n).getAccWidthAfterBar(ctx))
+                .max()
+                .value();
         } else {
             this.annotatedAccidentalSpacing = 0;
         }

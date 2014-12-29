@@ -182,7 +182,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
 
         var intersectingNotes = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
+            if (_.any(intersectingNotes, n => !!(<DurationModelType>n).getAccWidthAfterBar(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing  = 15;
             } else {

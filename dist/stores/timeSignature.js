@@ -95,7 +95,7 @@ var TimeSignatureModel = (function (_super) {
         }
         var intersectingNotes = _.filter(ctx.intersects(600 /* Duration */), function (l) { return l.isNote; });
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, function (n) { return n.containsAccidentalAfterBarline(ctx); })) {
+            if (_.any(intersectingNotes, function (n) { return !!n.getAccWidthAfterBar(ctx); })) {
                 this._annotatedSpacing = 15;
             }
             else {

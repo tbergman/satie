@@ -91,7 +91,7 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         ctx.attributes.keySignature                 = this;
         ctx.accidentalsByStave[ctx.currStaveIdx]    = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, n => (<DurationModelType>n).containsAccidentalAfterBarline(ctx))) {
+            if (_.any(intersectingNotes, n => !!(<DurationModelType>n).getAccWidthAfterBar(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.
                 this._annotatedSpacing              = 25;
             } else {

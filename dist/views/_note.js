@@ -176,12 +176,17 @@ var Note = (function (_super) {
         var l = this.getLines();
         var glyphOffset = 0;
         return _.map(accidentals, function (acc, idx) {
+            var paren = false;
+            if (typeof acc === "string") {
+                paren = !!~acc.indexOf("p");
+                acc = acc.replace("p", "") * 1;
+            }
             if (!isNaN(acc)) {
                 var glyphName;
                 switch (acc) {
                     case 2:
                         glyphName = "accidentalDoubleSharp";
-                        glyphOffset = 14;
+                        glyphOffset += 14;
                         break;
                     case 1:
                         glyphName = "accidentalSharp";
@@ -194,26 +199,34 @@ var Note = (function (_super) {
                         break;
                     case -2:
                         glyphName = "accidentalDoubleFlat";
-                        glyphOffset = 18;
+                        glyphOffset += 18;
                         break;
                     case -0.5:
                         glyphName = "accidentalQuarterToneFlatStein";
                         break;
                     case -1.5:
-                        glyphName = "accidentalThreeQuarterTonesFlatZimmermann";
-                        glyphOffset = 22;
+                        glyphName = "accidentalNarrowReversedFlatAndFlat";
+                        glyphOffset += 18;
                         break;
                     case 0.5:
                         glyphName = "accidentalQuarterToneSharpStein";
                         break;
                     case 1.5:
                         glyphName = "accidentalThreeQuarterTonesSharpStein";
-                        glyphOffset = 18;
+                        glyphOffset += 18;
                         break;
                     default:
                         assert(0, "Not reached");
                 }
-                return React.createElement(Accidental.Component, { x: _this.props.x - (glyphOffset || _this.accidentalSpacing()), y: _this.props.y, stroke: _this.props.accStrokes[idx], line: l[idx], key: "acc_" + idx, idx: idx, accidental: glyphName });
+                if (paren) {
+                    if (glyphOffset >= 18) {
+                        glyphOffset += 5;
+                    }
+                    else {
+                        glyphOffset = 18;
+                    }
+                }
+                return React.createElement(Accidental.Component, { x: _this.props.x - (glyphOffset || _this.accidentalSpacing()), y: _this.props.y, stroke: _this.props.accStrokes[idx], line: l[idx], key: "acc_" + idx, idx: idx, paren: paren, accidental: glyphName });
             }
             else {
                 return null;

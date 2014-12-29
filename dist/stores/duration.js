@@ -514,15 +514,16 @@ var DurationModel = (function (_super) {
         }
         return Metre.calcBeats2(this, ctx, inheritedCount);
     };
-    DurationModel.prototype.containsAccidentalAfterBarline = function (ctx, previewMode) {
-        var nonAccidentals = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
-        var pitches = this.chord;
-        for (var i = 0; i < pitches.length; ++i) {
-            if ((nonAccidentals[pitches[i].alter] || 0) !== (pitches[i].alter || 0)) {
-                return true;
-            }
+    DurationModel.prototype.getAccWidthAfterBar = function (ctx) {
+        var parens = _.any(this.getAccidentals(ctx, true), function (v) { return typeof v === "string" && !!~v.indexOf("p"); });
+        if (parens) {
+            return 20;
         }
-        return false;
+        var accs = _.any(this.getAccidentals(ctx, true), function (v) { return v === v; });
+        if (accs) {
+            return 10;
+        }
+        return 0;
     };
     DurationModel.prototype.perfectlyBeamed = function (ctx) {
         if (this.tuplet) {
@@ -613,7 +614,9 @@ var DurationModel = (function (_super) {
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
-            if (actual === target) {
+            var acc = this._p_notes[i].accidental;
+            var paren = acc && (acc.editorial || acc.parentheses || acc.bracket);
+            if (!acc && actual === target) {
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
                 for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
                     if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.step + pitch.octave], ctx.accidentalsByStave[j][pitch.step], target)) {
@@ -625,20 +628,30 @@ var DurationModel = (function (_super) {
                     var otherChord = concurrentNotes[j].note.chord;
                     noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
                 }
+                if (ctx.beat === 1) {
+                    var prevBarOrNote = ctx.prev(function (c) { return c.isNote && !c.isRest || c.type === 300 /* Barline */; });
+                    if (prevBarOrNote && prevBarOrNote.type === 300 /* Barline */) {
+                        var prevNote = ctx.prev(function (c) { return c.isNote && _.any(c.note.chord, function (c) { return c.step === pitch.step; }) || c.type === 300 /* Barline */; }, 2);
+                        if (prevNote && prevNote.type !== 300 /* Barline */) {
+                            noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
+                        }
+                    }
+                }
                 if (noConflicts) {
                     result[i] = NaN;
                     continue;
                 }
                 else {
+                    paren = true;
                 }
             }
             if (!actual) {
                 ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step] = undefined;
-                result[i] = 0;
+                result[i] = "0p";
                 continue;
             }
             assert(actual !== C.InvalidAccidental, "Accidental is invalid");
-            result[i] = actual;
+            result[i] = paren ? actual + "p" : actual;
         }
         return result;
     };

@@ -545,30 +545,19 @@ class DurationModel extends Model implements C.IPitchDuration {
         return Metre.calcBeats2(this, ctx, inheritedCount);
     }
 
-    containsAccidentalAfterBarline(ctx: Annotator.Context, previewMode?: C.PreviewMode) {
-        var nonAccidentals = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
-        var pitches: Array<C.IPitch> = this.chord;
-        for (var i = 0; i < pitches.length; ++i) {
-            if ((nonAccidentals[pitches[i].alter]||0) !== (pitches[i].alter||0)) {
-                return true;
-            }
-
-            /*
-                Make sure there's no ambiguity from the previous note 
-                This should probably be on by default when editing. Or, at the least, for non-imported notes,
-                it should be default.
-
-            var prevNote = ctx.prev(c => c.isNote && !c.isRest);
-            if (prevNote) {
-                if (_hasConflict(prevNote.note.chord, pitches[i].step, nonAccidentals[pitches[i].step]||null)) {
-                    return true;
-                }
-            }
-            */
+    getAccWidthAfterBar(ctx: Annotator.Context) {
+        var parens = _.any(this.getAccidentals(ctx, true), v => typeof v === "string" && !!~v.indexOf("p"));
+        if (parens) {
+            return 20;
+        }
+        var accs = _.any(this.getAccidentals(ctx, true), v => v === v);
+        if (accs) {
+            return 10;
         }
 
-        return false;
+        return 0;
     }
+
     perfectlyBeamed(ctx: Annotator.Context) {
         if (this.tuplet) {
             var prevNote = ctx.prev(c => c.isNote || c.endMarker);
@@ -664,11 +653,16 @@ class DurationModel extends Model implements C.IPitchDuration {
             assert(actual !== undefined);
             var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step], null);
             var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step + pitch.octave], null);
+            
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
 
-            if (actual === target) {
+            var acc = this._p_notes[i].accidental;
+            var paren = acc && (acc.editorial || acc.parentheses || acc.bracket);
+
+            // If the encoding software tells us what kind of accidental we have, we trust it. Otherwise...
+            if (!acc && actual === target) {
                 // We don't need to show an accidental if all of these conditions are met:
 
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
@@ -689,32 +683,33 @@ class DurationModel extends Model implements C.IPitchDuration {
                     noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
                 }
 
-                // 4. Ambiguity could not be caused by being directly after a barline
-                //    This should be on by default (at least parenthesised) in edit mode.
-                // var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
-                // if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
-                //     var prevNote = ctx.prev(c => c.isNote && !c.isRest);
-                //     if (prevNote) {
-                //         noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
-                //     }
-                // }
+                // 4. There isn't ambiguity because or a barline and this is the first beat.
+                if (ctx.beat === 1) {
+                    var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
+                    if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
+                        var prevNote = ctx.prev(c => c.isNote && _.any(c.note.chord, c => c.step === pitch.step) || c.type === C.Type.Barline, 2);
+                        if (prevNote && prevNote.type !== C.Type.Barline) {
+                            noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
+                        }
+                    }
+                }
 
                 if (noConflicts) {
                     result[i] = NaN; // no accidental
                     continue;
                 } else {
-                    // XXX: Otherwise, the note should be in parentheses
+                    paren = true;
                 }
             }
 
             if (!actual) {
                 ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step] = undefined;
-                result[i] = 0; // natural
+                result[i] = "0p"; // natural
                 continue;
             }
 
             assert(actual !== C.InvalidAccidental, "Accidental is invalid");
-            result[i] = actual;
+            result[i] = paren ? actual + "p" : actual;
         }
         return result;
     }

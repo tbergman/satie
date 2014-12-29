@@ -85,7 +85,7 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
         return this.props.spec.x;
     }
     getX2() {
-        return this.props.spec.x + this.props.spec.width;
+        return this.props.spec.x + this.props.spec.slurW;
     }
     getY1(idx: number) {
         return this.props.spec.y -

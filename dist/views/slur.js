@@ -55,7 +55,7 @@ var Slur = (function (_super) {
         return this.props.spec.x;
     };
     Slur.prototype.getX2 = function () {
-        return this.props.spec.x + this.props.spec.width;
+        return this.props.spec.x + this.props.spec.slurW;
     };
     Slur.prototype.getY1 = function (idx) {
         return this.props.spec.y - this.getYOffset() - (getExtremeLine(this.props.spec.lines1, -this.direction) - 3) * 10;

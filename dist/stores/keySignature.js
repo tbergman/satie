@@ -71,7 +71,7 @@ var KeySignatureModel = (function (_super) {
         ctx.attributes.keySignature = this;
         ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
-            if (_.any(intersectingNotes, function (n) { return n.containsAccidentalAfterBarline(ctx); })) {
+            if (_.any(intersectingNotes, function (n) { return !!n.getAccWidthAfterBar(ctx); })) {
                 this._annotatedSpacing = 25;
             }
             else {

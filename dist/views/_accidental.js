@@ -6,15 +6,23 @@ var __extends = this.__extends || function (d, b) {
 };
 var React = require("react");
 var TypedReact = require("typed-react");
-var Glyph = require("./_glyph");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+var C = require("../stores/contracts");
+var Glyph = require("./_glyph");
 var Accidental = (function (_super) {
     __extends(Accidental, _super);
     function Accidental() {
         _super.apply(this, arguments);
     }
     Accidental.prototype.render = function () {
-        return React.createElement(Glyph.Component, { x: this.props.x, y: this.props.y - (this.props.line - 3) * 10, fill: this.props.stroke, opacity: this.props.opacity, glyphName: this.props.accidental, "selection-info": "accidental-" + this.props.idx });
+        var accidental = React.createElement(Glyph.Component, { x: this.props.x, y: this.props.y - (this.props.line - 3) * 10, fill: this.props.stroke, opacity: this.props.opacity, glyphName: this.props.accidental, "selection-info": "accidental-" + this.props.idx });
+        if (this.props.paren) {
+            var width = C.SMuFL.bravuraBBoxes[this.props.accidental][0] * 10;
+            return React.createElement("g", null, React.createElement(Glyph.Component, { x: this.props.x - 7, y: this.props.y - (this.props.line - 3) * 10, glyphName: "accidentalParensLeft" }), accidental, React.createElement(Glyph.Component, { x: this.props.x + width, y: this.props.y - (this.props.line - 3) * 10, glyphName: "accidentalParensRight" }));
+        }
+        else {
+            return accidental;
+        }
     };
     return Accidental;
 })(TypedReact.Component);
