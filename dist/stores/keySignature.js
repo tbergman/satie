@@ -62,10 +62,10 @@ var KeySignatureModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
     };
     KeySignatureModel.prototype.annotateImpl = function (ctx) {
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.currStaveIdx]) {
             return ClefModel.createClef(ctx);
         }
-        this.clef = ctx.attributes.clef;
+        this.clef = ctx.attributes.clefs[ctx.currStaveIdx];
         assert(this.clef instanceof Object);
         var intersectingNotes = _.filter(ctx.intersects(600 /* Duration */), function (l) { return l.isNote; });
         ctx.attributes.keySignature = this;

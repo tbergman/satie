@@ -523,6 +523,7 @@ declare module '__satie/stores/model' {
         fields: string[];
         mxmlJsonOnlyFields: string[];
         extraWidth: number;
+        isAttribute: boolean;
         revision: string;
         priority: C.Type;
         calcBeats(ctx: C.MetreContext): number;

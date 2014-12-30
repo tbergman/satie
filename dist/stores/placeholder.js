@@ -111,6 +111,9 @@ var PlaceholderModel = (function (_super) {
             }
         }
         switch (this.priority) {
+            case 145 /* Attributes */:
+                ctx.attributes = ctx._parts[0].body[ctx.idx];
+                break;
             case 300 /* Barline */:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: { data: 0 /* Regular */ } }, true));
                 ctx.body[ctx.idx].annotated = this.annotated;
@@ -122,8 +125,10 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 150 /* Clef */:
-                if (!ctx.attributes.clef) {
-                    ctx.body.splice(ctx.idx, 1, new ClefModel(null, true));
+                if (!("priority" in ctx.attributes.clefs[ctx.currStaveIdx])) {
+                    var newClef = new ClefModel(ctx.attributes.clefs[ctx.currStaveIdx], true);
+                    ctx.body.splice(ctx.idx, 1, newClef);
+                    ctx.attributes.clefs[ctx.currStaveIdx] = newClef;
                     ctx.body[ctx.idx].annotated = this.annotated;
                     ctx.body[ctx.idx].proposed = this.proposed;
                     return 20 /* RetryCurrent */;
@@ -165,12 +170,14 @@ var PlaceholderModel = (function (_super) {
             case 170 /* TimeSignature */:
                 var tses = ctx.findVertical(function (obj) { return obj.type === 170 /* TimeSignature */; });
                 assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(tses[0], true));
+                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(tses[0].toMXMLObject(), true));
                 ctx.body[ctx.idx].annotated = this.annotated;
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
         }
-        this.recordMetreDataImpl(ctx);
+        if (this.priority !== 50 /* Print */) {
+            this.recordMetreDataImpl(ctx);
+        }
         return 10 /* Success */;
     };
     PlaceholderModel.fillMissingBeats = function (ctx, extraBeats) {

@@ -50,7 +50,7 @@ class SlurGroupModel extends Model {
         }
 
         // A clef must exist on each line.
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
             return ClefModel.createClef(ctx);
         }
 

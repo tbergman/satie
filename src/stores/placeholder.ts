@@ -23,11 +23,21 @@ import NewpageModel         = require("./newpage");
 import TimeSignatureModel   = require("./timeSignature");
 
 /**
- * Models with the same index in each staff have the same starting location and
- * priority (which is, except for placeholders, equal to type). Whenever a model
- * of a certain type and location exists in one part but not another, a PlaceholderModel
- * is added to the part without such a type. The priority of a PlaceholderModel
- * is equal to the type in the other part.
+ * Models in the same location across voices must have:
+ *  - the same priority (=== type, except in PlaceholderModel)
+ *  - the same starting beat
+ *
+ * PlaceholderModels fill gaps in voices to make these conditions true.
+ *
+ * PlaceholderModels are used when there is no information at the current position in the current
+ * voice. For example, consider this bar:
+ * 
+ *   Beat:     [1///2///3///4///]
+ *   Voice 1:  [|#######|######|]
+ *   Voice 2:  [|##############|]
+ * 
+ * On beat 3, Voice 2 would have a placeholder for a Duration, because it does not have a starting
+ * not on beat 3.
  */
 class PlaceholderModel extends Model {
     ///////////////
@@ -116,8 +126,12 @@ class PlaceholderModel extends Model {
             }
         }
 
-        // See if we should replace a placeholder for a real type...
+        // Type specific logic.
         switch(this.priority) {
+            case C.Type.Attributes:
+                // STOPSHIP: Find the part leader.
+                ctx.attributes = ctx._parts[0].body[ctx.idx];
+                break;
             case C.Type.Barline:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: {data: C.MusicXML.BarStyleType.Regular }}, true));
                 ctx.body[ctx.idx].annotated = this.annotated;
@@ -129,8 +143,10 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Clef:
-                if (!ctx.attributes.clef) {
-                    ctx.body.splice(ctx.idx, 1, new ClefModel(null, true)); // FIXME
+                if (!("priority" in ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/])) { // Check if model
+                    var newClef =  new ClefModel(ctx.attributes.clefs[ctx.currStaveIdx], true)
+                    ctx.body.splice(ctx.idx, 1, newClef); // FIXME
+                    ctx.attributes.clefs[ctx.currStaveIdx] = newClef;
                     ctx.body[ctx.idx].annotated = this.annotated;
                     ctx.body[ctx.idx].proposed  = this.proposed;
                     return C.IterationStatus.RetryCurrent;
@@ -172,14 +188,16 @@ class PlaceholderModel extends Model {
             case C.Type.TimeSignature:
                 var tses = ctx.findVertical(obj => obj.type === C.Type.TimeSignature);
                 assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(<TimeSignatureModel> tses[0], true));
+                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(<TimeSignatureModel> (<any>tses[0]).toMXMLObject(), true));
                 ctx.body[ctx.idx].annotated = this.annotated;
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
         }
 
         // HACK HACK HACK! Sometimes recordMetreDataImpl isn't run when only Placeholders have been added or removed.
-        this.recordMetreDataImpl(ctx);
+        if (this.priority !== C.Type.Print) {
+            this.recordMetreDataImpl(ctx);
+        }
 
         return C.IterationStatus.Success;
     }

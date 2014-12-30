@@ -102,7 +102,7 @@ var ClefModel = (function (_super) {
                 return ctx.eraseCurrent(1 /* MatchedOnly */);
             }
         }
-        this.isChange = ctx.attributes.clef !== this;
+        this.isChange = ctx.attributes.clefs[ctx.currStaveIdx] !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(function (m) { return m.type === 300 /* Barline */ || m.isNote && !m.isRest; });
         }
@@ -112,7 +112,8 @@ var ClefModel = (function (_super) {
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
             }
         }
-        ctx.attributes.clef = this;
+        ctx.attributes.clefs = ctx.attributes.clefs || [];
+        ctx.attributes.clefs[ctx.currStaveIdx] = this;
         var next = ctx.next();
         if (next.isNote) {
             var note = next;
@@ -137,10 +138,11 @@ var ClefModel = (function (_super) {
     };
     ClefModel.prototype._clefIsRedundant = function (ctx) {
         switch (true) {
-            case ctx.attributes.clef === this:
-            case !ctx.attributes.clef:
+            case !ctx.attributes.clefs:
+            case !ctx.attributes.clefs[ctx.currStaveIdx]:
+            case ctx.attributes.clefs[ctx.currStaveIdx] === this:
                 return false;
-            case ClefModel.serializeClef(ctx.attributes.clef) === ClefModel.serializeClef(this):
+            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.currStaveIdx]) === ClefModel.serializeClef(this):
                 return true;
             default:
                 console.warn("_clefIsRedundant: not reached");

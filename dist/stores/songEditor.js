@@ -13,6 +13,7 @@ var BeginModel = require("./begin");
 var C = require("./contracts");
 var Instruments = require("./instruments");
 var Model = require("./model");
+var PlaceholderModel = require("./placeholder");
 var isBrowser = typeof window !== "undefined";
 var SongEditorStore = (function (_super) {
     __extends(SongEditorStore, _super);
@@ -181,58 +182,107 @@ var SongEditorStore = (function (_super) {
         }
         return header;
     };
-    SongEditorStore.extractMXMLParts = function (m) {
+    SongEditorStore.extractMXMLParts = function (mxmlJson) {
         var idxToPart = {};
         var partCount = 0;
-        _.forEach(m.partList.scoreParts, function (part, idx) {
+        _.forEach(mxmlJson.partList.scoreParts, function (part, idx) {
             idxToPart[partCount++] = part.id;
         });
         var partToIdx = _.invert(idxToPart);
         assert(partCount, "At least one part is needed.");
-        var parts = _.times(partCount, function () { return new Object({
-            instrument: Instruments.List[0],
-            body: [new BeginModel({}, true)]
-        }); });
-        var mxmlClassToType = {
-            "Note": 600 /* Duration */,
-            "Attributes": 145 /* Attributes */,
-            "Barline": 300 /* Barline */
-        };
-        _.forEach(m.measures, function (measure, measureIdx) {
+        var voices = [];
+        function mxmlClassToType(type) {
+            switch (type) {
+                case "Note":
+                    return 600 /* Duration */;
+                case "Attributes":
+                    return 145 /* Attributes */;
+                case "Barline":
+                    return 300 /* Barline */;
+                default:
+                    throw type + " is not implemented";
+            }
+        }
+        ;
+        var divisionsPerPart = [];
+        var timeSignaturePerPart = [];
+        var _voiceHash = {};
+        var _maxVoice = -1;
+        function getVoiceIdx(mPartIdx, voice) {
+            var key = (mPartIdx || 0) + "_" + (voice || 1);
+            if (_voiceHash[key] === undefined) {
+                return _voiceHash[key] = ++_maxVoice;
+            }
+            return _voiceHash[key];
+        }
+        _.forEach(mxmlJson.measures, function (measure, measureIdx) {
             var minPriority;
-            var idxPerPart = _.map(parts, function (part) { return 0; });
+            var idxPerPart = _.times(partCount, function (part) { return 0; });
+            var outputIdx = 0;
             do {
                 var elements = _.map(measure.parts, function (p, partID) { return p[idxPerPart[partToIdx[partID]]] || {}; });
-                var priorities = _.map(elements, function (element) { return mxmlClassToType[element._class] || C.MAX_NUM; });
+                var splits = getSplits(elements);
+                if (splits.length) {
+                    _.forEach(splits, function (split) {
+                        var partIdx = split.idx;
+                        ++idxPerPart[partIdx];
+                        if (split.el._class === "Backup") {
+                            var beats = 4 / (split.el.duration / divisionsPerPart[partIdx]);
+                            console.log(beats);
+                        }
+                    });
+                    continue;
+                }
+                var priorities = _.map(elements, function (element) { return !element || typeof element === "string" ? C.MAX_NUM : mxmlClassToType(element._class); });
                 minPriority = _.min(priorities);
-                _.forEach(elements, function (element, partIdx) {
-                    if (mxmlClassToType[element._class] === minPriority) {
-                        if (minPriority === 600 /* Duration */) {
-                            var note = element;
-                            element = {
-                                _notes: [note],
-                                _class: element._class,
-                                dots: note.dots ? note.dots.length : 0
+                if (minPriority !== C.MAX_NUM) {
+                    _.forEach(elements, function (element, mPartIdx) {
+                        var voiceIdx = getVoiceIdx(mPartIdx, element.voice);
+                        if (!voices[voiceIdx]) {
+                            voices[voiceIdx] = {
+                                instrument: Instruments.List[0],
+                                body: [new BeginModel({}, true)]
                             };
-                            if (note.chord) {
-                                assert(false, "TODO");
+                            if (voiceIdx) {
+                                for (var i = 1; i < voices[0].body.length; ++i) {
+                                    voices[voiceIdx].body.push(new PlaceholderModel({ priority: voices[0].body[i].priority }, true));
+                                }
                             }
                         }
-                        var _class = element._class;
-                        delete element._class;
-                        element._ = [Model.newKey(), minPriority, 0];
-                        parts[partIdx].body.push(Model.fromJSON(element));
-                        element._class = _class;
-                        delete element._;
-                        ++idxPerPart[partIdx];
-                    }
-                    else {
-                    }
-                });
+                        if (mxmlClassToType(element._class) === minPriority) {
+                            if (minPriority === 145 /* Attributes */) {
+                                assert(element.voice === undefined, "Attributes are voiceless");
+                                assert(element.staff === undefined, "Attributes are staffless");
+                                divisionsPerPart[mPartIdx] = element.divisions || divisionsPerPart[mPartIdx];
+                                timeSignaturePerPart[mPartIdx] = element.time || timeSignaturePerPart[mPartIdx];
+                            }
+                            else if (minPriority === 600 /* Duration */) {
+                                var note = element;
+                                element = {
+                                    _notes: [note],
+                                    _class: element._class,
+                                    dots: note.dots ? note.dots.length : 0
+                                };
+                                if (note.chord) {
+                                    assert(false, "TODO");
+                                }
+                            }
+                            var _class = element._class;
+                            delete element._class;
+                            element._ = [Model.newKey(), minPriority, 0];
+                            voices[voiceIdx].body.push(Model.fromJSON(element));
+                            element._class = _class;
+                            delete element._;
+                            ++idxPerPart[mPartIdx];
+                        }
+                        else {
+                        }
+                    });
+                }
             } while (minPriority !== C.MAX_NUM);
-            if (measureIdx !== m.measures.length - 1) {
-                for (var i = 0; i < partCount; ++i) {
-                    parts[i].body.push(new BarlineModel({
+            if (measureIdx !== mxmlJson.measures.length - 1) {
+                for (var i = 0; i < voices.length; ++i) {
+                    voices[i].body.push(new BarlineModel({
                         barStyle: {
                             data: 0 /* Regular */
                         }
@@ -240,12 +290,16 @@ var SongEditorStore = (function (_super) {
                 }
             }
         });
-        _.forEach(parts, function (part) {
+        _.forEach(voices, function (part) {
             _.forEach(part.body, function (model, j) {
                 model.modelDidLoad(part.body, j);
             });
         });
-        return parts;
+        function getSplits(elements) {
+            return _.map(elements, function (element, idx) { return element._class === "Forward" || element._class === "Backup" ? { el: element, idx: idx } : null; }).filter(function (a) { return !!a; });
+        }
+        console.log(_voiceHash);
+        return voices;
     };
     SongEditorStore.prototype["DELETE /webapp/song/lineDirty"] = function (action) {
         this._linesToUpdate[action.postData] = false;

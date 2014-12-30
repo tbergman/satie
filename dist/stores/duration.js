@@ -371,9 +371,6 @@ var DurationModel = (function (_super) {
         }
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-            if (this._count === 60) {
-                debugger;
-            }
         }
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
@@ -793,8 +790,8 @@ var DurationModel = (function (_super) {
             assert(pitch.line !== undefined, "Must be first annotated in duration.jsx");
             return pitch.line;
         }
-        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
-        return DurationModel.clefOffsets[ctx.attributes.clef.sign] + (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
+        assert(ctx.attributes.clefs && ctx.attributes.clefs[ctx.currStaveIdx], "A clef must be inserted before the first note");
+        return DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
     };
     DurationModel.getLines = function (note, ctx, options) {
         options = options || { filterTemporary: false };
@@ -804,14 +801,14 @@ var DurationModel = (function (_super) {
                 if (note.isRest) {
                     var durr = note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
-                        ret.push(DurationModel.clefOffsets[ctx.attributes.clef.sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                        ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     }
                     else {
                         ret.push(3);
                     }
                 }
                 else {
-                    ret.push(DurationModel.clefOffsets[ctx.attributes.clef.sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                    ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
                 }
             }
         }
@@ -821,12 +818,12 @@ var DurationModel = (function (_super) {
         return ret;
     };
     DurationModel.getPitch = function (line, ctx) {
-        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
-        var pitch = DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5];
-        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) / 3.5);
+        assert(ctx.attributes.clefs[ctx.currStaveIdx], "A clef must be inserted before the first note");
+        var pitch = DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) % 3.5 + 3.5) % 3.5];
+        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) / 3.5);
         var alter = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] || ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
         return {
-            step: DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5],
+            step: DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) % 3.5 + 3.5) % 3.5],
             octave: octave,
             alter: alter === C.InvalidAccidental ? null : alter
         };

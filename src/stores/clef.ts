@@ -119,7 +119,7 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
         }
 
         // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
-        this.isChange = ctx.attributes.clef !== this;
+        this.isChange = ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/] !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
             // if (barCandidate && barCandidate.type === C.Type.Barline) {
@@ -138,7 +138,8 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
         }
 
         // Copy information from the context that the view needs.
-        ctx.attributes.clef = this;
+        ctx.attributes.clefs = ctx.attributes.clefs || [];
+        ctx.attributes.clefs[ctx.currStaveIdx] = this; // CXFIX
         var next = ctx.next();
         if (next.isNote) {
             var note: C.IPitch = <any> next;
@@ -163,10 +164,11 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
     /* Convenience */
     private _clefIsRedundant(ctx: Annotator.Context): boolean {
         switch (true) {
-            case ctx.attributes.clef === this:
-            case !ctx.attributes.clef:
+            case !ctx.attributes.clefs:
+            case !ctx.attributes.clefs[ctx.currStaveIdx]: // CXFIX
+            case ctx.attributes.clefs[ctx.currStaveIdx] /* CXFIX */ === this:
                 return false;
-            case ClefModel.serializeClef(ctx.attributes.clef) === ClefModel.serializeClef(this):
+            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.currStaveIdx] /*CXFIX*/) === ClefModel.serializeClef(this):
                 return true;
             default:
                 console.warn("_clefIsRedundant: not reached");

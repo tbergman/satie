@@ -317,6 +317,19 @@ export class Context implements C.MetreContext {
     insertFuture(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
+
+        if (obj.isAttribute) {
+            var nidx = index;
+            while(this.body[nidx] && this.body[nidx].isAttribute) {
+                if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
+                    this.body[nidx] = obj;
+                    recordMetreData(this._parts);
+                    return C.IterationStatus.Success;
+                }
+                ++nidx;
+            }
+        }
+
         this.splice(index, 0, [obj], obj.isNote ? SplicePolicy.Masked : SplicePolicy.Additive);
         recordMetreData(this._parts);
 
@@ -1101,12 +1114,20 @@ function _recordMetreData(parts: Array<C.IPart>) {
     "use strict";
     var i: number;
     var j: number;
+    var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
     for (i = 0; i < parts.length; ++i) {
         var body = parts[i].body;
         if (!body) { continue; }
         var mctx1 = new C.MetreContext;
         for (j = 0; j < body.length; ++j) {
+            // STOPSHIP: Doesn't work with multiple MusicXML parts.
+            if (attributesPerIdx[j]) {
+                mctx1.attributes = attributesPerIdx[j];
+            }
             body[j].recordMetreDataImpl(mctx1);
+            if (body[j].type === C.Type.Attributes) {
+                attributesPerIdx[j] = mctx1.attributes;
+            }
         }
     }
 }
@@ -1240,7 +1261,7 @@ class PrivIterator {
         }
 
         // The current beat that the context records is the lagging (minimum from all parts) beat.
-        // Note: the maxiumum beat in any of the parts is tracked in ctx.__globalBeat__
+        // Note: the maximum beat in any of the parts is tracked in ctx.__globalBeat__
         ctx.beat               = _.min(componentSnapshots, "beat").beat;
         for (var i = 0; i < this._components.length; ++i) {
             if (    this._components[i].nextLocation.bar === ctx.bar &&
@@ -1251,7 +1272,10 @@ class PrivIterator {
 
         // The horizontal location usually depends on the mergePolicy of the Model.
         // All models of a given type have the same priority.
-        var mergePolicy        = ctx.curr.xPolicy;
+        var mergePolicy        = C.RectifyXPolicy.Invalid;
+        for (var j = 0; j < ctx._parts.length; ++j) {
+            mergePolicy        = Math.max(mergePolicy, ctx._parts[j].body[ctx.idx].xPolicy);
+        }
         assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x                  = componentSnapshots[0].x;
         for (var i = 1; i < componentSnapshots.length; ++i) {

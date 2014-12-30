@@ -44,7 +44,7 @@ var SlurGroupModel = (function (_super) {
             this.x = ctx.prev().x;
             ctx.x = this.x;
         }
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
             return ClefModel.createClef(ctx);
         }
         if (!ctx.attributes.keySignature) {

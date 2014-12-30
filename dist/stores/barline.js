@@ -127,7 +127,7 @@ var BarlineModel = (function (_super) {
         var intersectingNotes = ctx.intersects(600 /* Duration */, ctx.idx, true, false);
         var nextNonPlaceholderIdx = ctx.nextIdx(function (c) { return !c.placeholder; });
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
-        if (nextNonPlaceholder.isNote) {
+        if (nextNonPlaceholder && nextNonPlaceholder.isNote) {
             this.annotatedAccidentalSpacing = _.chain(intersectingNotes).map(function (n) { return n.getAccWidthAfterBar(ctx); }).max().value();
         }
         else {

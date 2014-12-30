@@ -107,6 +107,10 @@ class Model {
         }
     }
 
+    get isAttribute():  boolean {
+        return this.priority > C.Type.START_OF_ATTRIBUTES && this.priority < C.Type.END_OF_ATTRIBUTES;
+    }
+
     get revision():     string                  { throw "Not a Barline"; }
     set revision(n: string)                     { throw "Not a Barline"; }
 

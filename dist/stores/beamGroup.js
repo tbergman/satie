@@ -78,7 +78,7 @@ var BeamGroupModel = (function (_super) {
     };
     BeamGroupModel.prototype.annotateImpl = function (ctx) {
         var _this = this;
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
             return ClefModel.createClef(ctx);
         }
         if (!ctx.attributes.keySignature) {

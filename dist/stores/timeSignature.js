@@ -83,13 +83,14 @@ var TimeSignatureModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
     };
     TimeSignatureModel.prototype.annotateImpl = function (ctx) {
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
             return ClefModel.createClef(ctx);
         }
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
             return KeySignatureModel.createKeySignature(ctx);
         }
-        if (ctx.ts && ctx.attributes.time !== this && TimeSignatureModel.isEqual(this.ts, ctx.ts)) {
+        var prevPotentialTime = ctx.prev(function (c) { return c.type === 170 /* TimeSignature */ || c.type === 130 /* NewLine */; });
+        if (prevPotentialTime && prevPotentialTime.type === 170 /* TimeSignature */ && TimeSignatureModel.isEqual(this.ts, prevPotentialTime.ts)) {
             ctx.eraseCurrent();
             return 20 /* RetryCurrent */;
         }
@@ -109,6 +110,28 @@ var TimeSignatureModel = (function (_super) {
         ctx.attributes.time = this;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return 10 /* Success */;
+    };
+    TimeSignatureModel.prototype.toMXMLObject = function () {
+        return {
+            beats: this.beats,
+            beatTypes: this.beatTypes,
+            color: this.color,
+            defaultX: this.defaultX,
+            defaultY: this.defaultY,
+            fontFamily: this.fontFamily,
+            fontSize: this.fontSize,
+            fontStyle: this.fontStyle,
+            fontWeight: this.fontWeight,
+            halign: this.halign,
+            interchangeables: this.interchangeables,
+            printObject: this.printObject,
+            relativeX: this.relativeX,
+            relativeY: this.relativeY,
+            senzaMisura: this.senzaMisura,
+            separator: this.separator,
+            symbol: this.symbol,
+            valign: this.valign
+        };
     };
     TimeSignatureModel.isEqual = function (ts1, ts2) {
         return (!!ts1 === !!ts2) && (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType && ts1.commonRepresentation === ts2.commonRepresentation);

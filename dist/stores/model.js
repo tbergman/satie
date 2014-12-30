@@ -162,6 +162,13 @@ var Model = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Model.prototype, "isAttribute", {
+        get: function () {
+            return this.priority > 100 /* START_OF_ATTRIBUTES */ && this.priority < 199 /* END_OF_ATTRIBUTES */;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Model.prototype, "revision", {
         get: function () {
             throw "Not a Barline";

@@ -351,9 +351,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-            if (this._count === 60) {
-                debugger;
-            }
             // FIXME: Round this to something sensible for MIDI imports.
         }
 
@@ -875,8 +872,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                     "Must be first annotated in duration.jsx");
             return pitch.line;
         }
-        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
-        return DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+        assert(ctx.attributes.clefs && ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/], "A clef must be inserted before the first note");
+        return DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
             (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
     };
 
@@ -890,7 +887,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     var durr = <DurationModel> note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
                         ret.push(
-                            DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+                            DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
                             ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
                             DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     } else {
@@ -898,7 +895,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 } else {
                     ret.push(
-                        DurationModel.clefOffsets[ctx.attributes.clef.sign] +
+                        DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
                         ((note.chord[i].octave || 0) - 3) * 3.5 +
                         DurationModel.pitchOffsets[note.chord[i].step]);
                 }
@@ -911,16 +908,16 @@ class DurationModel extends Model implements C.IPitchDuration {
     };
 
     static getPitch = (line: number, ctx: Annotator.Context) => {
-        assert(ctx.attributes.clef, "A clef must be inserted before the first note");
+        assert(ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/], "A clef must be inserted before the first note");
         var pitch = DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5];
-        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) / 3.5);
+                line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) % 3.5 + 3.5) % 3.5];
+        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) / 3.5);
         var alter = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
             ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
 
         return {
             step: DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.attributes.clef.sign]) % 3.5 + 3.5) % 3.5],
+                line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) % 3.5 + 3.5) % 3.5],
             octave: octave,
             alter: alter === C.InvalidAccidental ? null : alter
         };
@@ -1130,7 +1127,7 @@ module DurationModel {
         ties:               C.MusicXML.Tie[];
         dynamics:           number;
         play:               C.MusicXML.Play;
-        staff:              C.MusicXML.Staff;
+        staff:              number;
         grace:              C.MusicXML.Grace;
         notehead:           C.MusicXML.Notehead;
         release:            number;
@@ -1141,7 +1138,7 @@ module DurationModel {
         /* C.MusicXML.PrintStyle */
 
         /* C.MusicXML.PrintStyle >> EditorialVoice */
-        voice:              string;
+        voice:              number;
         footnote:           C.MusicXML.Footnote;
         level:              C.MusicXML.Level;
 

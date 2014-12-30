@@ -57,7 +57,7 @@ var AttributesModel = (function (_super) {
     Object.defineProperty(AttributesModel.prototype, "mxmlJsonOnlyFields", {
         get: function () {
             return [
-                "clef",
+                "clefs",
                 "time",
                 "keySignature"
             ];
@@ -167,22 +167,30 @@ var AttributesModel = (function (_super) {
             ctx.next().ctxData = this.ctxData;
             this.keySignature = null;
         }
-        if (this.clef && !(this.clef instanceof Model)) {
-            ctx.insertFuture(new ClefModel(this.clef, false));
-            ctx.next().ctxData = this.ctxData;
-            this.clef = null;
+        if (this.clefs) {
+            var clef = this.clefs[ctx.currStaveIdx];
+            if (!(clef instanceof Model)) {
+                ctx.insertFuture(new ClefModel(clef, false));
+                ctx.next().ctxData = this.ctxData;
+                clef = null;
+            }
         }
         this.updateAttached(ctx);
         if (this._parent) {
             this.time = this.time || this._parent.time;
             this.keySignature = this.keySignature || this._parent.keySignature;
-            this.clef = this.clef || this._parent.clef;
+            if (this._parent.clefs) {
+                this.clefs = this.clefs || [];
+                for (var i = 0; i < this._parent.clefs.length; ++i) {
+                    this.clefs[i] = this.clefs[i] || this._parent.clefs[i];
+                }
+            }
         }
         return 10 /* Success */;
     };
     AttributesModel.prototype.toMXMLObject = function () {
         return C.JSONx.clone({
-            clef: this.clef,
+            clefs: this.clefs,
             directive: this.directive,
             divisions: this.divisions,
             footnote: this.footnote,
@@ -198,7 +206,8 @@ var AttributesModel = (function (_super) {
         });
     };
     AttributesModel.prototype.updateAttached = function (ctx) {
-        this.clef = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; }));
+        this.clefs = this.clefs || [];
+        this.clefs[ctx.currStaveIdx] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.currStaveIdx];
         this.time = ifAttribute(ctx.next(function (c) { return c.type === 170 /* TimeSignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.time;
         this.keySignature = ifAttribute(ctx.next(function (c) { return c.type === 160 /* KeySignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; }));
         function ifAttribute(m) {

@@ -39,7 +39,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
 
     get mxmlJsonOnlyFields() {
         return [
-            "clef", "time", "keySignature"
+            "clefs", "time", "keySignature"
         ];
     }
 
@@ -85,7 +85,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     // I.3 C.MusicXML.Attributes, outside class //
     //////////////////////////////////////////////
 
-    clef:               C.MusicXML.Clef;
+    clefs:              C.MusicXML.Clef[];
     time:           	C.MusicXML.Time;
     keySignature:   	C.MusicXML.Key;
 
@@ -127,10 +127,13 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
             ctx.next().ctxData  = this.ctxData;
             this.keySignature   = null;
         }
-        if (this.clef && !(this.clef instanceof Model)) {
-            ctx.insertFuture(new ClefModel(this.clef, false));
-            ctx.next().ctxData  = this.ctxData;
-            this.clef           = null;
+        if (this.clefs) {
+            var clef = this.clefs[ctx.currStaveIdx];
+            if (!(clef instanceof Model)) {
+                ctx.insertFuture(new ClefModel(clef, false));
+                ctx.next().ctxData  = this.ctxData;
+                clef           = null;
+            }
         }
 
         this.updateAttached(ctx);
@@ -138,7 +141,12 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         if (this._parent) {
             this.time           = this.time || this._parent.time;
             this.keySignature   = this.keySignature || this._parent.keySignature;
-            this.clef           = this.clef || this._parent.clef;
+            if (this._parent.clefs) {
+                this.clefs      = this.clefs || [];
+                for (var i = 0; i < this._parent.clefs.length; ++i) {
+                    this.clefs[i] = this.clefs[i] || this._parent.clefs[i];
+                }
+            }
         }
 
         return C.IterationStatus.Success;
@@ -146,7 +154,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
 
     toMXMLObject(): C.MusicXML.AttributesComplete {
         return C.JSONx.clone({
-            clef:               this.clef,
+            clefs:              this.clefs,
             directive:      	this.directive,
             divisions:      	this.divisions,
             footnote:       	this.footnote,
@@ -167,9 +175,13 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     ///////////////
 
     updateAttached(ctx: Annotator.Context) {
-        this.clef         = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef          || c.type > C.Type.END_OF_ATTRIBUTES));
+        // CXFIX: Other voices.
+        this.clefs          = this.clefs || [];
+        this.clefs[ctx.currStaveIdx/*CXFIX*/] = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef || c.type > C.Type.END_OF_ATTRIBUTES)) ||
+            this.clefs[ctx.currStaveIdx];
+
         this.time           = <any> ifAttribute(ctx.next(c => c.type === C.Type.TimeSignature || c.type > C.Type.END_OF_ATTRIBUTES)) || this.time;
-        this.keySignature = <any> ifAttribute(ctx.next(c => c.type === C.Type.KeySignature  || c.type > C.Type.END_OF_ATTRIBUTES));
+        this.keySignature   = <any> ifAttribute(ctx.next(c => c.type === C.Type.KeySignature  || c.type > C.Type.END_OF_ATTRIBUTES));
 
         function ifAttribute(m: Model) {
             return m && m.priority < C.Type.END_OF_ATTRIBUTES ? m : null;

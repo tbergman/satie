@@ -234,6 +234,17 @@ var Context = (function () {
     Context.prototype.insertFuture = function (obj, index) {
         index = (index === null || index === undefined) ? (this.idx + 1) : index;
         assert(index > this.idx, "Otherwise, use 'insertPast'");
+        if (obj.isAttribute) {
+            var nidx = index;
+            while (this.body[nidx] && this.body[nidx].isAttribute) {
+                if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
+                    this.body[nidx] = obj;
+                    recordMetreData(this._parts);
+                    return 10 /* Success */;
+                }
+                ++nidx;
+            }
+        }
         this.splice(index, 0, [obj], obj.isNote ? 3 /* Masked */ : 2 /* Additive */);
         recordMetreData(this._parts);
         return 10 /* Success */;
@@ -704,6 +715,7 @@ function _recordMetreData(parts) {
     "use strict";
     var i;
     var j;
+    var attributesPerIdx = {};
     for (i = 0; i < parts.length; ++i) {
         var body = parts[i].body;
         if (!body) {
@@ -711,7 +723,13 @@ function _recordMetreData(parts) {
         }
         var mctx1 = new C.MetreContext;
         for (j = 0; j < body.length; ++j) {
+            if (attributesPerIdx[j]) {
+                mctx1.attributes = attributesPerIdx[j];
+            }
             body[j].recordMetreDataImpl(mctx1);
+            if (body[j].type === 145 /* Attributes */) {
+                attributesPerIdx[j] = mctx1.attributes;
+            }
         }
     }
 }
@@ -804,7 +822,10 @@ var PrivIterator = (function () {
                 ctx.beat = this._components[i].nextLocation.beat;
             }
         }
-        var mergePolicy = ctx.curr.xPolicy;
+        var mergePolicy = 0 /* Invalid */;
+        for (var j = 0; j < ctx._parts.length; ++j) {
+            mergePolicy = Math.max(mergePolicy, ctx._parts[j].body[ctx.idx].xPolicy);
+        }
         assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x = componentSnapshots[0].x;
         for (var i = 1; i < componentSnapshots.length; ++i) {

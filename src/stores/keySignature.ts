@@ -80,12 +80,12 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
-        this.clef                                   = ctx.attributes.clef;
+        this.clef                                   = ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/];
         assert(this.clef instanceof Object);
         var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.attributes.keySignature                 = this;

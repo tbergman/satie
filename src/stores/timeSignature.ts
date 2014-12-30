@@ -165,17 +165,19 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
             return ClefModel.createClef(ctx);
         }
 
         // A key signature must exist on each line
-        if (!ctx.attributes.clef) {
+        if (!ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
             return KeySignatureModel.createKeySignature(ctx);
         }
 
         // Time signatures must not be redundant
-        if (ctx.ts && ctx.attributes.time !== this && TimeSignatureModel.isEqual(this.ts, ctx.ts)) {
+        var prevPotentialTime = ctx.prev(c => c.type === C.Type.TimeSignature || c.type === C.Type.NewLine);
+        if (prevPotentialTime && prevPotentialTime.type === C.Type.TimeSignature &&
+                TimeSignatureModel.isEqual(this.ts, (<TimeSignatureModel>prevPotentialTime).ts)) {
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
         }
@@ -196,6 +198,29 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
         ctx.attributes.time = this;
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         return C.IterationStatus.Success;
+    }
+
+    toMXMLObject(): C.MusicXML.TimeComplete {
+        return {
+            beats: this.beats,
+            beatTypes: this.beatTypes,
+            color: this.color,
+            defaultX: this.defaultX,
+            defaultY: this.defaultY,
+            fontFamily: this.fontFamily,
+            fontSize: this.fontSize,
+            fontStyle: this.fontStyle,
+            fontWeight: this.fontWeight,
+            halign: this.halign,
+            interchangeables: this.interchangeables,
+            printObject: this.printObject,
+            relativeX: this.relativeX,
+            relativeY: this.relativeY,
+            senzaMisura: this.senzaMisura,
+            separator: this.separator,
+            symbol: this.symbol,
+            valign: this.valign
+        };
     }
 
     /////////////////
