@@ -89,7 +89,7 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         assert(this.clef instanceof Object);
         var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.attributes.keySignature                 = this;
-        ctx.accidentalsByStave[ctx.voiceIdx]    = C.NoteUtil.getAccidentals(this);
+        ctx.accidentalsByStaff[ctx.voiceIdx + 1]    = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => !!(<DurationModelType>n).getAccWidthAfterBar(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.

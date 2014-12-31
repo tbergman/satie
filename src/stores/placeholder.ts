@@ -143,7 +143,7 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Clef:
-                if (!("priority" in ctx.attributes.clefs[ctx.voiceIdx])) { // This checks if it's a model
+                if (ctx.part.staves > ctx.voiceIdx && !("priority" in ctx.attributes.clefs[ctx.voiceIdx])) { // This checks if it's a model
                     var newClef =  new ClefModel(ctx.attributes.clefs[ctx.voiceIdx], true)
                     ctx.body.splice(ctx.idx, 1, newClef); // FIXME
                     ctx.attributes.clefs[ctx.voiceIdx] = newClef;
@@ -169,12 +169,15 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.KeySignature:
-                var ks = C.JSONx.clone(<KeySignatureModel>realItems[0]);
-                assert(ks, "Undefined prevKeySignature!!");
-                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
-                ctx.body[ctx.idx].annotated = this.annotated;
-                ctx.body[ctx.idx].proposed  = this.proposed;
-                return C.IterationStatus.RetryCurrent;
+                if (ctx.part.staves > ctx.voiceIdx) {
+                    var ks = C.JSONx.clone(<KeySignatureModel>realItems[0]);
+                    assert(ks, "Undefined prevKeySignature!!");
+                    ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed  = this.proposed;
+                    return C.IterationStatus.RetryCurrent;
+                }
+                break;
             case C.Type.NewLine:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}, true));
                 ctx.body[ctx.idx].annotated = this.annotated;
@@ -186,12 +189,15 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.TimeSignature:
-                var tses = ctx.findVertical(obj => obj.type === C.Type.TimeSignature);
-                assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(<TimeSignatureModel> (<any>tses[0]).toMXMLObject(), true));
-                ctx.body[ctx.idx].annotated = this.annotated;
-                ctx.body[ctx.idx].proposed  = this.proposed;
-                return C.IterationStatus.RetryCurrent;
+                if (ctx.part.staves > ctx.voiceIdx) {
+                    var tses = ctx.findVertical(obj => obj.type === C.Type.TimeSignature);
+                    assert(tses.length, "Staves cannot all be placeholders!");
+                    ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(<TimeSignatureModel> (<any>tses[0]).toMXMLObject(), true));
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed  = this.proposed;
+                    return C.IterationStatus.RetryCurrent;
+                }
+                break;
         }
 
         // HACK HACK HACK! Sometimes recordMetreDataImpl isn't run when only Placeholders have been added or removed.

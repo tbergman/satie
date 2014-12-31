@@ -179,7 +179,11 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
 
     /* Static */
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
-        var clef: C.MusicXML.Clef = <any> ctx.prev(c => c.type === C.Type.Clef);
+        var clef: C.MusicXML.Clef = <any> ctx.prev(c => c.type === C.Type.Clef) ||
+            {
+                sign: "G",
+                line: 2
+            };
         return ctx.insertPast(new ClefModel(clef, true));
     };
 

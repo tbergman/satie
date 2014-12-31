@@ -143,7 +143,9 @@ var BarlineModel = (function (_super) {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        if (ctx.part.staves < ctx.voiceIdx) {
+            ctx.accidentalsByStaff[ctx.voiceIdx + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        }
         this.height = 20;
         this.yOffset = 0;
         this.barStyle.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");

@@ -87,7 +87,7 @@ var NewlineModel = (function (_super) {
         ctx.attributes = null;
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
-                accidentalsByStave: C.JSONx.clone(ctx.accidentalsByStave),
+                accidentalsByStaff: C.JSONx.clone(ctx.accidentalsByStaff),
                 attributes: {},
                 bar: null,
                 barKeys: null,
@@ -103,7 +103,7 @@ var NewlineModel = (function (_super) {
                 y: null
             };
         }
-        ctx.lines[ctx.line].accidentalsByStave = [];
+        ctx.lines[ctx.line].accidentalsByStaff = [];
         ctx.lines[ctx.line].attributes = {};
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];

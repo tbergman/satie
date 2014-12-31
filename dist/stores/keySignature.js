@@ -69,7 +69,7 @@ var KeySignatureModel = (function (_super) {
         assert(this.clef instanceof Object);
         var intersectingNotes = _.filter(ctx.intersects(600 /* Duration */), function (l) { return l.isNote; });
         ctx.attributes.keySignature = this;
-        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(this);
+        ctx.accidentalsByStaff[ctx.voiceIdx + 1] = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, function (n) { return !!n.getAccWidthAfterBar(ctx); })) {
                 this._annotatedSpacing = 25;

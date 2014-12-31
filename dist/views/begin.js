@@ -16,7 +16,7 @@ var BeginView = (function (_super) {
     }
     BeginView.prototype.render = function () {
         var spec = this.props.spec;
-        return React.createElement("g", null, React.createElement(StaveLines.Component, { key: "StaveLines", width: this.props.spec.staveW, x: spec.x, y: spec.braceY }), spec.startOfSystem && React.createElement(Brace.Component, { idx: 1, x: spec.x, y: spec.braceY, y2: spec.braceY2 }));
+        return React.createElement("g", null, React.createElement(StaveLines.Component, { key: "StaveLines", width: this.props.spec.staveW, x: spec.x, y: spec.braceY }), spec.startOfSystem && spec.braceY2 - spec.braceY > 1 && React.createElement(Brace.Component, { idx: 1, x: spec.x, y: spec.braceY, y2: spec.braceY2 }));
     };
     return BeginView;
 })(TypedReact.Component);

@@ -84,7 +84,6 @@ var TimeSignatureModel = (function (_super) {
     };
     TimeSignatureModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.attributes.clefs[ctx.voiceIdx]) {
-            debugger;
             return ClefModel.createClef(ctx);
         }
         if (!ctx.attributes.clefs[ctx.voiceIdx]) {

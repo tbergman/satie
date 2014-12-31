@@ -212,7 +212,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        if (ctx.part.staves < ctx.voiceIdx) {
+            ctx.accidentalsByStaff[ctx.voiceIdx + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        }
 
         // MXFIX
         // this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 20;

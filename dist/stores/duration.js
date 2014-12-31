@@ -371,6 +371,31 @@ var DurationModel = (function (_super) {
         }
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+            var dotFactor = 1;
+            var dots = 0;
+            while (!isPO2(this.count / dotFactor) && dots < 5) {
+                ++dots;
+                dotFactor += Math.pow(1 / 2, dots);
+            }
+            if (dots === 5) {
+                dots = 0;
+            }
+            else if (dots !== 0) {
+                debugger;
+                this._count /= dotFactor;
+                this.dots = dots;
+            }
+            if (!isPO2(this.count)) {
+                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count) / Math.log(2)));
+                this._count = nextPO2;
+            }
+            function isPO2(n) {
+                if (Math.abs(Math.round(n) - n) > 0.00001) {
+                    return false;
+                }
+                n = Math.round(n);
+                return !!n && !(n & (n - 1));
+            }
         }
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
@@ -393,7 +418,7 @@ var DurationModel = (function (_super) {
         var measureStyle = ctx.attributes._measureStyle;
         delete this.multiRest;
         if (measureStyle && !ctx.invisibleForBars) {
-            if (measureStyle.multipleRest) {
+            if (measureStyle.multipleRest && measureStyle.multipleRest > 1) {
                 var lastPotentialNote = ctx.prev(function (c) { return c.priority === 600 /* Duration */ || c.priority === 145 /* Attributes */; });
                 if (lastPotentialNote.priority !== 600 /* Duration */) {
                     this.multiRest = measureStyle.multipleRest.count;
@@ -502,9 +527,9 @@ var DurationModel = (function (_super) {
         this.x = ctx.x;
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
-            ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
-            if ((ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step]) !== this.chord[i].alter) {
-                ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step] = C.InvalidAccidental;
+            ctx.accidentalsByStaff[this.staff][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
+            if ((ctx.accidentalsByStaff[this.staff][this.chord[i].step]) !== this.chord[i].alter) {
+                ctx.accidentalsByStaff[this.staff][this.chord[i].step] = C.InvalidAccidental;
             }
         }
         ctx.x += this.getWidth(ctx);
@@ -560,6 +585,9 @@ var DurationModel = (function (_super) {
                     return true;
                 }
             }
+        }
+        if (rebeamable && !rebeamable.length) {
+            rebeamable = null;
         }
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
@@ -621,11 +649,11 @@ var DurationModel = (function (_super) {
             var pitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
-            if (!ctx.accidentalsByStave[ctx.voiceIdx]) {
+            if (!ctx.accidentalsByStaff[this.staff]) {
                 return result.map(function (a) { return NaN; });
             }
-            var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
-            var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
+            var generalTarget = or3(ctx.accidentalsByStaff[this.staff][pitch.step], null);
+            var target = or3(ctx.accidentalsByStaff[this.staff][pitch.step + pitch.octave], null);
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
@@ -644,8 +672,8 @@ var DurationModel = (function (_super) {
             var paren = acc && (acc.editorial || acc.parentheses || acc.bracket);
             if (!acc && actual === target) {
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
-                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.step + pitch.octave], ctx.accidentalsByStave[j][pitch.step], target)) {
+                for (var j = 0; j < ctx.accidentalsByStaff.length && noConflicts; ++j) {
+                    if (ctx.accidentalsByStaff[j] && target !== or3(ctx.accidentalsByStaff[j][pitch.step + pitch.octave], ctx.accidentalsByStaff[j][pitch.step], target)) {
                         noConflicts = false;
                     }
                 }
@@ -672,7 +700,7 @@ var DurationModel = (function (_super) {
                 }
             }
             if (!actual) {
-                ctx.accidentalsByStave[ctx.voiceIdx][pitch.step] = undefined;
+                ctx.accidentalsByStaff[this.staff][pitch.step] = undefined;
                 result[i] = "0p";
                 continue;
             }

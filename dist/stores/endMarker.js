@@ -74,6 +74,7 @@ var EndMarkerModel = (function (_super) {
                 beat.tie = false;
                 return new DurationModel(beat, true);
             });
+            assert(toAdd.length);
             ctx.splice(this.idx, 0, toAdd);
             return 60 /* RetryLine */;
         }

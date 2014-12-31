@@ -166,7 +166,6 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
-            debugger;
             return ClefModel.createClef(ctx);
         }
 

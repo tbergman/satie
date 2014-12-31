@@ -351,7 +351,42 @@ class DurationModel extends Model implements C.IPitchDuration {
         // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
         if (!isFinite(this._count)) {
             this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-            // FIXME: Round this to something sensible for MIDI imports.
+
+            // TRY DOTS
+            // ----------------
+            var dotFactor = 1;
+            var dots = 0;
+            while (!isPO2(this.count/dotFactor) && dots < 5) {
+                ++dots;
+                dotFactor += Math.pow(1/2, dots)
+            }
+            if (dots === 5) {
+                dots = 0;
+            } else if (dots !== 0) {
+                debugger;
+                this._count /= dotFactor;
+                this.dots = dots;
+            }
+
+            // TRY MULTIPLES
+            // ------------------
+            if (!isPO2(this.count)) {
+                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count)/Math.log(2)));
+                this._count = nextPO2;
+                // TODO: Add rest in.
+            }
+
+            // TODO: Try tuplets?
+            // ------------------
+
+            // TODO: Find the best match for performance data
+            function isPO2(n: number) {
+                if (Math.abs(Math.round(n) - n) > 0.00001) {
+                    return false;
+                }
+                n = Math.round(n);
+                return !!n && !(n & (n - 1));
+            }
         }
 
         assert(this._count === this._notes[0].noteType.duration);
@@ -389,7 +424,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var measureStyle = (<any>ctx.attributes)._measureStyle;
         delete this.multiRest;
         if (measureStyle && !ctx.invisibleForBars) { // Either 0 or undefined
-            if (measureStyle.multipleRest) {
+            if (measureStyle.multipleRest && measureStyle.multipleRest > 1) {
                 var lastPotentialNote = ctx.prev(c => c.priority === C.Type.Duration || c.priority === C.Type.Attributes);
                 if (lastPotentialNote.priority !== C.Type.Duration) {
                     this.multiRest = measureStyle.multipleRest.count;
@@ -532,10 +567,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             // Set the octave specific accidental
-            ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
+            ctx.accidentalsByStaff[this.staff][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
             // If needed, invalidate the default accidental
-            if ((ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step]) !== this.chord[i].alter) {
-                ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step] = C.InvalidAccidental;
+            if ((ctx.accidentalsByStaff[this.staff][this.chord[i].step]) !== this.chord[i].alter) {
+                ctx.accidentalsByStaff[this.staff][this.chord[i].step] = C.InvalidAccidental;
             }
         }
 
@@ -606,6 +641,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
             }
         }
+        if (rebeamable && !rebeamable.length) {
+            rebeamable = null;
+        }
 
         if (rebeamable) {
             DurationModel.BEAMDATA = rebeamable;
@@ -673,12 +711,12 @@ class DurationModel extends Model implements C.IPitchDuration {
             var pitch: C.IPitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
-            if (!ctx.accidentalsByStave[ctx.voiceIdx]) {
+            if (!ctx.accidentalsByStaff[this.staff]) {
                 // WARNING: This probably means there is no key signature yet.
                 return result.map(a => NaN);
             }
-            var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
-            var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
+            var generalTarget = or3(ctx.accidentalsByStaff[this.staff][pitch.step], null);
+            var target = or3(ctx.accidentalsByStaff[this.staff][pitch.step + pitch.octave], null);
             
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
@@ -706,9 +744,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
 
                 // 2. The note has the same accidental on all other part (in the same bar, in the past)
-                for (var j = 0; j < ctx.accidentalsByStave.length && noConflicts; ++j) {
-                    if (ctx.accidentalsByStave[j] && target !== or3(ctx.accidentalsByStave[j][pitch.step + pitch.octave],
-                            ctx.accidentalsByStave[j][pitch.step], target)) {
+                for (var j = 0; j < ctx.accidentalsByStaff.length && noConflicts; ++j) {
+                    if (ctx.accidentalsByStaff[j] && target !== or3(ctx.accidentalsByStaff[j][pitch.step + pitch.octave],
+                            ctx.accidentalsByStaff[j][pitch.step], target)) {
                         noConflicts = false;
                     }
                 }
@@ -740,7 +778,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             if (!actual) {
-                ctx.accidentalsByStave[ctx.voiceIdx][pitch.step] = undefined;
+                ctx.accidentalsByStaff[this.staff][pitch.step] = undefined;
                 result[i] = "0p"; // natural
                 continue;
             }

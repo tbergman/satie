@@ -149,7 +149,10 @@ var ClefModel = (function (_super) {
         return false;
     };
     ClefModel.createClef = function (ctx) {
-        var clef = ctx.prev(function (c) { return c.type === 150 /* Clef */; });
+        var clef = ctx.prev(function (c) { return c.type === 150 /* Clef */; }) || {
+            sign: "G",
+            line: 2
+        };
         return ctx.insertPast(new ClefModel(clef, true));
     };
     ClefModel.standardClefs = [

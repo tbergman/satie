@@ -88,7 +88,7 @@ export class Context implements C.MetreContext {
      */
     captureLine(): ILineSnapshot {
         return {
-            accidentalsByStave:     C.JSONx.clone(this.accidentalsByStave),
+            accidentalsByStaff:     this.accidentalsByStaff,
             bar:                    this.loc.bar,
             barKeys:                this.barKeys,
             barlineX:               this.barlineX,
@@ -773,7 +773,7 @@ export class Context implements C.MetreContext {
      * The default accidental for all notes. Reset to the key signature on each barline
      * @scope line
      */
-    accidentalsByStave: Array<C.IAccidentals> = [];
+    accidentalsByStaff: Array<C.IAccidentals> = [];
 
     /**
      * The positions of all the barlines in the current line.
@@ -1063,7 +1063,7 @@ export interface ILayoutOpts {
  * WARNING: If you change this, you may also want to change PrivIterator._rectify!
  */
 export interface ILineSnapshot {
-    accidentalsByStave: Array<C.IAccidentals>;
+    accidentalsByStaff: Array<C.IAccidentals>;
     attributes: C.MusicXML.Attributes;
     bar: number;
     barKeys: Array<string>;
@@ -1297,12 +1297,13 @@ class PrivIterator {
             otherContexts[i].x = minX;
         }
 
-        // Accidentals are kept separate per part.
-        ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
-        for (var i = 1; i < componentSnapshots.length; ++i) {
-            var partIdx        = componentSnapshots[i].partIdx;
-            ctx.accidentalsByStave[partIdx]
-                               = componentSnapshots[i].accidentalsByStave[partIdx];
+        ctx.accidentalsByStaff = [];
+        for (var i = 0; i < componentSnapshots.length; ++i) {
+            for (var j = 1; j < componentSnapshots[i].accidentalsByStaff.length; ++j) {
+                // TODO: conflicts?
+                ctx.accidentalsByStaff[j] = <any> _.extend(ctx.accidentalsByStaff[j] || {},
+                    componentSnapshots[i].accidentalsByStaff[j]);
+            }
         }
     }
 
@@ -1732,7 +1733,7 @@ class PrivIteratorComponent {
 function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     "use strict";
 
-    if (!!line.accidentalsByStave  ) { ctx.accidentalsByStave = line.accidentalsByStave; }
+    if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = line.accidentalsByStaff; }
     if (  line.bar         !== null) { ctx.bar                = line.bar;                }
     if (!!line.barlineX    !== null) { ctx.barlineX           = line.barlineX;           }
     if (!!line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }

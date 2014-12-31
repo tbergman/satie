@@ -30,7 +30,7 @@ class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
                 width={this.props.spec.staveW}
                 x={spec.x}
                 y={spec.braceY} />
-            {spec.startOfSystem && <!Brace.Component
+            {spec.startOfSystem && spec.braceY2 - spec.braceY > 1 && <!Brace.Component
                 idx={1}
                 x={spec.x}
                 y={spec.braceY}

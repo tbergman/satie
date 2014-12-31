@@ -4,7 +4,7 @@ var C = require("./contracts");
 var Context = (function () {
     function Context(parts, layout, editor, assertionPolicy) {
         this.startOfBeamBeat = NaN;
-        this.accidentalsByStave = [];
+        this.accidentalsByStaff = [];
         this.barlineX = [];
         this.line = 0;
         this.loc = {
@@ -57,7 +57,7 @@ var Context = (function () {
     };
     Context.prototype.captureLine = function () {
         return {
-            accidentalsByStave: C.JSONx.clone(this.accidentalsByStave),
+            accidentalsByStaff: this.accidentalsByStaff,
             bar: this.loc.bar,
             barKeys: this.barKeys,
             barlineX: this.barlineX,
@@ -833,10 +833,11 @@ var PrivIterator = (function () {
         for (var i = 0; i < otherContexts.length; ++i) {
             otherContexts[i].x = minX;
         }
-        ctx.accidentalsByStave = componentSnapshots[0].accidentalsByStave;
-        for (var i = 1; i < componentSnapshots.length; ++i) {
-            var partIdx = componentSnapshots[i].partIdx;
-            ctx.accidentalsByStave[partIdx] = componentSnapshots[i].accidentalsByStave[partIdx];
+        ctx.accidentalsByStaff = [];
+        for (var i = 0; i < componentSnapshots.length; ++i) {
+            for (var j = 1; j < componentSnapshots[i].accidentalsByStaff.length; ++j) {
+                ctx.accidentalsByStaff[j] = _.extend(ctx.accidentalsByStaff[j] || {}, componentSnapshots[i].accidentalsByStaff[j]);
+            }
         }
     };
     PrivIterator.prototype.next = function (status) {
@@ -1196,8 +1197,8 @@ var PrivIteratorComponent = (function () {
 })();
 function _cpyline(ctx, line, mode) {
     "use strict";
-    if (!!line.accidentalsByStave) {
-        ctx.accidentalsByStave = line.accidentalsByStave;
+    if (!!line.accidentalsByStaff) {
+        ctx.accidentalsByStaff = line.accidentalsByStaff;
     }
     if (line.bar !== null) {
         ctx.bar = line.bar;

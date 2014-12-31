@@ -38,7 +38,7 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
                 barNumber={barNumber} />
         </g>;
 
-        // {spec.pianoSystemContinues && <!Brace.Component MXFIX
+        // {spec.pianoSystemContinues && spec.braceY2 - spec.braceY > 1 && <!Brace.Component MXFIX
         //     idx={1}
         //     x={spec.x}
         //     fontSize={this.props.fontSize}

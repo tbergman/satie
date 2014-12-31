@@ -114,7 +114,7 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 150 /* Clef */:
-                if (!("priority" in ctx.attributes.clefs[ctx.voiceIdx])) {
+                if (ctx.part.staves > ctx.voiceIdx && !("priority" in ctx.attributes.clefs[ctx.voiceIdx])) {
                     var newClef = new ClefModel(ctx.attributes.clefs[ctx.voiceIdx], true);
                     ctx.body.splice(ctx.idx, 1, newClef);
                     ctx.attributes.clefs[ctx.voiceIdx] = newClef;
@@ -140,12 +140,15 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 160 /* KeySignature */:
-                var ks = C.JSONx.clone(realItems[0]);
-                assert(ks, "Undefined prevKeySignature!!");
-                ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
-                ctx.body[ctx.idx].annotated = this.annotated;
-                ctx.body[ctx.idx].proposed = this.proposed;
-                return 20 /* RetryCurrent */;
+                if (ctx.part.staves > ctx.voiceIdx) {
+                    var ks = C.JSONx.clone(realItems[0]);
+                    assert(ks, "Undefined prevKeySignature!!");
+                    ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed = this.proposed;
+                    return 20 /* RetryCurrent */;
+                }
+                break;
             case 130 /* NewLine */:
                 ctx.body.splice(ctx.idx, 1, new NewlineModel({}, true));
                 ctx.body[ctx.idx].annotated = this.annotated;
@@ -157,12 +160,15 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 170 /* TimeSignature */:
-                var tses = ctx.findVertical(function (obj) { return obj.type === 170 /* TimeSignature */; });
-                assert(tses.length, "Staves cannot all be placeholders!");
-                ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(tses[0].toMXMLObject(), true));
-                ctx.body[ctx.idx].annotated = this.annotated;
-                ctx.body[ctx.idx].proposed = this.proposed;
-                return 20 /* RetryCurrent */;
+                if (ctx.part.staves > ctx.voiceIdx) {
+                    var tses = ctx.findVertical(function (obj) { return obj.type === 170 /* TimeSignature */; });
+                    assert(tses.length, "Staves cannot all be placeholders!");
+                    ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(tses[0].toMXMLObject(), true));
+                    ctx.body[ctx.idx].annotated = this.annotated;
+                    ctx.body[ctx.idx].proposed = this.proposed;
+                    return 20 /* RetryCurrent */;
+                }
+                break;
         }
         if (this.priority !== 50 /* Print */) {
             this.recordMetreDataImpl(ctx);

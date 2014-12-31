@@ -87,6 +87,7 @@ class EndMarkerModel extends Model {
                     return new DurationModel(beat, true);
                 });
 
+            assert(toAdd.length);
             ctx.splice(this.idx, 0, toAdd);
 
             return C.IterationStatus.RetryLine; // we really need a RETRY_BAR...

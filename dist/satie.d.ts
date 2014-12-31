@@ -425,7 +425,7 @@ declare module '__satie/stores/annotator' {
         __globalBeat__: number;
         bar: number;
         endMarker: boolean;
-        accidentalsByStave: C.IAccidentals[];
+        accidentalsByStaff: C.IAccidentals[];
         barlineX: number[];
         line: number;
         loc: C.ILocation;
@@ -473,7 +473,7 @@ declare module '__satie/stores/annotator' {
         snapshot?: ICompleteSnapshot;
     }
     export interface ILineSnapshot {
-        accidentalsByStave: C.IAccidentals[];
+        accidentalsByStaff: C.IAccidentals[];
         attributes: C.MusicXML.Attributes;
         bar: number;
         barKeys: string[];
