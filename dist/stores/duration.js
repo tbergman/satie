@@ -370,32 +370,7 @@ var DurationModel = (function (_super) {
             this._p_notes = notes;
         }
         if (!isFinite(this._count)) {
-            this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-            var dotFactor = 1;
-            var dots = 0;
-            while (!isPO2(this.count / dotFactor) && dots < 5) {
-                ++dots;
-                dotFactor += Math.pow(1 / 2, dots);
-            }
-            if (dots === 5) {
-                dots = 0;
-            }
-            else if (dots !== 0) {
-                debugger;
-                this._count /= dotFactor;
-                this.dots = dots;
-            }
-            if (!isPO2(this.count)) {
-                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count) / Math.log(2)));
-                this._count = nextPO2;
-            }
-            function isPO2(n) {
-                if (Math.abs(Math.round(n) - n) > 0.00001) {
-                    return false;
-                }
-                n = Math.round(n);
-                return !!n && !(n & (n - 1));
-            }
+            this._implyDurationFromPerformanceData(mctx);
         }
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
@@ -418,7 +393,7 @@ var DurationModel = (function (_super) {
         var measureStyle = ctx.attributes._measureStyle;
         delete this.multiRest;
         if (measureStyle && !ctx.invisibleForBars) {
-            if (measureStyle.multipleRest && measureStyle.multipleRest > 1) {
+            if (measureStyle.multipleRest && measureStyle.multipleRest.count > 1) {
                 var lastPotentialNote = ctx.prev(function (c) { return c.priority === 600 /* Duration */ || c.priority === 145 /* Attributes */; });
                 if (lastPotentialNote.priority !== 600 /* Duration */) {
                     this.multiRest = measureStyle.multipleRest.count;
@@ -426,7 +401,7 @@ var DurationModel = (function (_super) {
             }
         }
         assert(this._beats !== null, "Unknown beat count");
-        this.isWholebar = this._beats === ctx.ts.beats;
+        this.isWholebar = this._beats === -1 || this._beats === ctx.ts.beats;
         if (ctx.isBeam || !this.inBeam) {
             if (this._beats > ctx.ts.beats && ctx.beat >= ctx.ts.beats) {
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
@@ -466,6 +441,7 @@ var DurationModel = (function (_super) {
             }
             assert(isFinite(this._beats) && this._beats !== null);
             if (ctx.smallest > this._beats) {
+                assert(this._beats > 0);
                 ctx.smallest = this._beats;
                 return 60 /* RetryLine */;
             }
@@ -724,6 +700,40 @@ var DurationModel = (function (_super) {
             this.tieTo = null;
         }
     };
+    DurationModel.prototype._implyDurationFromPerformanceData = function (mctx) {
+        var factor = mctx.ts.beatType / 4;
+        var beats = factor * (this._notes[0].duration / mctx.attributes.divisions);
+        this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+        var dotFactor = 1;
+        var dots = 0;
+        while (!isPO2(1 / (beats / dotFactor / 4)) && dots < 5) {
+            ++dots;
+            dotFactor += Math.pow(1 / 2, dots);
+        }
+        if (dots === 5) {
+            dots = 0;
+        }
+        else if (dots !== 0) {
+            this._count = (1 / (beats / dotFactor / 4 / factor));
+            this.dots = dots;
+        }
+        if (!isPO2(this.count)) {
+            if (beats === mctx.ts.beats && this.isRest) {
+                this._count = -1;
+            }
+            else {
+                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count) / Math.log(2)));
+                this._count = nextPO2;
+            }
+        }
+        function isPO2(n) {
+            if (Math.abs(Math.round(n) - n) > 0.00001) {
+                return false;
+            }
+            n = Math.round(n);
+            return !!n && !(n & (n - 1));
+        }
+    };
     DurationModel.prototype.getAccWidth = function (ctx) {
         var accWidth = 0;
         var accTmp = this.getAccidentals(ctx);
@@ -835,6 +845,9 @@ var DurationModel = (function (_super) {
                     var durr = note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
                         ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    }
+                    else if (note.isWholebar) {
+                        ret.push(4);
                     }
                     else {
                         ret.push(3);

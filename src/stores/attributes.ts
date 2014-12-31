@@ -103,10 +103,15 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     recordMetreDataImpl(mctx: C.MetreContext) {
         this._parent            = mctx.attributes;
 
-        // Note: this is thrown away by BeginModel.
-        this.divisions          = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60;
+        this.divisions          = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60; // ?
         mctx.attributes     	= this;
         this.ctxData        	= new C.MetreContext(mctx);
+        if (this.time) {
+            mctx.ts                 = {
+                beats:          this.time.beats[0],
+                beatType:       this.time.beatTypes[0]
+            }
+        }
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
@@ -120,10 +125,6 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
             this.keySignature   = null;
             this.clefs          = [];
             this.updateAttached(ctx);
-        }
-
-        if (!this.time && ctx.lines[ctx.line - 1] && ctx.lines[ctx.line - 1].attributes) {
-            this.time           = ctx.lines[ctx.line - 1].attributes.time;
         }
 
         if (this.time && !(this.time instanceof Model)) {

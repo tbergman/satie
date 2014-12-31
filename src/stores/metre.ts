@@ -251,17 +251,22 @@ function getBeamingPattern(ts: C.ISimpleTimeSignature, alt?: string) {
     "use strict";
 
     var pattern: C.IDuration[] = beamingPatterns[getTSString(ts) + (alt ? "_" + alt : "")];
-    if (!pattern && ts.beatType === 4) { // D'oh?
+    var factors: {[key: number]: number[]} = {
+        4: [4,3,2,1],
+        8: [12,8,4,3,2,1],
+        16: [4,3,2,1]
+    }
+    if (!pattern) {
         // TODO: Partial & Mixed
         pattern = [];
         var beatsToAdd = ts.beats;
-        _.forEach([4, 3, 2, 1], factor => {
+        _.forEach(factors[ts.beatType], factor => {
             while(beatsToAdd >= factor) {
-                pattern = pattern.concat(beamingPatterns[factor + "/4"]);
+                pattern = pattern.concat(beamingPatterns[factor + "/" + ts.beatType]);
                 beatsToAdd -= factor;
             }
         });
-    } // TODO: /8.
+    }
     assert(pattern, "Unknown beaming pattern");
     return pattern;
 }
@@ -478,6 +483,10 @@ export function calcBeats(count: number, dots: number,
         tuplet: C.ITuplet, ts: C.ISimpleTimeSignature) {
     "use strict";
 
+    if (count === -1) {
+        return ts.beats;
+    }
+
     if (count === C.MusicXML.Count.Breve) {
         count = 0.5;
     }
@@ -555,6 +564,8 @@ var allNotes = [_1, _2D, _2,
 
 // Adapted from Behind Bars (E. Gould) page 155
 var beamingPatterns: {[key: string]: Array <C.IDuration>} = {
+    "1/16":     [_16                            ],
+
     "2/16":     [_16,   _16                     ],
     "1/8":      [_8                             ],
 

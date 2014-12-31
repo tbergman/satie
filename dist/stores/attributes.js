@@ -150,6 +150,12 @@ var AttributesModel = (function (_super) {
         this.divisions = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60;
         mctx.attributes = this;
         this.ctxData = new C.MetreContext(mctx);
+        if (this.time) {
+            mctx.ts = {
+                beats: this.time.beats[0],
+                beatType: this.time.beatTypes[0]
+            };
+        }
     };
     AttributesModel.prototype.annotateImpl = function (ctx) {
         assert(this._parent !== this);
@@ -161,9 +167,6 @@ var AttributesModel = (function (_super) {
             this.keySignature = null;
             this.clefs = [];
             this.updateAttached(ctx);
-        }
-        if (!this.time && ctx.lines[ctx.line - 1] && ctx.lines[ctx.line - 1].attributes) {
-            this.time = ctx.lines[ctx.line - 1].attributes.time;
         }
         if (this.time && !(this.time instanceof Model)) {
             ctx.insertFuture(new TimeSignatureModel(this.time, false));

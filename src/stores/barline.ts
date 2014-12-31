@@ -98,7 +98,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.beat = 0;
         mctx.beat = 0;
-        ++mctx.bar;
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
@@ -212,7 +211,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        if (ctx.part.staves < ctx.voiceIdx) {
+        if (ctx.voiceIdx < ctx.part.staves) {
             ctx.accidentalsByStaff[ctx.voiceIdx + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         }
 

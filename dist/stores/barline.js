@@ -55,7 +55,6 @@ var BarlineModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
         this.ctxData.beat = 0;
         mctx.beat = 0;
-        ++mctx.bar;
     };
     BarlineModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.prev().endMarker) {
@@ -143,7 +142,7 @@ var BarlineModel = (function (_super) {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        if (ctx.part.staves < ctx.voiceIdx) {
+        if (ctx.voiceIdx < ctx.part.staves) {
             ctx.accidentalsByStaff[ctx.voiceIdx + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         }
         this.height = 20;

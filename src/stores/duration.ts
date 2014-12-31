@@ -348,45 +348,10 @@ class DurationModel extends Model implements C.IPitchDuration {
             this._p_notes       = <any> notes;
         }
 
-        // FIXME: The ACTUAL duration is this._notes[0].duration / mctx.attributes.divisions * 4...
+        // Performance data is in ctx._notes[0].duration / mctx.attributes.divisions * 4...
+        // We only use it if we have to.
         if (!isFinite(this._count)) {
-            this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
-
-            // TRY DOTS
-            // ----------------
-            var dotFactor = 1;
-            var dots = 0;
-            while (!isPO2(this.count/dotFactor) && dots < 5) {
-                ++dots;
-                dotFactor += Math.pow(1/2, dots)
-            }
-            if (dots === 5) {
-                dots = 0;
-            } else if (dots !== 0) {
-                debugger;
-                this._count /= dotFactor;
-                this.dots = dots;
-            }
-
-            // TRY MULTIPLES
-            // ------------------
-            if (!isPO2(this.count)) {
-                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count)/Math.log(2)));
-                this._count = nextPO2;
-                // TODO: Add rest in.
-            }
-
-            // TODO: Try tuplets?
-            // ------------------
-
-            // TODO: Find the best match for performance data
-            function isPO2(n: number) {
-                if (Math.abs(Math.round(n) - n) > 0.00001) {
-                    return false;
-                }
-                n = Math.round(n);
-                return !!n && !(n & (n - 1));
-            }
+            this._implyDurationFromPerformanceData(mctx);
         }
 
         assert(this._count === this._notes[0].noteType.duration);
@@ -420,11 +385,12 @@ class DurationModel extends Model implements C.IPitchDuration {
             return TimeSignatureModel.createTS(ctx);
         }
 
-        // Hack. Get the measureStyle owned by the most recent attribute.
-        var measureStyle = (<any>ctx.attributes)._measureStyle;
+        // Get the measureStyle owned by the most recent attribute...
+        var measureStyle: C.MusicXML.MeasureStyle = (<any>ctx.attributes)._measureStyle;
+        // ... and use it to sync multi rest attributes.
         delete this.multiRest;
         if (measureStyle && !ctx.invisibleForBars) { // Either 0 or undefined
-            if (measureStyle.multipleRest && measureStyle.multipleRest > 1) {
+            if (measureStyle.multipleRest && measureStyle.multipleRest.count > 1) {
                 var lastPotentialNote = ctx.prev(c => c.priority === C.Type.Duration || c.priority === C.Type.Attributes);
                 if (lastPotentialNote.priority !== C.Type.Duration) {
                     this.multiRest = measureStyle.multipleRest.count;
@@ -434,7 +400,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         assert(this._beats !== null, "Unknown beat count");
 
-        this.isWholebar = this._beats === ctx.ts.beats;
+        this.isWholebar = this._beats === -1 || this._beats === ctx.ts.beats;
 
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
@@ -481,6 +447,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             // All notes, chords, and rests throughout a line on a given part must have the same scale.
             assert(isFinite(this._beats) && this._beats !== null);
             if (ctx.smallest > this._beats) {
+                assert(this._beats > 0);
                 ctx.smallest = this._beats;
                 return C.IterationStatus.RetryLine;
             }
@@ -803,6 +770,55 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
     }
 
+    private _implyDurationFromPerformanceData(mctx: C.MetreContext) {
+        var factor = mctx.ts.beatType/4;
+        var beats = factor * (this._notes[0].duration / mctx.attributes.divisions);
+        this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
+
+        // TRY DOTS
+        // ----------------
+        var dotFactor = 1;
+        var dots = 0;
+        while (!isPO2(1/(beats/dotFactor/4)) && dots < 5) { // /8?
+            ++dots;
+            dotFactor += Math.pow(1/2, dots)
+        }
+        if (dots === 5) {
+            dots = 0;
+        } else if (dots !== 0) {
+            this._count = (1/(beats/dotFactor/4/factor));
+            this.dots = dots;
+        }
+
+        // Try tuplets?
+        // ------------
+        // TODO
+
+        // TRY Ties
+        // ------------------
+
+        if (!isPO2(this.count)) {
+            // Whole bar rests can still exist even when there's no single NOTE duration
+            // that spans a bar.
+            if (beats === mctx.ts.beats && this.isRest) {
+                this._count = -1;
+            } else {
+                var nextPO2 = Math.pow(2, Math.ceil(Math.log(this.count)/Math.log(2)));
+                this._count = nextPO2;
+                // TODO: Add 1+ tie.
+            }
+        }
+
+        // TODO: Find the best match for performance data
+        function isPO2(n: number) {
+            if (Math.abs(Math.round(n) - n) > 0.00001) {
+                return false;
+            }
+            n = Math.round(n);
+            return !!n && !(n & (n - 1));
+        }
+    }
+
     getAccWidth(ctx: Annotator.Context) {
         var accWidth: number = 0;
         var accTmp: any = this.getAccidentals(ctx);
@@ -931,6 +947,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                             DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] +
                             ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
                             DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    } else if (note.isWholebar) {
+                        ret.push(4);
                     } else {
                         ret.push(3);
                     }

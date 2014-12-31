@@ -145,12 +145,17 @@ exports.getTSString = getTSString;
 function getBeamingPattern(ts, alt) {
     "use strict";
     var pattern = beamingPatterns[getTSString(ts) + (alt ? "_" + alt : "")];
-    if (!pattern && ts.beatType === 4) {
+    var factors = {
+        4: [4, 3, 2, 1],
+        8: [12, 8, 4, 3, 2, 1],
+        16: [4, 3, 2, 1]
+    };
+    if (!pattern) {
         pattern = [];
         var beatsToAdd = ts.beats;
-        _.forEach([4, 3, 2, 1], function (factor) {
+        _.forEach(factors[ts.beatType], function (factor) {
             while (beatsToAdd >= factor) {
-                pattern = pattern.concat(beamingPatterns[factor + "/4"]);
+                pattern = pattern.concat(beamingPatterns[factor + "/" + ts.beatType]);
                 beatsToAdd -= factor;
             }
         });
@@ -297,6 +302,9 @@ function calcBeats2(durr, ctx, inheritedCount) {
 exports.calcBeats2 = calcBeats2;
 function calcBeats(count, dots, tuplet, ts) {
     "use strict";
+    if (count === -1) {
+        return ts.beats;
+    }
     if (count === 9990 /* Breve */) {
         count = 0.5;
     }
@@ -362,6 +370,7 @@ var _1DD = C.NoteUtil.makeDuration({ count: 1, dots: 2 });
 var _05 = C.NoteUtil.makeDuration({ count: 1 / 2 });
 var allNotes = [_1, _2D, _2, _4DD, _4D, _4, _8DD, _8D, _8, _16DD, _16D, _16, _32D, _32, _64D, _64, _128D, _128, _256D, _256, _512];
 var beamingPatterns = {
+    "1/16": [_16],
     "2/16": [_16, _16],
     "1/8": [_8],
     "3/16": [_8D],
