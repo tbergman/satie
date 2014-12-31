@@ -38,7 +38,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                                 this.props.variableBeams[idx + 1] === beams) {
                                 return null;
                             }
-                            x1 = this._withXOffset((this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) * 10);
+                            x1 = this._withXOffset((this.props.variableX[idx - 1] + this.props.variableX[idx] * 3) / 4);
                         } else {
                             x1 = this._withXOffset(this.props.variableX[idx - 1]);
                         }

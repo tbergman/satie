@@ -84,6 +84,7 @@ var TimeSignatureModel = (function (_super) {
     };
     TimeSignatureModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.attributes.clefs[ctx.voiceIdx]) {
+            debugger;
             return ClefModel.createClef(ctx);
         }
         if (!ctx.attributes.clefs[ctx.voiceIdx]) {
@@ -91,6 +92,7 @@ var TimeSignatureModel = (function (_super) {
         }
         var prevPotentialTime = ctx.prev(function (c) { return c.type === 170 /* TimeSignature */ || c.type === 130 /* NewLine */; });
         if (prevPotentialTime && prevPotentialTime.type === 170 /* TimeSignature */ && TimeSignatureModel.isEqual(this.ts, prevPotentialTime.ts)) {
+            ctx.attributes.time = null;
             ctx.eraseCurrent();
             return 20 /* RetryCurrent */;
         }

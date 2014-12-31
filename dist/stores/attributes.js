@@ -154,6 +154,14 @@ var AttributesModel = (function (_super) {
     AttributesModel.prototype.annotateImpl = function (ctx) {
         assert(this._parent !== this);
         ctx.attributes = this;
+        var potentialParent = ctx.prev(function (c) { return c.type === 145 /* Attributes */ || c.type === 130 /* NewLine */; });
+        var sameLineAsParent = this._parent && potentialParent === this._parent;
+        if (this._parent && !sameLineAsParent) {
+            this.time = this.time || this._parent.time;
+            this.keySignature = null;
+            this.clefs = [];
+            this.updateAttached(ctx);
+        }
         if (!this.time && ctx.lines[ctx.line - 1] && ctx.lines[ctx.line - 1].attributes) {
             this.time = ctx.lines[ctx.line - 1].attributes.time;
         }
@@ -167,24 +175,25 @@ var AttributesModel = (function (_super) {
             ctx.next().ctxData = this.ctxData;
             this.keySignature = null;
         }
-        if (this.clefs) {
-            var clef = this.clefs[ctx.voiceIdx];
-            if (!(clef instanceof Model)) {
-                ctx.insertFuture(new ClefModel(clef, false));
-                ctx.next().ctxData = this.ctxData;
-                clef = null;
-            }
+        this.clefs = this.clefs || [];
+        var clef = this.clefs[ctx.voiceIdx];
+        if (clef && !(clef instanceof Model)) {
+            ctx.insertFuture(new ClefModel(clef, false));
+            ctx.next().ctxData = this.ctxData;
+            clef = null;
         }
-        this.updateAttached(ctx);
-        if (this._parent) {
+        if (this._parent && sameLineAsParent) {
+            this.updateAttached(ctx);
             this.time = this.time || this._parent.time;
             this.keySignature = this.keySignature || this._parent.keySignature;
-            if (this._parent.clefs) {
-                this.clefs = this.clefs || [];
-                for (var i = 0; i < this._parent.clefs.length; ++i) {
-                    this.clefs[i] = this.clefs[i] || this._parent.clefs[i];
-                }
+            var clefs = [];
+            for (var i = 0; i < Math.max(this.clefs.length, this._parent.clefs.length); ++i) {
+                clefs[i] = this.clefs[i] || this._parent.clefs[i];
             }
+            this.clefs = clefs;
+        }
+        if (!this._parent) {
+            this.updateAttached(ctx);
         }
         return 10 /* Success */;
     };

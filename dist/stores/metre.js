@@ -11,8 +11,7 @@ function rhythmicSpellcheck(ctx) {
     if (ctx.curr.calcBeats(ctx) + ctx.beat > ctx.ts.beats) {
         return 10 /* Success */;
     }
-    var pattern = beamingPatterns[getTSString(ctx.ts)];
-    assert(pattern, "Unknown beaming pattern");
+    var pattern = getBeamingPattern(ctx.ts);
     var currNote = ctx.curr.note;
     var currNoteStartBeat = ctx.beat;
     var currNoteEndBeat = currNoteStartBeat + calcBeats2(currNote, ctx);
@@ -143,6 +142,22 @@ function getTSString(ts) {
     return ts.beats + "/" + ts.beatType;
 }
 exports.getTSString = getTSString;
+function getBeamingPattern(ts, alt) {
+    "use strict";
+    var pattern = beamingPatterns[getTSString(ts) + (alt ? "_" + alt : "")];
+    if (!pattern && ts.beatType === 4) {
+        pattern = [];
+        var beatsToAdd = ts.beats;
+        _.forEach([4, 3, 2, 1], function (factor) {
+            while (beatsToAdd >= factor) {
+                pattern = pattern.concat(beamingPatterns[factor + "/4"]);
+                beatsToAdd -= factor;
+            }
+        });
+    }
+    assert(pattern, "Unknown beaming pattern");
+    return pattern;
+}
 function add(durr1, durr2, ctx, beatOffset) {
     "use strict";
     return subtract((isNaN(durr1) ? calcBeats2(durr1, ctx) : durr1) + calcBeats2(durr2, ctx), 0, ctx, beatOffset);
@@ -154,7 +169,7 @@ function subtract(durr1, beats, ctx, beatOffset) {
     var replaceWith = [];
     var durr1Beats = isNaN(durr1) ? calcBeats2(durr1, ctx) : durr1;
     var beatsToFill = durr1Beats - beats;
-    var bp = beamingPatterns[tsName];
+    var bp = getBeamingPattern(ctx.ts);
     var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.ts.beats;
     for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;
@@ -199,10 +214,10 @@ function subtract(durr1, beats, ctx, beatOffset) {
 exports.subtract = subtract;
 function rebeamable(idx, ctx, alt) {
     "use strict";
-    var body = ctx.body;
     var tsName = getTSString(ctx.ts) + (alt ? "_" + alt : "");
     var replaceWith = [];
-    var bp = beamingPatterns[tsName];
+    var bp = getBeamingPattern(ctx.ts, alt);
+    var body = ctx.body;
     var currBeat = ctx.beat;
     var bpIdx = 0;
     var bpCount = 0;
@@ -282,6 +297,15 @@ function calcBeats2(durr, ctx, inheritedCount) {
 exports.calcBeats2 = calcBeats2;
 function calcBeats(count, dots, tuplet, ts) {
     "use strict";
+    if (count === 9990 /* Breve */) {
+        count = 0.5;
+    }
+    if (count === 9991 /* Long */) {
+        count = 0.25;
+    }
+    if (count === 9992 /* Maxima */) {
+        count = 0.125;
+    }
     assert(ts, "Not supplying a ts is deprecated");
     var base = ts.beatType / count;
     if (tuplet) {

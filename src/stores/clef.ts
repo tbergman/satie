@@ -9,6 +9,8 @@
 
 import Model                    = require("./model");
 
+import _                        = require("lodash");
+
 import Annotator                = require("./annotator");
 import AttributesModelType      = require("./attributes");  // Cyclic.
 import BarlineModelType         = require("./barline");     // Cyclic.
@@ -163,16 +165,16 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
 
     /* Convenience */
     private _clefIsRedundant(ctx: Annotator.Context): boolean {
-        switch (true) {
-            case !ctx.attributes.clefs:
-            case !ctx.attributes.clefs[ctx.voiceIdx]:
-            case ctx.attributes.clefs[ctx.voiceIdx] === this:
-                return false;
-            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.voiceIdx]) === ClefModel.serializeClef(this):
-                return true;
-            default:
-                console.warn("_clefIsRedundant: not reached");
+        var possiblePrevClef = ctx.prev(c => c.priority === C.Type.Clef || c.priority === C.Type.NewLine);
+        var prevClef: C.MusicXML.Clef = possiblePrevClef && possiblePrevClef.type === C.Type.Clef ? <any> possiblePrevClef : null;
+        if (!prevClef || prevClef === this) {
+            return false;
         }
+        if (_.isEqual(JSON.parse(ClefModel.serializeClef(prevClef)), JSON.parse(ClefModel.serializeClef(this)))) {
+            return true;
+        }
+
+        return false;
     }
 
     /* Static */

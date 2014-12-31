@@ -54,8 +54,7 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
     }
 
     // TODO: allow custom beam patterns
-    var pattern = beamingPatterns[getTSString(ctx.ts)];
-    assert(pattern, "Unknown beaming pattern");
+    var pattern = getBeamingPattern(ctx.ts);
 
     var currNote = ctx.curr.note;
     var currNoteStartBeat = ctx.beat;
@@ -248,6 +247,24 @@ export function getTSString(ts: C.ISimpleTimeSignature) {
 
     return ts.beats + "/" + ts.beatType;
 }
+function getBeamingPattern(ts: C.ISimpleTimeSignature, alt?: string) {
+    "use strict";
+
+    var pattern: C.IDuration[] = beamingPatterns[getTSString(ts) + (alt ? "_" + alt : "")];
+    if (!pattern && ts.beatType === 4) { // D'oh?
+        // TODO: Partial & Mixed
+        pattern = [];
+        var beatsToAdd = ts.beats;
+        _.forEach([4, 3, 2, 1], factor => {
+            while(beatsToAdd >= factor) {
+                pattern = pattern.concat(beamingPatterns[factor + "/4"]);
+                beatsToAdd -= factor;
+            }
+        });
+    } // TODO: /8.
+    assert(pattern, "Unknown beaming pattern");
+    return pattern;
+}
 
 /**
  * @returns an array of Duration specs that is the result of adding "durr2" to "durr1"
@@ -287,7 +304,7 @@ export function subtract(durr1: any, beats: number,
     var replaceWith: Array<C.IDuration> = [];
     var durr1Beats: number = isNaN(<any>durr1) ? calcBeats2(durr1, ctx) : <number> durr1;
     var beatsToFill = durr1Beats - beats;
-    var bp = beamingPatterns[tsName];
+    var bp = getBeamingPattern(ctx.ts);
     var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.ts.beats;
 
     for (var tries = 0; tries < 20; ++tries) {
@@ -352,10 +369,10 @@ export function subtract(durr1: any, beats: number,
 export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): Array<DurationModelType> {
     "use strict";
 
-    var body = ctx.body;
     var tsName = getTSString(ctx.ts) + (alt ? "_" + alt : "");
     var replaceWith: Array<DurationModelType> = [];
-    var bp = beamingPatterns[tsName];
+    var bp = getBeamingPattern(ctx.ts, alt);
+    var body = ctx.body;
     var currBeat = ctx.beat;
 
     var bpIdx = 0;
@@ -460,6 +477,16 @@ export function calcBeats2(durr: C.IPitchDuration, ctx: C.MetreContext, inherite
 export function calcBeats(count: number, dots: number,
         tuplet: C.ITuplet, ts: C.ISimpleTimeSignature) {
     "use strict";
+
+    if (count === C.MusicXML.Count.Breve) {
+        count = 0.5;
+    }
+    if (count === C.MusicXML.Count.Long) {
+        count = 0.25; // We really should...
+    }
+    if (count === C.MusicXML.Count.Maxima) {
+        count = 0.125; // ... not support these at all.
+    }
 
     assert(ts, "Not supplying a ts is deprecated");
     var base = ts.beatType/count;

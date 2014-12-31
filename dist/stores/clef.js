@@ -5,6 +5,7 @@ var __extends = this.__extends || function (d, b) {
     d.prototype = new __();
 };
 var Model = require("./model");
+var _ = require("lodash");
 var Annotator = require("./annotator");
 var C = require("./contracts");
 var ClefModel = (function (_super) {
@@ -137,16 +138,15 @@ var ClefModel = (function (_super) {
         return 10 /* Success */;
     };
     ClefModel.prototype._clefIsRedundant = function (ctx) {
-        switch (true) {
-            case !ctx.attributes.clefs:
-            case !ctx.attributes.clefs[ctx.voiceIdx]:
-            case ctx.attributes.clefs[ctx.voiceIdx] === this:
-                return false;
-            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.voiceIdx]) === ClefModel.serializeClef(this):
-                return true;
-            default:
-                console.warn("_clefIsRedundant: not reached");
+        var possiblePrevClef = ctx.prev(function (c) { return c.priority === 150 /* Clef */ || c.priority === 130 /* NewLine */; });
+        var prevClef = possiblePrevClef && possiblePrevClef.type === 150 /* Clef */ ? possiblePrevClef : null;
+        if (!prevClef || prevClef === this) {
+            return false;
         }
+        if (_.isEqual(JSON.parse(ClefModel.serializeClef(prevClef)), JSON.parse(ClefModel.serializeClef(this)))) {
+            return true;
+        }
+        return false;
     };
     ClefModel.createClef = function (ctx) {
         var clef = ctx.prev(function (c) { return c.type === 150 /* Clef */; });

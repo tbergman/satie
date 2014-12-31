@@ -229,8 +229,8 @@ class DurationModel extends Model implements C.IPitchDuration {
     tieTo: DurationModel;
 
     get beats(): number {
-        assert(false);
-        return NaN;
+        assert(isFinite(this._beats));  // Not valid before metre has been recorded.
+        return this._beats;
     }
     set beats(n: number) {
         assert(false);
@@ -673,6 +673,10 @@ class DurationModel extends Model implements C.IPitchDuration {
             var pitch: C.IPitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
+            if (!ctx.accidentalsByStave[ctx.voiceIdx]) {
+                // WARNING: This probably means there is no key signature yet.
+                return result.map(a => NaN);
+            }
             var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
             var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
             

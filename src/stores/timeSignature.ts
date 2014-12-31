@@ -166,6 +166,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
         if (!ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
+            debugger;
             return ClefModel.createClef(ctx);
         }
 
@@ -178,6 +179,7 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
         var prevPotentialTime = ctx.prev(c => c.type === C.Type.TimeSignature || c.type === C.Type.NewLine);
         if (prevPotentialTime && prevPotentialTime.type === C.Type.TimeSignature &&
                 TimeSignatureModel.isEqual(this.ts, (<TimeSignatureModel>prevPotentialTime).ts)) {
+            ctx.attributes.time = null;
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
         }

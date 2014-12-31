@@ -16,8 +16,8 @@ class Brace extends TypedReact.Component<Brace.IProps, {}> {
     render() {
         var defaults = C.SMuFL.bravuraMetadata.engravingDefaults;
 
-        var height = (this.props.y2 - this.props.y) + 40
-        var bottom = this.props.y2 + 20
+        var height = (this.props.y2 - this.props.y) + 40;
+        var bottom = this.props.y2 + 20;
         var s = height/40;
         return <!g>
             <!Glyph.Component transform={"scale(" + s + "," + s + ")" +

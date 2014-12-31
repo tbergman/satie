@@ -33,7 +33,7 @@ var Beam = (function (_super) {
                         if (_this.props.variableX[idx + 1] && _this.props.variableBeams[idx + 1] === beams) {
                             return null;
                         }
-                        x1 = _this._withXOffset((_this.props.variableX[idx - 1] + _this.props.variableX[idx] * 3) * 10);
+                        x1 = _this._withXOffset((_this.props.variableX[idx - 1] + _this.props.variableX[idx] * 3) / 4);
                     }
                     else {
                         x1 = _this._withXOffset(_this.props.variableX[idx - 1]);

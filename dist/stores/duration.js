@@ -288,8 +288,8 @@ var DurationModel = (function (_super) {
     });
     Object.defineProperty(DurationModel.prototype, "beats", {
         get: function () {
-            assert(false);
-            return NaN;
+            assert(isFinite(this._beats));
+            return this._beats;
         },
         set: function (n) {
             assert(false);
@@ -621,6 +621,9 @@ var DurationModel = (function (_super) {
             var pitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
+            if (!ctx.accidentalsByStave[ctx.voiceIdx]) {
+                return result.map(function (a) { return NaN; });
+            }
             var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
             var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
             if (!target && generalTarget !== C.InvalidAccidental) {
