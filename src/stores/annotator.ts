@@ -5,14 +5,14 @@
  */
 
 import _                        = require("lodash");
-import assert               	= require("assert");
+import assert                   = require("assert");
 
-import AttributesModelType  	= require("./attributes");      // Cyclic.
-import BarlineModel         	= require("./barline");
-import C                    	= require("./contracts");
-import Model                	= require("./model");
-import NewlineModelType     	= require("./newline");         // Cyclic.
-import PlaceholderModelType 	= require("./placeholder"); 	// Cyclic.
+import AttributesModelType      = require("./attributes");      // Cyclic.
+import BarlineModel             = require("./barline");
+import C                        = require("./contracts");
+import Model                    = require("./model");
+import NewlineModelType         = require("./newline");         // Cyclic.
+import PlaceholderModelType     = require("./placeholder");     // Cyclic.
 
 /**
  * Annotator has two goals:
@@ -30,8 +30,8 @@ import PlaceholderModelType 	= require("./placeholder"); 	// Cyclic.
  *     after the change is made, the parts are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(parts: Array<C.IPart>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
-        this._parts             = parts;
+    constructor(parts: Array<C.IVoice>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
+        this._voices             = parts;
         this._layout            = layout;
         this._assertionPolicy   = assertionPolicy;
         this.songEditor         = editor;
@@ -60,7 +60,7 @@ export class Context implements C.MetreContext {
         var error: Error                    = null;
         var result: C.IAnnotationResult;
         assert(from.bar !== 0);
-        assert(this._parts, "Staves must be set!");
+        assert(this._voices, "Staves must be set!");
 
         try {
             result                          = this._annotateImpl(from, cursor, disableRecording);
@@ -98,7 +98,7 @@ export class Context implements C.MetreContext {
             invisibleForBars:       this.invisibleForBars,
             pageLines:              this.pageLines,
             pageStarts:             this.pageStarts,
-            partIdx:                this.currStaveIdx,
+            partIdx:                this.voiceIdx,
             x:                      this.x,
             y:                      this.y
         };
@@ -126,7 +126,7 @@ export class Context implements C.MetreContext {
 
     get staveSpacing(): number {
         var print                   = C.getPrint(this._layout.header);
-        var staffLayout             = print.staffLayouts[this.currStaveIdx];
+        var staffLayout             = print.staffLayouts[this.voiceIdx];
         var staffSpacing            = staffLayout ? staffLayout.staffDistance : null;
 
         switch(true) {
@@ -199,8 +199,8 @@ export class Context implements C.MetreContext {
      */
     intersects(type: C.Type, idx: number = this.idx, after = true, before = true) {
         var intersects: Array<Model> = [];
-        for (var i = 0; i < this._parts.length; ++i) {
-            var body = this._parts[i].body;
+        for (var i = 0; i < this._voices.length; ++i) {
+            var body = this._voices[i].body;
             if (!body) { continue; }
             // Before
             if (before) {
@@ -233,10 +233,10 @@ export class Context implements C.MetreContext {
         var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
             var beamed: Array<{ inBeam: boolean; tuplet: C.ITuplet; }> = [];
-            for (var i = 0; i < this._parts.length; ++i) {
-                if (this._parts[i].body &&
-                    this._parts[i].body[idx + 1].type === C.Type.BeamGroup) {
-                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._parts[i].body[idx + 1]).beam;
+            for (var i = 0; i < this._voices.length; ++i) {
+                if (this._voices[i].body &&
+                    this._voices[i].body[idx + 1].type === C.Type.BeamGroup) {
+                    var newBeam: Array<{ note: C.IPitchDuration }> = (<any>this._voices[i].body[idx + 1]).beam;
                     beamed = beamed.concat(<any>newBeam);
                 }
             }
@@ -323,7 +323,7 @@ export class Context implements C.MetreContext {
             while(this.body[nidx] && this.body[nidx].isAttribute) {
                 if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
                     this.body[nidx] = obj;
-                    recordMetreData(this._parts);
+                    recordMetreData(this._voices);
                     return C.IterationStatus.Success;
                 }
                 ++nidx;
@@ -331,7 +331,7 @@ export class Context implements C.MetreContext {
         }
 
         this.splice(index, 0, [obj], obj.isNote ? SplicePolicy.Masked : SplicePolicy.Additive);
-        recordMetreData(this._parts);
+        recordMetreData(this._voices);
 
         return C.IterationStatus.Success;
     }
@@ -366,8 +366,8 @@ export class Context implements C.MetreContext {
             C.IterationStatus.RetryFromEntry;
 
         var visibleIdx = -1;
-        for (var i = 0; i < this._parts.length; ++i) {
-            var part = this._parts[i];
+        for (var i = 0; i < this._voices.length; ++i) {
+            var part = this._voices[i];
             if (part.body) {
                 ++visibleIdx;
                 part.body.splice(index, 0, objs[visibleIdx]);
@@ -411,8 +411,8 @@ export class Context implements C.MetreContext {
             assert(this._assertionPolicy === AssertionPolicy.NoAssertions);
         }
 
-        for (var i = 0; i < this._parts.length; ++i) {
-            var part = this._parts[i];
+        for (var i = 0; i < this._voices.length; ++i) {
+            var part = this._voices[i];
             if (part.body) {
                 if (this.body === part.body) {
                     if (replaceWith) {
@@ -524,7 +524,7 @@ export class Context implements C.MetreContext {
         return C.IterationStatus.Success;
     }
 
-    static insertPlaceholders(parts: Array<C.IPart>) {
+    static insertPlaceholders(parts: Array<C.IVoice>) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         function length() {
             var l = 0;
@@ -553,7 +553,7 @@ export class Context implements C.MetreContext {
 
     private _realign(start: number, end: number) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
-        var bodies = this._parts.filter(s => !!s.body).map(s => s.body);
+        var bodies = this._voices.filter(s => !!s.body).map(s => s.body);
         var cBeats = bodies.map(b => 0);
         var placeholders = bodies.map(b => <Array<Model>>[]);
         var reals = bodies.map(b => <Array<Model>>[]);
@@ -600,26 +600,26 @@ export class Context implements C.MetreContext {
 
         var firstSize = aligned[0].length;
         var j = 0;
-        for (var k = 0; k < this._parts.length; ++k) {
-            if (!this._parts[k].body) {
+        for (var k = 0; k < this._voices.length; ++k) {
+            if (!this._voices[k].body) {
                 continue;
             }
             if (this._assertionPolicy !== AssertionPolicy.NoAssertions) {
                 assert.equal(firstSize, aligned[j].length);
             }
-            Array.prototype.splice.apply(this._parts[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
+            Array.prototype.splice.apply(this._voices[k].body, [start, end + 1 - start].concat(<any>aligned[j]));
 
             ++j;
         }
 
-        recordMetreData(this._parts);
+        recordMetreData(this._voices);
     }
 
     findVertical(where?: (obj: Model) => boolean, idx?: number) {
         if (isNaN(idx)) {
             idx = this.idx;
         }
-        return _.chain(this._parts)
+        return _.chain(this._voices)
             .filter(s => !!s.body)
             .map(s => s.body[idx])
             .filter(s => s && (!where || !!where(s)))
@@ -708,13 +708,19 @@ export class Context implements C.MetreContext {
      * The current part.
      * @scope temporary
      */
-    currStave: C.IPart;
+    voice: C.IVoice;
 
     /**
      * For marking part lines dirty, for example.
      * @scope temporary
      */
-    currStaveIdx: number;
+    voiceIdx: number;
+
+    /** @scope temporary */
+    part: C.IPart;
+
+    /** @scope temporary */
+    idxInPart: number;
 
     /**
      * Set at the beginning of every beam. Called so that if the annotator has
@@ -809,7 +815,7 @@ export class Context implements C.MetreContext {
     smallest: number = 10000;
 
     /**
-     * The smallest acceptable amount of padding between parts.
+     * The smallest acceptable amount of padding between staves.
      * Used to prevent collisions.
      *
      * @scope line
@@ -890,11 +896,11 @@ export class Context implements C.MetreContext {
         }
         var status: C.IterationStatus;
         var ops = 0;
-        var initialLength = _.max(this._parts, s => s.body ? s.body.length : 0).body.length || 1;
+        var initialLength = _.max(this._voices, s => s.body ? s.body.length : 0).body.length || 1;
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._parts, cursor, this._assertionPolicy);
+        for (var it = new PrivIterator(this, from, this._voices, cursor, this._assertionPolicy);
                 !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
@@ -907,7 +913,7 @@ export class Context implements C.MetreContext {
         }
 
         if (it.eofJustificationDirty) {
-            this._semiJustify(this._parts);
+            this._semiJustify(this._voices);
         }
 
         return {
@@ -919,7 +925,7 @@ export class Context implements C.MetreContext {
         };
     }
 
-    private _semiJustify(parts: Array<C.IPart>) {
+    private _semiJustify(parts: Array<C.IVoice>) {
         var NewlineModel: typeof NewlineModelType = require("./newline");
         var bodies: Model[][] = [];
         for (var i = 0; i < parts.length; ++i) {
@@ -951,19 +957,16 @@ export class Context implements C.MetreContext {
         var scaling = this._layout.header.defaults.scaling;
         return scaling.millimeters / scaling.tenths * 40;
     }
-    calcLineSpacing(print: C.Print = C.getPrint(this._layout.header)): number {
-        return Math.max(print.systemLayout.systemDistance, this.minBottomPaddings[this.currStaveIdx]);
-    }
 
     private _assertAligned() {
         if (this._assertionPolicy === AssertionPolicy.Strict) {
             var expectedLength = 0;
             var bodies: Model[][] = [];
-            for (var i = 0; i < this._parts.length; ++i) {
-                if (this._parts[i].body) {
-                    expectedLength = expectedLength || this._parts[i].body.length;
-                    assert.equal(expectedLength, this._parts[i].body.length, "All parts must be the same length");
-                    bodies.push(this._parts[i].body);
+            for (var i = 0; i < this._voices.length; ++i) {
+                if (this._voices[i].body) {
+                    expectedLength = expectedLength || this._voices[i].body.length;
+                    assert.equal(expectedLength, this._voices[i].body.length, "All parts must be the same length");
+                    bodies.push(this._voices[i].body);
                 }
             }
             for (var i = 0; i < bodies[0].length; ++i) {
@@ -993,7 +996,7 @@ export class Context implements C.MetreContext {
      * The parts to be annotated.
      * @scope private
      */
-    _parts: Array<C.IPart>;
+    _voices: Array<C.IVoice>;
 
     _layout: ILayoutOpts;
     print: C.Print;
@@ -1093,7 +1096,7 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
     lines: Array<ILineSnapshot>;
 }
 
-export function recordMetreData(parts: Array<C.IPart>) {
+export function recordMetreData(parts: Array<C.IVoice>) {
     "use strict";
     try {
         // Rumor is that the v8 optimizing compiler doesn't optimize functions
@@ -1110,7 +1113,7 @@ export function recordMetreData(parts: Array<C.IPart>) {
     }
 }
 
-function _recordMetreData(parts: Array<C.IPart>) {
+function _recordMetreData(parts: Array<C.IVoice>) {
     "use strict";
     var i: number;
     var j: number;
@@ -1143,28 +1146,30 @@ function _recordMetreData(parts: Array<C.IPart>) {
  * Internal. Iterates over a set of bodies in parts and annotates them. Owned by an Annotator.
  */
 class PrivIterator {
-    constructor(parent: Context, from: C.ILocation, parts: Array<C.IPart>,
+    constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
             cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
         this._parent = parent;
-        this._parts = parts;
+        this._voices = voices;
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
-        var visibleSidx = -1;
-        recordMetreData(this._parts);
-        for (var i = 0; i < parts.length; ++i) {
-            if (parts[i].body) {
-                ++visibleSidx;
-                this._components.push(new PrivIteratorComponent(
-                    /* starting location*/ from,
-                    /* part */ parts[i],
-                    /* part index */ i,
-                    /* visible part index*/ visibleSidx,
-                    /* visual cursor */ cursor,
-                    this._assertionPolicy));
-            }
-        }
+        recordMetreData(this._voices);
+        this._components = _.map(voices, (voice, idx) => {
+            var part        = _.find(parent.songEditor.parts, part => _.any(part.voices, oVoice => voices[oVoice] === voice)); 
+            var partVoices  = _.map(part.voices, oVoice => voices[oVoice])
+            var idxInPart   = _.indexOf(partVoices, voice);
+
+            return new PrivIteratorComponent(
+                /* starting location*/ from,
+                /* part */ voice,
+                /* part index */ idx,
+                /* visual cursor */ cursor,
+                /* part */ part,
+                /* index in part */ idxInPart,
+                this._assertionPolicy);
+        });
+        
         this._assertOffsetsOK();
     }
 
@@ -1186,9 +1191,6 @@ class PrivIterator {
             }
 
             this._parent.y = origSnapshot.y;
-            for (var j = 0; j < i; ++j) {
-                this._parent.y += this._parent.staveSpacing;
-            }
 
             this._assertOffsetsOK();
 
@@ -1273,8 +1275,8 @@ class PrivIterator {
         // The horizontal location usually depends on the mergePolicy of the Model.
         // All models of a given type have the same priority.
         var mergePolicy        = C.RectifyXPolicy.Invalid;
-        for (var j = 0; j < ctx._parts.length; ++j) {
-            mergePolicy        = Math.max(mergePolicy, ctx._parts[j].body[ctx.idx].xPolicy);
+        for (var j = 0; j < ctx._voices.length; ++j) {
+            mergePolicy        = Math.max(mergePolicy, ctx._voices[j].body[ctx.idx].xPolicy);
         }
         assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x                  = componentSnapshots[0].x;
@@ -1352,7 +1354,7 @@ class PrivIterator {
         this._assertOffsetsOK();
 
         if (status !== C.IterationStatus.Success) {
-            recordMetreData(this._parts);
+            recordMetreData(this._voices);
         }
 
         this._assertOffsetsOK();
@@ -1499,7 +1501,7 @@ class PrivIterator {
     private _cursor: C.IVisualCursor;
     private _from: C.ILocation;
     private _parent: Context;
-    private _parts: Array<C.IPart>;
+    private _voices: Array<C.IVoice>;
     private _assertionPolicy: AssertionPolicy;
 }
 
@@ -1512,14 +1514,16 @@ class PrivIterator {
  * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
  */
 class PrivIteratorComponent {
-    constructor(from: C.ILocation, part: C.IPart, idx: number, visibleIdx: number,
-            cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
-        this._part = part;
-        this._body = part.body;
-        this._sidx = idx;
-        this._visibleSidx = visibleIdx;
-        this._cursor = cursor;
-        this._assertionPolicy = assertionPolicy;
+    constructor(from: C.ILocation, voice: C.IVoice, idx: number,
+            cursor: C.IVisualCursor, part: C.IPart, indexInPart: number,
+            assertionPolicy: AssertionPolicy) {
+        this._voice             = voice;
+        this._body              = voice.body;
+        this._sidx              = idx;
+        this._cursor            = cursor;
+        this._part              = part;
+        this._idxInPart         = indexInPart;
+        this._assertionPolicy   = assertionPolicy;
         this.reset(from);
 
         assert(this._location.eq(from));
@@ -1527,16 +1531,19 @@ class PrivIteratorComponent {
 
     annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
         if (this._beat !== null) {
-            ctx.__globalBeat__ = ctx.beat;
-            ctx.beat = this._beat;
+            ctx.__globalBeat__  = ctx.beat;
+            ctx.beat            = this._beat;
         }
-        ctx.body = this._body;
-        ctx.currStave = this._part;
-        ctx.currStaveIdx = this._sidx;
-        ctx.idx = this._idx;
+        ctx.body                = this._body;
+        ctx.voice               = this._voice;
+        ctx.voiceIdx            = this._sidx;
+        ctx.part                = this._part;
+        ctx.idxInPart           = this._idxInPart;
+        ctx.idx                 = this._idx;
 
-        var shouldUpdateVC = this._shouldUpdateVC(ctx);
-        if (this._aheadOfSchedule(ctx)) {
+        var shouldUpdateVC      = this._shouldUpdateVC(ctx);
+
+        if (this._beatExceedsContext(ctx)) {
             return this._addPadding(ctx);
         }
 
@@ -1549,10 +1556,11 @@ class PrivIteratorComponent {
         var isNewline = this.curr && this.curr.type === C.Type.NewLine;
 
         if (status === C.IterationStatus.Success && shouldUpdateVC) {
-            this._cursor.annotatedObj = this.curr;
-            this._cursor.annotatedStave = this._visibleSidx;
-            this._cursor.annotatedLine = ctx.line;
-            this._cursor.annotatedPage = ctx.pageStarts.length - 1;
+            var c               = this._cursor;
+            c.annotatedObj      = this.curr;
+            c.annotatedStave    = this._idx;
+            c.annotatedLine     = ctx.line;
+            c.annotatedPage     = ctx.pageStarts.length - 1;
         }
 
 
@@ -1667,7 +1675,7 @@ class PrivIteratorComponent {
         return this._body.length;
     }
 
-    private _aheadOfSchedule(ctx: Context): boolean {
+    private _beatExceedsContext(ctx: Context): boolean {
         if (ctx.curr.type !== C.Type.Duration) {
             return false;
         }
@@ -1704,14 +1712,17 @@ class PrivIteratorComponent {
 
     private _assertionPolicy:   AssertionPolicy;
     private _beat:              number           = null;
-    private _nextBeat:          number			 = null;
-    private _body:              Model[];
+    private _nextBeat:          number             = null;
+    private get _body() {
+        return this._voice.body;
+    }
     private _cursor:            C.IVisualCursor;
     public  _idx:               number;
     private _location:          C.Location;
     private _sidx:              number;
-    private _visibleSidx:       number;
+    private _voice:             C.IVoice;
     private _part:              C.IPart;
+    private _idxInPart:         number;
 }
 
 
@@ -1748,7 +1759,7 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
         switch (attrib) {
             case "lines":
                 ctx.lines = layout.lines;
-            	ctx.line  = layout.lines.length - 1;
+                ctx.line  = layout.lines.length - 1;
                 _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.StartOfLine);
                 break;
             case "fontSize":    ctx.fontSize   = layout.fontSize;   break;

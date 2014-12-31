@@ -140,8 +140,8 @@ var PlaybackStore = (function (_super) {
         }
         var seek = 0;
         var startTime = MIDI.Player.ctx.currentTime + 0.01;
-        for (var h = 0; h < this._songEditor.parts.length; ++h) {
-            var body = this._songEditor.parts[h].body;
+        for (var h = 0; h < this._songEditor.voices.length; ++h) {
+            var body = this._songEditor.voices[h].body;
             if (!body) {
                 continue;
             }
@@ -150,10 +150,10 @@ var PlaybackStore = (function (_super) {
             var bpm = this.bpm;
             var timePerBeat = 60 / bpm;
             var foundIdx = false;
-            var soundfont = this._songEditor.parts[h].instrument.soundfont;
+            var soundfont = this._songEditor.voices[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
-            var ctx = new Annotator.Context(this._songEditor.parts, null, this._songEditor, 1 /* NoAssertions */);
+            var ctx = new Annotator.Context(this._songEditor.voices, null, this._songEditor, 1 /* NoAssertions */);
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
                     var obj = body[i];

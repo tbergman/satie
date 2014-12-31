@@ -74,18 +74,7 @@ var PlaceholderModel = (function (_super) {
         configurable: true
     });
     PlaceholderModel.prototype.recordMetreDataImpl = function (mctx) {
-        if (this.priority === 600 /* Duration */ && mctx.beat === 0) {
-            this.ctxData = new C.MetreContext({
-                attributes: mctx.attributes,
-                beat: mctx.ts.beats,
-                bar: mctx.bar - 1,
-                endMarker: false,
-                ts: mctx.ts
-            });
-        }
-        else {
-            this.ctxData = new C.MetreContext(mctx);
-        }
+        this.ctxData = new C.MetreContext(mctx);
     };
     PlaceholderModel.prototype.annotateImpl = function (ctx) {
         var loc = new C.Location(ctx.loc);
@@ -112,7 +101,7 @@ var PlaceholderModel = (function (_super) {
         }
         switch (this.priority) {
             case 145 /* Attributes */:
-                ctx.attributes = ctx._parts[0].body[ctx.idx];
+                ctx.attributes = ctx._voices[0].body[ctx.idx];
                 break;
             case 300 /* Barline */:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: { data: 0 /* Regular */ } }, true));
@@ -125,10 +114,10 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 150 /* Clef */:
-                if (!("priority" in ctx.attributes.clefs[ctx.currStaveIdx])) {
-                    var newClef = new ClefModel(ctx.attributes.clefs[ctx.currStaveIdx], true);
+                if (!("priority" in ctx.attributes.clefs[ctx.voiceIdx])) {
+                    var newClef = new ClefModel(ctx.attributes.clefs[ctx.voiceIdx], true);
                     ctx.body.splice(ctx.idx, 1, newClef);
-                    ctx.attributes.clefs[ctx.currStaveIdx] = newClef;
+                    ctx.attributes.clefs[ctx.voiceIdx] = newClef;
                     ctx.body[ctx.idx].annotated = this.annotated;
                     ctx.body[ctx.idx].proposed = this.proposed;
                     return 20 /* RetryCurrent */;

@@ -484,8 +484,8 @@ var DurationModel = (function (_super) {
         assert(this.lines);
         assert(_.forEach(this.lines, function (l) { return isFinite(l); }));
         for (var i = 0; i < this.lines.length; ++i) {
-            ctx.minBottomPaddings[ctx.currStaveIdx] = Math.max(ctx.minBottomPaddings[ctx.currStaveIdx], -(this.lines[i] - 3) * 10);
-            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], (this.lines[i] - 4) * 10);
+            ctx.minBottomPaddings[this.staff] = Math.max(ctx.minBottomPaddings[this.staff], -(this.lines[i] - 3) * 10);
+            ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4) * 10);
         }
         if (!ctx.isBeam) {
             ctx.beat = (ctx.beat || 0) + this._beats;
@@ -502,16 +502,16 @@ var DurationModel = (function (_super) {
         this.x = ctx.x;
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
-            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
-            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]) !== this.chord[i].alter) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] = C.InvalidAccidental;
+            ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
+            if ((ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step]) !== this.chord[i].alter) {
+                ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step] = C.InvalidAccidental;
             }
         }
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         if (this.multiRest !== undefined) {
             ctx.invisibleForBars = this.multiRest;
-            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], 40);
+            ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], 40);
         }
         return 10 /* Success */;
     };
@@ -621,12 +621,23 @@ var DurationModel = (function (_super) {
             var pitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
-            var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step], null);
-            var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step + pitch.octave], null);
+            var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
+            var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
             var acc = this._p_notes[i].accidental;
+            var prevDurr = null;
+            _.forEach(this._p_notes, function (note) {
+                if (!note.hasOwnProperty("staff")) {
+                    if (!prevDurr) {
+                        prevDurr = ctx.prev(function (m) { return m.isNote; });
+                    }
+                    if (prevDurr) {
+                        note.staff = prevDurr.staff;
+                    }
+                }
+            });
             var paren = acc && (acc.editorial || acc.parentheses || acc.bracket);
             if (!acc && actual === target) {
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
@@ -658,7 +669,7 @@ var DurationModel = (function (_super) {
                 }
             }
             if (!actual) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step] = undefined;
+                ctx.accidentalsByStave[ctx.voiceIdx][pitch.step] = undefined;
                 result[i] = "0p";
                 continue;
             }
@@ -692,6 +703,13 @@ var DurationModel = (function (_super) {
         }
         return Math.max(0, accWidth - 12);
     };
+    Object.defineProperty(DurationModel.prototype, "staff", {
+        get: function () {
+            return _.chain(this._p_notes).map(function (n) { return n.staff; }).max().value();
+        },
+        enumerable: true,
+        configurable: true
+    });
     DurationModel.clefOffsets = {
         G: -3.5,
         F: 2.5,
@@ -775,23 +793,7 @@ var DurationModel = (function (_super) {
     };
     DurationModel.getAverageLine = function (note, ctx) {
         var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
-        var sum = 0;
-        for (var i = 0; i < lines.length; ++i) {
-            sum += lines[i] / lines.length;
-        }
-        return sum;
-    };
-    DurationModel.getLine = function (pitch, ctx, options) {
-        options = options || { filterTemporary: false };
-        if (pitch.isRest) {
-            return 3;
-        }
-        if (!ctx) {
-            assert(pitch.line !== undefined, "Must be first annotated in duration.jsx");
-            return pitch.line;
-        }
-        assert(ctx.attributes.clefs && ctx.attributes.clefs[ctx.currStaveIdx], "A clef must be inserted before the first note");
-        return DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
+        return _.reduce(lines, function (memo, line) { return memo + line / lines.length; }, 0);
     };
     DurationModel.getLines = function (note, ctx, options) {
         options = options || { filterTemporary: false };
@@ -801,32 +803,19 @@ var DurationModel = (function (_super) {
                 if (note.isRest) {
                     var durr = note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
-                        ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                        ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     }
                     else {
                         ret.push(3);
                     }
                 }
                 else {
-                    ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                    ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
                 }
             }
         }
-        for (var i = 0; i < ret.length; ++i) {
-            assert(!isNaN(ret[i]));
-        }
+        _.forEach(ret, function (r) { return assert(isFinite(r)); });
         return ret;
-    };
-    DurationModel.getPitch = function (line, ctx) {
-        assert(ctx.attributes.clefs[ctx.currStaveIdx], "A clef must be inserted before the first note");
-        var pitch = DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) % 3.5 + 3.5) % 3.5];
-        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) / 3.5);
-        var alter = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] || ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
-        return {
-            step: DurationModel.offsetToPitch[((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx].sign]) % 3.5 + 3.5) % 3.5],
-            octave: octave,
-            alter: alter === C.InvalidAccidental ? null : alter
-        };
     };
     DurationModel.offsetToPitch = {
         0: "C",
@@ -1066,6 +1055,7 @@ var DurationModel;
     })();
     DurationModel.MNote = MNote;
 })(DurationModel || (DurationModel = {}));
+DurationModel.MNote.prototype.staff = 1;
 function _hasConflict(otherChord, step, target) {
     "use strict";
     for (var k = 0; k < otherChord.length; ++k) {

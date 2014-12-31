@@ -35,7 +35,6 @@ class NewlineModel extends Model {
     extraWidth:         number;
     braceY:             number;
     braceY2:            number;
-    lineSpacing:        number;
     staveW:             number;
 
     ////////////////////
@@ -51,19 +50,14 @@ class NewlineModel extends Model {
             return ctx.insertPast(new PrintModel({}, true));
         }
 
-        // Pages should not overflow.
-        if (ctx.y + ctx.calcLineSpacing() > ctx.maxY) {
-            return NewPageModel.createNewPage(ctx);
-        }
-
         // Notes should be full justified within a line.
         // This requirement should be last so that it only happens once
         // per line. We take the min of each justification to fix rounding
         // errors.
         if (ctx.maxX - ctx.x > 0.001) {
             this._justify(ctx);
-            for (var i = 0; i < ctx._parts.length; ++i) {
-                var body = ctx._parts[i].body;
+            for (var i = 0; i < ctx._voices.length; ++i) {
+                var body = ctx._voices[i].body;
                 if (body !== ctx.body) {
                     var len = Math.min(ctx.body.length, body.length);
                     for (var j = 0; j < len; ++j) {
@@ -76,18 +70,17 @@ class NewlineModel extends Model {
         }
 
         var visibleStaveCount = 0;
-        for (var i = 0; i < ctx._parts.length; ++i) {
-            if (ctx._parts[i].body) {
+        for (var i = 0; i < ctx._voices.length; ++i) {
+            if (ctx._voices[i].body) {
                 ++visibleStaveCount;
             }
         }
 
-        NewlineModel.pushDownIfNeeded(ctx);
-
-        // Copy information from the context that the view needs.
-        this.lineSpacing        = ctx.calcLineSpacing(print);
         this.braceY             = this.y;
-        this.braceY2            = this.y + C.renderUtil.staveSeperation;
+        this.braceY2            = this.y;
+        NewlineModel.explode(ctx);
+
+        // Pages should not overflow.
 
         ctx.lines[ctx.line].y   = ctx.y;
         ctx.lines[ctx.line].x   = ctx.x;
@@ -103,15 +96,20 @@ class NewlineModel extends Model {
         ctx.maxX                = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
         ctx.maxY                = pageLayout.pageHeight - pageMargins.topMargin;
         ctx.x                   = systemMargins.leftMargin + pageMargins.leftMargin;
-        ctx.y                   = ctx.y + this.lineSpacing;
+
+        // Pages should not overflow.
+        if (ctx.y > ctx.maxY) {
+            return NewPageModel.createNewPage(ctx);
+        }
+
         ctx.lines[ctx.line].attributes.time = ctx.attributes.time;
 
         ctx.line                = ctx.line + 1;
         /////////////////////////////////////////////////////////////
 
         ctx.smallest            = 10000;
-        ctx.minBottomPaddings   = _.times(ctx._parts.length, () => 0);
-        ctx.minTopPaddings      = _.times(ctx._parts.length, () => 0);
+        ctx.minBottomPaddings   = _.times(ctx._voices.length + 1, () => 0);
+        ctx.minTopPaddings      = _.times(ctx._voices.length + 1, () => 0);
 
         this.x                  = ctx.x;
         this.staveW             = ctx.maxX - ctx.x;
@@ -140,7 +138,7 @@ class NewlineModel extends Model {
                 pageLines:              null,
                 pageStarts:             null,
                 prevClefByStave:        {},
-                partIdx:                ctx.currStaveIdx,
+                partIdx:                ctx.voiceIdx,
                 x:                      null,
                 y:						null
             };
@@ -304,7 +302,7 @@ class NewlineModel extends Model {
         var fullJustify = false;
         var i: number;
 
-        if ((<any>ctx._parts).isScale) {
+        if ((<any>ctx._voices).isScale) {
             // XXX: HACK!!!
             fullJustify = true;
         }
@@ -369,22 +367,55 @@ class NewlineModel extends Model {
         }
     }
 
-    static pushDownIfNeeded(ctx: Annotator.Context) {
-        for (var i = 0; i < ctx._parts.length; ++i) {
-            var body = ctx._parts[i].body;
+    /**
+     * Adjusts the vertical positions of all staves & voices.
+     */
+    static explode(ctx: Annotator.Context) {
+        var veryBottomPadding = 0;
+        var braces: {braceY2: number}[] = [];
+        _.forEach(ctx.songEditor.parts, part => {
+            _.times(part.staves, staff => {
+                staff += 1;
+                var extraTopPadding = (staff - 1)*50;
+                extraTopPadding += ctx.minTopPaddings[staff];
+                _.chain(part.voices)
+                    .map(voiceIdx => ctx._voices[voiceIdx].body)
+                    .map(body => {
+                        // Remove everything that's not in the current line.
+                        var line = ctx.line;
+                        return _.filter(body, model => {
+                            if (model.type === C.Type.NewLine) {
+                                --line;
+                                return !line || !~line;
+                            }
+                            return !line;
+                        });
+                    })
+                    .map((body, sidx) =>
+                        _.filter(body, model => model.staff === staff ||
+                            model.staff === -1 && staff === sidx + 1))
+                    .flatten(true)
+                    .forEach((model: Model) => {
+                            model.y += extraTopPadding;
+                            var brace = <any> model
+                            if (brace.braceY) {
+                                brace.braceY = model.y;
+                                braces.push(brace);
+                                _.forEach(braces, brace => {
+                                    brace.braceY2 = model.y;
+                                });
+                            }
+                        })
+                    .value();
+                extraTopPadding += ctx.minBottomPaddings[staff];
+                veryBottomPadding = ctx.minBottomPaddings[staff];
+            });
+        });
 
-            for (var l = ctx.idx; l + 1 === ctx.idx || !body[l + 1] ||
-                    body[l] && body[l + 1].priority !== C.Type.NewLine; --l) {
-                body[l].y += ctx.minTopPaddings[i];
-                var bodyl: any = body[l];
-                // Hack: Fix brace.
-                if (bodyl.braceY) {
-                    bodyl.braceY += ctx.minTopPaddings[i];
-                    bodyl.braceY2 += ctx.minTopPaddings[i];
-                }
-            }
-        }
-        ctx.y = ctx.curr.y;
+        veryBottomPadding = Math.max(C.getPrint(ctx._layout.header).systemLayout.systemDistance, veryBottomPadding);
+        (<NewlineModel>ctx.curr).braceY += veryBottomPadding;
+        (<NewlineModel>ctx.curr).braceY2 += veryBottomPadding;
+        ctx.y = ctx.curr.y + veryBottomPadding;
     }
 }
 

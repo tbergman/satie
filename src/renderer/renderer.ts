@@ -42,11 +42,13 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         }
 
         var parts = this.props.parts;
+        var voices = this.props.voices;
         var bodyLength = 0;
 
-        for (var i = 0; i < parts.length; ++i) {
-            if (parts[i].body) {
-                bodyLength = parts[i].body.length;
+        for (var i = 0; i < voices.length; ++i) {
+            if (voices[i].body) {
+                bodyLength = voices[i].body.length;
+                break;
             }
         }
 
@@ -74,7 +76,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
 
         var viewbox = "0 0 " + width10s + " " + height10s;
 
-        var vcHeight = 48 + ctx.staveSpacing * (ctx._parts.length - 1) / 2;
+        var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return <!RenderEngine
                     onClick={this.handleMouseClick}
@@ -92,10 +94,10 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     model={this.props.header} />}
                 {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in SongEditorStore or something. */}
-                {_.map(parts, (part: C.IPart, idx: number) => {
-                    assert(part.body);
-                    return <!g key={"" + idx} style={{ fontSize: scale40 + "px" }}>
-                        {_.reduce(part.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
+                {_.map(parts, (part: C.IPart, idx: number) =>
+                    _.chain(part.voices).map(voice => voices[voice]).map((voice, vidx) => 
+                            <!g key={idx + "_" + vidx} style={{ fontSize: scale40 + "px" }}>
+                        {_.reduce(voice.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
                             if (obj.type === C.Type.NewLine) {
                                 memo.push([]);
                             }
@@ -150,18 +152,18 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                             });
                             }
                         )}
-                    </g>
-                })}
+                    </g>).value()
+                )}
                 {(pidx === this.state.visualCursor.annotatedPage) &&
                     this.state.visualCursor && this.state.visualCursor.annotatedObj && <!g
                             style={{fontSize: scale40 + "px"}}>
                         <!Line.Component
                             x1={this.state.visualCursor.annotatedObj.x - 8}
                             x2={this.state.visualCursor.annotatedObj.x - 8}
-                            y1={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) *
-                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._parts.length - 1)/2 : 0) - vcHeight}
-                            y2={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) *
-                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._parts.length - 1)/2 : 0) + vcHeight}
+                            y1={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._voices.length - 1) *
+                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._voices.length - 1)/2 : 0) - vcHeight}
+                            y2={this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._voices.length - 1) *
+                                this.state.visualCursor.annotatedStave + (false/*isPiano MXFIX*/ ? ctx.staveSpacing * (ctx._voices.length - 1)/2 : 0) + vcHeight}
                             stroke="#008CFF"
                             strokeWidth={2} />
                     </g>}
@@ -238,9 +240,9 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         if (info) {
             var ctx = this.getCtx();
 
-            dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._parts.length - 1) * info.visualIdx;
+            dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._voices.length - 1) * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y)/5)/2 + 3;
-            var body = this.props.parts[info.partIdx].body;
+            var body = this.props.voices[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page];
                     j < body.length && body[info.musicLine].type !== C.Type.NewPage; ++j) {
                 var item = body[j];
@@ -257,7 +259,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                         foundObj = item;
                         break;
                     } else if (dynX < item.x ||
-                            (j === body.length - 1 && info.partIdx === this.props.parts.filter(s => !!s.body).length - 1)) {
+                            (j === body.length - 1 && info.partIdx === this.props.voices.filter(s => !!s.body).length - 1)) {
 
                         // End of a line.
                         // XXX: Instead, use EndMarker.
@@ -306,15 +308,15 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     private _getStaveInfoForY(my: number, page: number): { musicLine: number; partIdx: number; visualIdx: number } {
         var ctx = this.getCtx();
         var visualIdx = -1;
-        for (var h = 0; h < this.props.parts.length; ++h) {
-            var body = this.props.parts[h].body;
+        for (var h = 0; h < this.props.voices.length; ++h) {
+            var body = this.props.voices[h].body;
             if (!body) {
                 continue;
             }
             ++visualIdx;
 
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSpacing * (ctx._parts.length - 1) - my) < 55) {
+                if (Math.abs(ctx.lines[i].y + visualIdx*ctx.staveSpacing * (ctx._voices.length - 1) - my) < 55) {
                     return {
                         musicLine: i,
                         partIdx: h,
@@ -330,8 +332,8 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var ret: Array<Model> = [];
 
         var ctx = this.getCtx();
-        for (var h = 0; h < this.props.parts.length; ++h) {
-            var body = this.props.parts[h].body;
+        for (var h = 0; h < this.props.voices.length; ++h) {
+            var body = this.props.voices[h].body;
             if (!body) {
                 continue;
             }
@@ -497,6 +499,7 @@ module Renderer {
         raw?: boolean;
         header: C.ScoreHeader;
         parts?: Array<C.IPart>;
+        voices?: Array<C.IVoice>;
         songId?: string;
         store?: C.ISongEditor;
         top?: number;
@@ -620,7 +623,7 @@ interface ILineProps {
     h: number;
     idx: number;
     isCurrent: boolean;
-    parts: Array<C.IPart>;
+    parts: Array<C.IVoice>;
     store: C.ISongEditor;
 }
 

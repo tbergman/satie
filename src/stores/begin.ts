@@ -22,12 +22,13 @@ class BeginModel extends Model {
 
     get type()      { return C.Type.Begin; }
     get xPolicy()   { return C.RectifyXPolicy.Min; }
+    startOfSystem: boolean;
 
     ////////////////////
     // I.2 BeginModel //
     ////////////////////
 
-    part:           C.IPart;
+    part:           C.IVoice;
     noMargin:       boolean;
     braceY:         number;
     braceY2:        number;
@@ -65,14 +66,15 @@ class BeginModel extends Model {
         ctx.y                   = pageMargins.topMargin + print.systemLayout.topSystemDistance;
         ctx.lines[ctx.line].y   = ctx.y;
         ctx.lines[ctx.line].x   = ctx.x;
-        ctx.minBottomPaddings   = _.times(ctx._parts.length, () => 0);
-        ctx.minTopPaddings      = _.times(ctx._parts.length, () => 0);
+        ctx.minBottomPaddings   = _.times(ctx._voices.length + 1, () => 0); // this is overkill. should be number of staves
+        ctx.minTopPaddings      = _.times(ctx._voices.length + 1, () => 0); // but that's hard to calculate here.
 
         /////////////////////////////////////////////////////////////
 
         this.x                  = ctx.x;
         this.y              	= ctx.y;
         this.staveW          	= ctx.maxX - ctx.x;
+        this.startOfSystem      = !ctx.idxInPart && ctx.part.voices.length > 1;
 
         /*
          * Padding between beginning of part and the clef.
@@ -84,7 +86,7 @@ class BeginModel extends Model {
 
         // Copy information from the context needed for the view
         // this.pianoSystemContinues = ctx.currStave.pianoSystemContinues; MXFIX
-        this.part = ctx.currStave;
+        this.part = ctx.voice;
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!
@@ -93,7 +95,7 @@ class BeginModel extends Model {
             this.noMargin       = false;
         }
         this.braceY             = this.y;
-        this.braceY2            = this.y + ctx.staveSpacing * (ctx._parts.length - 1);
+        this.braceY2            = this.y; // Newline.explode deals with the rest.
 
         /////////////////////////////////////////////////////////////
 

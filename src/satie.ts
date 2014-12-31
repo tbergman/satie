@@ -45,6 +45,7 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
                 context: this.state.context,
                 dispatcher: this.state.dispatcher,
                 parts: this.state.songEditor.parts,
+                voices: this.state.songEditor.voices,
                 header: this.state.songEditor.header,
                 editMode: false,
                 width: this.props.width,

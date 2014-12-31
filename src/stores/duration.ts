@@ -209,7 +209,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     private _extraWidth: number;
-    private _beats: number;
+    _beats: number;
     /** @deprecated */
     private _count: C.MusicXML.Count;
     /** @deprecated */
@@ -505,10 +505,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(_.forEach(this.lines, l => isFinite(l)));
 
         for (var i = 0; i < this.lines.length; ++i) {
-            ctx.minBottomPaddings[ctx.currStaveIdx] =
-                Math.max(ctx.minBottomPaddings[ctx.currStaveIdx], -(this.lines[i] - 3)*10);
-            ctx.minTopPaddings[ctx.currStaveIdx] =
-                Math.max(ctx.minTopPaddings[ctx.currStaveIdx], (this.lines[i] - 4)*10);
+            ctx.minBottomPaddings[this.staff] =
+                Math.max(ctx.minBottomPaddings[this.staff], -(this.lines[i] - 3)*10);
+            ctx.minTopPaddings[this.staff] =
+                Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4)*10);
         }
 
         if (!ctx.isBeam) {
@@ -532,10 +532,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         for (i = 0; i < this.chord.length; ++i) {
             // Set the octave specific accidental
-            ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
+            ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
             // If needed, invalidate the default accidental
-            if ((ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step]) !== this.chord[i].alter) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][this.chord[i].step] = C.InvalidAccidental;
+            if ((ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step]) !== this.chord[i].alter) {
+                ctx.accidentalsByStave[ctx.voiceIdx][this.chord[i].step] = C.InvalidAccidental;
             }
         }
 
@@ -544,7 +544,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         if (this.multiRest !== undefined) {
             ctx.invisibleForBars = this.multiRest;
-            ctx.minTopPaddings[ctx.currStaveIdx] = Math.max(ctx.minTopPaddings[ctx.currStaveIdx], 40);
+            ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], 40);
         }
 
         return C.IterationStatus.Success;
@@ -615,9 +615,9 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     calcMiddleNoteDirection(ctx: Annotator.Context) {
         var prevLine: number = ctx.prev() && ctx.prev().isNote ?
-                DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
+                DurationModel.getAverageLine(<DurationModel> ctx.prev().note, ctx) : null;
         var nextLine: number = ctx.next() && ctx.next().isNote ?
-                DurationModel.getAverageLine(ctx.next().note, ctx) : null;
+                DurationModel.getAverageLine(<DurationModel> ctx.next().note, ctx) : null;
 
         if ((nextLine !== null) && ctx.beat + this._beats +
                 Metre.calcBeats2(ctx.next().note, ctx, this.count) > ctx.ts.beats) {
@@ -673,14 +673,25 @@ class DurationModel extends Model implements C.IPitchDuration {
             var pitch: C.IPitch = chord[i];
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
-            var generalTarget = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step], null);
-            var target = or3(ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step + pitch.octave], null);
+            var generalTarget = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step], null);
+            var target = or3(ctx.accidentalsByStave[ctx.voiceIdx][pitch.step + pitch.octave], null);
             
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
 
             var acc = this._p_notes[i].accidental;
+            var prevDurr: DurationModel = null;
+            _.forEach(this._p_notes, note => {
+                if (!note.hasOwnProperty("staff")) {
+                    if (!prevDurr) {
+                        prevDurr = <DurationModel> ctx.prev(m => m.isNote);
+                    }
+                    if (prevDurr) {
+                        note.staff = prevDurr.staff;
+                    }
+                }
+            });
             var paren = acc && (acc.editorial || acc.parentheses || acc.bracket);
 
             // If the encoding software tells us what kind of accidental we have, we trust it. Otherwise...
@@ -725,7 +736,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             if (!actual) {
-                ctx.accidentalsByStave[ctx.currStaveIdx][pitch.step] = undefined;
+                ctx.accidentalsByStave[ctx.voiceIdx][pitch.step] = undefined;
                 result[i] = "0p"; // natural
                 continue;
             }
@@ -760,6 +771,16 @@ class DurationModel extends Model implements C.IPitchDuration {
             accWidth = max*6;
         }
         return Math.max(0, accWidth - 12);
+    }
+
+    /**
+     * Durations can (unfortunately) span multiple staves.
+     * 
+     * Staves are rendered from top to bottom, so this returns the index of the final
+     * staff. Otherwise, a note could be covered by other Models.
+     */
+    get staff() {
+        return _.chain(this._p_notes).map(n => n.staff).max().value();
     }
 
     ////////////////
@@ -850,34 +871,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         1024: "rest1024th"
     };
 
-    static getAverageLine = (note: C.IPitchDuration, ctx: Annotator.Context) => {
+    static getAverageLine = (note: DurationModel, ctx: Annotator.Context) => {
         var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
-        var sum = 0;
-        for (var i = 0; i < lines.length; ++i) {
-            sum += lines[i] / lines.length;
-        }
-        return sum;
+        return _.reduce(lines, (memo, line) => memo + line/lines.length, 0);
     };
 
-    static getLine = (pitch: C.IPitch,
-            ctx: Annotator.Context, options?: { filterTemporary: boolean }): number => {
-        options = options || {filterTemporary: false};
-
-        if (pitch.isRest) {
-            return 3;
-        }
-
-        if (!ctx) {
-            assert(pitch.line !== undefined,
-                    "Must be first annotated in duration.jsx");
-            return pitch.line;
-        }
-        assert(ctx.attributes.clefs && ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/], "A clef must be inserted before the first note");
-        return DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
-            (pitch.octave || 0) * 3.5 + DurationModel.pitchOffsets[pitch.step];
-    };
-
-    static getLines = (note: C.IPitchDuration,
+    static getLines = (note: DurationModel,
             ctx: Annotator.Context, options?: { filterTemporary: boolean }): Array<number> => {
         options = options || {filterTemporary: false};
         var ret: Array<number> = [];
@@ -887,7 +886,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     var durr = <DurationModel> note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
                         ret.push(
-                            DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
+                            DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] +
                             ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
                             DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     } else {
@@ -895,32 +894,14 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 } else {
                     ret.push(
-                        DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign] +
+                        DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] +
                         ((note.chord[i].octave || 0) - 3) * 3.5 +
                         DurationModel.pitchOffsets[note.chord[i].step]);
                 }
             }
         }
-        for (var i = 0; i < ret.length; ++i) {
-            assert(!isNaN(ret[i]));
-        }
+        _.forEach(ret, r => assert(isFinite(r)));
         return ret;
-    };
-
-    static getPitch = (line: number, ctx: Annotator.Context) => {
-        assert(ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/], "A clef must be inserted before the first note");
-        var pitch = DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) % 3.5 + 3.5) % 3.5];
-        var octave = Math.floor((line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) / 3.5);
-        var alter = ctx.accidentalsByStave[ctx.currStaveIdx][pitch + octave] ||
-            ctx.accidentalsByStave[ctx.currStaveIdx][pitch] || null;
-
-        return {
-            step: DurationModel.offsetToPitch[((
-                line - DurationModel.clefOffsets[ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/].sign]) % 3.5 + 3.5) % 3.5],
-            octave: octave,
-            alter: alter === C.InvalidAccidental ? null : alter
-        };
     };
 
     static offsetToPitch: { [key: string]: string } = {
@@ -1123,11 +1104,11 @@ module DurationModel {
         notations:          C.MusicXML.Notations[];
         stem:               C.MusicXML.Stem;
         cue:                C.MusicXML.Cue;
-        duration:           number;                     // Currently ignored! We just use the note appearance for timing!
+        duration:           number;
         ties:               C.MusicXML.Tie[];
         dynamics:           number;
         play:               C.MusicXML.Play;
-        staff:              number;
+        staff:              number;                 // See prototype.
         grace:              C.MusicXML.Grace;
         notehead:           C.MusicXML.Notehead;
         release:            number;
@@ -1195,6 +1176,7 @@ module DurationModel {
     }
 }
 
+DurationModel.MNote.prototype.staff = 1;
 function _hasConflict(otherChord: Array<C.IPitch>, step: string, target: number) {
     "use strict";
     for (var k = 0; k < otherChord.length; ++k) {

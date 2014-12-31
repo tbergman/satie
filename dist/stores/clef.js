@@ -102,7 +102,7 @@ var ClefModel = (function (_super) {
                 return ctx.eraseCurrent(1 /* MatchedOnly */);
             }
         }
-        this.isChange = ctx.attributes.clefs[ctx.currStaveIdx] !== this;
+        this.isChange = ctx.attributes.clefs[ctx.voiceIdx] !== this;
         if (this.isChange) {
             var barCandidate = ctx.prev(function (m) { return m.type === 300 /* Barline */ || m.isNote && !m.isRest; });
         }
@@ -113,7 +113,7 @@ var ClefModel = (function (_super) {
             }
         }
         ctx.attributes.clefs = ctx.attributes.clefs || [];
-        ctx.attributes.clefs[ctx.currStaveIdx] = this;
+        ctx.attributes.clefs[ctx.voiceIdx] = this;
         var next = ctx.next();
         if (next.isNote) {
             var note = next;
@@ -139,10 +139,10 @@ var ClefModel = (function (_super) {
     ClefModel.prototype._clefIsRedundant = function (ctx) {
         switch (true) {
             case !ctx.attributes.clefs:
-            case !ctx.attributes.clefs[ctx.currStaveIdx]:
-            case ctx.attributes.clefs[ctx.currStaveIdx] === this:
+            case !ctx.attributes.clefs[ctx.voiceIdx]:
+            case ctx.attributes.clefs[ctx.voiceIdx] === this:
                 return false;
-            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.currStaveIdx]) === ClefModel.serializeClef(this):
+            case ClefModel.serializeClef(ctx.attributes.clefs[ctx.voiceIdx]) === ClefModel.serializeClef(this):
                 return true;
             default:
                 console.warn("_clefIsRedundant: not reached");

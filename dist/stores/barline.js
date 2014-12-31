@@ -54,6 +54,8 @@ var BarlineModel = (function (_super) {
     BarlineModel.prototype.recordMetreDataImpl = function (mctx) {
         this.ctxData = new C.MetreContext(mctx);
         this.ctxData.beat = 0;
+        mctx.beat = 0;
+        ++mctx.bar;
     };
     BarlineModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.prev().endMarker) {
@@ -141,7 +143,7 @@ var BarlineModel = (function (_super) {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         this.height = 20;
         this.yOffset = 0;
         this.barStyle.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#2A2A2A");

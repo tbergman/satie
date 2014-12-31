@@ -45,10 +45,12 @@ var Renderer = (function (_super) {
             console.time("render");
         }
         var parts = this.props.parts;
+        var voices = this.props.voices;
         var bodyLength = 0;
-        for (var i = 0; i < parts.length; ++i) {
-            if (parts[i].body) {
-                bodyLength = parts[i].body.length;
+        for (var i = 0; i < voices.length; ++i) {
+            if (voices[i].body) {
+                bodyLength = voices[i].body.length;
+                break;
             }
         }
         var pages = [];
@@ -71,59 +73,56 @@ var Renderer = (function (_super) {
         var width10s = print.pageLayout.pageWidth;
         var height10s = print.pageLayout.pageHeight;
         var viewbox = "0 0 " + width10s + " " + height10s;
-        var vcHeight = 48 + ctx.staveSpacing * (ctx._parts.length - 1) / 2;
+        var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
         var rawPages = _.map(pages, function (page, pidx) {
-            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, parts: parts, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) {
-                assert(part.body);
-                return React.createElement("g", { key: "" + idx, style: { fontSize: scale40 + "px" } }, _.reduce(part.body.slice(page.from, page.to), function (memo, obj) {
-                    if (obj.type === 130 /* NewLine */) {
-                        memo.push([]);
-                    }
-                    memo[memo.length - 1].push(obj);
-                    return memo;
-                }, [[]]).splice(page.idx ? 1 : 0).map(function (s, lidx) {
-                    return React.createElement(LineContainerComponent, {
-                        parts: _this.props.parts,
-                        isCurrent: _this.state.visualCursor.annotatedLine === lidx + pageLines[page.idx],
-                        store: _this.props.store,
-                        h: idx,
-                        generate: function generate() {
-                            var components = new Array(s.length * 2);
-                            var h = 0;
-                            var selIdx = -1;
-                            var selProps = null;
-                            for (var i = 0; i < s.length; ++i) {
-                                if (s[i].selected && s[i].type !== 130 /* NewLine */ && s[i].type !== 110 /* EndMarker */) {
-                                    if (selIdx === -1) {
-                                        selIdx = h++;
-                                        selProps = {
-                                            key: "selectionrect-" + Math.random(),
-                                            x: s[i].x,
-                                            y: s[i].y - 1 / 2,
-                                            height: 1,
-                                            fill: "#75A1D0",
-                                            opacity: 0.33
-                                        };
-                                    }
-                                }
-                                if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
-                                    selProps.width = Math.abs(s[i].x - selProps.x);
-                                    components[selIdx] = React.createElement(Rect.Component, selProps);
-                                    selIdx = -1;
-                                }
-                                if (s[i].visible) {
-                                    components[h++] = s[i].render(scale40);
+            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, parts: parts, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) { return _.chain(part.voices).map(function (voice) { return voices[voice]; }).map(function (voice, vidx) { return React.createElement("g", { key: idx + "_" + vidx, style: { fontSize: scale40 + "px" } }, _.reduce(voice.body.slice(page.from, page.to), function (memo, obj) {
+                if (obj.type === 130 /* NewLine */) {
+                    memo.push([]);
+                }
+                memo[memo.length - 1].push(obj);
+                return memo;
+            }, [[]]).splice(page.idx ? 1 : 0).map(function (s, lidx) {
+                return React.createElement(LineContainerComponent, {
+                    parts: _this.props.parts,
+                    isCurrent: _this.state.visualCursor.annotatedLine === lidx + pageLines[page.idx],
+                    store: _this.props.store,
+                    h: idx,
+                    generate: function generate() {
+                        var components = new Array(s.length * 2);
+                        var h = 0;
+                        var selIdx = -1;
+                        var selProps = null;
+                        for (var i = 0; i < s.length; ++i) {
+                            if (s[i].selected && s[i].type !== 130 /* NewLine */ && s[i].type !== 110 /* EndMarker */) {
+                                if (selIdx === -1) {
+                                    selIdx = h++;
+                                    selProps = {
+                                        key: "selectionrect-" + Math.random(),
+                                        x: s[i].x,
+                                        y: s[i].y - 1 / 2,
+                                        height: 1,
+                                        fill: "#75A1D0",
+                                        opacity: 0.33
+                                    };
                                 }
                             }
-                            components.length = h;
-                            return components;
-                            return null;
-                        },
-                        idx: lidx + pageLines[page.idx],
-                        key: lidx
-                    });
-                }));
-            }), (pidx === _this.state.visualCursor.annotatedPage) && _this.state.visualCursor && _this.state.visualCursor.annotatedObj && React.createElement("g", { style: { fontSize: scale40 + "px" } }, React.createElement(Line.Component, { x1: _this.state.visualCursor.annotatedObj.x - 8, x2: _this.state.visualCursor.annotatedObj.x - 8, y1: _this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) * _this.state.visualCursor.annotatedStave + (false ? ctx.staveSpacing * (ctx._parts.length - 1) / 2 : 0) - vcHeight, y2: _this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._parts.length - 1) * _this.state.visualCursor.annotatedStave + (false ? ctx.staveSpacing * (ctx._parts.length - 1) / 2 : 0) + vcHeight, stroke: "#008CFF", strokeWidth: 2 })));
+                            if (selIdx !== -1 && (!s[i].selected || i + 1 === s.length)) {
+                                selProps.width = Math.abs(s[i].x - selProps.x);
+                                components[selIdx] = React.createElement(Rect.Component, selProps);
+                                selIdx = -1;
+                            }
+                            if (s[i].visible) {
+                                components[h++] = s[i].render(scale40);
+                            }
+                        }
+                        components.length = h;
+                        return components;
+                        return null;
+                    },
+                    idx: lidx + pageLines[page.idx],
+                    key: lidx
+                });
+            })); }).value(); }), (pidx === _this.state.visualCursor.annotatedPage) && _this.state.visualCursor && _this.state.visualCursor.annotatedObj && React.createElement("g", { style: { fontSize: scale40 + "px" } }, React.createElement(Line.Component, { x1: _this.state.visualCursor.annotatedObj.x - 8, x2: _this.state.visualCursor.annotatedObj.x - 8, y1: _this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._voices.length - 1) * _this.state.visualCursor.annotatedStave + (false ? ctx.staveSpacing * (ctx._voices.length - 1) / 2 : 0) - vcHeight, y2: _this.state.visualCursor.annotatedObj.y - ctx.staveSpacing * (ctx._voices.length - 1) * _this.state.visualCursor.annotatedStave + (false ? ctx.staveSpacing * (ctx._voices.length - 1) / 2 : 0) + vcHeight, stroke: "#008CFF", strokeWidth: 2 })));
         });
         var ret;
         var yPtr = { y: this.props.marginTop };
@@ -180,9 +179,9 @@ var Renderer = (function (_super) {
         var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var ctx = this.getCtx();
-            dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._parts.length - 1) * info.visualIdx;
+            dynY = ctx.lines[info.musicLine].y + ctx.staveSpacing * (ctx._voices.length - 1) * info.visualIdx;
             dynLine = Math.round((dynY - mouse.y) / 5) / 2 + 3;
-            var body = this.props.parts[info.partIdx].body;
+            var body = this.props.voices[info.partIdx].body;
             for (var j = ctx.pageStarts[mouse.page]; j < body.length && body[info.musicLine].type !== 120 /* NewPage */; ++j) {
                 var item = body[j];
                 ctxData = item.ctxData;
@@ -193,7 +192,7 @@ var Renderer = (function (_super) {
                         foundObj = item;
                         break;
                     }
-                    else if (dynX < item.x || (j === body.length - 1 && info.partIdx === this.props.parts.filter(function (s) { return !!s.body; }).length - 1)) {
+                    else if (dynX < item.x || (j === body.length - 1 && info.partIdx === this.props.voices.filter(function (s) { return !!s.body; }).length - 1)) {
                         if (dynX < item.x) {
                             j -= 1;
                         }
@@ -232,14 +231,14 @@ var Renderer = (function (_super) {
     Renderer.prototype._getStaveInfoForY = function (my, page) {
         var ctx = this.getCtx();
         var visualIdx = -1;
-        for (var h = 0; h < this.props.parts.length; ++h) {
-            var body = this.props.parts[h].body;
+        for (var h = 0; h < this.props.voices.length; ++h) {
+            var body = this.props.voices[h].body;
             if (!body) {
                 continue;
             }
             ++visualIdx;
             for (var i = ctx.pageLines[page]; i < ctx.lines.length; ++i) {
-                if (Math.abs(ctx.lines[i].y + visualIdx * ctx.staveSpacing * (ctx._parts.length - 1) - my) < 55) {
+                if (Math.abs(ctx.lines[i].y + visualIdx * ctx.staveSpacing * (ctx._voices.length - 1) - my) < 55) {
                     return {
                         musicLine: i,
                         partIdx: h,
@@ -253,8 +252,8 @@ var Renderer = (function (_super) {
     Renderer.prototype._elementsInBBox = function (box, mouse) {
         var ret = [];
         var ctx = this.getCtx();
-        for (var h = 0; h < this.props.parts.length; ++h) {
-            var body = this.props.parts[h].body;
+        for (var h = 0; h < this.props.voices.length; ++h) {
+            var body = this.props.voices[h].body;
             if (!body) {
                 continue;
             }

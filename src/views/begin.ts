@@ -30,15 +30,12 @@ class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
                 width={this.props.spec.staveW}
                 x={spec.x}
                 y={spec.braceY} />
+            {spec.startOfSystem && <!Brace.Component
+                idx={1}
+                x={spec.x}
+                y={spec.braceY}
+                y2={spec.braceY2} />}
         </g>
-
-        // MXFIX
-        // {spec.pianoSystemContinues && <!Brace.Component
-        //     idx={1}
-        //     x={spec.x}
-        //     fontSize={this.props.fontSize}
-        //     y={spec.braceY}
-        //     y2={spec.braceY2} />}
     }
 };
 

@@ -810,10 +810,33 @@ export interface IMouse {
     page:                       number;
 };
 
-/** 
- * Properties that make up a part
+/**
+ * Staves, voices, and voices are all distinct concepts. A part is usually one instrument.
+ * There is a one-to-many relation between parts and voices, as well as between parts and
+ * staves. Staves of a single part are grouped together.
  */
 export interface IPart {
+    /**
+     * Id of corresponding part in header. This contains information about how the part is rendered.
+     */
+    id:                         string;
+
+    /**
+     * Indices of voices this part owns.
+     */
+    voices:                     number[];
+
+    /**
+     * Number of staves this part owns.
+     */
+    staves:                     number;
+};
+
+/** 
+ * Staves, voices, and parts are all distinct concepts. A voice is a monotonic time-stream
+ * of Models. A voice can "switch" staves, but it must remain in the same part.
+ */
+export interface IVoice {
     /** 
      * The Models that compose the part.
      */
@@ -925,6 +948,7 @@ export interface ISongEditor {
     midiOutHint:                        (out: Array<number>) => void;
     header:                             ScoreHeader;
     parts:                              IPart[];
+    voices:                             IVoice[];
     src:                                string;
     visualCursor:                       IVisualCursor;
 

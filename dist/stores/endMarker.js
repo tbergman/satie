@@ -88,7 +88,7 @@ var EndMarkerModel = (function (_super) {
             }
         }
         if (!ctx.next()) {
-            NewlineModel.pushDownIfNeeded(ctx);
+            NewlineModel.explode(ctx);
         }
         this.endMarker = true;
         return 10 /* Success */;

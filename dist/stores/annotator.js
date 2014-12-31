@@ -20,7 +20,7 @@ var Context = (function () {
         this._recordings = null;
         this.nullEntry = false;
         this.lines = [];
-        this._parts = parts;
+        this._voices = parts;
         this._layout = layout;
         this._assertionPolicy = assertionPolicy;
         this.songEditor = editor;
@@ -39,7 +39,7 @@ var Context = (function () {
         var error = null;
         var result;
         assert(from.bar !== 0);
-        assert(this._parts, "Staves must be set!");
+        assert(this._voices, "Staves must be set!");
         try {
             result = this._annotateImpl(from, cursor, disableRecording);
         }
@@ -67,7 +67,7 @@ var Context = (function () {
             invisibleForBars: this.invisibleForBars,
             pageLines: this.pageLines,
             pageStarts: this.pageStarts,
-            partIdx: this.currStaveIdx,
+            partIdx: this.voiceIdx,
             x: this.x,
             y: this.y
         };
@@ -92,7 +92,7 @@ var Context = (function () {
     Object.defineProperty(Context.prototype, "staveSpacing", {
         get: function () {
             var print = C.getPrint(this._layout.header);
-            var staffLayout = print.staffLayouts[this.currStaveIdx];
+            var staffLayout = print.staffLayouts[this.voiceIdx];
             var staffSpacing = staffLayout ? staffLayout.staffDistance : null;
             switch (true) {
                 case !isNaN(staffSpacing):
@@ -141,8 +141,8 @@ var Context = (function () {
         if (after === void 0) { after = true; }
         if (before === void 0) { before = true; }
         var intersects = [];
-        for (var i = 0; i < this._parts.length; ++i) {
-            var body = this._parts[i].body;
+        for (var i = 0; i < this._voices.length; ++i) {
+            var body = this._voices[i].body;
             if (!body) {
                 continue;
             }
@@ -179,9 +179,9 @@ var Context = (function () {
         var inBeam = this.body[idx + 1].priority === 450 /* BeamGroup */;
         if (inBeam) {
             var beamed = [];
-            for (var i = 0; i < this._parts.length; ++i) {
-                if (this._parts[i].body && this._parts[i].body[idx + 1].type === 450 /* BeamGroup */) {
-                    var newBeam = this._parts[i].body[idx + 1].beam;
+            for (var i = 0; i < this._voices.length; ++i) {
+                if (this._voices[i].body && this._voices[i].body[idx + 1].type === 450 /* BeamGroup */) {
+                    var newBeam = this._voices[i].body[idx + 1].beam;
                     beamed = beamed.concat(newBeam);
                 }
             }
@@ -239,14 +239,14 @@ var Context = (function () {
             while (this.body[nidx] && this.body[nidx].isAttribute) {
                 if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
                     this.body[nidx] = obj;
-                    recordMetreData(this._parts);
+                    recordMetreData(this._voices);
                     return 10 /* Success */;
                 }
                 ++nidx;
             }
         }
         this.splice(index, 0, [obj], obj.isNote ? 3 /* Masked */ : 2 /* Additive */);
-        recordMetreData(this._parts);
+        recordMetreData(this._voices);
         return 10 /* Success */;
     };
     Context.prototype.insertPast = function (obj, index, merge) {
@@ -261,8 +261,8 @@ var Context = (function () {
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
         var exitCode = this.idx === index ? 20 /* RetryCurrent */ : 90 /* RetryFromEntry */;
         var visibleIdx = -1;
-        for (var i = 0; i < this._parts.length; ++i) {
-            var part = this._parts[i];
+        for (var i = 0; i < this._voices.length; ++i) {
+            var part = this._voices[i];
             if (part.body) {
                 ++visibleIdx;
                 part.body.splice(index, 0, objs[visibleIdx]);
@@ -298,8 +298,8 @@ var Context = (function () {
         else {
             assert(this._assertionPolicy === 1 /* NoAssertions */);
         }
-        for (var i = 0; i < this._parts.length; ++i) {
-            var part = this._parts[i];
+        for (var i = 0; i < this._voices.length; ++i) {
+            var part = this._voices[i];
             if (part.body) {
                 if (this.body === part.body) {
                     if (replaceWith) {
@@ -424,7 +424,7 @@ var Context = (function () {
     };
     Context.prototype._realign = function (start, end) {
         var PlaceholderModel = require("./placeholder");
-        var bodies = this._parts.filter(function (s) { return !!s.body; }).map(function (s) { return s.body; });
+        var bodies = this._voices.filter(function (s) { return !!s.body; }).map(function (s) { return s.body; });
         var cBeats = bodies.map(function (b) { return 0; });
         var placeholders = bodies.map(function (b) { return []; });
         var reals = bodies.map(function (b) { return []; });
@@ -469,23 +469,23 @@ var Context = (function () {
         }
         var firstSize = aligned[0].length;
         var j = 0;
-        for (var k = 0; k < this._parts.length; ++k) {
-            if (!this._parts[k].body) {
+        for (var k = 0; k < this._voices.length; ++k) {
+            if (!this._voices[k].body) {
                 continue;
             }
             if (this._assertionPolicy !== 1 /* NoAssertions */) {
                 assert.equal(firstSize, aligned[j].length);
             }
-            Array.prototype.splice.apply(this._parts[k].body, [start, end + 1 - start].concat(aligned[j]));
+            Array.prototype.splice.apply(this._voices[k].body, [start, end + 1 - start].concat(aligned[j]));
             ++j;
         }
-        recordMetreData(this._parts);
+        recordMetreData(this._voices);
     };
     Context.prototype.findVertical = function (where, idx) {
         if (isNaN(idx)) {
             idx = this.idx;
         }
-        return _.chain(this._parts).filter(function (s) { return !!s.body; }).map(function (s) { return s.body[idx]; }).filter(function (s) { return s && (!where || !!where(s)); }).value();
+        return _.chain(this._voices).filter(function (s) { return !!s.body; }).map(function (s) { return s.body[idx]; }).filter(function (s) { return s && (!where || !!where(s)); }).value();
     };
     Context.prototype.midiOutHint = function (out) {
         this.songEditor.midiOutHint(out);
@@ -587,10 +587,10 @@ var Context = (function () {
         }
         var status;
         var ops = 0;
-        var initialLength = _.max(this._parts, function (s) { return s.body ? s.body.length : 0; }).body.length || 1;
+        var initialLength = _.max(this._voices, function (s) { return s.body ? s.body.length : 0; }).body.length || 1;
         var verbose = false;
         var stopIn = NaN;
-        for (var it = new PrivIterator(this, from, this._parts, cursor, this._assertionPolicy); !it.atEnd; it.next(status)) {
+        for (var it = new PrivIterator(this, from, this._voices, cursor, this._assertionPolicy); !it.atEnd; it.next(status)) {
             if (++ops / initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
                 stopIn = 20;
@@ -601,7 +601,7 @@ var Context = (function () {
             status = it.annotate(verbose);
         }
         if (it.eofJustificationDirty) {
-            this._semiJustify(this._parts);
+            this._semiJustify(this._voices);
         }
         return {
             cursor: null,
@@ -642,19 +642,15 @@ var Context = (function () {
         var scaling = this._layout.header.defaults.scaling;
         return scaling.millimeters / scaling.tenths * 40;
     };
-    Context.prototype.calcLineSpacing = function (print) {
-        if (print === void 0) { print = C.getPrint(this._layout.header); }
-        return Math.max(print.systemLayout.systemDistance, this.minBottomPaddings[this.currStaveIdx]);
-    };
     Context.prototype._assertAligned = function () {
         if (this._assertionPolicy === 0 /* Strict */) {
             var expectedLength = 0;
             var bodies = [];
-            for (var i = 0; i < this._parts.length; ++i) {
-                if (this._parts[i].body) {
-                    expectedLength = expectedLength || this._parts[i].body.length;
-                    assert.equal(expectedLength, this._parts[i].body.length, "All parts must be the same length");
-                    bodies.push(this._parts[i].body);
+            for (var i = 0; i < this._voices.length; ++i) {
+                if (this._voices[i].body) {
+                    expectedLength = expectedLength || this._voices[i].body.length;
+                    assert.equal(expectedLength, this._voices[i].body.length, "All parts must be the same length");
+                    bodies.push(this._voices[i].body);
                 }
             }
             for (var i = 0; i < bodies[0].length; ++i) {
@@ -734,24 +730,24 @@ function _recordMetreData(parts) {
     }
 }
 var PrivIterator = (function () {
-    function PrivIterator(parent, from, parts, cursor, assertionPolicy) {
+    function PrivIterator(parent, from, voices, cursor, assertionPolicy) {
+        var _this = this;
         this.eofJustificationDirty = true;
         this._canExitAtNewline = false;
         this._components = [];
         this._parent = parent;
-        this._parts = parts;
+        this._voices = voices;
         this._cursor = cursor;
         this._from = from;
         this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
-        var visibleSidx = -1;
-        recordMetreData(this._parts);
-        for (var i = 0; i < parts.length; ++i) {
-            if (parts[i].body) {
-                ++visibleSidx;
-                this._components.push(new PrivIteratorComponent(from, parts[i], i, visibleSidx, cursor, this._assertionPolicy));
-            }
-        }
+        recordMetreData(this._voices);
+        this._components = _.map(voices, function (voice, idx) {
+            var part = _.find(parent.songEditor.parts, function (part) { return _.any(part.voices, function (oVoice) { return voices[oVoice] === voice; }); });
+            var partVoices = _.map(part.voices, function (oVoice) { return voices[oVoice]; });
+            var idxInPart = _.indexOf(partVoices, voice);
+            return new PrivIteratorComponent(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
+        });
         this._assertOffsetsOK();
     }
     PrivIterator.prototype.annotate = function (verbose) {
@@ -767,9 +763,6 @@ var PrivIterator = (function () {
                 return 20 /* RetryCurrent */;
             }
             this._parent.y = origSnapshot.y;
-            for (var j = 0; j < i; ++j) {
-                this._parent.y += this._parent.staveSpacing;
-            }
             this._assertOffsetsOK();
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
             this._assertOffsetsOK();
@@ -823,8 +816,8 @@ var PrivIterator = (function () {
             }
         }
         var mergePolicy = 0 /* Invalid */;
-        for (var j = 0; j < ctx._parts.length; ++j) {
-            mergePolicy = Math.max(mergePolicy, ctx._parts[j].body[ctx.idx].xPolicy);
+        for (var j = 0; j < ctx._voices.length; ++j) {
+            mergePolicy = Math.max(mergePolicy, ctx._voices[j].body[ctx.idx].xPolicy);
         }
         assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
         ctx.x = componentSnapshots[0].x;
@@ -892,7 +885,7 @@ var PrivIterator = (function () {
         }
         this._assertOffsetsOK();
         if (status !== 10 /* Success */) {
-            recordMetreData(this._parts);
+            recordMetreData(this._voices);
         }
         this._assertOffsetsOK();
     };
@@ -1016,14 +1009,15 @@ var PrivIterator = (function () {
     return PrivIterator;
 })();
 var PrivIteratorComponent = (function () {
-    function PrivIteratorComponent(from, part, idx, visibleIdx, cursor, assertionPolicy) {
+    function PrivIteratorComponent(from, voice, idx, cursor, part, indexInPart, assertionPolicy) {
         this._beat = null;
         this._nextBeat = null;
-        this._part = part;
-        this._body = part.body;
+        this._voice = voice;
+        this._body = voice.body;
         this._sidx = idx;
-        this._visibleSidx = visibleIdx;
         this._cursor = cursor;
+        this._part = part;
+        this._idxInPart = indexInPart;
         this._assertionPolicy = assertionPolicy;
         this.reset(from);
         assert(this._location.eq(from));
@@ -1034,11 +1028,13 @@ var PrivIteratorComponent = (function () {
             ctx.beat = this._beat;
         }
         ctx.body = this._body;
-        ctx.currStave = this._part;
-        ctx.currStaveIdx = this._sidx;
+        ctx.voice = this._voice;
+        ctx.voiceIdx = this._sidx;
+        ctx.part = this._part;
+        ctx.idxInPart = this._idxInPart;
         ctx.idx = this._idx;
         var shouldUpdateVC = this._shouldUpdateVC(ctx);
-        if (this._aheadOfSchedule(ctx)) {
+        if (this._beatExceedsContext(ctx)) {
             return this._addPadding(ctx);
         }
         var status = this._body[this._idx].annotate(ctx);
@@ -1046,10 +1042,11 @@ var PrivIteratorComponent = (function () {
         var isClean = status === 10 /* Success */ && (!this._cursor || this._cursor.annotatedObj);
         var isNewline = this.curr && this.curr.type === 130 /* NewLine */;
         if (status === 10 /* Success */ && shouldUpdateVC) {
-            this._cursor.annotatedObj = this.curr;
-            this._cursor.annotatedStave = this._visibleSidx;
-            this._cursor.annotatedLine = ctx.line;
-            this._cursor.annotatedPage = ctx.pageStarts.length - 1;
+            var c = this._cursor;
+            c.annotatedObj = this.curr;
+            c.annotatedStave = this._idx;
+            c.annotatedLine = ctx.line;
+            c.annotatedPage = ctx.pageStarts.length - 1;
         }
         if (canExitAtNewline && isNewline && isClean) {
             return 5 /* ExitEarly */;
@@ -1152,7 +1149,7 @@ var PrivIteratorComponent = (function () {
         enumerable: true,
         configurable: true
     });
-    PrivIteratorComponent.prototype._aheadOfSchedule = function (ctx) {
+    PrivIteratorComponent.prototype._beatExceedsContext = function (ctx) {
         if (ctx.curr.type !== 600 /* Duration */) {
             return false;
         }
@@ -1188,6 +1185,13 @@ var PrivIteratorComponent = (function () {
         var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === 110 /* EndMarker */);
         return barMatches && beatMatches && typeMatches && !target.annotatedObj;
     };
+    Object.defineProperty(PrivIteratorComponent.prototype, "_body", {
+        get: function () {
+            return this._voice.body;
+        },
+        enumerable: true,
+        configurable: true
+    });
     return PrivIteratorComponent;
 })();
 function _cpyline(ctx, line, mode) {

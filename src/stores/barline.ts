@@ -97,6 +97,8 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         // If we have an overfilled note in the previous bar, it will at some point turn
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.beat = 0;
+        mctx.beat = 0;
+        ++mctx.bar;
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
@@ -210,7 +212,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         ctx.beat = 0;
         ++ctx.bar;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
 
         // MXFIX
         // this.height = this.onPianoStaff ? ctx.staveSeperation/2 : 20;

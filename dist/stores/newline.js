@@ -36,13 +36,10 @@ var NewlineModel = (function (_super) {
         if (ctx.prev().priority !== 50 /* Print */) {
             return ctx.insertPast(new PrintModel({}, true));
         }
-        if (ctx.y + ctx.calcLineSpacing() > ctx.maxY) {
-            return NewPageModel.createNewPage(ctx);
-        }
         if (ctx.maxX - ctx.x > 0.001) {
             this._justify(ctx);
-            for (var i = 0; i < ctx._parts.length; ++i) {
-                var body = ctx._parts[i].body;
+            for (var i = 0; i < ctx._voices.length; ++i) {
+                var body = ctx._voices[i].body;
                 if (body !== ctx.body) {
                     var len = Math.min(ctx.body.length, body.length);
                     for (var j = 0; j < len; ++j) {
@@ -55,15 +52,14 @@ var NewlineModel = (function (_super) {
             }
         }
         var visibleStaveCount = 0;
-        for (var i = 0; i < ctx._parts.length; ++i) {
-            if (ctx._parts[i].body) {
+        for (var i = 0; i < ctx._voices.length; ++i) {
+            if (ctx._voices[i].body) {
                 ++visibleStaveCount;
             }
         }
-        NewlineModel.pushDownIfNeeded(ctx);
-        this.lineSpacing = ctx.calcLineSpacing(print);
         this.braceY = this.y;
-        this.braceY2 = this.y + C.renderUtil.staveSeperation;
+        this.braceY2 = this.y;
+        NewlineModel.explode(ctx);
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].x = ctx.x;
         var print = ctx.print;
@@ -74,12 +70,14 @@ var NewlineModel = (function (_super) {
         ctx.maxX = pageLayout.pageWidth - systemMargins.rightMargin - pageMargins.rightMargin;
         ctx.maxY = pageLayout.pageHeight - pageMargins.topMargin;
         ctx.x = systemMargins.leftMargin + pageMargins.leftMargin;
-        ctx.y = ctx.y + this.lineSpacing;
+        if (ctx.y > ctx.maxY) {
+            return NewPageModel.createNewPage(ctx);
+        }
         ctx.lines[ctx.line].attributes.time = ctx.attributes.time;
         ctx.line = ctx.line + 1;
         ctx.smallest = 10000;
-        ctx.minBottomPaddings = _.times(ctx._parts.length, function () { return 0; });
-        ctx.minTopPaddings = _.times(ctx._parts.length, function () { return 0; });
+        ctx.minBottomPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
+        ctx.minTopPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
         this.x = ctx.x;
         this.staveW = ctx.maxX - ctx.x;
         ctx.x = ctx.x + 8;
@@ -100,7 +98,7 @@ var NewlineModel = (function (_super) {
                 pageLines: null,
                 pageStarts: null,
                 prevClefByStave: {},
-                partIdx: ctx.currStaveIdx,
+                partIdx: ctx.voiceIdx,
                 x: null,
                 y: null
             };
@@ -208,19 +206,42 @@ var NewlineModel = (function (_super) {
             toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 - (bbox[0] + bbox[3]) / 2 - toCenter[j].x;
         }
     };
-    NewlineModel.pushDownIfNeeded = function (ctx) {
-        for (var i = 0; i < ctx._parts.length; ++i) {
-            var body = ctx._parts[i].body;
-            for (var l = ctx.idx; l + 1 === ctx.idx || !body[l + 1] || body[l] && body[l + 1].priority !== 130 /* NewLine */; --l) {
-                body[l].y += ctx.minTopPaddings[i];
-                var bodyl = body[l];
-                if (bodyl.braceY) {
-                    bodyl.braceY += ctx.minTopPaddings[i];
-                    bodyl.braceY2 += ctx.minTopPaddings[i];
-                }
-            }
-        }
-        ctx.y = ctx.curr.y;
+    NewlineModel.explode = function (ctx) {
+        var veryBottomPadding = 0;
+        var braces = [];
+        _.forEach(ctx.songEditor.parts, function (part) {
+            _.times(part.staves, function (staff) {
+                staff += 1;
+                var extraTopPadding = (staff - 1) * 50;
+                extraTopPadding += ctx.minTopPaddings[staff];
+                _.chain(part.voices).map(function (voiceIdx) { return ctx._voices[voiceIdx].body; }).map(function (body) {
+                    var line = ctx.line;
+                    return _.filter(body, function (model) {
+                        if (model.type === 130 /* NewLine */) {
+                            --line;
+                            return !line || !~line;
+                        }
+                        return !line;
+                    });
+                }).map(function (body, sidx) { return _.filter(body, function (model) { return model.staff === staff || model.staff === -1 && staff === sidx + 1; }); }).flatten(true).forEach(function (model) {
+                    model.y += extraTopPadding;
+                    var brace = model;
+                    if (brace.braceY) {
+                        brace.braceY = model.y;
+                        braces.push(brace);
+                        _.forEach(braces, function (brace) {
+                            brace.braceY2 = model.y;
+                        });
+                    }
+                }).value();
+                extraTopPadding += ctx.minBottomPaddings[staff];
+                veryBottomPadding = ctx.minBottomPaddings[staff];
+            });
+        });
+        veryBottomPadding = Math.max(C.getPrint(ctx._layout.header).systemLayout.systemDistance, veryBottomPadding);
+        ctx.curr.braceY += veryBottomPadding;
+        ctx.curr.braceY2 += veryBottomPadding;
+        ctx.y = ctx.curr.y + veryBottomPadding;
     };
     NewlineModel.createNewline = function (ctx) {
         if (ctx.songEditor) {
@@ -253,7 +274,7 @@ var NewlineModel = (function (_super) {
     NewlineModel.semiJustify = function (ctx) {
         var fullJustify = false;
         var i;
-        if (ctx._parts.isScale) {
+        if (ctx._voices.isScale) {
             fullJustify = true;
         }
         var n = 0;

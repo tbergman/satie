@@ -97,7 +97,7 @@ class BeamGroupModel extends Model {
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
-        if (!ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
+        if (!ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
             return ClefModel.createClef(ctx);
         }
 

@@ -46,7 +46,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
 
     getInitialState(): IState {
         return {
-            test: "01a",
+            test: "02e",
             width: 1
         };
     }
@@ -226,8 +226,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
 
     renderEditor() {
         return <!div>
-            <!textarea style={{width: "49%", height: 400}} value={this.state.testSRC} onChange={this.handleChange}/>
-            <!textarea style={{width: "49%", height: 400}} readOnly={true} value={JSON.stringify(this.state.score, null, 2)} />
+            <!textarea style={{width: "100%", height: 400}} value={this.state.testSRC} onChange={this.handleChange}/>
         </div>
     }
 

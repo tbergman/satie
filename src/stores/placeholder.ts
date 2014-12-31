@@ -75,17 +75,17 @@ class PlaceholderModel extends Model {
     recordMetreDataImpl(mctx: C.MetreContext) {
         // EXCEPTION -- if we are a DurationModel at beat 0, we actually should be
         // at the end of the bar. See duration.ts
-        if (this.priority === C.Type.Duration && mctx.beat === 0) {
-            this.ctxData = new C.MetreContext({
-                attributes: mctx.attributes,
-                beat: mctx.ts.beats,
-                bar: mctx.bar - 1,
-                endMarker: false,
-                ts: mctx.ts
-            });
-        } else {
-            this.ctxData = new C.MetreContext(mctx);
-        }
+        // if (this.priority === C.Type.Duration && mctx.beat === 0) {
+        //     this.ctxData = new C.MetreContext({
+        //         attributes: mctx.attributes,
+        //         beat: mctx.ts.beats,
+        //         bar: mctx.bar - 1,
+        //         endMarker: false,
+        //         ts: mctx.ts
+        //     });
+        // } else {
+        this.ctxData = new C.MetreContext(mctx);
+        // }
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // Make sure a model (be it a placeholder or not) is needed here because either:
@@ -130,7 +130,7 @@ class PlaceholderModel extends Model {
         switch(this.priority) {
             case C.Type.Attributes:
                 // STOPSHIP: Find the part leader.
-                ctx.attributes = ctx._parts[0].body[ctx.idx];
+                ctx.attributes = ctx._voices[0].body[ctx.idx];
                 break;
             case C.Type.Barline:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: {data: C.MusicXML.BarStyleType.Regular }}, true));
@@ -143,10 +143,10 @@ class PlaceholderModel extends Model {
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;
             case C.Type.Clef:
-                if (!("priority" in ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/])) { // Check if model
-                    var newClef =  new ClefModel(ctx.attributes.clefs[ctx.currStaveIdx], true)
+                if (!("priority" in ctx.attributes.clefs[ctx.voiceIdx])) { // This checks if it's a model
+                    var newClef =  new ClefModel(ctx.attributes.clefs[ctx.voiceIdx], true)
                     ctx.body.splice(ctx.idx, 1, newClef); // FIXME
-                    ctx.attributes.clefs[ctx.currStaveIdx] = newClef;
+                    ctx.attributes.clefs[ctx.voiceIdx] = newClef;
                     ctx.body[ctx.idx].annotated = this.annotated;
                     ctx.body[ctx.idx].proposed  = this.proposed;
                     return C.IterationStatus.RetryCurrent;

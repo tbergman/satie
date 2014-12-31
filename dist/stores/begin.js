@@ -48,14 +48,15 @@ var BeginModel = (function (_super) {
         ctx.y = pageMargins.topMargin + print.systemLayout.topSystemDistance;
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].x = ctx.x;
-        ctx.minBottomPaddings = _.times(ctx._parts.length, function () { return 0; });
-        ctx.minTopPaddings = _.times(ctx._parts.length, function () { return 0; });
+        ctx.minBottomPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
+        ctx.minTopPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
         this.x = ctx.x;
         this.y = ctx.y;
         this.staveW = ctx.maxX - ctx.x;
+        this.startOfSystem = !ctx.idxInPart && ctx.part.voices.length > 1;
         ctx.x += 8;
         ctx.barKeys = [];
-        this.part = ctx.currStave;
+        this.part = ctx.voice;
         if (typeof window === "undefined" || global.location.href.indexOf("/scales/") !== -1) {
             this.noMargin = true;
         }
@@ -63,7 +64,7 @@ var BeginModel = (function (_super) {
             this.noMargin = false;
         }
         this.braceY = this.y;
-        this.braceY2 = this.y + ctx.staveSpacing * (ctx._parts.length - 1);
+        this.braceY2 = this.y;
         return 10 /* Success */;
     };
     BeginModel.createBegin = function (ctx) {

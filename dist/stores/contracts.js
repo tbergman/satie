@@ -385,6 +385,7 @@ var MidiEventType = exports.MidiEventType;
 ;
 ;
 ;
+;
 (function (PreviewMode) {
     PreviewMode[PreviewMode["ExcludePreviews"] = 0] = "ExcludePreviews";
     PreviewMode[PreviewMode["IncludePreviews"] = 1] = "IncludePreviews";

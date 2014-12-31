@@ -62,14 +62,14 @@ var KeySignatureModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
     };
     KeySignatureModel.prototype.annotateImpl = function (ctx) {
-        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.currStaveIdx]) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.voiceIdx]) {
             return ClefModel.createClef(ctx);
         }
-        this.clef = ctx.attributes.clefs[ctx.currStaveIdx];
+        this.clef = ctx.attributes.clefs[ctx.voiceIdx];
         assert(this.clef instanceof Object);
         var intersectingNotes = _.filter(ctx.intersects(600 /* Duration */), function (l) { return l.isNote; });
         ctx.attributes.keySignature = this;
-        ctx.accidentalsByStave[ctx.currStaveIdx] = C.NoteUtil.getAccidentals(this);
+        ctx.accidentalsByStave[ctx.voiceIdx] = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, function (n) { return !!n.getAccWidthAfterBar(ctx); })) {
                 this._annotatedSpacing = 25;

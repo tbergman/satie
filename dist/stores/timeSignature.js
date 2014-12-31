@@ -83,10 +83,10 @@ var TimeSignatureModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
     };
     TimeSignatureModel.prototype.annotateImpl = function (ctx) {
-        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
+        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
             return ClefModel.createClef(ctx);
         }
-        if (!ctx.attributes.clefs[ctx.currStaveIdx]) {
+        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
             return KeySignatureModel.createKeySignature(ctx);
         }
         var prevPotentialTime = ctx.prev(function (c) { return c.type === 170 /* TimeSignature */ || c.type === 130 /* NewLine */; });

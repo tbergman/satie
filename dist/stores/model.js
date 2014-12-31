@@ -44,6 +44,13 @@ var Model = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Model.prototype, "staff", {
+        get: function () {
+            return -1;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Model.prototype, "inBeam", {
         get: function () {
             return this._getFlag(Flags.InBeam);
@@ -332,9 +339,9 @@ var Model;
                         combined[i] = here[i];
                     }
                 }
-                for (var i = 0; i < ctx._parts.length; ++i) {
-                    ctx._parts[i].body.splice(ctx.idx, 1);
-                    ctx._parts[i].body[ctx.idx] = combined[i];
+                for (var i = 0; i < ctx._voices.length; ++i) {
+                    ctx._voices[i].body.splice(ctx.idx, 1);
+                    ctx._voices[i].body[ctx.idx] = combined[i];
                 }
                 return this.retryStatus;
             }

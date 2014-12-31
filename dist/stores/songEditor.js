@@ -37,6 +37,7 @@ var SongEditorStore = (function (_super) {
         this._dispatcher = null;
         this._linesToUpdate = {};
         this._parts = null;
+        this._voices = null;
         this._header = null;
         this._snapshots = {};
         this._visualCursor = defaultCursor;
@@ -73,6 +74,13 @@ var SongEditorStore = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(SongEditorStore.prototype, "voices", {
+        get: function () {
+            return this._voices;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(SongEditorStore.prototype, "header", {
         get: function () {
             return this._header;
@@ -83,7 +91,7 @@ var SongEditorStore = (function (_super) {
     Object.defineProperty(SongEditorStore.prototype, "src", {
         get: function () {
             return "RIPMUS0," + JSON.stringify({
-                parts: this._parts,
+                parts: this._voices,
                 header: this._header
             });
         },
@@ -128,10 +136,10 @@ var SongEditorStore = (function (_super) {
         this._dirty = true;
     };
     SongEditorStore.prototype.dangerouslyMarkRendererLineDirty = function (line) {
-        if (!this._parts) {
+        if (!this._voices) {
             return;
         }
-        for (var i = 0; i < this._parts.length; ++i) {
+        for (var i = 0; i < this._voices.length; ++i) {
             this._linesToUpdate[i + "_" + line] = true;
         }
     };
@@ -184,9 +192,15 @@ var SongEditorStore = (function (_super) {
     };
     SongEditorStore.extractMXMLParts = function (mxmlJson) {
         var idxToPart = {};
+        var parts = [];
         var partCount = 0;
         _.forEach(mxmlJson.partList.scoreParts, function (part, idx) {
             idxToPart[partCount++] = part.id;
+            parts.push({
+                id: part.id,
+                staves: 0,
+                voices: []
+            });
         });
         var partToIdx = _.invert(idxToPart);
         assert(partCount, "At least one part is needed.");
@@ -207,18 +221,23 @@ var SongEditorStore = (function (_super) {
         var divisionsPerPart = [];
         var timeSignaturePerPart = [];
         var _voiceHash = {};
+        var partToVoices = _.times(partCount, function () { return []; });
         var _maxVoice = -1;
         function getVoiceIdx(mPartIdx, voice) {
             var key = (mPartIdx || 0) + "_" + (voice || 1);
             if (_voiceHash[key] === undefined) {
-                return _voiceHash[key] = ++_maxVoice;
+                ++_maxVoice;
+                partToVoices[mPartIdx].push(_maxVoice);
+                parts[mPartIdx].voices.push(_maxVoice);
+                return _voiceHash[key] = _maxVoice;
             }
             return _voiceHash[key];
         }
+        var outputIdx = 1;
         _.forEach(mxmlJson.measures, function (measure, measureIdx) {
             var minPriority;
+            var currBeat = 0;
             var idxPerPart = _.times(partCount, function (part) { return 0; });
-            var outputIdx = 0;
             do {
                 var elements = _.map(measure.parts, function (p, partID) { return p[idxPerPart[partToIdx[partID]]] || {}; });
                 var splits = getSplits(elements);
@@ -227,8 +246,15 @@ var SongEditorStore = (function (_super) {
                         var partIdx = split.idx;
                         ++idxPerPart[partIdx];
                         if (split.el._class === "Backup") {
-                            var beats = 4 / (split.el.duration / divisionsPerPart[partIdx]);
-                            console.log(beats);
+                            var beats = split.el.duration / divisionsPerPart[partIdx];
+                            currBeat = currBeat - beats;
+                            --outputIdx;
+                            while (getCurrBeat() > currBeat) {
+                                --outputIdx;
+                            }
+                            function getCurrBeat() {
+                                return _.chain(voices).map(function (voice) { return (voice.body[outputIdx].ctxData || { beat: 0 }).beat; }).max().value();
+                            }
                         }
                     });
                     continue;
@@ -236,8 +262,10 @@ var SongEditorStore = (function (_super) {
                 var priorities = _.map(elements, function (element) { return !element || typeof element === "string" ? C.MAX_NUM : mxmlClassToType(element._class); });
                 minPriority = _.min(priorities);
                 if (minPriority !== C.MAX_NUM) {
+                    var newBeat = 1000;
                     _.forEach(elements, function (element, mPartIdx) {
                         var voiceIdx = getVoiceIdx(mPartIdx, element.voice);
+                        parts[mPartIdx].staves = Math.max(parts[mPartIdx].staves, element.staff || 1);
                         if (!voices[voiceIdx]) {
                             voices[voiceIdx] = {
                                 instrument: Instruments.List[0],
@@ -249,7 +277,9 @@ var SongEditorStore = (function (_super) {
                                 }
                             }
                         }
+                        Annotator.recordMetreData(voices);
                         if (mxmlClassToType(element._class) === minPriority) {
+                            var beatsInEl = 0;
                             if (minPriority === 145 /* Attributes */) {
                                 assert(element.voice === undefined, "Attributes are voiceless");
                                 assert(element.staff === undefined, "Attributes are staffless");
@@ -270,14 +300,30 @@ var SongEditorStore = (function (_super) {
                             var _class = element._class;
                             delete element._class;
                             element._ = [Model.newKey(), minPriority, 0];
-                            voices[voiceIdx].body.push(Model.fromJSON(element));
+                            var curr = voices[voiceIdx].body[outputIdx];
+                            var model = Model.fromJSON(element);
+                            if (curr && curr.placeholder && curr.priority === minPriority && curr.ctxData.beat === currBeat) {
+                                voices[voiceIdx].body[outputIdx] = model;
+                            }
+                            else {
+                                voices[voiceIdx].body.splice(outputIdx, 0, model);
+                                _.chain(partToVoices[mPartIdx]).filter(function (vidx) { return vidx !== voiceIdx; }).map(function (vidx) { return voices[vidx]; }).forEach(function (voice) { return voice.body.splice(outputIdx, 0, new PlaceholderModel({ priority: minPriority }, true)); }).value();
+                            }
                             element._class = _class;
                             delete element._;
+                            Annotator.recordMetreData(voices);
+                            if (minPriority === 600 /* Duration */) {
+                                beatsInEl = model._beats;
+                            }
                             ++idxPerPart[mPartIdx];
+                            newBeat = Math.min(newBeat, currBeat + beatsInEl);
                         }
                         else {
+                            assert(false, "Not implemented");
                         }
                     });
+                    currBeat = newBeat;
+                    ++outputIdx;
                 }
             } while (minPriority !== C.MAX_NUM);
             if (measureIdx !== mxmlJson.measures.length - 1) {
@@ -287,6 +333,7 @@ var SongEditorStore = (function (_super) {
                             data: 0 /* Regular */
                         }
                     }, true));
+                    outputIdx = voices[i].body.length;
                 }
             }
         });
@@ -298,8 +345,10 @@ var SongEditorStore = (function (_super) {
         function getSplits(elements) {
             return _.map(elements, function (element, idx) { return element._class === "Forward" || element._class === "Backup" ? { el: element, idx: idx } : null; }).filter(function (a) { return !!a; });
         }
-        console.log(_voiceHash);
-        return voices;
+        return {
+            voices: voices,
+            parts: parts
+        };
     };
     SongEditorStore.prototype["DELETE /webapp/song/lineDirty"] = function (action) {
         this._linesToUpdate[action.postData] = false;
@@ -313,8 +362,10 @@ var SongEditorStore = (function (_super) {
     SongEditorStore.prototype["PUT /webapp/song/mxmlJSON"] = function (action) {
         var mxml = C.JSONx.clone(action.postData);
         this._header = SongEditorStore.extractMXMLHeader(mxml);
-        this._parts = SongEditorStore.extractMXMLParts(mxml);
-        Annotator.recordMetreData(this._parts);
+        var partData = SongEditorStore.extractMXMLParts(mxml);
+        this._parts = partData.parts;
+        this._voices = partData.voices;
+        Annotator.recordMetreData(this._voices);
         this._annotate(null, null, null, null, true, null, 1 /* NoAssertions */);
         this.dangerouslyMarkRendererDirty();
         this.emit(0 /* Change */);
@@ -356,7 +407,7 @@ var SongEditorStore = (function (_super) {
     };
     SongEditorStore.prototype._annotate = function (pointerData, toolFn, parts, profile, disableRecording, godAction, assertionPolicy) {
         assertionPolicy = isNaN(assertionPolicy) ? 0 /* Strict */ : assertionPolicy;
-        parts = parts || this._parts;
+        parts = parts || this._voices;
         if (SongEditorStore.PROFILER_ENABLED) {
             console.time("annotate");
         }
@@ -399,7 +450,7 @@ var SongEditorStore = (function (_super) {
     };
     SongEditorStore.prototype._clear = function () {
         this._activeStaveIdx = null;
-        this._parts = null;
+        this._voices = null;
         this._header = null;
         this._visualCursorIs({
             bar: 1,
@@ -422,11 +473,12 @@ var SongEditorStore = (function (_super) {
         if (profile) {
             console.time("Parse source");
         }
+        assert(false, "Fix voice & parts");
         var song = SongEditorStore.parse(src);
         this._header = song.header;
-        this._parts = song.parts;
-        for (var i = 0; i < this._parts.length; ++i) {
-            if (this._parts[i].body) {
+        this._voices = song.parts;
+        for (var i = 0; i < this._voices.length; ++i) {
+            if (this._voices[i].body) {
                 this._activeStaveIdx = i;
             }
         }
@@ -448,16 +500,16 @@ var SongEditorStore = (function (_super) {
         var sign = spec.step > 0 ? 1 : -1;
         var steps = spec.step;
         var idx = this._visualCursor.annotatedObj.idx;
-        var parts = this._parts;
+        var voices = this._voices;
         var iterations = 0;
         var page = this._visualCursor.annotatedPage;
-        var part = 0;
+        var voice = 0;
         var line = this._visualCursor.annotatedLine;
-        while (steps && parts[part].body[idx += sign]) {
-            var priority = parts[part].body[idx].priority;
+        while (steps && voices[voice].body[idx += sign]) {
+            var priority = voices[voice].body[idx].priority;
             var visible = false;
-            for (var i = 0; !visible && i < parts.length; ++i) {
-                visible = visible || !!parts[i].body[idx].visible;
+            for (var i = 0; !visible && i < voices.length; ++i) {
+                visible = visible || !!voices[i].body[idx].visible;
             }
             if (!visible) {
             }
@@ -465,11 +517,11 @@ var SongEditorStore = (function (_super) {
                 steps -= sign;
             }
             else if (!spec.skipDurationlessContent) {
-                while (parts[part].body[idx] && parts[part].body[idx].priority !== 600 /* Duration */ && parts[part].body[idx].priority !== 110 /* EndMarker */) {
-                    if (parts[part].body[idx].type === 120 /* NewPage */) {
+                while (voices[voice].body[idx] && voices[voice].body[idx].priority !== 600 /* Duration */ && voices[voice].body[idx].priority !== 110 /* EndMarker */) {
+                    if (voices[voice].body[idx].type === 120 /* NewPage */) {
                         page += sign;
                     }
-                    if (parts[part].body[idx].type === 130 /* NewLine */) {
+                    if (voices[voice].body[idx].type === 130 /* NewLine */) {
                         line += sign;
                     }
                     idx += sign;
@@ -479,24 +531,24 @@ var SongEditorStore = (function (_super) {
             }
             ++iterations;
         }
-        var obj = parts[part].body[idx];
+        var obj = voices[voice].body[idx];
         if (!obj) {
             if (sign === 1 && spec.loopThroughEnd) {
                 this._visualCursor = {
                     bar: 0,
                     beat: 0,
                     endMarker: false,
-                    annotatedObj: parts[part].body[0],
+                    annotatedObj: voices[voice].body[0],
                     annotatedLine: line,
                     annotatedPage: page,
-                    annotatedStave: part
+                    annotatedStave: voice
                 };
                 this._stepCursor({ step: 1 });
             }
             return;
         }
-        for (var i = 1; obj.placeholder && i < parts.length; ++i) {
-            obj = parts[i].body[idx];
+        for (var i = 1; obj.placeholder && i < voices.length; ++i) {
+            obj = voices[i].body[idx];
         }
         this._visualCursor = {
             bar: obj.ctxData.bar,
@@ -505,7 +557,7 @@ var SongEditorStore = (function (_super) {
             annotatedObj: obj,
             annotatedLine: 0,
             annotatedPage: page,
-            annotatedStave: part
+            annotatedStave: voice
         };
     };
     SongEditorStore.prototype._visualCursorIs = function (visualCursor) {

@@ -17,10 +17,10 @@ var Brace = (function (_super) {
     }
     Brace.prototype.render = function () {
         var defaults = C.SMuFL.bravuraMetadata.engravingDefaults;
-        var height = (this.props.y2 - this.props.y) + 1;
-        var mid = (this.props.y2 + this.props.y) / 2;
-        var s = height;
-        return React.createElement("g", null, React.createElement(Glyph.Component, { transform: "scale(" + s + "," + s + ")" + "translate(" + (-this.props.fontSize * this.props.x * (1 - 1 / s)) + "," + -(1 - 1 / s) * this.props.fontSize * mid + ")", fill: "#000000", fontSize: this.props.fontSize, key: 0, x: this.props.x - 1 / 8, y: mid + 2 / 4, glyphName: "brace" }), React.createElement(Line.Component, { stroke: "black", strokeWidth: defaults.thinBarlineThickness / 4, fontSize: this.props.fontSize, key: 1, x1: this.props.x, x2: this.props.x, y1: mid - height / 2, y2: mid + height / 2 }));
+        var height = (this.props.y2 - this.props.y) + 40;
+        var bottom = this.props.y2 + 20;
+        var s = height / 40;
+        return React.createElement("g", null, React.createElement(Glyph.Component, { transform: "scale(" + s + "," + s + ")" + "translate(" + (-this.props.x * (1 - 1 / s)) + "," + -(1 - 1 / s) * bottom + ")", fill: "#000000", key: 0, x: this.props.x - 5, y: bottom, glyphName: "brace" }), React.createElement(Line.Component, { stroke: "black", strokeWidth: defaults.thinBarlineThickness * 10, key: 1, x1: this.props.x, x2: this.props.x, y1: this.props.y - 20, y2: this.props.y2 + 20 }));
     };
     return Brace;
 })(TypedReact.Component);

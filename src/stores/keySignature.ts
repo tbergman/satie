@@ -80,16 +80,16 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/]) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
-        this.clef                                   = ctx.attributes.clefs[ctx.currStaveIdx/*CXFIX*/];
+        this.clef                                   = ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/];
         assert(this.clef instanceof Object);
         var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.attributes.keySignature                 = this;
-        ctx.accidentalsByStave[ctx.currStaveIdx]    = C.NoteUtil.getAccidentals(this);
+        ctx.accidentalsByStave[ctx.voiceIdx]    = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => !!(<DurationModelType>n).getAccWidthAfterBar(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.

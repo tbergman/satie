@@ -63,6 +63,10 @@ class Model {
         return this.priority > C.Type.START_OF_MODIFIERS && this.priority < C.Type.END_OF_MODIFIERS;
     }
 
+    get staff():        number {
+        return -1;  // -1 means staff === voice if voice <= staves.length. Otherwise, an exception is thrown.
+    }
+
     ////////////////////////////////////
     // I.2 Flags common to all models //
     ////////////////////////////////////
@@ -246,7 +250,7 @@ class Model {
      * Given an array of parts, remove all annotated objects
      * created through a Model.
      */
-    static removeAnnotations = (parts: Array<C.IPart>) => {
+    static removeAnnotations = (parts: Array<C.IVoice>) => {
         for (var i = 0; i < parts.length; ++i) {
             for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
                 var item = parts[i].body[j];
@@ -350,9 +354,9 @@ module Model {
                         combined[i] = here[i];
                     }
                 }
-                for (var i = 0; i < ctx._parts.length; ++i) {
-                    ctx._parts[i].body.splice(ctx.idx, 1);
-                    ctx._parts[i].body[ctx.idx] = combined[i];
+                for (var i = 0; i < ctx._voices.length; ++i) {
+                    ctx._voices[i].body.splice(ctx.idx, 1);
+                    ctx._voices[i].body[ctx.idx] = combined[i];
                 }
                 return this.retryStatus;
             }

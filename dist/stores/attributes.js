@@ -168,7 +168,7 @@ var AttributesModel = (function (_super) {
             this.keySignature = null;
         }
         if (this.clefs) {
-            var clef = this.clefs[ctx.currStaveIdx];
+            var clef = this.clefs[ctx.voiceIdx];
             if (!(clef instanceof Model)) {
                 ctx.insertFuture(new ClefModel(clef, false));
                 ctx.next().ctxData = this.ctxData;
@@ -207,7 +207,7 @@ var AttributesModel = (function (_super) {
     };
     AttributesModel.prototype.updateAttached = function (ctx) {
         this.clefs = this.clefs || [];
-        this.clefs[ctx.currStaveIdx] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.currStaveIdx];
+        this.clefs[ctx.voiceIdx] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.voiceIdx];
         this.time = ifAttribute(ctx.next(function (c) { return c.type === 170 /* TimeSignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.time;
         this.keySignature = ifAttribute(ctx.next(function (c) { return c.type === 160 /* KeySignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; }));
         function ifAttribute(m) {

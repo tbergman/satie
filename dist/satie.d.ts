@@ -215,6 +215,11 @@ declare module '__satie/stores/contracts' {
         page: number;
     }
     export interface IPart {
+        id: string;
+        voices: number[];
+        staves: number;
+    }
+    export interface IVoice {
         body?: Model[];
         instrument?: IInstrument;
     }
@@ -274,6 +279,7 @@ declare module '__satie/stores/contracts' {
         midiOutHint: (out: number[]) => void;
         header: ScoreHeader;
         parts: IPart[];
+        voices: IVoice[];
         src: string;
         visualCursor: IVisualCursor;
         dangerouslyMarkRenderDone: () => void;
@@ -374,7 +380,7 @@ declare module '__satie/stores/annotator' {
     import C = require("__satie/stores/contracts");
     import Model = require("__satie/stores/model");
     export class Context implements C.MetreContext {
-        constructor(parts: C.IPart[], layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy);
+        constructor(parts: C.IVoice[], layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy);
         annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult;
         abort(): void;
         captureLine(): ILineSnapshot;
@@ -400,7 +406,7 @@ declare module '__satie/stores/annotator' {
         splice(start: number, count: number, replaceWith?: Model[], splicePolicy?: SplicePolicy): void;
         removeAdjacentBeams(note?: C.IDuration): C.IterationStatus;
         removeRemainingBeamsInBar(): C.IterationStatus;
-        static insertPlaceholders(parts: C.IPart[]): void;
+        static insertPlaceholders(parts: C.IVoice[]): void;
         findVertical(where?: (obj: Model) => boolean, idx?: number): Model[];
         midiOutHint(out: number[]): void;
         nextActualType: number;
@@ -410,8 +416,10 @@ declare module '__satie/stores/annotator' {
         body: Model[];
         invisibleForBars: number;
         idx: number;
-        currStave: C.IPart;
-        currStaveIdx: number;
+        voice: C.IVoice;
+        voiceIdx: number;
+        part: C.IPart;
+        idxInPart: number;
         startOfBeamBeat: number;
         beat: number;
         __globalBeat__: number;
@@ -440,10 +448,9 @@ declare module '__satie/stores/annotator' {
         record(model: BarlineModel): void;
         toJSON(): {};
         calcFontSize(): number;
-        calcLineSpacing(print?: C.Print): number;
         isBeam: boolean;
         nullEntry: boolean;
-        _parts: C.IPart[];
+        _voices: C.IVoice[];
         _layout: ILayoutOpts;
         print: C.Print;
         _attributes: C.MusicXML.Attributes;
@@ -491,7 +498,7 @@ declare module '__satie/stores/annotator' {
     export interface ICompleteSnapshot extends IPartialSnapshot {
         lines: ILineSnapshot[];
     }
-    export function recordMetreData(parts: C.IPart[]): void;
+    export function recordMetreData(parts: C.IVoice[]): void;
 }
 
 declare module '__satie/stores/model' {
@@ -507,6 +514,7 @@ declare module '__satie/stores/model' {
         spacing: number;
         ctxData: C.MetreContext;
         isModifier: boolean;
+        staff: number;
         inBeam: boolean;
         placeholder: boolean;
         selected: boolean;
@@ -543,7 +551,7 @@ declare module '__satie/stores/model' {
             key: number;
             spec: Model;
         }) => any) => void;
-        static removeAnnotations: (parts: C.IPart[]) => void;
+        static removeAnnotations: (parts: C.IVoice[]) => void;
         static fromJSON(json: Object, existingObjects?: {
             [x: string]: Model;
         }): Model;

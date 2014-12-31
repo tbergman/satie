@@ -16,28 +16,26 @@ class Brace extends TypedReact.Component<Brace.IProps, {}> {
     render() {
         var defaults = C.SMuFL.bravuraMetadata.engravingDefaults;
 
-        var height = (this.props.y2 - this.props.y) + 1;
-        var mid = (this.props.y2 + this.props.y) / 2;
-        var s = height;
+        var height = (this.props.y2 - this.props.y) + 40
+        var bottom = this.props.y2 + 20
+        var s = height/40;
         return <!g>
             <!Glyph.Component transform={"scale(" + s + "," + s + ")" +
-                    "translate(" + (-this.props.fontSize*this.props.x*(1-1/s)) + "," +
-                    -(1-1/s)*this.props.fontSize*mid + ")"}
+                    "translate(" + (-this.props.x*(1-1/s)) + "," +
+                    -(1-1/s)*bottom + ")"}
                 fill={"#000000"}
-                fontSize={this.props.fontSize}
                 key={0}
-                x={this.props.x - 1/8}
-                y={mid + 2/4}
+                x={this.props.x - 5}
+                y={bottom}
                 glyphName={"brace"} />
             <!Line.Component
                 stroke="black"
-                strokeWidth={defaults.thinBarlineThickness/4}
-                fontSize={this.props.fontSize}
+                strokeWidth={defaults.thinBarlineThickness*10}
                 key={1}
                 x1={this.props.x}
                 x2={this.props.x}
-                y1={mid - height/2}
-                y2={mid + height/2} />
+                y1={this.props.y - 20}
+                y2={this.props.y2 + 20} />
         </g>;
     }
 }
@@ -52,7 +50,6 @@ module Brace {
         y: number;
         y2: number;
         idx: number;
-        fontSize: number;
     }
 }
 

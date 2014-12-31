@@ -105,7 +105,7 @@ class EndMarkerModel extends Model {
         }
 
         if (!ctx.next()) {
-            NewlineModel.pushDownIfNeeded(ctx);
+            NewlineModel.explode(ctx);
         }
 
         this.endMarker = true;

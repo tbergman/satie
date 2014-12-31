@@ -31,10 +31,10 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
                 key="StaveLines"
                 width={this.props.spec.staveW}
                 x={spec.x}
-                y={spec.braceY + spec.lineSpacing} />
+                y={spec.braceY} />
             <!BarNumber.Component 
                 x={spec.x - 0}
-                y={spec.braceY + spec.lineSpacing - 30}
+                y={spec.braceY - 30}
                 barNumber={barNumber} />
         </g>;
 
