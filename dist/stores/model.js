@@ -352,6 +352,7 @@ var Model;
                     ctx._voices[i].body[ctx.idx + 1] = ctx._voices[i].body[ctx.idx];
                     ctx._voices[i].body[ctx.idx] = memo;
                 }
+                return this.retryStatus;
             }
             return _super.prototype.annotate.call(this, ctx);
         };
