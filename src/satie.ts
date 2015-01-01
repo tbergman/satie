@@ -29,7 +29,7 @@ import Dispatcher   = require("./stores/dispatcher");
 import Instruments  = require("./stores/instruments");
 import Model        = require("./stores/model");
 import Renderer     = require("./renderer/renderer");
-import SongEditor   = require("./stores/songEditor");
+import ScoreStore   = require("./stores/scoreStore");
 
 export import MusicXML = require("musicxml-interfaces");
 
@@ -68,7 +68,7 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
 
     getInitialState(): ISatieState {
         var dispatcher = new Dispatcher;
-        var songEditor = new SongEditor(dispatcher);
+        var songEditor = new ScoreStore(dispatcher);
         songEditor.addListener(C.EventType.Annotate, this._updateFromStore);
 
         return {
@@ -110,7 +110,7 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
 
 interface ISatieState {
     context?: Annotator.Context;
-    songEditor?: SongEditor;
+    songEditor?: ScoreStore;
     dispatcher?: C.IDispatcher;
 }
 

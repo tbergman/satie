@@ -93,7 +93,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     key="HEADER"
                     model={this.props.header} />}
                 {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
-                    method in SongEditorStore or something. */}
+                    method in ScoreStore or something. */}
                 {_.map(parts, (part: C.IPart, idx: number) =>
                     _.chain(part.voices).map(voice => voices[voice]).map((voice, vidx) => 
                             <!g key={idx + "_" + vidx} style={{ fontSize: scale40 + "px" }}>
@@ -501,7 +501,7 @@ module Renderer {
         parts?: Array<C.IPart>;
         voices?: Array<C.IVoice>;
         songId?: string;
-        store?: C.ISongEditor;
+        store?: C.IScoreStore;
         top?: number;
         width?: number;
         height?: number;
@@ -624,7 +624,7 @@ interface ILineProps {
     idx: number;
     isCurrent: boolean;
     parts: Array<C.IVoice>;
-    store: C.ISongEditor;
+    store: C.IScoreStore;
 }
 
 interface ILineState {

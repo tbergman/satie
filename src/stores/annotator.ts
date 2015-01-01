@@ -30,7 +30,7 @@ import PlaceholderModelType     = require("./placeholder");     // Cyclic.
  *     after the change is made, the parts are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(parts: Array<C.IVoice>, layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy) {
+    constructor(parts: Array<C.IVoice>, layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy) {
         this._voices             = parts;
         this._layout            = layout;
         this._assertionPolicy   = assertionPolicy;
@@ -864,7 +864,7 @@ export class Context implements C.MetreContext {
     /**
      * The Flux store.
      */
-    songEditor: C.ISongEditor;
+    songEditor: C.IScoreStore;
 
     private static _ANNOTATING: boolean = false;
     disableRecordings: boolean = true;
@@ -879,7 +879,7 @@ export class Context implements C.MetreContext {
     toJSON() : {} {
         var serializable: {[key: string]: any} = {};
         for (var key in this) {
-            if (this.hasOwnProperty(key) && key !== "songEditor") {
+            if (this.hasOwnProperty(key) && key !== "scoreStore") {
                 serializable[key] = (<any>this)[key];
             }
         }

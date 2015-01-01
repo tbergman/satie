@@ -22,14 +22,14 @@ import PlaceholderModel  = require("./placeholder");
 /**
  * Flux store for a MusicXML song.
  */
-class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
+class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
     constructor(dispatcher: C.IDispatcher) {
         super();
         dispatcher.register(this._handleAction);
 
         this._dispatcher = dispatcher;
 
-        global.SongEditor = this;
+        global.ScoreStore = this;
         this._clear();
     }
 
@@ -429,9 +429,9 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
     "PUT /webapp/song/mxmlJSON"(action: C.IFluxAction<C.MusicXML.ScoreTimewise>) {
         var mxml                = C.JSONx.clone(action.postData);
 
-        this._header            = SongEditorStore.extractMXMLHeader(mxml);
+        this._header            = ScoreStoreStore.extractMXMLHeader(mxml);
 
-        var partData            = SongEditorStore.extractMXMLParts(mxml);
+        var partData            = ScoreStoreStore.extractMXMLParts(mxml);
         this._parts             = partData.parts;
         this._voices            = partData.voices;
 
@@ -451,7 +451,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         this.emit(C.EventType.Annotate);
     }
 
-    "PUT /webapp/visualCursor/step"(action: C.IFluxAction<SongEditorStore.IStepCursorSpec>) {
+    "PUT /webapp/visualCursor/step"(action: C.IFluxAction<ScoreStoreStore.IStepCursorSpec>) {
         this._stepCursor({
             step: action.postData.step,
             loopThroughEnd: action.postData.loopThroughEnd,
@@ -504,7 +504,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
 
         parts = parts || this._voices;
 
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.time("annotate");
         }
 
@@ -549,7 +549,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
 
         var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
 
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.log("I broke the profiler");
             // console.log("ops:", result.operations, "\tbody:", part.body.length, "\tscore:",
             //     (Math.round(result.operations / part.body.length * 100) / 100));
@@ -559,7 +559,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
             this._ctx = context;
         }
 
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.timeEnd("annotate");
         }
 
@@ -604,7 +604,7 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
         }
 
         assert(false, "Fix voice & parts");
-        var song = SongEditorStore.parse(src);
+        var song = ScoreStoreStore.parse(src);
         this._header = song.header;
         this._voices = song.parts;
 
@@ -614,22 +614,22 @@ class SongEditorStore extends TSEE implements C.ISongEditor, C.IApi {
             }
         }
 
-        var origPE = SongEditorStore.PROFILER_ENABLED;
+        var origPE = ScoreStoreStore.PROFILER_ENABLED;
 
         if (profile) {
             console.timeEnd("Parse source");
-            SongEditorStore.PROFILER_ENABLED = true;
+            ScoreStoreStore.PROFILER_ENABLED = true;
         }
 
         var res = this._annotate(null, null, null, null, true, null, Annotator.AssertionPolicy.NoAssertions);
 
         if (profile) {
-            SongEditorStore.PROFILER_ENABLED = origPE;
+            ScoreStoreStore.PROFILER_ENABLED = origPE;
         }
         return res;
     }
 
-    private _stepCursor(spec: SongEditorStore.IStepCursorSpec) {
+    private _stepCursor(spec: ScoreStoreStore.IStepCursorSpec) {
         if (!this._visualCursor || !this._visualCursor.annotatedObj) {
             return;
         }
@@ -759,7 +759,7 @@ var defaultCursor = {
     annotatedPage: <number> null
 };
 
-module SongEditorStore {
+module ScoreStoreStore {
     "use strict";
     export interface IStepCursorSpec {
         step: number;
@@ -768,4 +768,4 @@ module SongEditorStore {
     }
 }
 
-export = SongEditorStore;
+export = ScoreStoreStore;

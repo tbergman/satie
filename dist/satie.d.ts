@@ -269,7 +269,7 @@ declare module '__satie/stores/contracts' {
         Max = 1,
         Min = 2,
     }
-    export interface ISongEditor {
+    export interface IScoreStore {
         destructor: () => void;
         addListener: (event: number, listener: Function) => void;
         removeListener: (event: number, listener: Function) => void;
@@ -380,7 +380,7 @@ declare module '__satie/stores/annotator' {
     import C = require("__satie/stores/contracts");
     import Model = require("__satie/stores/model");
     export class Context implements C.MetreContext {
-        constructor(parts: C.IVoice[], layout: ILayoutOpts, editor: C.ISongEditor, assertionPolicy: AssertionPolicy);
+        constructor(parts: C.IVoice[], layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy);
         annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult;
         abort(): void;
         captureLine(): ILineSnapshot;
@@ -440,7 +440,7 @@ declare module '__satie/stores/annotator' {
         fontSize: number;
         maxX: number;
         maxY: number;
-        songEditor: C.ISongEditor;
+        songEditor: C.IScoreStore;
         disableRecordings: boolean;
         _recordings: {
             [x: string]: BarlineModel;

@@ -934,7 +934,7 @@ export enum RectifyXPolicy {
     Min                         = 2
 }
 
-export interface ISongEditor {
+export interface IScoreStore {
     /* Life-cycle */
     destructor:                         () => void;
 

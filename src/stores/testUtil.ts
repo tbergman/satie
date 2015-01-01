@@ -13,7 +13,7 @@
 // import C = require("./contracts");
 // import Dispatcher = require("./dispatcher");
 // import SessionStore = require("./session");
-// import SongEditorStore = require("./songEditor");
+// import ScoreStore = require("./scoreStore");
 // import lylite = require("./lylite");
 
 // export function parseAnnotateTest(desc: string, ly: string, tests: Array<any[]>) {
@@ -24,7 +24,7 @@
 //         var context: Annotator.Context;
 //         var dispatcher = new Dispatcher;
 //         var session = new SessionStore(dispatcher);
-//         var songEditor = new SongEditorStore(dispatcher, session);
+//         var songEditor = new ScoreStore(dispatcher, session);
 //         console.log("Unused:", songEditor);
 //         it("should parse", function () {
 //             var song = lylite.parse(ly);
@@ -75,12 +75,12 @@
 // }
 
 // export function singleChange(verb: string, command: string, data: any,
-//         before: (songEditor: SongEditorStore) => void,
-//         after: (songEditor: SongEditorStore) => void) {
+//         before: (songEditor: ScoreStore) => void,
+//         after: (songEditor: ScoreStore) => void) {
 //     "use strict";
 //     var dispatcher = new Dispatcher;
 //     var session = new SessionStore(dispatcher);
-//     var songEditor = new SongEditorStore(dispatcher, session);
+//     var songEditor = new ScoreStore(dispatcher, session);
 //     var listener = calledExactly(1, "Dispatcher emits a single update");
 //     var annotationListener = calledExactly(0, "No annotation update");
 

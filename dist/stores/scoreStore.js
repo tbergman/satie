@@ -15,9 +15,9 @@ var Instruments = require("./instruments");
 var Model = require("./model");
 var PlaceholderModel = require("./placeholder");
 var isBrowser = typeof window !== "undefined";
-var SongEditorStore = (function (_super) {
-    __extends(SongEditorStore, _super);
-    function SongEditorStore(dispatcher) {
+var ScoreStoreStore = (function (_super) {
+    __extends(ScoreStoreStore, _super);
+    function ScoreStoreStore(dispatcher) {
         var _this = this;
         _super.call(this);
         this.dangerouslyMarkRendererLineClean = this["DELETE /webapp/song/lineDirty"].bind(this);
@@ -43,52 +43,52 @@ var SongEditorStore = (function (_super) {
         this._visualCursor = defaultCursor;
         dispatcher.register(this._handleAction);
         this._dispatcher = dispatcher;
-        global.SongEditor = this;
+        global.ScoreStore = this;
         this._clear();
     }
-    SongEditorStore.prototype.destructor = function () {
+    ScoreStoreStore.prototype.destructor = function () {
         this._dispatcher.unregister(this._handleAction);
         this._clear();
     };
-    Object.defineProperty(SongEditorStore.prototype, "dirty", {
+    Object.defineProperty(ScoreStoreStore.prototype, "dirty", {
         get: function () {
             return this._dirty;
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(SongEditorStore.prototype, "finalCtx", {
+    Object.defineProperty(ScoreStoreStore.prototype, "finalCtx", {
         get: function () {
             return this._ctx;
         },
         enumerable: true,
         configurable: true
     });
-    SongEditorStore.prototype.getLineDirty = function (idx, h) {
+    ScoreStoreStore.prototype.getLineDirty = function (idx, h) {
         return this._linesToUpdate[h + "_" + idx];
     };
-    Object.defineProperty(SongEditorStore.prototype, "parts", {
+    Object.defineProperty(ScoreStoreStore.prototype, "parts", {
         get: function () {
             return this._parts;
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(SongEditorStore.prototype, "voices", {
+    Object.defineProperty(ScoreStoreStore.prototype, "voices", {
         get: function () {
             return this._voices;
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(SongEditorStore.prototype, "header", {
+    Object.defineProperty(ScoreStoreStore.prototype, "header", {
         get: function () {
             return this._header;
         },
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(SongEditorStore.prototype, "src", {
+    Object.defineProperty(ScoreStoreStore.prototype, "src", {
         get: function () {
             return "RIPMUS0," + JSON.stringify({
                 parts: this._voices,
@@ -98,14 +98,14 @@ var SongEditorStore = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(SongEditorStore.prototype, "visualCursor", {
+    Object.defineProperty(ScoreStoreStore.prototype, "visualCursor", {
         get: function () {
             return this._visualCursor;
         },
         enumerable: true,
         configurable: true
     });
-    SongEditorStore.prototype.ctxFromSnapshot = function (pointerData, parts, assertionPolicy) {
+    ScoreStoreStore.prototype.ctxFromSnapshot = function (pointerData, parts, assertionPolicy) {
         var i;
         if (!pointerData) {
             return null;
@@ -126,16 +126,16 @@ var SongEditorStore = (function (_super) {
             }
         }
     };
-    SongEditorStore.prototype.dangerouslyMarkRenderDone = function () {
+    ScoreStoreStore.prototype.dangerouslyMarkRenderDone = function () {
         var _this = this;
         _.defer(function () {
             _this._dirty = false;
         });
     };
-    SongEditorStore.prototype.dangerouslyMarkRendererDirty = function () {
+    ScoreStoreStore.prototype.dangerouslyMarkRendererDirty = function () {
         this._dirty = true;
     };
-    SongEditorStore.prototype.dangerouslyMarkRendererLineDirty = function (line) {
+    ScoreStoreStore.prototype.dangerouslyMarkRendererLineDirty = function (line) {
         if (!this._voices) {
             return;
         }
@@ -143,10 +143,10 @@ var SongEditorStore = (function (_super) {
             this._linesToUpdate[i + "_" + line] = true;
         }
     };
-    SongEditorStore.prototype.dangerouslyTakeSnapshot = function (ctx) {
+    ScoreStoreStore.prototype.dangerouslyTakeSnapshot = function (ctx) {
         this._snapshots[ctx.line] = JSON.stringify(ctx.captureSnapshot());
     };
-    SongEditorStore.parse = function (src) {
+    ScoreStoreStore.parse = function (src) {
         var song = null;
         if (src.length && src.substr(0, 8) === "RIPMUS0,") {
             var songJson = JSON.parse(src.substring(8));
@@ -175,7 +175,7 @@ var SongEditorStore = (function (_super) {
         }
         return song;
     };
-    SongEditorStore.extractMXMLHeader = function (m) {
+    ScoreStoreStore.extractMXMLHeader = function (m) {
         var header = new C.ScoreHeader({
             work: m.work,
             movementNumber: m.movementNumber,
@@ -190,7 +190,7 @@ var SongEditorStore = (function (_super) {
         }
         return header;
     };
-    SongEditorStore.extractMXMLParts = function (mxmlJson) {
+    ScoreStoreStore.extractMXMLParts = function (mxmlJson) {
         var idxToPart = {};
         var parts = [];
         var partCount = 0;
@@ -350,19 +350,19 @@ var SongEditorStore = (function (_super) {
             parts: parts
         };
     };
-    SongEditorStore.prototype["DELETE /webapp/song/lineDirty"] = function (action) {
+    ScoreStoreStore.prototype["DELETE /webapp/song/lineDirty"] = function (action) {
         this._linesToUpdate[action.postData] = false;
     };
-    SongEditorStore.prototype["PUT /webapp/song/src"] = function (action) {
+    ScoreStoreStore.prototype["PUT /webapp/song/src"] = function (action) {
         this._reparse(action.postData);
         this.dangerouslyMarkRendererDirty();
         this.emit(0 /* Change */);
         this.emit(1 /* Annotate */);
     };
-    SongEditorStore.prototype["PUT /webapp/song/mxmlJSON"] = function (action) {
+    ScoreStoreStore.prototype["PUT /webapp/song/mxmlJSON"] = function (action) {
         var mxml = C.JSONx.clone(action.postData);
-        this._header = SongEditorStore.extractMXMLHeader(mxml);
-        var partData = SongEditorStore.extractMXMLParts(mxml);
+        this._header = ScoreStoreStore.extractMXMLHeader(mxml);
+        var partData = ScoreStoreStore.extractMXMLParts(mxml);
         this._parts = partData.parts;
         this._voices = partData.voices;
         Annotator.recordMetreData(this._voices);
@@ -371,14 +371,14 @@ var SongEditorStore = (function (_super) {
         this.emit(0 /* Change */);
         this.emit(1 /* Annotate */);
     };
-    SongEditorStore.prototype["PUT /webapp/visualCursor"] = function (action) {
+    ScoreStoreStore.prototype["PUT /webapp/visualCursor"] = function (action) {
         this._visualCursorIs(action.postData);
         if (!this._visualCursor.annotatedObj) {
             this._annotate(null, null, null, null, true);
         }
         this.emit(1 /* Annotate */);
     };
-    SongEditorStore.prototype["PUT /webapp/visualCursor/step"] = function (action) {
+    ScoreStoreStore.prototype["PUT /webapp/visualCursor/step"] = function (action) {
         this._stepCursor({
             step: action.postData.step,
             loopThroughEnd: action.postData.loopThroughEnd,
@@ -389,12 +389,12 @@ var SongEditorStore = (function (_super) {
         }
         this.emit(1 /* Annotate */);
     };
-    SongEditorStore.prototype["DELETE /webapp/visualCursor"] = function (action) {
+    ScoreStoreStore.prototype["DELETE /webapp/visualCursor"] = function (action) {
         this._visualCursor = null;
         this.emit(0 /* Change */);
         this._annotate(null, null, null, null, true);
     };
-    SongEditorStore.prototype["PUT /webapp/instrument"] = function (action) {
+    ScoreStoreStore.prototype["PUT /webapp/instrument"] = function (action) {
         var instrument = action.postData.instrument;
         var part = action.postData.part;
         this.ensureSoundfontLoaded(instrument.soundfont);
@@ -402,13 +402,13 @@ var SongEditorStore = (function (_super) {
         part.instrument = instrument;
         this.emit(0 /* Change */);
     };
-    SongEditorStore.prototype.midiOutHint = function (out) {
+    ScoreStoreStore.prototype.midiOutHint = function (out) {
         this.emit(4 /* MidiOut */, out);
     };
-    SongEditorStore.prototype._annotate = function (pointerData, toolFn, parts, profile, disableRecording, godAction, assertionPolicy) {
+    ScoreStoreStore.prototype._annotate = function (pointerData, toolFn, parts, profile, disableRecording, godAction, assertionPolicy) {
         assertionPolicy = isNaN(assertionPolicy) ? 0 /* Strict */ : assertionPolicy;
         parts = parts || this._voices;
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.time("annotate");
         }
         var aBody;
@@ -437,18 +437,18 @@ var SongEditorStore = (function (_super) {
             beat: context.lines ? context.lines[context.line].beat : 0
         };
         var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.log("I broke the profiler");
         }
         if (!result.skip) {
             this._ctx = context;
         }
-        if (SongEditorStore.PROFILER_ENABLED) {
+        if (ScoreStoreStore.PROFILER_ENABLED) {
             console.timeEnd("annotate");
         }
         return result;
     };
-    SongEditorStore.prototype._clear = function () {
+    ScoreStoreStore.prototype._clear = function () {
         this._activeStaveIdx = null;
         this._voices = null;
         this._header = null;
@@ -457,7 +457,7 @@ var SongEditorStore = (function (_super) {
             beat: 0
         });
     };
-    SongEditorStore.prototype._recreateSnapshot = function (line) {
+    ScoreStoreStore.prototype._recreateSnapshot = function (line) {
         var lines = [];
         for (var i = 1; i <= line; ++i) {
             var sn = JSON.parse(this._snapshots[i]);
@@ -469,12 +469,12 @@ var SongEditorStore = (function (_super) {
             }
         }
     };
-    SongEditorStore.prototype._reparse = function (src, profile) {
+    ScoreStoreStore.prototype._reparse = function (src, profile) {
         if (profile) {
             console.time("Parse source");
         }
         assert(false, "Fix voice & parts");
-        var song = SongEditorStore.parse(src);
+        var song = ScoreStoreStore.parse(src);
         this._header = song.header;
         this._voices = song.parts;
         for (var i = 0; i < this._voices.length; ++i) {
@@ -482,18 +482,18 @@ var SongEditorStore = (function (_super) {
                 this._activeStaveIdx = i;
             }
         }
-        var origPE = SongEditorStore.PROFILER_ENABLED;
+        var origPE = ScoreStoreStore.PROFILER_ENABLED;
         if (profile) {
             console.timeEnd("Parse source");
-            SongEditorStore.PROFILER_ENABLED = true;
+            ScoreStoreStore.PROFILER_ENABLED = true;
         }
         var res = this._annotate(null, null, null, null, true, null, 1 /* NoAssertions */);
         if (profile) {
-            SongEditorStore.PROFILER_ENABLED = origPE;
+            ScoreStoreStore.PROFILER_ENABLED = origPE;
         }
         return res;
     };
-    SongEditorStore.prototype._stepCursor = function (spec) {
+    ScoreStoreStore.prototype._stepCursor = function (spec) {
         if (!this._visualCursor || !this._visualCursor.annotatedObj) {
             return;
         }
@@ -560,7 +560,7 @@ var SongEditorStore = (function (_super) {
             annotatedStave: voice
         };
     };
-    SongEditorStore.prototype._visualCursorIs = function (visualCursor) {
+    ScoreStoreStore.prototype._visualCursorIs = function (visualCursor) {
         this._visualCursor.bar = visualCursor.bar;
         this._visualCursor.beat = visualCursor.beat;
         this._visualCursor.endMarker = visualCursor.endMarker;
@@ -569,8 +569,8 @@ var SongEditorStore = (function (_super) {
         this._visualCursor.annotatedPage = null;
         this._visualCursor.annotatedStave = null;
     };
-    SongEditorStore.PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
-    return SongEditorStore;
+    ScoreStoreStore.PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
+    return ScoreStoreStore;
 })(TSEE);
 var defaultCursor = {
     bar: 1,
@@ -580,8 +580,8 @@ var defaultCursor = {
     annotatedLine: null,
     annotatedPage: null
 };
-var SongEditorStore;
-(function (SongEditorStore) {
+var ScoreStoreStore;
+(function (ScoreStoreStore) {
     "use strict";
-})(SongEditorStore || (SongEditorStore = {}));
-module.exports = SongEditorStore;
+})(ScoreStoreStore || (ScoreStoreStore = {}));
+module.exports = ScoreStoreStore;

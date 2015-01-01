@@ -33,7 +33,7 @@ enum EventType {
 }
 
 class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
-    constructor(dispatcher: C.IDispatcher, songEditor?: C.ISongEditor) {
+    constructor(dispatcher: C.IDispatcher, songEditor?: C.IScoreStore) {
         super();
         this._dispatcher = dispatcher;
         dispatcher.register(this._handleAction);
@@ -322,7 +322,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     private _pendingInstruments: number                         			= 0;
     private _playing: boolean;
     private _remainingActions: Array<any>                       			= [];
-    private _songEditor: C.ISongEditor;
+    private _songEditor: C.IScoreStore;
     private _soundfontToChannel: { [soundfontToChannel: string]: number }   = {};
     private _timeoutId: number;
 }

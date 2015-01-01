@@ -9,7 +9,7 @@ var TypedReact = require("typed-react");
 var C = require("./stores/contracts");
 var Dispatcher = require("./stores/dispatcher");
 var Renderer = require("./renderer/renderer");
-var SongEditor = require("./stores/songEditor");
+var ScoreStore = require("./stores/scoreStore");
 exports.MusicXML = require("musicxml-interfaces");
 var Satie = (function (_super) {
     __extends(Satie, _super);
@@ -47,7 +47,7 @@ var Satie = (function (_super) {
     };
     Satie.prototype.getInitialState = function () {
         var dispatcher = new Dispatcher;
-        var songEditor = new SongEditor(dispatcher);
+        var songEditor = new ScoreStore(dispatcher);
         songEditor.addListener(1 /* Annotate */, this._updateFromStore);
         return {
             dispatcher: dispatcher,

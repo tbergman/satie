@@ -573,7 +573,7 @@ var Context = (function () {
     Context.prototype.toJSON = function () {
         var serializable = {};
         for (var key in this) {
-            if (this.hasOwnProperty(key) && key !== "songEditor") {
+            if (this.hasOwnProperty(key) && key !== "scoreStore") {
                 serializable[key] = this[key];
             }
         }

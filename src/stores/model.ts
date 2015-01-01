@@ -25,7 +25,7 @@ import C                = require("./contracts");
  *      annotateImpl.
  * 
  * To see the kind of information held by Models, in your web browser's
- * console, look at 'SongEditorStore.parts()[...].body'. Every item is a Model.
+ * console, look at 'ScoreStore.parts()[...].body'. Every item is a Model.
  */
 class Model {
     /////////////////////////////////////////
