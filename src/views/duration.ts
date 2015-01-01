@@ -30,21 +30,23 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         var spec = props.spec;
         assert(spec instanceof DurationModel);
 
-        var notations = _.map(spec.displayNotation || [], (m, idx) =>
-            <!NoteNotation.Component
-                idx={1}
-                direction={props.direction}
-                notation={m}
-                key={idx}
-                line={3}
-                notehead={props.spec.noteheadGlyph}
-                x={NaN /*assigned later :( */}
-                y={NaN /*assigned later :( */} />);
+        var notations: any[] = [];
+        // _.map(spec.displayNotations || [], (m, idx) =>
+        //     <!NoteNotation.Component
+        //         idx={1}
+        //         direction={props.direction}
+        //         notation={m}
+        //         key={idx}
+        //         line={3}
+        //         notehead={props.spec.noteheadGlyph}
+        //         x={NaN /*assigned later :( */}
+        //         y={NaN /*assigned later :( */} />);
 
         /**
          * Mode to reduce unneeded renders.
          */
-        var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest && !spec.tie;
+        var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest &&
+            !_.any(spec.tieds, t => t && t.type !== C.MusicXML.StartStopContinue.Stop);
 
         var lyKey = 0;
         var lyrics = _.chain(spec._notes)
@@ -79,8 +81,11 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                         .flatten()
                         .value();
 
+        var dotOffset = C.SMuFL.bravuraBBoxes[props.spec.noteheadGlyph || spec.restHead][0]*10 + 6;
+
         if (spec.isRest) {
             return <!Rest.Component
+                    dotOffset={dotOffset}
                     dotted={spec.displayDots}
                     line={spec.lines}
                     key={spec.key}
@@ -95,12 +100,11 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
             </Rest.Component>;
         }
 
-        assert(spec.count);
-
         var note = <!Note.Component
                     accidentals={spec._displayedAccidentals}
                     accStrokes={spec.accStrokes}
                     direction={this.props.direction || spec.direction}
+                    dotOffset={dotOffset}
                     dotted={spec.displayDots}
                     flag={spec.flag}
                     hasStem={spec.hasStem}

@@ -69,7 +69,8 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
         currNote && nextNote &&
         !currNote.tuplet && !nextNote.tuplet &&
         (currNote.isRest && nextObj.isRest || // which is either a rest, or is...
-                nextObj.isNote && currNote.tie ? // ... tied to the current note
+                nextObj.isNote && _.any(currNote.tieds,
+                    t => t && t.type !== C.MusicXML.StartStopContinue.Stop) ? // ... tied to the current noteA
             nextObj.note : null);
 
     //////////////////////////////////////////////////////////////////////
@@ -232,7 +233,11 @@ function clearExcessBeats(currNote: C.IPitchDuration, excessBeats: number, ctx: 
     var after = ctx.idx + replaceWith.length;
     if (!currNote.isRest) {
         for (var i = ctx.idx; i < after - 1; ++i) {
-            ctx.body[i].note.tie = true;
+            ctx.body[i].note.tieds = _.map(ctx.body[i].note.chord, n => {
+                return {
+                    type: C.MusicXML.StartStopContinue.Start
+                };
+            });
         }
     }
 

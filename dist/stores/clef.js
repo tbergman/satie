@@ -105,7 +105,6 @@ var ClefModel = (function (_super) {
         }
         this.isChange = ctx.attributes.clefs[ctx.voiceIdx] !== this;
         if (this.isChange) {
-            var barCandidate = ctx.prev(function (m) { return m.type === 300 /* Barline */ || m.isNote && !m.isRest; });
         }
         else {
             if (ctx.ts && ctx.beat >= ctx.ts.beats) {
@@ -234,7 +233,7 @@ var ClefModel = (function (_super) {
         }
     ];
     return ClefModel;
-})(Model.StateChangeModel);
+})(Model.SubAttributeModel);
 var ClefModel;
 (function (ClefModel) {
     "use strict";

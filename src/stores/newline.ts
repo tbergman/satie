@@ -12,6 +12,7 @@ import Annotator        = require("./annotator");
 import AttributesModel  = require("./attributes")
 import C                = require("./contracts");
 import NewPageModel     = require("./newpage");
+import TimeSignatureMT  = require("./timeSignature");   // Cyclic
 import PrintModel       = require("./print");
 
 /**
@@ -348,22 +349,32 @@ class NewlineModel extends Model {
         // Whole-bar rests are centered.
         var toCenter: Array<Model> = [];
         // -2 because we want to avoid BARLINE and END_MARKER
-        for (var i = idx - 2; i >= 0 && (body[i].type > C.Type.Barline || body[i].soundOnly); --i) {
+        for (var i = idx - 2; i >= 0 && (body[i].priority > C.Type.Barline && body[i].priority !== C.Type.Begin || body[i].soundOnly); --i) {
             if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
                 toCenter.push(body[i]);
             }
         }
+        if (!toCenter.length) {
+            return;
+        }
+        var offsetX = 0;
+        for (var j = i; body[j] && body[j].priority > C.Type.START_OF_ATTRIBUTES &&
+                    body[j].priority !== C.Type.Barline &&
+                    body[j].priority !== C.Type.Begin; --j) {
+            if (body[j].type === C.Type.TimeSignature) {
+                offsetX -= (<TimeSignatureMT>body[j])._annotatedSpacing;
+            }
+        }
+        if (body[i].type !== C.Type.Barline) {
+            ++i;
+        }
         for (var j = 0; j < toCenter.length; ++j) {
             var bbox = C.SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
             var offset = 0;
-            if (body[i].type === C.Type.TimeSignature) {
-                offset += 0.7/4;
-            }
             if (body[i].isNote && body[i].note.temporary) {
                 continue;
             }
-            toCenter[j].spacing = offset + (body[i].x + body[idx].x) / 2 -
-                (bbox[0] + bbox[3]) / 2 - toCenter[j].x;
+            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10*(bbox[0] - bbox[2])/2 + offsetX;
         }
     }
 

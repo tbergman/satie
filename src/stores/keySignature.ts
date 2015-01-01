@@ -17,7 +17,7 @@ import DurationModelType    = require("./duration"); // Potentially cyclic. For 
 /**
  * Represents a key signature as an array of accidentals, and a tonality (major/minor).
  */
-class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.KeyComplete {
+class KeySignatureModel extends Model.SubAttributeModel implements C.MusicXML.KeyComplete {
     /* Model */
     get type()                              { return C.Type.KeySignature; }
     get xPolicy()                           { return C.RectifyXPolicy.Max; }
@@ -80,12 +80,12 @@ class KeySignatureModel extends Model.StateChangeModel implements C.MusicXML.Key
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.voiceIdx]) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
-        this.clef                                   = ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/];
+        this.clef                                   = ctx.attributes.clefs[ctx.voiceIdx];
         assert(this.clef instanceof Object);
         var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.attributes.keySignature                 = this;

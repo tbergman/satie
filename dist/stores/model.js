@@ -321,19 +321,20 @@ var Model;
 (function (Model) {
     "use strict";
     Model.constructorsByType = {};
-    var StateChangeModel = (function (_super) {
-        __extends(StateChangeModel, _super);
-        function StateChangeModel() {
+    var SubAttributeModel = (function (_super) {
+        __extends(SubAttributeModel, _super);
+        function SubAttributeModel() {
             _super.apply(this, arguments);
         }
-        StateChangeModel.prototype.annotate = function (ctx) {
-            if (ctx.next(null, 1, true).priority === this.type) {
+        SubAttributeModel.prototype.annotate = function (ctx) {
+            var next = ctx.next(null, 1, true);
+            if (next.priority === this.type) {
                 var here = ctx.findVertical(null, this.idx);
-                var next = ctx.findVertical(null, this.idx + 1);
+                var nextV = ctx.findVertical(null, this.idx + 1);
                 var combined = new Array(here.length);
                 for (var i = 0; i < combined.length; ++i) {
-                    if (!next[i].placeholder) {
-                        combined[i] = next[i];
+                    if (!nextV[i].placeholder) {
+                        combined[i] = nextV[i];
                     }
                     else {
                         combined[i] = here[i];
@@ -345,18 +346,25 @@ var Model;
                 }
                 return this.retryStatus;
             }
+            else if (next.isAttribute && next.priority < this.priority) {
+                for (var i = 0; i < ctx._voices.length; ++i) {
+                    var memo = ctx._voices[i].body[ctx.idx + 1];
+                    ctx._voices[i].body[ctx.idx + 1] = ctx._voices[i].body[ctx.idx];
+                    ctx._voices[i].body[ctx.idx] = memo;
+                }
+            }
             return _super.prototype.annotate.call(this, ctx);
         };
-        Object.defineProperty(StateChangeModel.prototype, "retryStatus", {
+        Object.defineProperty(SubAttributeModel.prototype, "retryStatus", {
             get: function () {
                 return 20 /* RetryCurrent */;
             },
             enumerable: true,
             configurable: true
         });
-        return StateChangeModel;
+        return SubAttributeModel;
     })(Model);
-    Model.StateChangeModel = StateChangeModel;
+    Model.SubAttributeModel = SubAttributeModel;
 })(Model || (Model = {}));
 var Flags;
 (function (Flags) {

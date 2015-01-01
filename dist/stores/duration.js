@@ -42,7 +42,9 @@ var DurationModel = (function (_super) {
                 });
             });
         }
-        this.tie = this.tie;
+        if (spec.tieds) {
+            this.tieds = spec.tieds;
+        }
         function setIfDefined(property) {
             if (spec.hasOwnProperty(property)) {
                 self[property] = spec[property];
@@ -102,7 +104,7 @@ var DurationModel = (function (_super) {
                     alter: null,
                     octave: null
                 }];
-                this.tie = false;
+                this.tieds = [null];
             }
             else {
                 assert(!this.isRest, "Instead, set the exact pitch or chord...");
@@ -111,12 +113,20 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DurationModel.prototype, "tie", {
+    Object.defineProperty(DurationModel.prototype, "tieds", {
         get: function () {
-            return this._getFlag(Flags.TIE);
+            return _.chain(this._p_notes).map(function (n) { return n.notationObj.tieds; }).map(function (t) { return t && t.length ? t[0] : null; }).value();
         },
         set: function (v) {
-            this._setFlag(Flags.TIE, v);
+            _.forEach(this._p_notes, function (n, i) {
+                if (v[i]) {
+                    n.ensureNotationsWrittable();
+                    n.notationObj.tieds = [v[i]];
+                }
+                else {
+                    delete n.notationObj.tieds;
+                }
+            });
         },
         enumerable: true,
         configurable: true
@@ -231,16 +241,6 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DurationModel.prototype, "displayNotation", {
-        get: function () {
-            return this._displayNotation || this._notes[0].notations;
-        },
-        set: function (m) {
-            this._displayNotation = m;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(DurationModel.prototype, "flag", {
         get: function () {
             return !this.inBeam && (this.displayCount in DurationModel.countToFlag) && DurationModel.countToFlag[this.displayCount];
@@ -293,17 +293,6 @@ var DurationModel = (function (_super) {
         },
         set: function (n) {
             assert(false);
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(DurationModel.prototype, "notations", {
-        get: function () {
-            return this._notes[0].notations;
-        },
-        set: function (m) {
-            this._notes[0].notations = m;
-            this.displayNotation = null;
         },
         enumerable: true,
         configurable: true
@@ -419,13 +408,21 @@ var DurationModel = (function (_super) {
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                                replaceWith[i].tie = true;
+                                replaceWith[i].tieds = this.chord.map(function (c) {
+                                    return {
+                                        type: 0 /* Start */
+                                    };
+                                });
                             }
                         }
                         for (i = 0; i < addAfterBar.length; ++i) {
                             addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if (i + 1 !== addAfterBar.length && !this.isRest) {
-                                addAfterBar[i].tie = true;
+                                replaceWith[i].tieds = this.chord.map(function (c) {
+                                    return {
+                                        type: 0 /* Start */
+                                    };
+                                });
                             }
                         }
                         BarlineModel.createBarline(ctx, 0 /* Regular */);
@@ -686,10 +683,10 @@ var DurationModel = (function (_super) {
         return result;
     };
     DurationModel.prototype._handleTie = function (ctx) {
-        if (this.tie) {
+        if (_.any(this.tieds, function (t) { return t && t.type !== 1 /* Stop */; })) {
             var nextNote = ctx.next(function (obj) { return obj.isNote; });
             if (!nextNote || nextNote.isRest) {
-                this.tie = false;
+                this.tieds = [null];
                 this.tieTo = null;
             }
             else {
@@ -947,6 +944,7 @@ var DurationModel;
                 "timeOnly"
             ];
             _.forEach(properties, setIfDefined);
+            this.unstupidifyNotations();
             function setIfDefined(property) {
                 if (note.hasOwnProperty(property)) {
                     self[property] = note[property];
@@ -1095,6 +1093,72 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
+        MNote.prototype.ensureNotationsWrittable = function () {
+            this.notations = this.notations || [{}];
+        };
+        Object.defineProperty(MNote.prototype, "notationObj", {
+            get: function () {
+                return this.notations ? this.notations[0] : Object.freeze({});
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MNote.prototype.ensureArticulationsWrittable = function () {
+            this.ensureNotationsWrittable();
+            this.notationObj.articulations = this.notationObj.articulations || [{}];
+        };
+        Object.defineProperty(MNote.prototype, "articulationObj", {
+            get: function () {
+                return this.notationObj.articulations ? this.notationObj.articulations[0] : Object.freeze({});
+            },
+            enumerable: true,
+            configurable: true
+        });
+        MNote.prototype.unstupidifyNotations = function () {
+            if (this.notations) {
+                var notations = this.notations;
+                var notation = {
+                    articulations: combineArticulations("articulations"),
+                    accidentalMarks: combine("accidentalMarks"),
+                    arpeggiates: combine("arpeggiates"),
+                    dynamics: combine("dynamics"),
+                    fermatas: combine("fermatas"),
+                    glissandos: combine("glissandos"),
+                    nonArpeggiates: combine("nonArpeggiates"),
+                    ornaments: combine("ornaments"),
+                    otherNotations: combine("otherNotations"),
+                    slides: combine("slides"),
+                    slurs: combine("slurs"),
+                    technicals: combine("technicals"),
+                    tieds: combine("tieds"),
+                    tuplets: combine("tuplets"),
+                    footnote: last("footnote"),
+                    level: last("level"),
+                    printObject: last("printObject")
+                };
+                function combine(key) {
+                    return _.reduce(notations, function (memo, n) { return n[key] ? (memo || []).concat(n[key]) : memo; }, null);
+                }
+                function combineArticulations(key) {
+                    var array = combine(key);
+                    if (!array) {
+                        return null;
+                    }
+                    var articulations = {};
+                    for (var i = 0; i < array.length; ++i) {
+                        for (var akey in array[i]) {
+                            if (array[i].hasOwnProperty(akey)) {
+                                articulations[akey] = array[i][akey];
+                            }
+                        }
+                    }
+                    return [articulations];
+                }
+                function last(key) {
+                    return _.reduce(notations, function (memo, n) { return n[key] ? n[key] : memo; }, []);
+                }
+            }
+        };
         return MNote;
     })();
     DurationModel.MNote = MNote;
@@ -1115,6 +1179,5 @@ var Flags;
 (function (Flags) {
     Flags[Flags["TEMPORARY"] = 2 << 7] = "TEMPORARY";
     Flags[Flags["WHOLE_BAR"] = 2 << 8] = "WHOLE_BAR";
-    Flags[Flags["TIE"] = 2 << 9] = "TIE";
 })(Flags || (Flags = {}));
 module.exports = DurationModel;

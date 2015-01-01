@@ -107,10 +107,16 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         mctx.attributes     	= this;
         this.ctxData        	= new C.MetreContext(mctx);
         if (this.time) {
-            mctx.ts                 = {
+            mctx.ts             = {
                 beats:          this.time.beats[0],
                 beatType:       this.time.beatTypes[0]
-            }
+            };
+        } else if (!mctx.ts) {
+            // This will be corrected later.
+            mctx.ts             = {
+                beats:          4,
+                beatType:       4
+            };
         }
     }
 

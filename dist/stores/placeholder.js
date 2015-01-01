@@ -102,6 +102,12 @@ var PlaceholderModel = (function (_super) {
         switch (this.priority) {
             case 145 /* Attributes */:
                 ctx.attributes = ctx._voices[0].body[ctx.idx];
+                if (!ctx.ts) {
+                    ctx.ts = {
+                        beats: 4,
+                        beatType: 4
+                    };
+                }
                 break;
             case 300 /* Barline */:
                 ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: { data: 0 /* Regular */ } }, true));

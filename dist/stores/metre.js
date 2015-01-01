@@ -18,7 +18,7 @@ function rhythmicSpellcheck(ctx) {
     var nextIdx = ctx.nextIdx(function (c) { return c.type === 600 /* Duration */ || c.priority === 300 /* Barline */; });
     var nextObj = ctx.body[nextIdx];
     var nextNote = nextObj && nextObj.isNote ? nextObj.note : null;
-    var nextEquivNote = nextIdx < ctx.body.length && currNote && nextNote && !currNote.tuplet && !nextNote.tuplet && (currNote.isRest && nextObj.isRest || nextObj.isNote && currNote.tie ? nextObj.note : null);
+    var nextEquivNote = nextIdx < ctx.body.length && currNote && nextNote && !currNote.tuplet && !nextNote.tuplet && (currNote.isRest && nextObj.isRest || nextObj.isNote && _.any(currNote.tieds, function (t) { return t && t.type !== 1 /* Stop */; }) ? nextObj.note : null);
     if (currNote.tuplet && (!nextNote || !nextNote.tuplet)) {
         var base = 1;
         var partial = 0;
@@ -132,7 +132,11 @@ function clearExcessBeats(currNote, excessBeats, ctx) {
     var after = ctx.idx + replaceWith.length;
     if (!currNote.isRest) {
         for (var i = ctx.idx; i < after - 1; ++i) {
-            ctx.body[i].note.tie = true;
+            ctx.body[i].note.tieds = _.map(ctx.body[i].note.chord, function (n) {
+                return {
+                    type: 0 /* Start */
+                };
+            });
         }
     }
     return 60 /* RetryLine */;

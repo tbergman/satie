@@ -71,7 +71,7 @@ var EndMarkerModel = (function (_super) {
             var DurationModel = require("./duration");
             var toAdd = Metre.subtract(ctx.ts.beats, ctx.beat, ctx).map(function (beat) {
                 beat.chord = [{ step: "R", octave: 0, alter: null }];
-                beat.tie = false;
+                beat.tieds = [null];
                 return new DurationModel(beat, true);
             });
             assert(toAdd.length);

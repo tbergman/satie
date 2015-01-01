@@ -22,16 +22,18 @@ import NoteNotation = require("./_noteNotation");
 class Rest extends TypedReact.Component<Rest.IProps, {}> {
     render() {
         var line = this.props.line[0];
-        var width = C.SMuFL.bravuraBBoxes[this.props.notehead][0]*10;
+        var bbox = C.SMuFL.bravuraBBoxes[this.props.notehead];
+        var width = (bbox[0] - bbox[2])*10;
+        var spacing = this.props.spacing;
         return <!g>
             <!Glyph.Component
                 key="R"
-                x={this.props.x + this.props.spacing}
+                x={this.props.x + spacing}
                 y={this.props.y + (3 - line)*10}
                 fill={this.props.stroke}
                 glyphName={this.props.notehead} />
             {this.props.multiRest && <!text
-                    x={this.props.x + this.props.spacing + width/2}
+                    x={this.props.x + spacing + width/2}
                     y={this.props.y - 30}
                     fontSize={48}
                     className="mmn_"
@@ -42,7 +44,7 @@ class Rest extends TypedReact.Component<Rest.IProps, {}> {
                 key={idx + "d"}
                 radius={2.4}
                 stroke={this.props.stroke}
-                x={this.props.x + this.props.spacing}
+                x={this.props.x + spacing + this.props.dotOffset}
                 y={this.props.y}
                 line={line} />): null}
             {this.props.children && _.map(this.props.children, (element, idx) => {
@@ -74,6 +76,7 @@ module Rest {
     export interface IProps {
         children: NoteNotation[];
         dotted: number;
+        dotOffset?: number;
         line: Array<number>;
         multiRest?: number;
         notehead: string;

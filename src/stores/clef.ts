@@ -16,7 +16,7 @@ import AttributesModelType      = require("./attributes");  // Cyclic.
 import BarlineModelType         = require("./barline");     // Cyclic.
 import C                        = require("./contracts");
 
-class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplete {
+class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComplete {
     /* Model */
     get type()                                          { return C.Type.Clef; }
     get visible():              boolean                 { return this.isVisible !== false && !this.soundOnly; }
@@ -123,11 +123,11 @@ class ClefModel extends Model.StateChangeModel implements C.MusicXML.ClefComplet
         // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
         this.isChange = ctx.attributes.clefs[ctx.voiceIdx] !== this;
         if (this.isChange) {
-            var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
+            // var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
             // if (barCandidate && barCandidate.type === C.Type.Barline) {
             //     ctx.insertPastVertical(ctx.findVertical(), barCandidate.idx - 1);
-            //     for (var i = 0; i < ctx._parts.length; ++i) {
-            //         ctx._parts[i].body.splice(ctx.idx, 1);
+            //     for (var i = 0; i < ctx._voices.length; ++i) {
+            //         ctx._voices[i].body.splice(ctx.idx, 1);
             //     }
             //     return C.IterationStatus.RetryLine;
             // }

@@ -37,7 +37,7 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
     }
 
     cx() {
-        return this.props.x + 18 + 6*(this.props.idx);
+        return this.props.x + 6*(this.props.idx);
     }
     cy() {
         return this.props.y - (this.props.line - 3)*10 - this.cyOffset();

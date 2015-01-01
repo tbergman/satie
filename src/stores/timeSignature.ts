@@ -15,7 +15,7 @@ import ClefModel        	= require("./clef");
 import DurationModelType    = require("./duration");        // Cyclic.
 import KeySignatureModel 	= require("./keySignature");
 
-class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.TimeComplete {
+class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.TimeComplete {
     ///////////////
     // I.1 Model //
     ///////////////
@@ -165,12 +165,12 @@ class TimeSignatureModel extends Model.StateChangeModel implements C.MusicXML.Ti
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
-        if (!ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
+        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
             return ClefModel.createClef(ctx);
         }
 
         // A key signature must exist on each line
-        if (!ctx.attributes.clefs[ctx.voiceIdx/*CXFIX*/]) {
+        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
             return KeySignatureModel.createKeySignature(ctx);
         }
 

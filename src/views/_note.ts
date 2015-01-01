@@ -72,7 +72,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     key={"_1_" + idx}
                     stroke={this.props.strokes[0]}
                     radius={2.4}
-                    x={this.props.x}
+                    x={this.props.x + this.props.dotOffset}
                     y={this.props.y}
                     line={line} />) : null}
                 {this.props.hasStem && <!NoteStem.Component
@@ -352,6 +352,7 @@ module Note {
         children?: Array<React.ReactElement<NoteNotation.IProps>>;
         direction?: number;
         dotted?: number;
+        dotOffset?: number;
         idx?: number;
         flag?: string;
         hasStem?: boolean;

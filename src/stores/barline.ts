@@ -171,7 +171,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
                 var whole = Metre.wholeNote(ctx).map(w => new DurationModel(w, true));
                 for (i = 0; i < whole.length; ++i) {
                     whole[i].chord = [{ step: "R", alter: null, octave: null }];
-                    whole[i].tie = false;
+                    whole[i].tieds = [null];
                 }
                 // This is dangerous, and probably wrong.
                 Array.prototype.splice.apply(ctx.body, [ctx.idx + 1, 0].concat(<any>whole));

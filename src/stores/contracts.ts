@@ -889,7 +889,7 @@ export interface IPitch extends MusicXML.Pitch {
 export interface IPitchDuration extends IDuration {
     chord?:                     Array<IPitch>;
     isRest?:                    boolean;
-    tie?:                       boolean;
+    tieds?:                     Array<MusicXML.Tied>;
     accToDelete?:               number;
     isWholebar?:                boolean;
 };

@@ -340,16 +340,17 @@ module Model {
     /**
      * Types that do not support adjacent models of the same type.
      */
-    export class StateChangeModel extends Model {
+    export class SubAttributeModel extends Model {
         annotate(ctx: Annotator.Context) {
-            if (ctx.next(null, 1, true).priority === this.type) {
+            var next = ctx.next(null, 1, true);
+            if (next.priority === this.type) {
                 // Find real versions of every part, if possible.
                 var here = ctx.findVertical(null, this.idx);
-                var next = ctx.findVertical(null, this.idx + 1);
+                var nextV = ctx.findVertical(null, this.idx + 1);
                 var combined = new Array(here.length);
                 for (var i = 0; i < combined.length; ++i) {
-                    if (!next[i].placeholder) {
-                        combined[i] = next[i];
+                    if (!nextV[i].placeholder) {
+                        combined[i] = nextV[i];
                     } else {
                         combined[i] = here[i];
                     }
@@ -359,6 +360,12 @@ module Model {
                     ctx._voices[i].body[ctx.idx] = combined[i];
                 }
                 return this.retryStatus;
+            } else if (next.isAttribute && next.priority < this.priority) {
+                for (var i = 0; i < ctx._voices.length; ++i) {
+                    var memo = ctx._voices[i].body[ctx.idx + 1];
+                    ctx._voices[i].body[ctx.idx + 1] = ctx._voices[i].body[ctx.idx];
+                    ctx._voices[i].body[ctx.idx] = memo;
+                }
             }
 
             return super.annotate(ctx);

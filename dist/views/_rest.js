@@ -19,8 +19,10 @@ var Rest = (function (_super) {
     Rest.prototype.render = function () {
         var _this = this;
         var line = this.props.line[0];
-        var width = C.SMuFL.bravuraBBoxes[this.props.notehead][0] * 10;
-        return React.createElement("g", null, React.createElement(Glyph.Component, { key: "R", x: this.props.x + this.props.spacing, y: this.props.y + (3 - line) * 10, fill: this.props.stroke, glyphName: this.props.notehead }), this.props.multiRest && React.createElement("text", { x: this.props.x + this.props.spacing + width / 2, y: this.props.y - 30, fontSize: 48, className: "mmn_", textAnchor: "middle", line: line }, this.props.multiRest), this.props.dotted ? _.times(this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: idx + "d", radius: 2.4, stroke: _this.props.stroke, x: _this.props.x + _this.props.spacing, y: _this.props.y, line: line }); }) : null, this.props.children && _.map(this.props.children, function (element, idx) {
+        var bbox = C.SMuFL.bravuraBBoxes[this.props.notehead];
+        var width = (bbox[0] - bbox[2]) * 10;
+        var spacing = this.props.spacing;
+        return React.createElement("g", null, React.createElement(Glyph.Component, { key: "R", x: this.props.x + spacing, y: this.props.y + (3 - line) * 10, fill: this.props.stroke, glyphName: this.props.notehead }), this.props.multiRest && React.createElement("text", { x: this.props.x + spacing + width / 2, y: this.props.y - 30, fontSize: 48, className: "mmn_", textAnchor: "middle", line: line }, this.props.multiRest), this.props.dotted ? _.times(this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: idx + "d", radius: 2.4, stroke: _this.props.stroke, x: _this.props.x + spacing + _this.props.dotOffset, y: _this.props.y, line: line }); }) : null, this.props.children && _.map(this.props.children, function (element, idx) {
             element.props.direction = _this.direction();
             element.props.line = _this.startingLine();
             element.props.x = _this.props.x;

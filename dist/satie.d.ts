@@ -232,7 +232,7 @@ declare module '__satie/stores/contracts' {
     export interface IPitchDuration extends IDuration {
         chord?: IPitch[];
         isRest?: boolean;
-        tie?: boolean;
+        tieds?: MusicXML.Tied[];
         accToDelete?: number;
         isWholebar?: boolean;
     }
@@ -564,7 +564,7 @@ declare module '__satie/stores/model' {
         var constructorsByType: {
             [x: number]: (spec: any) => Model;
         };
-        class StateChangeModel extends Model {
+        class SubAttributeModel extends Model {
             annotate(ctx: Annotator.Context): C.IterationStatus;
             retryStatus: C.IterationStatus;
         }

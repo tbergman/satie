@@ -146,6 +146,6 @@ var TimeSignatureModel = (function (_super) {
         return 60 /* RetryLine */;
     };
     return TimeSignatureModel;
-})(Model.StateChangeModel);
+})(Model.SubAttributeModel);
 TimeSignatureModel.prototype._displayTimeSignature = null;
 module.exports = TimeSignatureModel;

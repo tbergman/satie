@@ -156,6 +156,12 @@ var AttributesModel = (function (_super) {
                 beatType: this.time.beatTypes[0]
             };
         }
+        else if (!mctx.ts) {
+            mctx.ts = {
+                beats: 4,
+                beatType: 4
+            };
+        }
     };
     AttributesModel.prototype.annotateImpl = function (ctx) {
         assert(this._parent !== this);

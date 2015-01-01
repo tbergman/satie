@@ -106,5 +106,5 @@ var KeySignatureModel = (function (_super) {
         return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
     };
     return KeySignatureModel;
-})(Model.StateChangeModel);
+})(Model.SubAttributeModel);
 module.exports = KeySignatureModel;

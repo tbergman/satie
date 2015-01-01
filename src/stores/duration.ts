@@ -60,14 +60,30 @@ class DurationModel extends Model implements C.IPitchDuration {
                 alter: null,
                 octave: null
             }];
-            this.tie = false;
+            this.tieds = [null];
         } else {
             assert(!this.isRest, "Instead, set the exact pitch or chord...");
         }
     }
 
-    get tie(): boolean          { return    this._getFlag(Flags.TIE); }
-    set tie(v: boolean)         {           this._setFlag(Flags.TIE, v); }
+    get tieds(): C.MusicXML.Tied[] {
+        // Ignores all but the first.
+        return _.chain(this._p_notes)
+            .map(n => n.notationObj.tieds)
+            .map(t => t && t.length ? t[0] : null)
+            .value();
+    }
+    set tieds(v: C.MusicXML.Tied[]) {
+        _.forEach(this._p_notes, (n, i) => {
+            if (v[i]) {
+                n.ensureNotationsWrittable();
+                n.notationObj.tieds = [v[i]];
+            } else {
+                delete n.notationObj.tieds;
+            }
+        });
+        // TODO: Also update sound (ties)
+    }
 
     get isWholebar(): boolean   { return    this._getFlag(Flags.WHOLE_BAR); }
     set isWholebar(v: boolean)  {           this._setFlag(Flags.WHOLE_BAR, v); }
@@ -164,14 +180,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._displayCount = c;
     }
 
-    get displayNotation(): C.MusicXML.Notations[] {
-        return this._displayNotation || this._notes[0].notations;
-    }
-
-    set displayNotation(m: C.MusicXML.Notations[]) {
-        this._displayNotation = m;
-    }
-
     get flag() {
         return !this.inBeam && (this.displayCount in DurationModel.countToFlag) &&
             DurationModel.countToFlag[this.displayCount];
@@ -236,15 +244,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(false);
     }
 
-    get notations() {
-        return this._notes[0].notations;
-    }
-
-    set notations(m: C.MusicXML.Notations[]) {
-        this._notes[0].notations = m;
-        this.displayNotation = null;
-    }
-
     get color() {
         return this._notes[0].color;
     }
@@ -298,7 +297,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                 });
             });
         }
-        this.tie = this.tie;
+        if (spec.tieds) {
+            this.tieds = spec.tieds;
+        }
 
         function setIfDefined(property: string) {
             if (spec.hasOwnProperty(property)) {
@@ -423,13 +424,21 @@ class DurationModel extends Model implements C.IPitchDuration {
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                                replaceWith[i].tie = true;
+                                replaceWith[i].tieds = this.chord.map(c => {
+                                    return {
+                                        type: C.MusicXML.StartStopContinue.Start
+                                    };
+                                });
                             }
                         }
                         for (i = 0; i < addAfterBar.length; ++i) {
                             addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if (i + 1 !== addAfterBar.length && !this.isRest) {
-                                addAfterBar[i].tie = true;
+                                replaceWith[i].tieds = this.chord.map(c => {
+                                    return {
+                                        type: C.MusicXML.StartStopContinue.Start
+                                    };
+                                });
                             }
                         }
                         BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
@@ -757,10 +766,10 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     private _handleTie(ctx: Annotator.Context) {
-        if (this.tie) {
+        if (_.any(this.tieds, t => t && t.type !== C.MusicXML.StartStopContinue.Stop)) {
             var nextNote = ctx.next(obj => obj.isNote);
             if (!nextNote || nextNote.isRest) {
-                this.tie = false;
+                this.tieds = [null];
                 this.tieTo = null;
             } else {
                 this.tieTo = <DurationModel> nextNote;
@@ -1030,6 +1039,8 @@ module DurationModel {
 
             _.forEach(properties, setIfDefined);
 
+            this.unstupidifyNotations();
+
             function setIfDefined(property: string) {
                 if (note.hasOwnProperty(property)) {
                     self[property]  = <any> (<any>note)[property];
@@ -1161,10 +1172,17 @@ module DurationModel {
         attack:             number;
         endDynamics:        number;
         lyrics:             C.MusicXML.Lyric[];
+        /**
+         * DO NOT MODIFY. Don't even think about it. Instead use notationObj and articulationObj
+         */
         notations:          C.MusicXML.Notations[];
         stem:               C.MusicXML.Stem;
         cue:                C.MusicXML.Cue;
         duration:           number;
+        /**
+         * This applies to the sound only.
+         * s.a. 
+         */
         ties:               C.MusicXML.Tie[];
         dynamics:           number;
         play:               C.MusicXML.Play;
@@ -1233,6 +1251,113 @@ module DurationModel {
 
 
         private _color:     number = 0x000000;
+
+        // Util
+        // ---------
+
+        ensureNotationsWrittable() {
+            this.notations = this.notations || [{}];
+        }
+        get notationObj(): C.MusicXML.Notations {
+            return this.notations ? this.notations[0] : Object.freeze({});
+        }
+
+        ensureArticulationsWrittable() {
+            this.ensureNotationsWrittable();
+            this.notationObj.articulations = this.notationObj.articulations || [{}];
+        }
+        get articulationObj(): C.MusicXML.Articulations {
+            return this.notationObj.articulations ? this.notationObj.articulations[0] : Object.freeze({});
+        }
+
+        /**
+         * Flattens notations.
+         * All of the following are valid and equivalent in MusicXML:
+         *
+         * 1. <notations>
+         *      <articulations>
+         *        <staccato placement="above"/>
+         *      </articulations>
+         *    </notations>
+         *    <notations>
+         *      <articulations>
+         *        <accent placement="above"/>
+         *      </articulations>
+         *    </notations>
+         *     
+         * 2. <notations>
+         *      <articulations>
+         *        <staccato placement="above"/>
+         *      </articulations>
+         *      <articulations>
+         *        <accent placement="above"/>
+         *      </articulations>
+         *    </notations>
+         *     
+         * 3. <notations>
+         *      <articulations>
+         *        <staccato placement="above"/>
+         *        <accent placement="above"/>
+         *      </articulations>
+         *    </notations>
+         *
+         * This function makes the structure like the third version. So there's only ever 0 or
+         * 1 notations and 0 or 1 articulations. This makes the notationObj and articualtionObj
+         * function above fast.
+         * 
+         * In practice, different groups of notations could have different editorials.
+         * I'm not willing to put up with that.
+         */
+        unstupidifyNotations() {
+            if (this.notations) {
+                var notations = this.notations;
+                var notation: C.MusicXML.Notations = {
+                    articulations:          combineArticulations               	("articulations"),
+                    accidentalMarks:        combine<C.MusicXML.AccidentalMark>  ("accidentalMarks"),
+                    arpeggiates:            combine<C.MusicXML.Arpeggiate>     	("arpeggiates"),
+                    dynamics:               combine<C.MusicXML.Dynamics>        ("dynamics"),
+                    fermatas:               combine<C.MusicXML.Fermata>         ("fermatas"),
+                    glissandos:             combine<C.MusicXML.Glissando>       ("glissandos"),
+                    nonArpeggiates:         combine<C.MusicXML.NonArpeggiate>   ("nonArpeggiates"),
+                    ornaments:              combine<C.MusicXML.Ornaments>       ("ornaments"),
+                    otherNotations:         combine<C.MusicXML.OtherNotation>   ("otherNotations"),
+                    slides:                 combine<C.MusicXML.Slide>           ("slides"),
+                    slurs:                  combine<C.MusicXML.Slur>            ("slurs"),
+                    technicals:             combine<C.MusicXML.Technical>       ("technicals"),
+                    tieds:                  combine<C.MusicXML.Tied>            ("tieds"),
+                    tuplets:                combine<C.MusicXML.Tuplet>          ("tuplets"),
+                    footnote:                  last<C.MusicXML.Footnote>        ("footnote"),
+                    level:                     last<C.MusicXML.Level>           ("level"),
+                    printObject:               last<boolean>                    ("printObject")
+                };
+
+                function combine<T>(key: string): T[] {
+                    return _.reduce(notations, (memo: any, n:any) =>
+                        n[key] ? (memo||<T[]>[]).concat(n[key]) : memo, null);
+                }
+
+                function combineArticulations(key: string): C.MusicXML.Articulations[] {
+                    var array = combine<C.MusicXML.Articulations>(key);
+                    if (!array) {
+                        return null;
+                    }
+                    var articulations: C.MusicXML.Articulations = <any> {};
+                    for (var i = 0; i < array.length; ++i) {
+                        for (var akey in array[i]) {
+                            if (array[i].hasOwnProperty(akey)) {
+                                (<any>articulations)[akey] = (<any>array[i])[akey];
+                            }
+                        }
+                    }
+                    return [articulations];
+                }
+
+                function last<T>(key: string): T {
+                    return _.reduce(notations, (memo: any, n:any) =>
+                        n[key] ? n[key] : memo, []);
+                }
+            }
+        }
     }
 }
 
@@ -1251,8 +1376,7 @@ function _hasConflict(otherChord: Array<C.IPitch>, step: string, target: number)
 
 enum Flags {
     TEMPORARY   = 2 << 7,
-    WHOLE_BAR   = 2 << 8,
-    TIE         = 2 << 9
+    WHOLE_BAR   = 2 << 8
 }
 
 export = DurationModel;

@@ -33,7 +33,7 @@ var Dot = (function (_super) {
         return ((this.props.line * 2) % 2) ? 0 : 5;
     };
     Dot.prototype.cx = function () {
-        return this.props.x + 18 + 6 * (this.props.idx);
+        return this.props.x + 6 * (this.props.idx);
     };
     Dot.prototype.cy = function () {
         return this.props.y - (this.props.line - 3) * 10 - this.cyOffset();
