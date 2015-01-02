@@ -362,7 +362,7 @@ class NewlineModel extends Model {
                     body[j].priority !== C.Type.Barline &&
                     body[j].priority !== C.Type.Begin; --j) {
             if (body[j].type === C.Type.TimeSignature) {
-                offsetX -= (<TimeSignatureMT>body[j])._annotatedSpacing;
+                offsetX -= (<TimeSignatureMT>body[j])._annotatedSpacing - 6.5;
             }
         }
         if (body[i].type !== C.Type.Barline) {
@@ -374,7 +374,7 @@ class NewlineModel extends Model {
             if (body[i].isNote && body[i].note.temporary) {
                 continue;
             }
-            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10*(bbox[0] - bbox[2])/2 + offsetX;
+            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10*(bbox[0] - bbox[2])/2 + offsetX - 6.5;
         }
     }
 

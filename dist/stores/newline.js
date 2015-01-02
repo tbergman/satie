@@ -200,7 +200,7 @@ var NewlineModel = (function (_super) {
         var offsetX = 0;
         for (var j = i; body[j] && body[j].priority > 100 /* START_OF_ATTRIBUTES */ && body[j].priority !== 300 /* Barline */ && body[j].priority !== 140 /* Begin */; --j) {
             if (body[j].type === 170 /* TimeSignature */) {
-                offsetX -= body[j]._annotatedSpacing;
+                offsetX -= body[j]._annotatedSpacing - 6.5;
             }
         }
         if (body[i].type !== 300 /* Barline */) {
@@ -212,7 +212,7 @@ var NewlineModel = (function (_super) {
             if (body[i].isNote && body[i].note.temporary) {
                 continue;
             }
-            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10 * (bbox[0] - bbox[2]) / 2 + offsetX;
+            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10 * (bbox[0] - bbox[2]) / 2 + offsetX - 6.5;
         }
     };
     NewlineModel.explode = function (ctx) {
