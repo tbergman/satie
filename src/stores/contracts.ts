@@ -1303,4 +1303,13 @@ export function tsToSimpleTS(ts: MusicXML.Time): ISimpleTimeSignature {
     };
 }
 
+export var defaultClefLines: { [key: string]: number} = {
+    G:              2,
+    F:              4,
+    C:              3,
+    PERCUSSION:     3,
+    TAB:            5,
+    NONE:           3
+};
+
 global.C = module.exports; // For debugging

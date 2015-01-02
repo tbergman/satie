@@ -139,6 +139,11 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
             }
         }
 
+        // Some clef lines don't NEED to be specified. Lets be flexible.
+        if (isNaN(this.line)) {
+            this.line = C.defaultClefLines[this.sign.toUpperCase()];
+        }
+
         // Copy information from the context that the view needs.
         ctx.attributes.clefs = ctx.attributes.clefs || [];
         ctx.attributes.clefs[ctx.voiceIdx] = this;

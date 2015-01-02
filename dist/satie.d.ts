@@ -374,6 +374,9 @@ declare module '__satie/stores/contracts' {
     }
     export function deepAssign<T>(a: T, b: T): T;
     export function tsToSimpleTS(ts: MusicXML.Time): ISimpleTimeSignature;
+    export var defaultClefLines: {
+        [x: string]: number;
+    };
 }
 
 declare module '__satie/stores/annotator' {
@@ -383,7 +386,7 @@ declare module '__satie/stores/annotator' {
     export class Context implements C.MetreContext {
         constructor(parts: C.IVoice[], layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy);
         annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult;
-        abort(): void;
+        abort(exception: any): void;
         captureLine(): ILineSnapshot;
         captureSnapshot(): IPartialSnapshot;
         curr: Model;

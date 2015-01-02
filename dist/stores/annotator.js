@@ -48,12 +48,13 @@ var Context = (function () {
         }
         Context._ANNOTATING = false;
         if (error) {
-            this.abort();
+            this.abort(error);
         }
         return result;
     };
-    Context.prototype.abort = function () {
-        assert(false, "Could not render");
+    Context.prototype.abort = function (exception) {
+        console.warn("Satie failed to render the requested song. This could either be an error " + "in Satie or in your MusicXML. If the MusicXML is the output of a major " + "program, please report this as a bug to https://github.com/ripieno/satie");
+        throw exception;
     };
     Context.prototype.captureLine = function () {
         return {

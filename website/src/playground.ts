@@ -46,7 +46,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
 
     getInitialState(): IState {
         return {
-            test: "11c",
+            test: "12a",
             width: 1
         };
     }

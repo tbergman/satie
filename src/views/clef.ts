@@ -26,13 +26,22 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
             y           = {spec.y - (this.line() - 3)*10}
             opacity     = {this.props.opacity}
             fill        = {spec.color}
-            glyphName   = {this.sign() + (spec.isChange ? "Change" : "")} />
+            glyphName   = {this.sign()} />
         return clef;
     }
 
     sign() {
-        var clef = this.props.spec.displayedClef;
-        return clef.sign.toLowerCase() + "Clef";
+        var clef = this.props.spec.displayedClef.sign.toLowerCase();
+        if (clef === "percussion") {
+            return "unpitchedPercussionClef1";
+        } else if (clef === "tab") {
+            return "6stringTabClef";
+        } else if (clef === "none") {
+            return "staffPosRaise1";
+        } else {
+            // XXX: Just render at 2/3 pt
+            return clef + "Clef" + (this.props.spec.isChange ? "Change" : "");
+        }
     }
 
     line(): number {

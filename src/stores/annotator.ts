@@ -72,13 +72,16 @@ export class Context implements C.MetreContext {
         Context._ANNOTATING                 = false;
 
         if (error) {
-            this.abort();
+            this.abort(error);
         }
         return result;
     }
 
-    abort() {
-        assert(false, "Could not render");
+    abort(exception: any) {
+        console.warn("Satie failed to render the requested song. This could either be an error " +
+                     "in Satie or in your MusicXML. If the MusicXML is the output of a major " +
+                     "program, please report this as a bug to https://github.com/ripieno/satie");
+        throw exception;
     }
 
     /**

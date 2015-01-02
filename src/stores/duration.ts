@@ -857,9 +857,12 @@ class DurationModel extends Model implements C.IPitchDuration {
     static BEAMDATA: Array<DurationModel>;
 
     static clefOffsets: { [key: string]: number } = {
-        G: -3.5,
-        F: 2.5,
-        C: -0.5
+        G:              -3.5,
+        F:               2.5,
+        C:              -0.5,
+        PERCUSSION:     -0.5,
+        TAB:            -0.5,
+        NONE:           -0.5
     };
 
     static chromaticScale: { [key: string]: number } = {
@@ -953,7 +956,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     var durr = <DurationModel> note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
                         ret.push(
-                            DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] +
+                            DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
                             ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
                             DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     } else if (note.isWholebar) {
@@ -963,7 +966,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 } else {
                     ret.push(
-                        DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] +
+                        DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
                         ((note.chord[i].octave || 0) - 3) * 3.5 +
                         DurationModel.pitchOffsets[note.chord[i].step]);
                 }
@@ -1359,6 +1362,12 @@ module DurationModel {
             }
         }
     }
+
+    export function getClefOffset(clef: C.MusicXML.Clef) {
+        return DurationModel.clefOffsets[clef.sign] + clef.line - C.defaultClefLines[clef.sign.toUpperCase()]
+            - 3.5*parseInt(clef.clefOctaveChange||"0", 10);
+    }
+
 }
 
 DurationModel.MNote.prototype.staff = 1;

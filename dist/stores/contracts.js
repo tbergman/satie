@@ -614,4 +614,12 @@ function tsToSimpleTS(ts) {
     };
 }
 exports.tsToSimpleTS = tsToSimpleTS;
+exports.defaultClefLines = {
+    G: 2,
+    F: 4,
+    C: 3,
+    PERCUSSION: 3,
+    TAB: 5,
+    NONE: 3
+};
 global.C = module.exports;

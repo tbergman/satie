@@ -112,6 +112,9 @@ var ClefModel = (function (_super) {
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
             }
         }
+        if (isNaN(this.line)) {
+            this.line = C.defaultClefLines[this.sign.toUpperCase()];
+        }
         ctx.attributes.clefs = ctx.attributes.clefs || [];
         ctx.attributes.clefs[ctx.voiceIdx] = this;
         var next = ctx.next();

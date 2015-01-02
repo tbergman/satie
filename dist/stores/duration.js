@@ -751,7 +751,10 @@ var DurationModel = (function (_super) {
     DurationModel.clefOffsets = {
         G: -3.5,
         F: 2.5,
-        C: -0.5
+        C: -0.5,
+        PERCUSSION: -0.5,
+        TAB: -0.5,
+        NONE: -0.5
     };
     DurationModel.chromaticScale = {
         c: 0,
@@ -841,7 +844,7 @@ var DurationModel = (function (_super) {
                 if (note.isRest) {
                     var durr = note;
                     if (durr._notes && durr._notes[i].rest.displayStep) {
-                        ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                        ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
                     }
                     else if (note.isWholebar) {
                         ret.push(4);
@@ -851,7 +854,7 @@ var DurationModel = (function (_super) {
                     }
                 }
                 else {
-                    ret.push(DurationModel.clefOffsets[ctx.attributes.clefs[note.staff - 1].sign] + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                    ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
                 }
             }
         }
@@ -1162,6 +1165,10 @@ var DurationModel;
         return MNote;
     })();
     DurationModel.MNote = MNote;
+    function getClefOffset(clef) {
+        return DurationModel.clefOffsets[clef.sign] + clef.line - C.defaultClefLines[clef.sign.toUpperCase()] - 3.5 * parseInt(clef.clefOctaveChange || "0", 10);
+    }
+    DurationModel.getClefOffset = getClefOffset;
 })(DurationModel || (DurationModel = {}));
 DurationModel.MNote.prototype.staff = 1;
 function _hasConflict(otherChord, step, target) {

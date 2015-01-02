@@ -16,12 +16,23 @@ var Clef = (function (_super) {
     Clef.prototype.render = function () {
         var spec = this.props.spec;
         var x = spec.x - (spec.isChange ? 0.2 : 0);
-        var clef = React.createElement(Glyph.Component, { x: x, y: spec.y - (this.line() - 3) * 10, opacity: this.props.opacity, fill: spec.color, glyphName: this.sign() + (spec.isChange ? "Change" : "") });
+        var clef = React.createElement(Glyph.Component, { x: x, y: spec.y - (this.line() - 3) * 10, opacity: this.props.opacity, fill: spec.color, glyphName: this.sign() });
         return clef;
     };
     Clef.prototype.sign = function () {
-        var clef = this.props.spec.displayedClef;
-        return clef.sign.toLowerCase() + "Clef";
+        var clef = this.props.spec.displayedClef.sign.toLowerCase();
+        if (clef === "percussion") {
+            return "unpitchedPercussionClef1";
+        }
+        else if (clef === "tab") {
+            return "6stringTabClef";
+        }
+        else if (clef === "none") {
+            return "staffPosRaise1";
+        }
+        else {
+            return clef + "Clef" + (this.props.spec.isChange ? "Change" : "");
+        }
     };
     Clef.prototype.line = function () {
         return this.props.spec.displayedClef.line;
