@@ -1289,4 +1289,18 @@ export function deepAssign<T>(a: T, b: T):T {
     }
 }
 
+export function tsToSimpleTS(ts: MusicXML.Time): ISimpleTimeSignature {
+    var commonBeatType = _.reduce(ts.beatTypes, (maxBT, beatType) => Math.max(maxBT, beatType), 0);
+    var totalBeats = _.reduce(ts.beats, (memo, time, i) => memo +
+            _.reduce(time.split("+"), (memo, time) =>
+                memo + parseInt(time, 10) * commonBeatType/ts.beatTypes[i], 0), 0);
+
+    return {
+        beats:                  totalBeats,
+        beatType:               commonBeatType,
+        commonRepresentation:   isNaN(ts.symbol) || ts.symbol !== MusicXML.TimeSymbolType.Normal
+            // Note: commonRepresentation should really always be either itself set or exist on a prototype.
+    };
+}
+
 global.C = module.exports; // For debugging

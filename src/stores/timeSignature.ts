@@ -44,11 +44,7 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
     ////////////////////////////////
 
     get ts(): C.ISimpleTimeSignature {
-        return {
-            beats:                  this.addUpBeats(),
-            beatType:               this.beatTypes[0],
-            commonRepresentation:   this.symbol !== C.MusicXML.TimeSymbolType.Normal
-        };
+        return C.tsToSimpleTS(this);
     }
     set ts(c: C.ISimpleTimeSignature) {
         // METREFIX broken

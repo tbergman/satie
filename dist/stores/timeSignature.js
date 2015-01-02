@@ -40,11 +40,7 @@ var TimeSignatureModel = (function (_super) {
     });
     Object.defineProperty(TimeSignatureModel.prototype, "ts", {
         get: function () {
-            return {
-                beats: this.addUpBeats(),
-                beatType: this.beatTypes[0],
-                commonRepresentation: this.symbol !== 5 /* Normal */
-            };
+            return C.tsToSimpleTS(this);
         },
         set: function (c) {
             this.beats = [c.beats + ""];

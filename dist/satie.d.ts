@@ -373,6 +373,7 @@ declare module '__satie/stores/contracts' {
         function hash<T>(obj: T): number;
     }
     export function deepAssign<T>(a: T, b: T): T;
+    export function tsToSimpleTS(ts: MusicXML.Time): ISimpleTimeSignature;
 }
 
 declare module '__satie/stores/annotator' {

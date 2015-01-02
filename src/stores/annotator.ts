@@ -647,12 +647,7 @@ export class Context implements C.MetreContext {
     }
 
     get ts(): C.ISimpleTimeSignature {
-        return this.attributes.time ? {
-            beats:          _.reduce(this.attributes.time.beats, (memo, time) => memo +
-                _.reduce(time.split("+"), (memo, time) => memo + parseInt(time, 10), 0), 0),
-            beatType: this.attributes.time.beatTypes[0],
-            commonRepresentation: this.attributes.time.symbol !== C.MusicXML.TimeSymbolType.Normal
-        } : null;
+        return C.tsToSimpleTS(this.attributes.time);
     }
 
     set ts(ts: C.ISimpleTimeSignature) {

@@ -604,4 +604,14 @@ function deepAssign(a, b) {
     }
 }
 exports.deepAssign = deepAssign;
+function tsToSimpleTS(ts) {
+    var commonBeatType = _.reduce(ts.beatTypes, function (maxBT, beatType) { return Math.max(maxBT, beatType); }, 0);
+    var totalBeats = _.reduce(ts.beats, function (memo, time, i) { return memo + _.reduce(time.split("+"), function (memo, time) { return memo + parseInt(time, 10) * commonBeatType / ts.beatTypes[i]; }, 0); }, 0);
+    return {
+        beats: totalBeats,
+        beatType: commonBeatType,
+        commonRepresentation: isNaN(ts.symbol) || ts.symbol !== 5 /* Normal */
+    };
+}
+exports.tsToSimpleTS = tsToSimpleTS;
 global.C = module.exports;
