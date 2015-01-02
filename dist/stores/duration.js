@@ -532,6 +532,9 @@ var DurationModel = (function (_super) {
         return Metre.calcBeats2(this, ctx, inheritedCount);
     };
     DurationModel.prototype.getAccWidthAfterBar = function (ctx) {
+        if (!ctx.attributes || !ctx.attributes.keySignature) {
+            return 0;
+        }
         var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var backupAcc = ctx.accidentalsByStaff[this.staff];
         var beat = ctx.beat;
