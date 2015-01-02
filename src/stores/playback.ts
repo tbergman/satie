@@ -33,17 +33,17 @@ enum EventType {
 }
 
 class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
-    constructor(dispatcher: C.IDispatcher, songEditor?: C.IScoreStore) {
+    constructor(dispatcher: C.IDispatcher, score?: C.IScoreStore) {
         super();
         this._dispatcher = dispatcher;
         dispatcher.register(this._handleAction);
 
-        this._songEditor = songEditor;
+        this._score = score;
         this._playing = false;
 
-        if (songEditor) {
-            songEditor.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
-            songEditor.addListener(C.EventType.MidiOut, hit);
+        if (score) {
+            score.ensureSoundfontLoaded = this.ensureLoaded.bind(this);
+            score.addListener(C.EventType.MidiOut, hit);
         }
 
         if (enabled) {
@@ -54,8 +54,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     destructor() {
         this._play(false);
         this._dispatcher.unregister(this._handleAction);
-        if (this._songEditor) {
-            this._songEditor.removeListener(C.EventType.MidiOut, hit);
+        if (this._score) {
+            this._score.removeListener(C.EventType.MidiOut, hit);
         }
     }
 
@@ -137,7 +137,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         });
         this._remainingActions = [];
 
-        var aobj = this._songEditor.visualCursor.annotatedObj;
+        var aobj = this._score.visualCursor.annotatedObj;
         if (aobj && aobj.endMarker) {
             this._dispatcher.PUT("/webapp/visualCursor/step", {
                 step: 1,
@@ -149,22 +149,22 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         var seek = 0;
         var startTime = MIDI.Player.ctx.currentTime + 0.01;
 
-        for (var h = 0; h < this._songEditor.voices.length; ++h) {
-            var body: Model[] = this._songEditor.voices[h].body;
+        for (var h = 0; h < this._score.voices.length; ++h) {
+            var body: Model[] = this._score.voices[h].body;
             if (!body) {
                 continue;
             }
-            var visualCursor = this._songEditor.visualCursor;
+            var visualCursor = this._score.visualCursor;
             var delay = 0;
             var bpm = this.bpm;
             var timePerBeat = 60/bpm;
             var foundIdx = false;
 
-            var soundfont = this._songEditor.voices[h].instrument.soundfont;
+            var soundfont = this._score.voices[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
             assert(channel !== undefined);
 
-            var ctx = new Annotator.Context(this._songEditor.voices, null, this._songEditor, Annotator.AssertionPolicy.NoAssertions);
+            var ctx = new Annotator.Context(this._score.voices, null, this._score, Annotator.AssertionPolicy.NoAssertions);
 
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
@@ -322,7 +322,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
     private _pendingInstruments: number                         			= 0;
     private _playing: boolean;
     private _remainingActions: Array<any>                       			= [];
-    private _songEditor: C.IScoreStore;
+    private _score: C.IScoreStore;
     private _soundfontToChannel: { [soundfontToChannel: string]: number }   = {};
     private _timeoutId: number;
 }

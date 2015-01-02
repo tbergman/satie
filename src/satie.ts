@@ -44,14 +44,14 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
             body = React.createElement(Renderer.Component, {
                 context: this.state.context,
                 dispatcher: this.state.dispatcher,
-                parts: this.state.songEditor.parts,
-                voices: this.state.songEditor.voices,
-                header: this.state.songEditor.header,
+                parts: this.state.score.parts,
+                voices: this.state.score.voices,
+                header: this.state.score.header,
                 editMode: false,
                 width: this.props.width,
                 height: this.props.width, // Ensures entire width is used.
                 top: 0,
-                store: this.state.songEditor
+                store: this.state.score
             });
         }
         return React.createElement("div", {
@@ -68,12 +68,12 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
 
     getInitialState(): ISatieState {
         var dispatcher = new Dispatcher;
-        var songEditor = new ScoreStore(dispatcher);
-        songEditor.addListener(C.EventType.Annotate, this._updateFromStore);
+        var score = new ScoreStore(dispatcher);
+        score.addListener(C.EventType.Annotate, this._updateFromStore);
 
         return {
             dispatcher: dispatcher,
-            songEditor: songEditor
+            score: score
         };
     }
 
@@ -97,20 +97,20 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
     }
 
     componentWillUnmount() {
-        this.state.songEditor.removeListener(C.EventType.Annotate, this._updateFromStore);
-        this.state.songEditor.destructor();
+        this.state.score.removeListener(C.EventType.Annotate, this._updateFromStore);
+        this.state.score.destructor();
     }
 
     private _updateFromStore() {
         this.setState({
-            context: this.state.songEditor.finalCtx
+            context: this.state.score.finalCtx
         });
     }
 }
 
 interface ISatieState {
     context?: Annotator.Context;
-    songEditor?: ScoreStore;
+    score?: ScoreStore;
     dispatcher?: C.IDispatcher;
 }
 

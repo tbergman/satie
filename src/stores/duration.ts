@@ -442,8 +442,8 @@ class DurationModel extends Model implements C.IPitchDuration {
                             }
                         }
                         BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
-                        ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherParts);
-                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherParts);
+                        ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherVoices);
+                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherVoices);
                         return C.IterationStatus.RetryLine;
                     }
                 }
@@ -453,7 +453,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (status !== C.IterationStatus.Success) { return status; }
             }
 
-            // All notes, chords, and rests throughout a line on a given part must have the same scale.
+            // All notes, chords, and rests throughout a line on a given voice must have the same scale.
             assert(isFinite(this._beats) && this._beats !== null);
             if (ctx.smallest > this._beats) {
                 assert(this._beats > 0);
@@ -737,7 +737,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 // 1. The note has the same accidental on other octave (if the note is on other octaves)
                 var noConflicts = target === generalTarget || generalTarget === C.InvalidAccidental;
 
-                // 2. The note has the same accidental on all other part (in the same bar, in the past)
+                // 2. The note has the same accidental on all other voice (in the same bar, in the past)
                 for (var j = 0; j < ctx.accidentalsByStaff.length && noConflicts; ++j) {
                     if (ctx.accidentalsByStaff[j] && target !== or3(ctx.accidentalsByStaff[j][pitch.step + pitch.octave],
                             ctx.accidentalsByStaff[j][pitch.step], target)) {
@@ -745,7 +745,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     }
                 }
 
-                // 3. The note has the same accidental on other part with the same note (right now!)
+                // 3. The note has the same accidental on other voices with the same note (right now!)
                 var concurrentNotes = ctx.findVertical(c => c.isNote);
                 for (var j = 0; j < concurrentNotes.length && noConflicts; ++j) {
                     var otherChord = concurrentNotes[j].note.chord;

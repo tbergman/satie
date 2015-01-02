@@ -88,8 +88,8 @@ var BarlineModel = (function (_super) {
             else {
                 ctx.splice(i, ctx.idx - i);
                 ctx.markEntireSongDirty();
-                ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line - 1);
-                ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line);
+                ctx.score.dangerouslyMarkRendererLineDirty(ctx.line - 1);
+                ctx.score.dangerouslyMarkRendererLineDirty(ctx.line);
                 ctx.idx = i;
                 return 50 /* LineRemoved */;
             }

@@ -25,14 +25,14 @@ var Satie = (function (_super) {
             body = React.createElement(Renderer.Component, {
                 context: this.state.context,
                 dispatcher: this.state.dispatcher,
-                parts: this.state.songEditor.parts,
-                voices: this.state.songEditor.voices,
-                header: this.state.songEditor.header,
+                parts: this.state.score.parts,
+                voices: this.state.score.voices,
+                header: this.state.score.header,
                 editMode: false,
                 width: this.props.width,
                 height: this.props.width,
                 top: 0,
-                store: this.state.songEditor
+                store: this.state.score
             });
         }
         return React.createElement("div", {
@@ -47,11 +47,11 @@ var Satie = (function (_super) {
     };
     Satie.prototype.getInitialState = function () {
         var dispatcher = new Dispatcher;
-        var songEditor = new ScoreStore(dispatcher);
-        songEditor.addListener(1 /* Annotate */, this._updateFromStore);
+        var score = new ScoreStore(dispatcher);
+        score.addListener(1 /* Annotate */, this._updateFromStore);
         return {
             dispatcher: dispatcher,
-            songEditor: songEditor
+            score: score
         };
     };
     Satie.prototype.componentWillMount = function () {
@@ -71,12 +71,12 @@ var Satie = (function (_super) {
         }
     };
     Satie.prototype.componentWillUnmount = function () {
-        this.state.songEditor.removeListener(1 /* Annotate */, this._updateFromStore);
-        this.state.songEditor.destructor();
+        this.state.score.removeListener(1 /* Annotate */, this._updateFromStore);
+        this.state.score.destructor();
     };
     Satie.prototype._updateFromStore = function () {
         this.setState({
-            context: this.state.songEditor.finalCtx
+            context: this.state.score.finalCtx
         });
     };
     return Satie;

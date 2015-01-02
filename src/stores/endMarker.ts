@@ -49,8 +49,8 @@ class EndMarkerModel extends Model {
                 if (ctx.body[i].type === C.Type.NewLine) {
                     ctx.splice(i, 1);
                     ctx.markEntireSongDirty();
-                    if (ctx.songEditor) {
-                        ctx.songEditor.dangerouslyMarkRendererDirty();
+                    if (ctx.score) {
+                        ctx.score.dangerouslyMarkRendererDirty();
                     }
                     return C.IterationStatus.RetryFromEntry;
                 }

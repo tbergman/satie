@@ -56,7 +56,7 @@ var BeginModel = (function (_super) {
         this.startOfSystem = !ctx.idxInPart && ctx.part.voices.length > 1;
         ctx.x += 8;
         ctx.barKeys = [];
-        this.part = ctx.voice;
+        this.voice = ctx.voice;
         if (typeof window === "undefined" || global.location.href.indexOf("/scales/") !== -1) {
             this.noMargin = true;
         }

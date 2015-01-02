@@ -427,8 +427,8 @@ var DurationModel = (function (_super) {
                             }
                         }
                         BarlineModel.createBarline(ctx, 0 /* Regular */);
-                        ctx.splice(ctx.idx, 0, replaceWith, 4 /* ShortenOtherParts */);
-                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, 4 /* ShortenOtherParts */);
+                        ctx.splice(ctx.idx, 0, replaceWith, 4 /* ShortenOtherVoices */);
+                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, 4 /* ShortenOtherVoices */);
                         return 60 /* RetryLine */;
                     }
                 }

@@ -83,7 +83,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                     onMouseLeave={this.handleMouseLeave}
                     onMouseMove={this.handleMouseMove}
                     page={page}
-                    parts={parts}
                     width={this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%"}
                     height={this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%"}
                     viewbox={viewbox}>
@@ -553,7 +552,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
 
     shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
         var songDirty = this.props.store && this.props.store.dirty ||
-                nextProps.parts !== this.props.parts;
+                nextProps.mainVoice !== this.props.mainVoice;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
 
         if (lineDirty) {
@@ -572,7 +571,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         if (songDirty || lineDirty || this.dirty) {
             // Throttle updating, unless we're on the active line, or if we're
             // completely replacing the song.
-            if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
+            if (this.props.isCurrent || this.props.mainVoice !== nextProps.mainVoice) {
                 this.dirty = false;
                 return true;
             } else if (!this.onScreen) {
@@ -623,7 +622,7 @@ interface ILineProps {
     h: number;
     idx: number;
     isCurrent: boolean;
-    parts: Array<C.IVoice>;
+    mainVoice: Array<C.IVoice>;
     store: C.IScoreStore;
 }
 

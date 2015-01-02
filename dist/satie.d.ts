@@ -384,7 +384,7 @@ declare module '__satie/stores/annotator' {
     import C = require("__satie/stores/contracts");
     import Model = require("__satie/stores/model");
     export class Context implements C.MetreContext {
-        constructor(parts: C.IVoice[], layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy);
+        constructor(voices: C.IVoice[], layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy);
         annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean, dispatcher: C.IDispatcher): C.IAnnotationResult;
         abort(exception: any): void;
         captureLine(): ILineSnapshot;
@@ -444,7 +444,7 @@ declare module '__satie/stores/annotator' {
         fontSize: number;
         maxX: number;
         maxY: number;
-        songEditor: C.IScoreStore;
+        score: C.IScoreStore;
         disableRecordings: boolean;
         _recordings: {
             [x: string]: BarlineModel;
@@ -465,7 +465,7 @@ declare module '__satie/stores/annotator' {
         MatchedOnly = 1,
         Additive = 2,
         Masked = 3,
-        ShortenOtherParts = 4,
+        ShortenOtherVoices = 4,
         Subtractive = 5,
     }
     export enum AssertionPolicy {
@@ -487,7 +487,7 @@ declare module '__satie/stores/annotator' {
         line: number;
         pageLines: number[];
         pageStarts: number[];
-        partIdx: number;
+        voiceIdx: number;
         x: number;
         y: number;
     }
@@ -502,7 +502,7 @@ declare module '__satie/stores/annotator' {
     export interface ICompleteSnapshot extends IPartialSnapshot {
         lines: ILineSnapshot[];
     }
-    export function recordMetreData(parts: C.IVoice[]): void;
+    export function recordMetreData(voices: C.IVoice[]): void;
 }
 
 declare module '__satie/stores/model' {
@@ -555,7 +555,7 @@ declare module '__satie/stores/model' {
             key: number;
             spec: Model;
         }) => any) => void;
-        static removeAnnotations: (parts: C.IVoice[]) => void;
+        static removeAnnotations: (voices: C.IVoice[]) => void;
         static fromJSON(json: Object, existingObjects?: {
             [x: string]: Model;
         }): Model;

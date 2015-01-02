@@ -98,7 +98,7 @@ var NewlineModel = (function (_super) {
                 pageLines: null,
                 pageStarts: null,
                 prevClefByStave: {},
-                partIdx: ctx.voiceIdx,
+                voiceIdx: ctx.voiceIdx,
                 x: null,
                 y: null
             };
@@ -113,8 +113,8 @@ var NewlineModel = (function (_super) {
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts = ctx.pageStarts;
-        if (ctx.songEditor) {
-            ctx.songEditor.dangerouslyTakeSnapshot(ctx);
+        if (ctx.score) {
+            ctx.score.dangerouslyTakeSnapshot(ctx);
         }
         return 10 /* Success */;
     };
@@ -218,7 +218,7 @@ var NewlineModel = (function (_super) {
     NewlineModel.explode = function (ctx) {
         var veryBottomPadding = 0;
         var braces = [];
-        _.forEach(ctx.songEditor.parts, function (part) {
+        _.forEach(ctx.score.parts, function (part) {
             _.times(part.staves, function (staff) {
                 staff += 1;
                 var extraTopPadding = (staff - 1) * 50;
@@ -253,8 +253,8 @@ var NewlineModel = (function (_super) {
         ctx.curr.y = ctx.y;
     };
     NewlineModel.createNewline = function (ctx) {
-        if (ctx.songEditor) {
-            ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line + 1);
+        if (ctx.score) {
+            ctx.score.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         }
         var l = 0;
         var fidx;

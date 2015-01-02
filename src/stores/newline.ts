@@ -18,7 +18,7 @@ import PrintModel       = require("./print");
 /**
  * A manual or automatic hint that a new line should be created. This file
  * modifies the context on each new line. It's also used to render the staff and
- * piano part for everything but the first line of each page. See also begin.ts.
+ * braces for everything but the first line of each page. See also begin.ts.
  */
 class NewlineModel extends Model {
 
@@ -116,7 +116,7 @@ class NewlineModel extends Model {
         this.staveW             = ctx.maxX - ctx.x;
 
         /*
-         * 8 is the padding between beginning of part and the clef.
+         * 8 is the padding between BeginModel and ClefModel.
          * This value should also be changed in BeginModel.
          */
         ctx.x                   = ctx.x + 8;
@@ -139,7 +139,7 @@ class NewlineModel extends Model {
                 pageLines:              null,
                 pageStarts:             null,
                 prevClefByStave:        {},
-                partIdx:                ctx.voiceIdx,
+                voiceIdx:               ctx.voiceIdx,
                 x:                      null,
                 y:						null
             };
@@ -156,8 +156,8 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line].pageLines           = ctx.pageLines;
         ctx.lines[ctx.line].pageStarts          = ctx.pageStarts;
 
-        if (ctx.songEditor) {
-            ctx.songEditor.dangerouslyTakeSnapshot(ctx);
+        if (ctx.score) {
+            ctx.score.dangerouslyTakeSnapshot(ctx);
         }
 
         return C.IterationStatus.Success;
@@ -262,8 +262,8 @@ class NewlineModel extends Model {
     ////////////////
 
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
-        if (ctx.songEditor) {
-            ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line + 1);
+        if (ctx.score) {
+            ctx.score.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         }
         var l = 0;
         var fidx: number;
@@ -384,7 +384,7 @@ class NewlineModel extends Model {
     static explode(ctx: Annotator.Context) {
         var veryBottomPadding = 0;
         var braces: {braceY2: number}[] = [];
-        _.forEach(ctx.songEditor.parts, part => {
+        _.forEach(ctx.score.parts, part => {
             _.times(part.staves, staff => {
                 staff += 1;
                 var extraTopPadding = (staff - 1)*50;

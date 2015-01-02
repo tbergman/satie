@@ -52,8 +52,8 @@ var EndMarkerModel = (function (_super) {
                 if (ctx.body[i].type === 130 /* NewLine */) {
                     ctx.splice(i, 1);
                     ctx.markEntireSongDirty();
-                    if (ctx.songEditor) {
-                        ctx.songEditor.dangerouslyMarkRendererDirty();
+                    if (ctx.score) {
+                        ctx.score.dangerouslyMarkRendererDirty();
                     }
                     return 90 /* RetryFromEntry */;
                 }

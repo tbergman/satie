@@ -356,8 +356,8 @@ export function subtract(durr1: any, beats: number,
                 }
 
                 if (completelyFills || (i - bpIdx <= 1)) {
-                    // This either fills multiple parts perfectly, or fills less than one
-                    // part.
+                    // This either fills multiple segments perfectly, or fills less than one
+                    // segment.
                     replaceWith.push(_.clone(note));
                     beatsToFill -= noteBeats;
                     currBeat += noteBeats;

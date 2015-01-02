@@ -296,14 +296,14 @@ var Model = (function () {
             return React.createElement(View, props);
         };
     };
-    Model.removeAnnotations = function (parts) {
-        for (var i = 0; i < parts.length; ++i) {
-            for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
-                var item = parts[i].body[j];
+    Model.removeAnnotations = function (voices) {
+        for (var i = 0; i < voices.length; ++i) {
+            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
+                var item = voices[i].body[j];
                 if (item.annotated && !item.placeholder) {
-                    for (var k = 0; k < parts.length; ++k) {
-                        if (parts[k].body) {
-                            parts[k].body.splice(j, 1);
+                    for (var k = 0; k < voices.length; ++k) {
+                        if (voices[k].body) {
+                            voices[k].body.splice(j, 1);
                         }
                     }
                     --j;

@@ -17,24 +17,24 @@ import PlaceholderModelType     = require("./placeholder");     // Cyclic.
 /**
  * Annotator has two goals:
  * 
- *  1) Put a set of parts into a state where they can be rendered. For example, Annotator would
+ *  1) Put a set of voices into a state where they can be rendered. For example, Annotator would
  *     set the position of all items, insert barlines/rests, and add the appropriate accidentals.
  *     When a song is loaded from source (e.g., MusicXML, lilypond), it cannot out of the box be
- *     displayed. Calling (new Annotator(parts)).annotate() is all that is necessary to make it
+ *     displayed. Calling (new Annotator(voices)).annotate() is all that is necessary to make it
  *     renderable.
  * 
- *  2) Wrap all mutations to the parts. For example, the NoteTool will use an annotator to add
+ *  2) Wrap all mutations to the voices. For example, the NoteTool will use an annotator to add
  *     a note, or change a rest into a note. In this case, Annotator.annotate should be called
  *     with all parameters. It is worth noting that Annotator does NOT specify what the change is.
- *     Instead, it just ensures that all the appropriate changes are made to the parts so that
- *     after the change is made, the parts are in a valid and renderable state.
+ *     Instead, it just ensures that all the appropriate changes are made to the voices so that
+ *     after the change is made, the voices are in a valid and renderable state.
  */
 export class Context implements C.MetreContext {
-    constructor(parts: Array<C.IVoice>, layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy) {
-        this._voices             = parts;
+    constructor(voices: Array<C.IVoice>, layout: ILayoutOpts, editor: C.IScoreStore, assertionPolicy: AssertionPolicy) {
+        this._voices            = voices;
         this._layout            = layout;
         this._assertionPolicy   = assertionPolicy;
-        this.songEditor         = editor;
+        this.score              = editor;
 
         if (layout) {
             if (layout.snapshot) {
@@ -46,11 +46,11 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * After the function exits, any part of the Annotator's parts after 'from' can be rendered.
+     * After the function exits, any voices of the Annotator's parts after 'from' can be rendered.
      * The default value of 'from' is the beginning of the song.
      * 
-     * If 'mutation' is set, then the parts will be modified according to what is specified in
-     * 'mutation'. The mutation must be after 'from'. All modifications to parts must go through
+     * If 'mutation' is set, then the voices will be modified according to what is specified in
+     * 'mutation'. The mutation must be after 'from'. All modifications to voices must go through
      * Annotator.annotate.
      */
     annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean,
@@ -101,7 +101,7 @@ export class Context implements C.MetreContext {
             invisibleForBars:       this.invisibleForBars,
             pageLines:              this.pageLines,
             pageStarts:             this.pageStarts,
-            partIdx:                this.voiceIdx,
+            voiceIdx:               this.voiceIdx,
             x:                      this.x,
             y:                      this.y
         };
@@ -441,7 +441,7 @@ export class Context implements C.MetreContext {
                                 }, replaceWith[j].annotated));
                             } else {
                                 placeholders.push(part.body[vidx + j]);
-                                if (splicePolicy === SplicePolicy.ShortenOtherParts) {
+                                if (splicePolicy === SplicePolicy.ShortenOtherVoices) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
                                     if (retained.calcBeats(this) > fromMainPart.calcBeats(this)) {
@@ -630,7 +630,7 @@ export class Context implements C.MetreContext {
     }
 
     midiOutHint(out: number[]) {
-        this.songEditor.midiOutHint(out);
+        this.score.midiOutHint(out);
     }
 
     get nextActualType(): number {
@@ -867,7 +867,7 @@ export class Context implements C.MetreContext {
     /**
      * The Flux store.
      */
-    songEditor: C.IScoreStore;
+    score: C.IScoreStore;
 
     private static _ANNOTATING: boolean = false;
     disableRecordings: boolean = true;
@@ -1041,7 +1041,7 @@ export enum SplicePolicy {
      * Like MatchedOnly, but shorten durations in other parts when replacing them.
      * This is used for changing the time signature.
      */
-    ShortenOtherParts = 4,
+    ShortenOtherVoices = 4,
     /**
      * Remove models from non-current parts.
      */
@@ -1076,7 +1076,7 @@ export interface ILineSnapshot {
     line: number;
     pageLines: Array<number>;
     pageStarts: Array<number>;
-    partIdx: number;
+    voiceIdx: number;
     x: number;
     y: number;
 }
@@ -1099,12 +1099,12 @@ export interface ICompleteSnapshot extends IPartialSnapshot {
     lines: Array<ILineSnapshot>;
 }
 
-export function recordMetreData(parts: Array<C.IVoice>) {
+export function recordMetreData(voices: C.IVoice[]) {
     "use strict";
     try {
         // Rumor is that the v8 optimizing compiler doesn't optimize functions
         // with try-catch.
-        _recordMetreData(parts);
+        _recordMetreData(voices);
     } catch (err) {
         var AttributesModel: typeof AttributesModelType = require("./attributes");
         switch(true) {
@@ -1116,17 +1116,17 @@ export function recordMetreData(parts: Array<C.IVoice>) {
     }
 }
 
-function _recordMetreData(parts: Array<C.IVoice>) {
+function _recordMetreData(voices: C.IVoice[]) {
     "use strict";
     var i: number;
     var j: number;
     var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
-    for (i = 0; i < parts.length; ++i) {
-        var body = parts[i].body;
+    for (i = 0; i < voices.length; ++i) {
+        var body = voices[i].body;
         if (!body) { continue; }
         var mctx1 = new C.MetreContext;
         for (j = 0; j < body.length; ++j) {
-            // STOPSHIP: Doesn't work with multiple MusicXML parts.
+            // STOPSHIP: Doesn't work with multiple MusicXML voices.
             if (attributesPerIdx[j]) {
                 mctx1.attributes = attributesPerIdx[j];
             }
@@ -1146,7 +1146,7 @@ function _recordMetreData(parts: Array<C.IVoice>) {
 
 
 /**
- * Internal. Iterates over a set of bodies in parts and annotates them. Owned by an Annotator.
+ * Internal. Iterates over a set of bodies in voices and annotates them. Owned by an Annotator.
  */
 class PrivIterator {
     constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
@@ -1159,13 +1159,13 @@ class PrivIterator {
         this._assertionPolicy = assertionPolicy;
         recordMetreData(this._voices);
         this._components = _.map(voices, (voice, idx) => {
-            var part        = _.find(parent.songEditor.parts, part => _.any(part.voices, oVoice => voices[oVoice] === voice)); 
+            var part        = _.find(parent.score.parts, part => _.any(part.voices, oVoice => voices[oVoice] === voice)); 
             var partVoices  = _.map(part.voices, oVoice => voices[oVoice])
             var idxInPart   = _.indexOf(partVoices, voice);
 
             return new PrivIteratorComponent(
                 /* starting location*/ from,
-                /* part */ voice,
+                /* voice */ voice,
                 /* part index */ idx,
                 /* visual cursor */ cursor,
                 /* part */ part,
@@ -1188,7 +1188,7 @@ class PrivIterator {
         for (var i = 0; i < this._components.length; ++i) {
             this._ensureCurrPrioritiesMatch();
             if (this.atEnd) {
-                // All parts are now at the end.
+                // All voices are now at the end.
                 this._assertOffsetsOK();
                 return C.IterationStatus.RetryCurrent; // Don't go to next!
             }
@@ -1265,8 +1265,8 @@ class PrivIterator {
             ctx.y              = componentSnapshots[0].y;
         }
 
-        // The current beat that the context records is the lagging (minimum from all parts) beat.
-        // Note: the maximum beat in any of the parts is tracked in ctx.__globalBeat__
+        // The current beat that the context records is the lagging (minimum from all voices) beat.
+        // Note: the maximum beat in any of the voices is tracked in ctx.__globalBeat__
         ctx.beat               = _.min(componentSnapshots, "beat").beat;
         for (var i = 0; i < this._components.length; ++i) {
             if (    this._components[i].nextLocation.bar === ctx.bar &&
@@ -1288,7 +1288,7 @@ class PrivIterator {
             ctx.x              = fn(ctx.x, componentSnapshots[i].x);
         }
 
-        // The exception to this rule occurs when different parts disagree about how much space is needed.
+        // The exception to this rule occurs when different voices disagree about how much space is needed.
         // We should usually believe the real (not placeholder) model that reports the smallest number.
         // This can sadly cause some strange (overly large) spacing for Durations that do not line up.
         var minX               = Infinity;
@@ -1482,8 +1482,8 @@ class PrivIterator {
     }
 
     private _markLineDirty() {
-        if (this._parent.songEditor) {
-            this._parent.songEditor.dangerouslyMarkRendererLineDirty(this._parent.line);
+        if (this._parent.score) {
+            this._parent.score.dangerouslyMarkRendererLineDirty(this._parent.line);
         }
         this._canExitAtNewline = false;
     }

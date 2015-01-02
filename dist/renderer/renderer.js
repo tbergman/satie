@@ -75,7 +75,7 @@ var Renderer = (function (_super) {
         var viewbox = "0 0 " + width10s + " " + height10s;
         var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
         var rawPages = _.map(pages, function (page, pidx) {
-            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, parts: parts, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) { return _.chain(part.voices).map(function (voice) { return voices[voice]; }).map(function (voice, vidx) { return React.createElement("g", { key: idx + "_" + vidx, style: { fontSize: scale40 + "px" } }, _.reduce(voice.body.slice(page.from, page.to), function (memo, obj) {
+            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) { return _.chain(part.voices).map(function (voice) { return voices[voice]; }).map(function (voice, vidx) { return React.createElement("g", { key: idx + "_" + vidx, style: { fontSize: scale40 + "px" } }, _.reduce(voice.body.slice(page.from, page.to), function (memo, obj) {
                 if (obj.type === 130 /* NewLine */) {
                     memo.push([]);
                 }
@@ -400,7 +400,7 @@ var LineContainer = (function (_super) {
         return React.createElement("g", null, this.props.generate());
     };
     LineContainer.prototype.shouldComponentUpdate = function (nextProps, nextState) {
-        var songDirty = this.props.store && this.props.store.dirty || nextProps.parts !== this.props.parts;
+        var songDirty = this.props.store && this.props.store.dirty || nextProps.mainVoice !== this.props.mainVoice;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
         if (lineDirty) {
             if (profilerEnabled) {
@@ -416,7 +416,7 @@ var LineContainer = (function (_super) {
             }
         }
         if (songDirty || lineDirty || this.dirty) {
-            if (this.props.isCurrent || this.props.parts !== nextProps.parts) {
+            if (this.props.isCurrent || this.props.mainVoice !== nextProps.mainVoice) {
                 this.dirty = false;
                 return true;
             }

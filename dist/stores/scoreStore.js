@@ -90,8 +90,8 @@ var ScoreStoreStore = (function (_super) {
     });
     Object.defineProperty(ScoreStoreStore.prototype, "src", {
         get: function () {
-            return "RIPMUS0," + JSON.stringify({
-                parts: this._voices,
+            return "Ripieno State Transfer (dev)," + JSON.stringify({
+                voices: this._voices,
                 header: this._header
             });
         },
@@ -105,23 +105,23 @@ var ScoreStoreStore = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    ScoreStoreStore.prototype.ctxFromSnapshot = function (pointerData, parts, assertionPolicy) {
+    ScoreStoreStore.prototype.ctxFromSnapshot = function (pointerData, voices, assertionPolicy) {
         var i;
         if (!pointerData) {
             return null;
         }
         if (pointerData && this._snapshots[pointerData.musicLine]) {
-            var ctx = new Annotator.Context(parts, {
+            var ctx = new Annotator.Context(voices, {
                 header: this.header,
                 snapshot: this._recreateSnapshot(pointerData.musicLine)
             }, this, assertionPolicy);
-            for (i = 0; i < parts.length; ++i) {
+            for (i = 0; i < voices.length; ++i) {
                 this._linesToUpdate[i + "_" + ctx.line] = true;
             }
             return ctx;
         }
         else {
-            for (i = 0; i < parts.length; ++i) {
+            for (i = 0; i < voices.length; ++i) {
                 this._linesToUpdate[i + "_0"] = true;
             }
         }
@@ -148,24 +148,24 @@ var ScoreStoreStore = (function (_super) {
     };
     ScoreStoreStore.parse = function (src) {
         var song = null;
-        if (src.length && src.substr(0, 8) === "RIPMUS0,") {
+        if (src.length && src.substr(0, 8) === "Ripieno State Transfer (dev),") {
             var songJson = JSON.parse(src.substring(8));
             song = {
-                parts: [],
+                voices: [],
                 header: new C.ScoreHeader(songJson.header)
             };
             for (var i = 0; i < songJson.parts.length; ++i) {
-                song.parts.push({
+                song.voices.push({
                     body: [],
                     instrument: songJson.parts[i].instrument || Instruments.List[0]
                 });
                 var body = songJson.parts[i].body;
                 if (body) {
                     for (var j = 0; j < body.length; ++j) {
-                        song.parts[i].body[j] = Model.fromJSON(body[j]);
+                        song.voices[i].body[j] = Model.fromJSON(body[j]);
                     }
                     for (var j = 0; j < body.length; ++j) {
-                        song.parts[i].body[j].modelDidLoad(song.parts[i].body, j);
+                        song.voices[i].body[j].modelDidLoad(song.voices[i].body, j);
                     }
                 }
             }
@@ -476,7 +476,7 @@ var ScoreStoreStore = (function (_super) {
         assert(false, "Fix voice & parts");
         var song = ScoreStoreStore.parse(src);
         this._header = song.header;
-        this._voices = song.parts;
+        this._voices = song.voices;
         for (var i = 0; i < this._voices.length; ++i) {
             if (this._voices[i].body) {
                 this._activeStaveIdx = i;

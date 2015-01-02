@@ -28,7 +28,7 @@ class BeginModel extends Model {
     // I.2 BeginModel //
     ////////////////////
 
-    part:           C.IVoice;
+    voice:          C.IVoice;
     noMargin:       boolean;
     braceY:         number;
     braceY2:        number;
@@ -86,7 +86,7 @@ class BeginModel extends Model {
 
         // Copy information from the context needed for the view
         // this.pianoSystemContinues = ctx.currStave.pianoSystemContinues; MXFIX
-        this.part = ctx.voice;
+        this.voice = ctx.voice;
         if (typeof window === "undefined" ||
                 global.location.href.indexOf("/scales/") !== -1) {
             // XXX: HACK!!!

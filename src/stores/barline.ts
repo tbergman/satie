@@ -138,8 +138,8 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             } else {
                 ctx.splice(i, ctx.idx - i);
                 ctx.markEntireSongDirty();
-                ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line - 1);
-                ctx.songEditor.dangerouslyMarkRendererLineDirty(ctx.line);
+                ctx.score.dangerouslyMarkRendererLineDirty(ctx.line - 1);
+                ctx.score.dangerouslyMarkRendererLineDirty(ctx.line);
                 ctx.idx = i;
                 return C.IterationStatus.LineRemoved;
             }

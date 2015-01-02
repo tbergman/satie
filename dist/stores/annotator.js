@@ -2,7 +2,7 @@ var _ = require("lodash");
 var assert = require("assert");
 var C = require("./contracts");
 var Context = (function () {
-    function Context(parts, layout, editor, assertionPolicy) {
+    function Context(voices, layout, editor, assertionPolicy) {
         this.startOfBeamBeat = NaN;
         this.accidentalsByStaff = [];
         this.barlineX = [];
@@ -20,10 +20,10 @@ var Context = (function () {
         this._recordings = null;
         this.nullEntry = false;
         this.lines = [];
-        this._voices = parts;
+        this._voices = voices;
         this._layout = layout;
         this._assertionPolicy = assertionPolicy;
-        this.songEditor = editor;
+        this.score = editor;
         if (layout) {
             if (layout.snapshot) {
                 _cpysnapshot(this, layout.snapshot);
@@ -68,7 +68,7 @@ var Context = (function () {
             invisibleForBars: this.invisibleForBars,
             pageLines: this.pageLines,
             pageStarts: this.pageStarts,
-            partIdx: this.voiceIdx,
+            voiceIdx: this.voiceIdx,
             x: this.x,
             y: this.y
         };
@@ -325,7 +325,7 @@ var Context = (function () {
                             }
                             else {
                                 placeholders.push(part.body[vidx + j]);
-                                if (splicePolicy === 4 /* ShortenOtherParts */) {
+                                if (splicePolicy === 4 /* ShortenOtherVoices */) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
                                     if (retained.calcBeats(this) > fromMainPart.calcBeats(this)) {
@@ -489,7 +489,7 @@ var Context = (function () {
         return _.chain(this._voices).filter(function (s) { return !!s.body; }).map(function (s) { return s.body[idx]; }).filter(function (s) { return s && (!where || !!where(s)); }).value();
     };
     Context.prototype.midiOutHint = function (out) {
-        this.songEditor.midiOutHint(out);
+        this.score.midiOutHint(out);
     };
     Object.defineProperty(Context.prototype, "nextActualType", {
         get: function () {
@@ -682,7 +682,7 @@ exports.Context = Context;
     SplicePolicy[SplicePolicy["MatchedOnly"] = 1] = "MatchedOnly";
     SplicePolicy[SplicePolicy["Additive"] = 2] = "Additive";
     SplicePolicy[SplicePolicy["Masked"] = 3] = "Masked";
-    SplicePolicy[SplicePolicy["ShortenOtherParts"] = 4] = "ShortenOtherParts";
+    SplicePolicy[SplicePolicy["ShortenOtherVoices"] = 4] = "ShortenOtherVoices";
     SplicePolicy[SplicePolicy["Subtractive"] = 5] = "Subtractive";
 })(exports.SplicePolicy || (exports.SplicePolicy = {}));
 var SplicePolicy = exports.SplicePolicy;
@@ -691,10 +691,10 @@ var SplicePolicy = exports.SplicePolicy;
     AssertionPolicy[AssertionPolicy["NoAssertions"] = 1] = "NoAssertions";
 })(exports.AssertionPolicy || (exports.AssertionPolicy = {}));
 var AssertionPolicy = exports.AssertionPolicy;
-function recordMetreData(parts) {
+function recordMetreData(voices) {
     "use strict";
     try {
-        _recordMetreData(parts);
+        _recordMetreData(voices);
     }
     catch (err) {
         var AttributesModel = require("./attributes");
@@ -707,13 +707,13 @@ function recordMetreData(parts) {
     }
 }
 exports.recordMetreData = recordMetreData;
-function _recordMetreData(parts) {
+function _recordMetreData(voices) {
     "use strict";
     var i;
     var j;
     var attributesPerIdx = {};
-    for (i = 0; i < parts.length; ++i) {
-        var body = parts[i].body;
+    for (i = 0; i < voices.length; ++i) {
+        var body = voices[i].body;
         if (!body) {
             continue;
         }
@@ -743,7 +743,7 @@ var PrivIterator = (function () {
         this._assertionPolicy = assertionPolicy;
         recordMetreData(this._voices);
         this._components = _.map(voices, function (voice, idx) {
-            var part = _.find(parent.songEditor.parts, function (part) { return _.any(part.voices, function (oVoice) { return voices[oVoice] === voice; }); });
+            var part = _.find(parent.score.parts, function (part) { return _.any(part.voices, function (oVoice) { return voices[oVoice] === voice; }); });
             var partVoices = _.map(part.voices, function (oVoice) { return voices[oVoice]; });
             var idxInPart = _.indexOf(partVoices, voice);
             return new PrivIteratorComponent(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
@@ -991,8 +991,8 @@ var PrivIterator = (function () {
         }
     };
     PrivIterator.prototype._markLineDirty = function () {
-        if (this._parent.songEditor) {
-            this._parent.songEditor.dangerouslyMarkRendererLineDirty(this._parent.line);
+        if (this._parent.score) {
+            this._parent.score.dangerouslyMarkRendererLineDirty(this._parent.line);
         }
         this._canExitAtNewline = false;
     };

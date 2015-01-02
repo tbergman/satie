@@ -25,7 +25,7 @@ import C                = require("./contracts");
  *      annotateImpl.
  * 
  * To see the kind of information held by Models, in your web browser's
- * console, look at 'ScoreStore.parts()[...].body'. Every item is a Model.
+ * console, look at 'ScoreStore.voices[...].body'. Every item is a Model.
  */
 class Model {
     /////////////////////////////////////////
@@ -35,7 +35,7 @@ class Model {
     /** Unique identifier for this instance */
     key:                string                  = Model.newKey();
 
-    /** Calculated. Position in part */
+    /** Calculated. Position in voice */
     idx:                number                  = NaN;
 
     /** Calculated. From left, in tenths of a stave space */
@@ -247,17 +247,17 @@ class Model {
     };
 
     /**
-     * Given an array of parts, remove all annotated objects
+     * Given an array of voices, remove all annotated objects
      * created through a Model.
      */
-    static removeAnnotations = (parts: Array<C.IVoice>) => {
-        for (var i = 0; i < parts.length; ++i) {
-            for (var j = 0; parts[i].body && j < parts[i].body.length; ++j) {
-                var item = parts[i].body[j];
+    static removeAnnotations = (voices: Array<C.IVoice>) => {
+        for (var i = 0; i < voices.length; ++i) {
+            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
+                var item = voices[i].body[j];
                 if (item.annotated && !item.placeholder) {
-                    for (var k = 0; k < parts.length; ++k) {
-                        if (parts[k].body) {
-                            parts[k].body.splice(j, 1);
+                    for (var k = 0; k < voices.length; ++k) {
+                        if (voices[k].body) {
+                            voices[k].body.splice(j, 1);
                         }
                     }
                     --j;
@@ -344,7 +344,7 @@ module Model {
         annotate(ctx: Annotator.Context) {
             var next = ctx.next(null, 1, true);
             if (next.priority === this.type) {
-                // Find real versions of every part, if possible.
+                // Find real versions of every model, if possible.
                 var here = ctx.findVertical(null, this.idx);
                 var nextV = ctx.findVertical(null, this.idx + 1);
                 var combined = new Array(here.length);

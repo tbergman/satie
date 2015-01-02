@@ -57,8 +57,8 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
     get header() {
         return this._header; }
     get src() {
-        return "RIPMUS0," + JSON.stringify({
-            parts: this._voices,
+        return "Ripieno State Transfer (dev)," + JSON.stringify({
+            voices: this._voices,
             header: this._header
         });
     }
@@ -69,7 +69,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
     // STAVE MUTATORS // 
     ////////////////////
 
-    ctxFromSnapshot(pointerData: C.IPointerData, parts: Array<C.IVoice>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
+    ctxFromSnapshot(pointerData: C.IPointerData, voices: Array<C.IVoice>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
         var i: number;
 
         if (!pointerData) {
@@ -77,18 +77,18 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         }
 
         if (pointerData && this._snapshots[pointerData.musicLine]) {
-            var ctx = new Annotator.Context(parts, {
+            var ctx = new Annotator.Context(voices, {
                 header: this.header,
                 snapshot: this._recreateSnapshot(pointerData.musicLine)
             }, this, assertionPolicy);
-            for (i = 0; i < parts.length; ++i) {
+            for (i = 0; i < voices.length; ++i) {
                 this._linesToUpdate[i + "_" + ctx.line] = true;
             }
             return ctx;
         } else {
             // We don't store snapshots for the 0th line, but we still need
             // to force it to be re-rendered.
-            for (i = 0; i < parts.length; ++i) {
+            for (i = 0; i < voices.length; ++i) {
                 this._linesToUpdate[i + "_0"] = true;
             }
         }
@@ -151,28 +151,28 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
     // STATICS // 
     /////////////
 
-    static parse(src: string): { parts: Array<C.IVoice>; header: C.ScoreHeader; } {
-        var song: { header: C.ScoreHeader; parts: Array<C.IVoice>; } = null;
+    static parse(src: string): { voices: Array<C.IVoice>; header: C.ScoreHeader; } {
+        var song: { header: C.ScoreHeader; voices: Array<C.IVoice>; } = null;
 
-        if (src.length && src.substr(0, 8) === "RIPMUS0,") {
+        if (src.length && src.substr(0, 8) === "Ripieno State Transfer (dev),") {
             // Ripieno native
             var songJson = JSON.parse(src.substring(8));
             song = {
-                parts: [],
+                voices: [],
                 header: new C.ScoreHeader(songJson.header)
             };
             for (var i = 0; i < songJson.parts.length; ++i) {
-                song.parts.push({
+                song.voices.push({
                     body: [],
                     instrument: songJson.parts[i].instrument || Instruments.List[0]
                 });
                 var body = songJson.parts[i].body;
                 if (body) {
                     for (var j = 0; j < body.length; ++j) {
-                        song.parts[i].body[j] = Model.fromJSON(body[j]);
+                        song.voices[i].body[j] = Model.fromJSON(body[j]);
                     }
                     for (var j = 0; j < body.length; ++j) {
-                        song.parts[i].body[j].modelDidLoad(song.parts[i].body, j);
+                        song.voices[i].body[j].modelDidLoad(song.voices[i].body, j);
                     }
                 }
             }
@@ -606,7 +606,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         assert(false, "Fix voice & parts");
         var song = ScoreStoreStore.parse(src);
         this._header = song.header;
-        this._voices = song.parts;
+        this._voices = song.voices;
 
         for (var i = 0; i < this._voices.length; ++i) {
             if (this._voices[i].body) {
