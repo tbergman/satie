@@ -510,6 +510,9 @@ var Context = (function () {
     };
     Object.defineProperty(Context.prototype, "ts", {
         get: function () {
+            if (!this.attributes || !this.attributes.time) {
+                return null;
+            }
             return C.tsToSimpleTS(this.attributes.time);
         },
         set: function (ts) {

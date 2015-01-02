@@ -114,7 +114,8 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
                 <!option value="11d">Lily 11d: TS/CompoundMulti</option>
                 <!option value="11e">Lily 11e: TS/CompoundMixed</option>
                 <!option value="11f">Lily 11f: TS/SymbolMeaning</option>
-                <!option value="11g">Lily 11g: TS/SenzaMisura</option>
+                <!option value="11g">Lily 11g: TS/SingleNumber</option>
+                <!option value="11h">Lily 11h: TS/SenzaMisura</option>
                 <!option value="12a">Lily 12a: Clefs</option>
                 <!option value="12b">Lily 12b: Clefs/NoKeyOrClef</option>
                 <!option value="13a">Lily 13a: KeySignatures</option>

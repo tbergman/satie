@@ -647,6 +647,9 @@ export class Context implements C.MetreContext {
     }
 
     get ts(): C.ISimpleTimeSignature {
+        if (!this.attributes || !this.attributes.time) {
+            return null;
+        }
         return C.tsToSimpleTS(this.attributes.time);
     }
 
