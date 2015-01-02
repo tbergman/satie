@@ -5,6 +5,7 @@ var __extends = this.__extends || function (d, b) {
     d.prototype = new __();
 };
 var Model = require("./model");
+var _ = require("lodash");
 var assert = require("assert");
 var C = require("./contracts");
 var ClefModel = require("./clef");
@@ -152,7 +153,7 @@ var AttributesModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
         if (this.time) {
             mctx.ts = {
-                beats: this.time.beats[0],
+                beats: _.reduce(this.time.beats, function (memo, time) { return memo + _.reduce(time.split("+"), function (memo, time) { return memo + parseInt(time, 10); }, 0); }, 0),
                 beatType: this.time.beatTypes[0]
             };
         }

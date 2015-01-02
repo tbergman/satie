@@ -41,13 +41,13 @@ var TimeSignatureModel = (function (_super) {
     Object.defineProperty(TimeSignatureModel.prototype, "ts", {
         get: function () {
             return {
-                beats: this.beats[0],
+                beats: this.addUpBeats(),
                 beatType: this.beatTypes[0],
                 commonRepresentation: this.symbol !== 5 /* Normal */
             };
         },
         set: function (c) {
-            this.beats = [c.beats];
+            this.beats = [c.beats + ""];
             this.beatTypes = [c.beatType];
             switch (true) {
                 case c.commonRepresentation && c.beats === 4 && c.beatType === 4:
@@ -78,6 +78,9 @@ var TimeSignatureModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    TimeSignatureModel.prototype.addUpBeats = function () {
+        return _.reduce(this.beats, function (memo, time) { return memo + _.reduce(time.split("+"), function (memo, time) { return memo + parseInt(time, 10); }, 0); }, 0);
+    };
     TimeSignatureModel.prototype.recordMetreDataImpl = function (mctx) {
         mctx.ts = this.ts;
         this.ctxData = new C.MetreContext(mctx);
@@ -139,7 +142,7 @@ var TimeSignatureModel = (function (_super) {
     };
     TimeSignatureModel.createTS = function (ctx) {
         ctx.insertPast(new TimeSignatureModel({
-            beats: [4],
+            beats: ["4"],
             beatTypes: [4],
             senzaMisura: false
         }, true));

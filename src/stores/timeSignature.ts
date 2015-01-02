@@ -45,13 +45,14 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
 
     get ts(): C.ISimpleTimeSignature {
         return {
-            beats:                  this.beats[0],
+            beats:                  this.addUpBeats(),
             beatType:               this.beatTypes[0],
             commonRepresentation:   this.symbol !== C.MusicXML.TimeSymbolType.Normal
         };
     }
     set ts(c: C.ISimpleTimeSignature) {
-        this.beats                  = [c.beats];
+        // METREFIX broken
+        this.beats                  = [c.beats + ""];
         this.beatTypes              = [c.beatType];
         switch(true) {
             case c.commonRepresentation && c.beats === 4 && c.beatType === 4:
@@ -76,12 +77,17 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
         this._displayTimeSignature = ts;
     }
 
+    addUpBeats() {
+        return _.reduce(this.beats, (memo, time) => memo +
+            _.reduce(time.split("+"), (memo, time) => memo + parseInt(time, 10), 0), 0);
+    }
+
     /////////////////////////
     // I.3 C.MusicXML.Time //
     /////////////////////////
 
     interchangeables:               C.MusicXML.Interchangeable[];
-    beats:                          number[];
+    beats:                          string[];
     beatTypes:                      number[];
     senzaMisura:                    boolean;
 
@@ -230,7 +236,7 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
 
     static createTS = (ctx: Annotator.Context): C.IterationStatus => {
         ctx.insertPast(new TimeSignatureModel({
-                beats:          [4],
+                beats:          ["4"],
                 beatTypes:      [4],
                 senzaMisura:    false
             }, true));

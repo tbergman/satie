@@ -648,15 +648,17 @@ export class Context implements C.MetreContext {
 
     get ts(): C.ISimpleTimeSignature {
         return this.attributes.time ? {
-            beats: this.attributes.time.beats[0],
+            beats:          _.reduce(this.attributes.time.beats, (memo, time) => memo +
+                _.reduce(time.split("+"), (memo, time) => memo + parseInt(time, 10), 0), 0),
             beatType: this.attributes.time.beatTypes[0],
             commonRepresentation: this.attributes.time.symbol !== C.MusicXML.TimeSymbolType.Normal
         } : null;
     }
 
     set ts(ts: C.ISimpleTimeSignature) {
+        // METREFIX BROKEN!!!
         this.attributes.time = this.attributes.time || <any>{};
-        this.attributes.time.beats = [ts.beats];
+        this.attributes.time.beats = ["" + ts.beats];
         this.attributes.time.beatTypes = [ts.beatType];
         switch(true) {
             case ts.commonRepresentation && ts.beats === 4 && ts.beatType === 4:

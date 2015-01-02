@@ -511,14 +511,14 @@ var Context = (function () {
     Object.defineProperty(Context.prototype, "ts", {
         get: function () {
             return this.attributes.time ? {
-                beats: this.attributes.time.beats[0],
+                beats: _.reduce(this.attributes.time.beats, function (memo, time) { return memo + _.reduce(time.split("+"), function (memo, time) { return memo + parseInt(time, 10); }, 0); }, 0),
                 beatType: this.attributes.time.beatTypes[0],
                 commonRepresentation: this.attributes.time.symbol !== 5 /* Normal */
             } : null;
         },
         set: function (ts) {
             this.attributes.time = this.attributes.time || {};
-            this.attributes.time.beats = [ts.beats];
+            this.attributes.time.beats = ["" + ts.beats];
             this.attributes.time.beatTypes = [ts.beatType];
             switch (true) {
                 case ts.commonRepresentation && ts.beats === 4 && ts.beatType === 4:

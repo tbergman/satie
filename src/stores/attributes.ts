@@ -6,6 +6,7 @@
 
 import Model                = require("./model");
 
+import _                    = require("lodash");
 import assert               = require("assert");
 
 import Annotator            = require("./annotator");
@@ -108,7 +109,8 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         this.ctxData        	= new C.MetreContext(mctx);
         if (this.time) {
             mctx.ts             = {
-                beats:          this.time.beats[0],
+                beats:          _.reduce(this.time.beats, (memo, time) => memo +
+                    _.reduce(time.split("+"), (memo, time) => memo + parseInt(time, 10), 0), 0),
                 beatType:       this.time.beatTypes[0]
             };
         } else if (!mctx.ts) {
