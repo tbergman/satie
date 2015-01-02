@@ -371,6 +371,7 @@ var DurationModel = (function (_super) {
         Metre.correctRoundingErrors(mctx);
     };
     DurationModel.prototype.annotateImpl = function (ctx) {
+        var _this = this;
         var i;
         var j;
         if (!ctx.attributes.keySignature) {
@@ -499,6 +500,12 @@ var DurationModel = (function (_super) {
         }
         this.x = ctx.x;
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
+        var accidentals = this.getAccidentals(ctx);
+        _.forEach(accidentals, function (a, i) {
+            if (parseInt(a, 10) === 0) {
+                ctx.accidentalsByStaff[_this.staff][_this.chord[i].step] = undefined;
+            }
+        });
         for (i = 0; i < this.chord.length; ++i) {
             ctx.accidentalsByStaff[this.staff][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
             if ((ctx.accidentalsByStaff[this.staff][this.chord[i].step]) !== this.chord[i].alter) {
@@ -525,7 +532,17 @@ var DurationModel = (function (_super) {
         return Metre.calcBeats2(this, ctx, inheritedCount);
     };
     DurationModel.prototype.getAccWidthAfterBar = function (ctx) {
-        var parens = _.any(this.getAccidentals(ctx, true), function (v) { return typeof v === "string" && !!~v.indexOf("p"); });
+        var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        var backupAcc = ctx.accidentalsByStaff[this.staff];
+        var beat = ctx.beat;
+        ctx.accidentalsByStaff[this.staff] = staffAcc;
+        ctx.beat = 1;
+        ctx.idx++;
+        var acc = this.getAccidentals(ctx, true);
+        ctx.accidentalsByStaff[this.staff] = backupAcc;
+        ctx.beat = beat;
+        ctx.idx--;
+        var parens = _.any(acc, function (v) { return typeof v === "string" && !!~v.indexOf("p"); });
         if (parens) {
             return 20;
         }
@@ -673,8 +690,7 @@ var DurationModel = (function (_super) {
                 }
             }
             if (!actual) {
-                ctx.accidentalsByStaff[this.staff][pitch.step] = undefined;
-                result[i] = "0p";
+                result[i] = paren ? "0p" : "0";
                 continue;
             }
             assert(actual !== C.InvalidAccidental, "Accidental is invalid");

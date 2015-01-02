@@ -91,7 +91,7 @@ export class Context implements C.MetreContext {
      */
     captureLine(): ILineSnapshot {
         return {
-            accidentalsByStaff:     this.accidentalsByStaff,
+            accidentalsByStaff:     C.JSONx.clone(this.accidentalsByStaff),
             bar:                    this.loc.bar,
             barKeys:                this.barKeys,
             barlineX:               this.barlineX,
@@ -1736,7 +1736,7 @@ class PrivIteratorComponent {
 function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     "use strict";
 
-    if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = line.accidentalsByStaff; }
+    if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff); }
     if (  line.bar         !== null) { ctx.bar                = line.bar;                }
     if (!!line.barlineX    !== null) { ctx.barlineX           = line.barlineX;           }
     if (!!line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }

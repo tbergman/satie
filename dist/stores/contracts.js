@@ -519,41 +519,43 @@ var NoteUtil;
     function getAccidentals(key) {
         var ret = {};
         if (key.fifths < 0) {
-            _.times(-key.fifths, function (idx) {
-                ret[NoteUtil.flatCircle[idx]] = -1;
+            _.times(Math.min(7, -key.fifths), function (idx) {
+                ret[NoteUtil.flatCircle[idx]] = (7 + idx < -key.fifths) ? -2 : -1;
             });
             return ret;
         }
-        _.times(key.fifths, function (idx) {
-            ret[NoteUtil.sharpCircle[idx]] = 1;
-        });
-        return ret;
+        else {
+            _.times(Math.min(7, key.fifths), function (idx) {
+                ret[NoteUtil.flatCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
+            });
+            return ret;
+        }
     }
     NoteUtil.getAccidentals = getAccidentals;
     ;
-    NoteUtil.flatCircle = "beadgcf";
-    NoteUtil.sharpCircle = "fcgdaeb";
+    NoteUtil.flatCircle = "BEADGCF";
+    NoteUtil.sharpCircle = "FCGDAEB";
     NoteUtil.keyCircle = [
-        "fb",
-        "cb",
-        "gb",
-        "db",
-        "ab",
-        "eb",
-        "bb",
-        "f ",
-        "c ",
-        "g ",
-        "d ",
-        "a ",
-        "e ",
-        "b ",
-        "f#",
-        "c#",
-        "g#",
-        "d#",
-        "a#",
-        "e#"
+        "Fb",
+        "Cb",
+        "Gb",
+        "Db",
+        "Ab",
+        "Eb",
+        "Bb",
+        "F ",
+        "C ",
+        "G ",
+        "D ",
+        "A ",
+        "E ",
+        "B ",
+        "F#",
+        "C#",
+        "G#",
+        "D#",
+        "A#",
+        "E#"
     ];
     NoteUtil.circleOffsetByMode = {
         major: 8,

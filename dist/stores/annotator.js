@@ -58,7 +58,7 @@ var Context = (function () {
     };
     Context.prototype.captureLine = function () {
         return {
-            accidentalsByStaff: this.accidentalsByStaff,
+            accidentalsByStaff: C.JSONx.clone(this.accidentalsByStaff),
             bar: this.loc.bar,
             barKeys: this.barKeys,
             barlineX: this.barlineX,
@@ -1198,7 +1198,7 @@ var PrivIteratorComponent = (function () {
 function _cpyline(ctx, line, mode) {
     "use strict";
     if (!!line.accidentalsByStaff) {
-        ctx.accidentalsByStaff = line.accidentalsByStaff;
+        ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff);
     }
     if (line.bar !== null) {
         ctx.bar = line.bar;

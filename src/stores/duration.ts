@@ -541,6 +541,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         // Set which accidentals are displayed, and then update the accidentals currently
         // active in the bar.
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
+        var accidentals = this.getAccidentals(ctx);
+        _.forEach(accidentals, (a, i) => {
+            if (parseInt(a, 10) === 0) {
+                ctx.accidentalsByStaff[this.staff][this.chord[i].step] = undefined;
+            }
+        });
         for (i = 0; i < this.chord.length; ++i) {
             // Set the octave specific accidental
             ctx.accidentalsByStaff[this.staff][this.chord[i].step + this.chord[i].octave] = this.chord[i].alter;
@@ -579,7 +585,19 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     getAccWidthAfterBar(ctx: Annotator.Context) {
-        var parens = _.any(this.getAccidentals(ctx, true), v => typeof v === "string" && !!~v.indexOf("p"));
+        var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
+        var backupAcc = ctx.accidentalsByStaff[this.staff];
+        var beat = ctx.beat;
+        ctx.accidentalsByStaff[this.staff] = staffAcc;
+        ctx.beat = 1;
+        ctx.idx++;
+        var acc = this.getAccidentals(ctx, true);
+        ctx.accidentalsByStaff[this.staff] = backupAcc;
+        ctx.beat = beat;
+        ctx.idx--;
+
+        var parens = _.any(acc, v => typeof v === "string" && !!~v.indexOf("p"));
+
         if (parens) {
             return 20;
         }
@@ -754,8 +772,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             if (!actual) {
-                ctx.accidentalsByStaff[this.staff][pitch.step] = undefined;
-                result[i] = "0p"; // natural
+                result[i] = paren ? "0p" : "0";
                 continue;
             }
 

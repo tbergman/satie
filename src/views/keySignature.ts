@@ -37,15 +37,16 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
      */
     getAccidentals(): {accidental: string; line: number}[] {
         var spec = this.props.spec;
+        var idxes = _.times(Math.min(7, Math.abs(spec.fifths)), i => (i + Math.max(0, Math.abs(spec.fifths) - 7))%7);
         if (spec.fifths >= 0) {
-            return _.times(spec.fifths, i => Object({
+            return _.map(idxes, i => Object({
                 line: sharps[standardClef(spec.clef)][i],
-                accidental: "accidentalSharp"
+                accidental: (7 + i < spec.fifths) ? "accidentalDoubleSharp" : "accidentalSharp"
             }));
         } else if (spec.fifths < 0) {
-            return _.times(-spec.fifths, i => Object({
+            return _.map(idxes, i => Object({
                 line: flats[standardClef(spec.clef)][i],
-                accidental: "accidentalFlat"
+                accidental: (7 + i < -spec.fifths) ? "accidentalDoubleFlat": "accidentalFlat"
             }));
         }
     }

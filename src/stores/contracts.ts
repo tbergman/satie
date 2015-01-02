@@ -1217,25 +1217,25 @@ export module NoteUtil {
         var ret: IAccidentals = { };
 
         if (key.fifths < 0) {
-            _.times(-key.fifths, idx => {
-                ret[flatCircle[idx]] = -1;
+            _.times(Math.min(7, -key.fifths), idx => {
+                ret[flatCircle[idx]] = (7 + idx < -key.fifths) ? -2 : -1;
+            });
+            return ret;
+        } else {
+            _.times(Math.min(7, key.fifths), idx => {
+                ret[flatCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
             });
             return ret;
         }
-
-        _.times(key.fifths, idx => {
-            ret[sharpCircle[idx]] = 1;
-        });
-        return ret;
     };
 
-    export var flatCircle = "beadgcf";
-    export var sharpCircle = "fcgdaeb";
+    export var flatCircle = "BEADGCF";
+    export var sharpCircle = "FCGDAEB";
 
     export var keyCircle = [
-        "fb", "cb", "gb", "db", "ab", "eb", "bb",
-        "f ", "c ", "g ", "d ", "a ", "e ", "b ",
-        "f#", "c#", "g#", "d#", "a#", "e#"];
+        "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb",
+        "F ", "C ", "G ", "D ", "A ", "E ", "B ",
+        "F#", "C#", "G#", "D#", "A#", "E#"];
     export var circleOffsetByMode: {[key: string]: number} = { // MXFIX: enum plz
         major: 8,
         minor: 11

@@ -101,7 +101,7 @@ class KeySignatureModel extends Model.SubAttributeModel implements C.MusicXML.Ke
             this._annotatedSpacing                  = 10;
         }
 
-        var c: number                               = Math.abs(this.fifths);
+        var c: number                               = Math.min(7, Math.abs(this.fifths));
         if (c) {
             ctx.x                                   += this._annotatedSpacing + 10.4*c;
         } else {

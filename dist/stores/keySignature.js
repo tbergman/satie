@@ -81,7 +81,7 @@ var KeySignatureModel = (function (_super) {
         else {
             this._annotatedSpacing = 10;
         }
-        var c = Math.abs(this.fifths);
+        var c = Math.min(7, Math.abs(this.fifths));
         if (c) {
             ctx.x += this._annotatedSpacing + 10.4 * c;
         }
