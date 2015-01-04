@@ -3,8 +3,8 @@
 //   ../node_modules/musicxml-interfaces/typescript/dist/musicxml-interfaces.d.ts
 
 declare module 'satie' {
-    import C = require("__satie/stores/contracts");
     export import MusicXML = require("musicxml-interfaces");
+    import C = require("__satie/stores/contracts");
     export interface ISatieProps {
         musicXML: C.MusicXML.ScoreTimewise;
         width: number;

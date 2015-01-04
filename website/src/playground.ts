@@ -36,7 +36,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
         return <!div className="pageContent">
             <!Bootstrap.Panel header={this.renderHeader()} footer={this.renderEditor()}>
                 {this.state.score && <!Satie.MusicXMLView musicXML={this.state.score}
-                    width={this.state.width} height={300} />}
+                    width={this.state.width} height={600} />}
                 {this.state.error}
             </Bootstrap.Panel>
             <!h3><!a href="javascript:void(0)">MusicXML Specification »</a></h3>
@@ -46,7 +46,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
 
     getInitialState(): IState {
         return {
-            test: "01b",
+            test: "14a",
             width: 1
         };
     }

@@ -59,7 +59,7 @@ var TimeSignatureNumber = (function (_super) {
     }
     TimeSignatureNumber.prototype.render = function () {
         var _this = this;
-        return React.createElement("g", null, _.map((this.props.children + "").split(""), function (c, i) { return React.createElement(Glyph.Component, { key: "ts-" + i, x: _this.props.x + i * 10, y: _this.props.y, fill: _this.props.stroke, glyphName: "timeSig" + c }); }));
+        return React.createElement("g", null, _.map((this.props.children + "").split(""), function (c, i) { return React.createElement(Glyph.Component, { key: "ts-" + i, x: _this.props.x + i * 12, y: _this.props.y, fill: _this.props.stroke, glyphName: "timeSig" + c }); }));
     };
     return TimeSignatureNumber;
 })(TypedReact.Component);

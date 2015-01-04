@@ -94,7 +94,7 @@ class TimeSignatureNumber extends TypedReact.Component<TimeSignatureNumber.IProp
         return <!g>
             {_.map((this.props.children + "").split(""), (c, i) => <!Glyph.Component
                 key={"ts-" + i}
-                x={this.props.x + i*10}
+                x={this.props.x + i*12}
                 y={this.props.y}
                 fill={this.props.stroke}
                 glyphName={"timeSig" + c} />)}

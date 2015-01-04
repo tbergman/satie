@@ -4,19 +4,19 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+exports.MusicXML = require("musicxml-interfaces");
 var React = require("react");
 var TypedReact = require("typed-react");
 var C = require("./stores/contracts");
 var Dispatcher = require("./stores/dispatcher");
 var Renderer = require("./renderer/renderer");
 var ScoreStore = require("./stores/scoreStore");
-exports.MusicXML = require("musicxml-interfaces");
-var Satie = (function (_super) {
-    __extends(Satie, _super);
-    function Satie() {
+var MusicXMLViewSpec = (function (_super) {
+    __extends(MusicXMLViewSpec, _super);
+    function MusicXMLViewSpec() {
         _super.apply(this, arguments);
     }
-    Satie.prototype.render = function () {
+    MusicXMLViewSpec.prototype.render = function () {
         var body;
         if (!this.state.context) {
             body = React.createElement("div", null, "Loading...");
@@ -39,13 +39,14 @@ var Satie = (function (_super) {
             style: {
                 width: this.props.width,
                 height: this.props.height,
-                overflow: "scroll",
+                overflowY: "scroll",
+                overflowX: "hidden",
                 border: "1px solid #eee",
                 position: "relative"
             }
         }, body);
     };
-    Satie.prototype.getInitialState = function () {
+    MusicXMLViewSpec.prototype.getInitialState = function () {
         var dispatcher = new Dispatcher;
         var score = new ScoreStore(dispatcher);
         score.addListener(1 /* Annotate */, this._updateFromStore);
@@ -54,15 +55,13 @@ var Satie = (function (_super) {
             score: score
         };
     };
-    Satie.prototype.componentWillMount = function () {
-        if (!cssInjected && typeof window !== "undefined") {
-            injectCSS();
-        }
+    MusicXMLViewSpec.prototype.componentWillMount = function () {
+        injectCSS();
     };
-    Satie.prototype.componentDidMount = function () {
+    MusicXMLViewSpec.prototype.componentDidMount = function () {
         this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
     };
-    Satie.prototype.componentDidUpdate = function (prevProps) {
+    MusicXMLViewSpec.prototype.componentDidUpdate = function (prevProps) {
         if (prevProps.musicXML !== this.props.musicXML) {
             this.setState({
                 context: null
@@ -70,23 +69,26 @@ var Satie = (function (_super) {
             this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
         }
     };
-    Satie.prototype.componentWillUnmount = function () {
+    MusicXMLViewSpec.prototype.componentWillUnmount = function () {
         this.state.score.removeListener(1 /* Annotate */, this._updateFromStore);
         this.state.score.destructor();
     };
-    Satie.prototype._updateFromStore = function () {
+    MusicXMLViewSpec.prototype._updateFromStore = function () {
         this.setState({
             context: this.state.score.finalCtx
         });
     };
-    return Satie;
+    return MusicXMLViewSpec;
 })(TypedReact.Component);
 var cssInjected = false;
 function injectCSS() {
+    if (cssInjected || typeof window === "undefined") {
+        return;
+    }
     cssInjected = true;
     var style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
     document.head.appendChild(style);
     style.innerHTML = "@font-face {" + "font-family: 'bravura';" + "src: url('/res/bravura.woff') format('woff');" + "font-weight: normal;" + "font-style: normal;" + "}" + ".mn_ {" + "-moz-user-select: none;" + "-ms-user-select: none;" + "-webkit-touch-callout: none;" + "-webkit-user-select: none;" + "cursor: default;" + "font-family: 'bravura';" + "user-select: none;" + "pointer-events: none;" + "text-rendering: optimizeSpeed;" + "}" + ".mmn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: middle;" + "stroke: #7a7a7a;" + "}" + ".bn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: end;" + "stroke: #7a7a7a;" + "}";
 }
-exports.MusicXMLView = TypedReact.createClass(Satie);
+exports.MusicXMLView = TypedReact.createClass(MusicXMLViewSpec);

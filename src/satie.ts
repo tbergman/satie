@@ -17,24 +17,22 @@
 
 /// <reference path="../typings/tsd.d.ts" />
 
-import React        = require("react");
-import TypedReact   = require("typed-react");
-import _            = require("lodash");
-import assert       = require("assert");
+export import MusicXML  = require("musicxml-interfaces");
+import React            = require("react");
+import TypedReact   	= require("typed-react");
+import _            	= require("lodash");
+import assert       	= require("assert");
 
-import Annotator    = require("./stores/annotator");
-import BeginModel   = require("./stores/begin");
-import C            = require("./stores/contracts");
-import Dispatcher   = require("./stores/dispatcher");
-import Instruments  = require("./stores/instruments");
-import Model        = require("./stores/model");
-import Renderer     = require("./renderer/renderer");
-import ScoreStore   = require("./stores/scoreStore");
+import Annotator        = require("./stores/annotator");
+import BeginModel   	= require("./stores/begin");
+import C            	= require("./stores/contracts");
+import Dispatcher   	= require("./stores/dispatcher");
+import Instruments  	= require("./stores/instruments");
+import Model        	= require("./stores/model");
+import Renderer     	= require("./renderer/renderer");
+import ScoreStore   	= require("./stores/scoreStore");
 
-export import MusicXML = require("musicxml-interfaces");
-
-class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
-
+class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
     render(): any {
         var body: any;
 
@@ -58,7 +56,8 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
             style: {
                 width:      this.props.width,
                 height: 	this.props.height,
-                overflow:   "scroll",
+                overflowY:  "scroll",
+                overflowX:  "hidden",
                 border:     "1px solid #eee",
                 position:   "relative"
             }},
@@ -78,9 +77,7 @@ class Satie extends TypedReact.Component<ISatieProps, ISatieState> {
     }
 
     componentWillMount() {
-        if (!cssInjected && typeof window !== "undefined") {
-            injectCSS();
-        }
+        injectCSS();
     }
 
     componentDidMount() {
@@ -116,6 +113,9 @@ interface ISatieState {
 
 var cssInjected = false;
 function injectCSS() {
+    if (cssInjected || typeof window === "undefined") {
+        return;
+    }
     cssInjected = true;
 
 	var style = document.createElement("style");
@@ -160,5 +160,5 @@ export interface ISatieProps {
     height: number;
 }
 
-export var MusicXMLView = TypedReact.createClass(Satie);
+export var MusicXMLView = TypedReact.createClass(MusicXMLViewSpec);
 
