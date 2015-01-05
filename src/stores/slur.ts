@@ -50,7 +50,7 @@ class SlurGroupModel extends Model {
         }
 
         // A clef must exist on each line.
-        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
+        if (!ctx.attributes.clefs[ctx.idxInPart]) {
             return ClefModel.createClef(ctx);
         }
 

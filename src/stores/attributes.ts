@@ -142,11 +142,11 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
             this.keySignature   = null;
         }
         this.clefs = this.clefs || [];
-        var clef = this.clefs[ctx.voiceIdx];
+        var clef = this.clefs[ctx.idxInPart];
         if (clef && !(clef instanceof Model)) {
             ctx.insertFuture(new ClefModel(clef, false));
             ctx.next().ctxData  = this.ctxData;
-            clef           = null;
+            clef                = null;
         }
 
         if (this._parent && sameLineAsParent) {
@@ -191,11 +191,11 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
 
     updateAttached(ctx: Annotator.Context) {
         this.clefs          = this.clefs || [];
-        this.clefs[ctx.voiceIdx] = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef || c.type > C.Type.END_OF_ATTRIBUTES)) ||
-            this.clefs[ctx.voiceIdx];
+        this.clefs[ctx.idxInPart] = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef || c.type > C.Type.END_OF_ATTRIBUTES)) ||
+            this.clefs[ctx.idxInPart];
 
-        this.time           = <any> ifAttribute(ctx.next(c => c.type === C.Type.TimeSignature || c.type > C.Type.END_OF_ATTRIBUTES)) || this.time;
-        this.keySignature   = <any> ifAttribute(ctx.next(c => c.type === C.Type.KeySignature  || c.type > C.Type.END_OF_ATTRIBUTES));
+        this.time           = <any> ifAttribute(ctx.next(c => c.priority === C.Type.TimeSignature || c.priority > C.Type.END_OF_ATTRIBUTES)) || this.time;
+        this.keySignature   = <any> ifAttribute(ctx.next(c => c.priority === C.Type.KeySignature  || c.priority > C.Type.END_OF_ATTRIBUTES));
 
         function ifAttribute(m: Model) {
             return m && m.priority < C.Type.END_OF_ATTRIBUTES ? m : null;

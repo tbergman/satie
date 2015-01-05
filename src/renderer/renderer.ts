@@ -77,6 +77,9 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var viewbox = "0 0 " + width10s + " " + height10s;
 
         var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
+        _.map(parts, (part: C.IPart, idx: number) => {
+            _.chain(part.containsVoice).keys().map(k => parseInt(k, 10)).sort().map(voice => voices[<any>voice]).map(null);
+        });
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
             return <!RenderEngine
                     onClick={this.handleMouseClick}
@@ -94,7 +97,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
                 {/* Using parts is an anti-pattern. Ideally, we would have a getModels()
                     method in ScoreStore or something. */}
                 {_.map(parts, (part: C.IPart, idx: number) =>
-                    _.chain(part.voices).map(voice => voices[voice]).map((voice, vidx) => 
+                    _.chain(part.containsVoice).keys().map(k => parseInt(k, 10)).map(voice => voices[voice]).map((voice, vidx) => 
                             <!g key={idx + "_" + vidx} style={{ fontSize: scale40 + "px" }}>
                         {_.reduce(voice.body.slice(page.from, page.to), function (memo: Array<Model>[], obj: Model) {
                             if (obj.type === C.Type.NewLine) {

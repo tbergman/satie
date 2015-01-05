@@ -8,6 +8,7 @@ var Model = require("./model");
 var _ = require("lodash");
 var assert = require("assert");
 var Annotator = require("./annotator");
+var AttributesModel = require("./attributes");
 var BarlineModel = require("./barline");
 var BeginModel = require("./begin");
 var C = require("./contracts");
@@ -101,12 +102,18 @@ var PlaceholderModel = (function (_super) {
         }
         switch (this.priority) {
             case 145 /* Attributes */:
-                ctx.attributes = ctx._voices[0].body[ctx.idx];
-                if (!ctx.ts) {
-                    ctx.ts = {
-                        beats: 4,
-                        beatType: 4
-                    };
+                if (!ctx.idxInPart) {
+                    ctx.body.splice(ctx.idx, 1, new AttributesModel({}, true));
+                    return 20 /* RetryCurrent */;
+                }
+                else {
+                    ctx.attributes = ctx._voices[_.chain(ctx.part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).min().value()].body[ctx.idx];
+                    if (!ctx.ts) {
+                        ctx.ts = {
+                            beats: 4,
+                            beatType: 4
+                        };
+                    }
                 }
                 break;
             case 300 /* Barline */:
@@ -120,18 +127,27 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 150 /* Clef */:
-                if (ctx.part.staves > ctx.voiceIdx && !("priority" in ctx.attributes.clefs[ctx.voiceIdx])) {
-                    var newClef = new ClefModel(ctx.attributes.clefs[ctx.voiceIdx], true);
-                    ctx.body.splice(ctx.idx, 1, newClef);
-                    ctx.attributes.clefs[ctx.voiceIdx] = newClef;
-                    ctx.body[ctx.idx].annotated = this.annotated;
-                    ctx.body[ctx.idx].proposed = this.proposed;
-                    return 20 /* RetryCurrent */;
+                if (ctx.part.staveCount > ctx.idxInPart) {
+                    var newClef;
+                    if (!ctx.attributes.clefs[ctx.idxInPart]) {
+                        newClef = new ClefModel({ sign: "G", line: 2, clefOctaveChange: null }, true);
+                    }
+                    else if (!("priority" in ctx.attributes.clefs[ctx.idxInPart])) {
+                        newClef = new ClefModel(ctx.attributes.clefs[ctx.idxInPart], true);
+                    }
+                    if (newClef) {
+                        ctx.body.splice(ctx.idx, 1, newClef);
+                        ctx.attributes.clefs[ctx.idxInPart] = newClef;
+                        ctx.body[ctx.idx].annotated = this.annotated;
+                        ctx.body[ctx.idx].proposed = this.proposed;
+                        return 20 /* RetryCurrent */;
+                    }
                 }
                 break;
             case 600 /* Duration */:
                 assert(!ctx.findVertical(function (c) { return c.priority !== 600 /* Duration */; }).length);
-                if (ctx.next(null, 1, true).type === 450 /* BeamGroup */) {
+                var next = ctx.next(null, 1, true);
+                if (next && next.type === 450 /* BeamGroup */) {
                     var bodies = ctx.findVertical(function () { return true; }, this.idx + 1);
                     ctx.eraseFuture(this.idx + 1);
                     ctx.insertPastVertical(bodies);
@@ -146,7 +162,7 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 160 /* KeySignature */:
-                if (ctx.part.staves > ctx.voiceIdx) {
+                if (ctx.part.staveCount > ctx.idxInPart) {
                     var ks = C.JSONx.clone(realItems[0]);
                     assert(ks, "Undefined prevKeySignature!!");
                     ctx.body.splice(ctx.idx, 1, new KeySignatureModel({ keySignature: ks }, true));
@@ -166,7 +182,7 @@ var PlaceholderModel = (function (_super) {
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;
             case 170 /* TimeSignature */:
-                if (ctx.part.staves > ctx.voiceIdx) {
+                if (ctx.part.staveCount > ctx.idxInPart) {
                     var tses = ctx.findVertical(function (obj) { return obj.type === 170 /* TimeSignature */; });
                     assert(tses.length, "Staves cannot all be placeholders!");
                     ctx.body.splice(ctx.idx, 1, new TimeSignatureModel(tses[0].toMXMLObject(), true));
@@ -176,7 +192,7 @@ var PlaceholderModel = (function (_super) {
                 }
                 break;
         }
-        if (this.priority !== 50 /* Print */) {
+        if (this.priority !== 50 /* Print */ && ctx.attributes && ctx.attributes.time) {
             this.recordMetreDataImpl(ctx);
         }
         return 10 /* Success */;

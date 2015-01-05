@@ -822,14 +822,15 @@ export interface IPart {
     id:                         string;
 
     /**
-     * Indices of voices this part owns.
+     * The keys are indices of voices this part owns.
+     * The values are "true".
      */
-    voices:                     number[];
+    containsVoice:              {[key: number]: boolean};
 
     /**
      * Number of staves this part owns.
      */
-    staves:                     number;
+    staveCount:                     number;
 };
 
 /** 

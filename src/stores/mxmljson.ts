@@ -108,8 +108,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         idxToPart[parts.length]             = part.id;
         parts.push({
             id:                             part.id,
-            staves:                         0,
-            voices:                         []
+            staveCount:                         0,
+            containsVoice:                  {}
         });
     });
     var partToIdx                           = _.invert(idxToPart);
@@ -122,7 +122,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     var timeSignaturePerPart                = <C.MusicXML.Time[]> [];
     var outputIdx: number                   = 1; // BeginModel is __always__ output.
 
-    // Fill the voice object. This is the important bulk of this call.
+    // Fill the voice object. This is the bulk of this call.
     _.forEach(mxmlJson.measures, processMeasure);
 
     // Call model hooks
@@ -161,9 +161,9 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
             if (minPriority !== C.MAX_NUM) {
                 var newBeat = 1000;
                 _.forEach(elements, (element, mPartIdx) => {
-                    var voiceIdx = getVoiceIdx(mPartIdx, element.voice);
-                    parts[mPartIdx].staves = Math.max(parts[mPartIdx].staves, element.staff||1);
-                    if (!voices[voiceIdx]) {
+                    var voiceIdx = element ? getVoiceIdx(mPartIdx, element.voice) : -1;
+                    parts[mPartIdx].staveCount = Math.max(parts[mPartIdx].staveCount, element ? element.staff||1 : -1);
+                    if (!!~voiceIdx && !voices[voiceIdx]) {
                         voices[voiceIdx] = {
                             instrument: Instruments.List[0],
                             body: <Model[]> [new BeginModel({}, true)]
@@ -176,11 +176,12 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                         }
                     }
 
-                    Annotator.recordMetreData(voices); // XXX: O(n^2) for no reason.
+                    Annotator.recordMetreData(parts, voices); // XXX: O(n^2) for no reason.
 
-                    var thisPriority = mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[mPartIdx].id);
+                    var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[mPartIdx].id) :
+                        C.Type.Unknown;
 
-                    if (minPriority === thisPriority) {
+                    if (minPriority === thisPriority && currBeat === beatPerPart[mPartIdx]) {
                         var beatsInEl = 0;
                         if (minPriority === C.Type.Attributes) {
                             assert(element.voice === undefined, "Attributes are voiceless");
@@ -222,7 +223,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                         element._class = _class;
                         delete element._;
 
-                        Annotator.recordMetreData(voices); // XXX: O(n^2) for no reason.
+                        Annotator.recordMetreData(parts, voices); // XXX: O(n^2) for no reason.
 
                         if (minPriority === C.Type.Duration) {
                             // needs recordMetreData to be called.
@@ -230,13 +231,20 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                         }
 
                         ++idxPerPart[mPartIdx];
-                        newBeat = Math.min(newBeat, currBeat + beatsInEl);
+                        beatPerPart[mPartIdx] = currBeat + beatsInEl;
+                        newBeat = Math.min(newBeat, beatPerPart[mPartIdx]);
                     } else {
                         // Most likely, we put in a placeholder.
-                        assert(false, "Not implemented");
+                        beatPerPart[mPartIdx] = -1;
+                        _.chain(partToVoices[mPartIdx])
+                            .map(vidx => voices[vidx])
+                            .forEach(voice => voice.body.splice(outputIdx, 0,
+                                new PlaceholderModel({priority: minPriority}, true)))
+                            .value();
                     }
                 });
                 currBeat = newBeat;
+                beatPerPart = _.map(beatPerPart, m => !~m ? currBeat : m)
                 ++outputIdx;
             }
         } while(minPriority !== C.MAX_NUM);
@@ -254,15 +262,16 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
         ////
         function applySplit(split: {el: any; idx: number}) {
-            var partIdx             = split.idx;
-            ++idxPerPart[partIdx];
+            var partIdx                 = split.idx;
+            idxPerPart[partIdx]     	= idxPerPart[partIdx] + 1;
             if (split.el._class === "Backup") {
-                var beats           = split.el.duration / divisionsPerPart[partIdx]; // Does this work in /8?
+                var beats               = split.el.duration / divisionsPerPart[partIdx]; // Does this work in /8?
 
-                currBeat = currBeat - beats;
-                --outputIdx;
+                currBeat                = currBeat - beats;
+                beatPerPart[partIdx]    = currBeat;
+                outputIdx               = outputIdx - 1;
                 while (getCurrBeat() > currBeat) {
-                    --outputIdx;
+                    outputIdx           = outputIdx - 1;
                 }
 
                 function getCurrBeat() {
@@ -278,30 +287,30 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
         ////
         function extractPriority(element: any, pIdx: number) {
-            return !element || typeof element === "string" ?
-                    C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[pIdx].id);
+            return !element ?  C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[pIdx].id);
         }
 
         ////
         function extractElement(p: any, partID: string) {
-            return p[idxPerPart[partToIdx[partID]]] || <any> {};
+            return p[idxPerPart[partToIdx[partID]]] || <any> null;
         }
     }
 
     ////
     function getSplits(elements: any[]) {
         return _.map(elements, (element, idx) =>
-                element._class === "Forward" || element._class === "Backup" ? {el: element, idx: idx} : null)
+                element && (element._class === "Forward" || element._class === "Backup") ? {el: element, idx: idx} : null)
             .filter(a => !!a);
     }
 
     ////
     function getVoiceIdx(mPartIdx: number, voice: number) {
+        assert(!!~voice)
         var key = (mPartIdx || 0) + "_" + (voice||1);
         if (_voiceHash[key] === undefined) {
             ++_maxVoice;
             partToVoices[mPartIdx].push(_maxVoice);
-            parts[mPartIdx].voices.push(_maxVoice);
+            parts[mPartIdx].containsVoice[_maxVoice] = true;
             return _voiceHash[key] = _maxVoice;
         }
         return _voiceHash[key];

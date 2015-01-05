@@ -103,7 +103,7 @@ class NewlineModel extends Model {
             return NewPageModel.createNewPage(ctx);
         }
 
-        ctx.lines[ctx.line].attributes.time = ctx.attributes.time;
+        ctx.lines[ctx.line]._attributes[ctx.part.id].time = ctx.attributes.time;
 
         ctx.line                = ctx.line + 1;
         /////////////////////////////////////////////////////////////
@@ -129,7 +129,7 @@ class NewlineModel extends Model {
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
                 accidentalsByStaff:     C.JSONx.clone(ctx.accidentalsByStaff),
-                attributes:             {},
+                _attributes:            {},
                 bar:                    null,
                 barKeys:                null,
                 barlineX:               null,
@@ -146,7 +146,7 @@ class NewlineModel extends Model {
         }
 
         ctx.lines[ctx.line].accidentalsByStaff  = [];
-        ctx.lines[ctx.line].attributes          = {};
+        ctx.lines[ctx.line]._attributes[ctx.part.id] = {};
         ctx.lines[ctx.line].bar                 = ctx.bar;
         ctx.lines[ctx.line].barlineX            = [];
         ctx.lines[ctx.line].barKeys             = C.JSONx.clone(ctx.barKeys);
@@ -385,11 +385,14 @@ class NewlineModel extends Model {
         var veryBottomPadding = 0;
         var braces: {braceY2: number}[] = [];
         _.forEach(ctx.score.parts, part => {
-            _.times(part.staves, staff => {
+            _.times(part.staveCount, staff => {
                 staff += 1;
                 var extraTopPadding = (staff - 1)*50;
                 extraTopPadding += ctx.minTopPaddings[staff];
-                _.chain(part.voices)
+                _.chain(part.containsVoice)
+                    .keys()
+                    .map(k => parseInt(k, 10))
+                    .sort()
                     .map(voiceIdx => ctx._voices[voiceIdx].body)
                     .map(body => {
                         // Remove everything that's not in the current line.

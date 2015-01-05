@@ -216,8 +216,10 @@ declare module '__satie/stores/contracts' {
     }
     export interface IPart {
         id: string;
-        voices: number[];
-        staves: number;
+        containsVoice: {
+            [x: number]: boolean;
+        };
+        staveCount: number;
     }
     export interface IVoice {
         body?: Model[];
@@ -410,7 +412,7 @@ declare module '__satie/stores/annotator' {
         splice(start: number, count: number, replaceWith?: Model[], splicePolicy?: SplicePolicy): void;
         removeAdjacentBeams(note?: C.IDuration): C.IterationStatus;
         removeRemainingBeamsInBar(): C.IterationStatus;
-        static insertPlaceholders(parts: C.IVoice[]): void;
+        static insertPlaceholders(voices: C.IVoice[]): void;
         findVertical(where?: (obj: Model) => boolean, idx?: number): Model[];
         midiOutHint(out: number[]): void;
         nextActualType: number;
@@ -457,7 +459,9 @@ declare module '__satie/stores/annotator' {
         _voices: C.IVoice[];
         _layout: ILayoutOpts;
         print: C.Print;
-        _attributes: C.MusicXML.Attributes;
+        _attributes: {
+            [x: string]: C.MusicXML.Attributes;
+        };
         attributes: C.MusicXML.Attributes;
         lines: ILineSnapshot[];
     }
@@ -478,7 +482,9 @@ declare module '__satie/stores/annotator' {
     }
     export interface ILineSnapshot {
         accidentalsByStaff: C.IAccidentals[];
-        attributes: C.MusicXML.Attributes;
+        _attributes: {
+            [x: string]: C.MusicXML.Attributes;
+        };
         bar: number;
         barKeys: string[];
         barlineX: number[];
@@ -495,14 +501,16 @@ declare module '__satie/stores/annotator' {
         fontSize: number;
         maxX: number;
         maxY: number;
-        attributes: C.MusicXML.Attributes;
+        _attributes: {
+            [x: string]: C.MusicXML.Attributes;
+        };
         prevLine: ILineSnapshot;
         partialLine: ILineSnapshot;
     }
     export interface ICompleteSnapshot extends IPartialSnapshot {
         lines: ILineSnapshot[];
     }
-    export function recordMetreData(voices: C.IVoice[]): void;
+    export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]): void;
 }
 
 declare module '__satie/stores/model' {

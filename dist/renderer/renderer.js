@@ -74,8 +74,11 @@ var Renderer = (function (_super) {
         var height10s = print.pageLayout.pageHeight;
         var viewbox = "0 0 " + width10s + " " + height10s;
         var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
+        _.map(parts, function (part, idx) {
+            _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).sort().map(function (voice) { return voices[voice]; }).map(null);
+        });
         var rawPages = _.map(pages, function (page, pidx) {
-            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) { return _.chain(part.voices).map(function (voice) { return voices[voice]; }).map(function (voice, vidx) { return React.createElement("g", { key: idx + "_" + vidx, style: { fontSize: scale40 + "px" } }, _.reduce(voice.body.slice(page.from, page.to), function (memo, obj) {
+            return React.createElement(RenderEngine, { onClick: _this.handleMouseClick, onMouseLeave: _this.handleMouseLeave, onMouseMove: _this.handleMouseMove, page: page, width: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, width10s) + "mm" : "100%", height: _this.props.raw ? C.renderUtil.tenthsToMM(scale40, height10s) + "mm" : "100%", viewbox: viewbox }, !page.from && !useGL && React.createElement(Header.Component, { editMode: _this.props.editMode, fontSize: scale40, key: "HEADER", model: _this.props.header }), _.map(parts, function (part, idx) { return _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).map(function (voice) { return voices[voice]; }).map(function (voice, vidx) { return React.createElement("g", { key: idx + "_" + vidx, style: { fontSize: scale40 + "px" } }, _.reduce(voice.body.slice(page.from, page.to), function (memo, obj) {
                 if (obj.type === 130 /* NewLine */) {
                     memo.push([]);
                 }

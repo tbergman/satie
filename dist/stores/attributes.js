@@ -182,7 +182,7 @@ var AttributesModel = (function (_super) {
             this.keySignature = null;
         }
         this.clefs = this.clefs || [];
-        var clef = this.clefs[ctx.voiceIdx];
+        var clef = this.clefs[ctx.idxInPart];
         if (clef && !(clef instanceof Model)) {
             ctx.insertFuture(new ClefModel(clef, false));
             ctx.next().ctxData = this.ctxData;
@@ -222,9 +222,9 @@ var AttributesModel = (function (_super) {
     };
     AttributesModel.prototype.updateAttached = function (ctx) {
         this.clefs = this.clefs || [];
-        this.clefs[ctx.voiceIdx] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.voiceIdx];
-        this.time = ifAttribute(ctx.next(function (c) { return c.type === 170 /* TimeSignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.time;
-        this.keySignature = ifAttribute(ctx.next(function (c) { return c.type === 160 /* KeySignature */ || c.type > 199 /* END_OF_ATTRIBUTES */; }));
+        this.clefs[ctx.idxInPart] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.idxInPart];
+        this.time = ifAttribute(ctx.next(function (c) { return c.priority === 170 /* TimeSignature */ || c.priority > 199 /* END_OF_ATTRIBUTES */; })) || this.time;
+        this.keySignature = ifAttribute(ctx.next(function (c) { return c.priority === 160 /* KeySignature */ || c.priority > 199 /* END_OF_ATTRIBUTES */; }));
         function ifAttribute(m) {
             return m && m.priority < 199 /* END_OF_ATTRIBUTES */ ? m : null;
         }

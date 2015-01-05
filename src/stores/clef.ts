@@ -121,7 +121,7 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         }
 
         // Clef changes at the beginning of a bar (ignoring rests) go BEFORE barlines.
-        this.isChange = ctx.attributes.clefs[ctx.voiceIdx] !== this;
+        this.isChange = ctx.attributes.clefs[ctx.idxInPart] !== this;
         if (this.isChange) {
             // var barCandidate = ctx.prev(m => m.type === C.Type.Barline || m.isNote && !m.isRest);
             // if (barCandidate && barCandidate.type === C.Type.Barline) {
@@ -146,7 +146,7 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
 
         // Copy information from the context that the view needs.
         ctx.attributes.clefs = ctx.attributes.clefs || [];
-        ctx.attributes.clefs[ctx.voiceIdx] = this;
+        ctx.attributes.clefs[ctx.idxInPart] = this;
         var next = ctx.next();
         if (next.isNote) {
             var note: C.IPitch = <any> next;
@@ -189,7 +189,10 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
                 sign: "G",
                 line: 2
             };
-        return ctx.insertPast(new ClefModel(clef, true));
+        var model = new ClefModel(clef, true);
+        model.ctxData = ctx.curr.ctxData;
+        ctx.insertPast(model);
+        return C.IterationStatus.RetryLine; // Caching
     };
 
     static standardClefs: C.MusicXML.ClefComplete[] = [

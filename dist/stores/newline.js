@@ -73,7 +73,7 @@ var NewlineModel = (function (_super) {
         if (ctx.y > ctx.maxY) {
             return NewPageModel.createNewPage(ctx);
         }
-        ctx.lines[ctx.line].attributes.time = ctx.attributes.time;
+        ctx.lines[ctx.line]._attributes[ctx.part.id].time = ctx.attributes.time;
         ctx.line = ctx.line + 1;
         ctx.smallest = 10000;
         ctx.minBottomPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
@@ -88,7 +88,7 @@ var NewlineModel = (function (_super) {
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
                 accidentalsByStaff: C.JSONx.clone(ctx.accidentalsByStaff),
-                attributes: {},
+                _attributes: {},
                 bar: null,
                 barKeys: null,
                 barlineX: null,
@@ -104,7 +104,7 @@ var NewlineModel = (function (_super) {
             };
         }
         ctx.lines[ctx.line].accidentalsByStaff = [];
-        ctx.lines[ctx.line].attributes = {};
+        ctx.lines[ctx.line]._attributes[ctx.part.id] = {};
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
         ctx.lines[ctx.line].barKeys = C.JSONx.clone(ctx.barKeys);
@@ -219,11 +219,11 @@ var NewlineModel = (function (_super) {
         var veryBottomPadding = 0;
         var braces = [];
         _.forEach(ctx.score.parts, function (part) {
-            _.times(part.staves, function (staff) {
+            _.times(part.staveCount, function (staff) {
                 staff += 1;
                 var extraTopPadding = (staff - 1) * 50;
                 extraTopPadding += ctx.minTopPaddings[staff];
-                _.chain(part.voices).map(function (voiceIdx) { return ctx._voices[voiceIdx].body; }).map(function (body) {
+                _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).sort().map(function (voiceIdx) { return ctx._voices[voiceIdx].body; }).map(function (body) {
                     var line = ctx.line;
                     return _.filter(body, function (model) {
                         if (model.type === 130 /* NewLine */) {

@@ -103,7 +103,7 @@ var ClefModel = (function (_super) {
                 return ctx.eraseCurrent(1 /* MatchedOnly */);
             }
         }
-        this.isChange = ctx.attributes.clefs[ctx.voiceIdx] !== this;
+        this.isChange = ctx.attributes.clefs[ctx.idxInPart] !== this;
         if (this.isChange) {
         }
         else {
@@ -116,7 +116,7 @@ var ClefModel = (function (_super) {
             this.line = C.defaultClefLines[this.sign.toUpperCase()];
         }
         ctx.attributes.clefs = ctx.attributes.clefs || [];
-        ctx.attributes.clefs[ctx.voiceIdx] = this;
+        ctx.attributes.clefs[ctx.idxInPart] = this;
         var next = ctx.next();
         if (next.isNote) {
             var note = next;
@@ -155,7 +155,10 @@ var ClefModel = (function (_super) {
             sign: "G",
             line: 2
         };
-        return ctx.insertPast(new ClefModel(clef, true));
+        var model = new ClefModel(clef, true);
+        model.ctxData = ctx.curr.ctxData;
+        ctx.insertPast(model);
+        return 60 /* RetryLine */;
     };
     ClefModel.standardClefs = [
         {

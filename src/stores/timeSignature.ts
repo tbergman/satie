@@ -167,12 +167,12 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A clef must exist on each line.
-        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
+        if (!ctx.attributes.clefs[ctx.idxInPart]) {
             return ClefModel.createClef(ctx);
         }
 
         // A key signature must exist on each line
-        if (!ctx.attributes.clefs[ctx.voiceIdx]) {
+        if (!ctx.attributes.clefs[ctx.idxInPart]) {
             return KeySignatureModel.createKeySignature(ctx);
         }
 

@@ -80,16 +80,16 @@ class KeySignatureModel extends Model.SubAttributeModel implements C.MusicXML.Ke
         this.ctxData = new C.MetreContext(mctx);
     }
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
-        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.voiceIdx]) {
+        if (!ctx.attributes.clefs || !ctx.attributes.clefs[ctx.idxInPart]) {
             return ClefModel.createClef(ctx);
         }
 
         // Copy information from the context that the view needs.
-        this.clef                                   = ctx.attributes.clefs[ctx.voiceIdx];
+        this.clef                                   = ctx.attributes.clefs[ctx.idxInPart];
         assert(this.clef instanceof Object);
         var intersectingNotes                       = _.filter(ctx.intersects(C.Type.Duration), l => l.isNote);
         ctx.attributes.keySignature                 = this;
-        ctx.accidentalsByStaff[ctx.voiceIdx + 1]    = C.NoteUtil.getAccidentals(this);
+        ctx.accidentalsByStaff[ctx.idxInPart + 1]    = C.NoteUtil.getAccidentals(this);
         if (intersectingNotes.length) {
             if (_.any(intersectingNotes, n => !!(<DurationModelType>n).getAccWidthAfterBar(ctx))) {
                 // TODO: should be 1 if there are more than 1 accidental.

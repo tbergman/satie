@@ -63,7 +63,7 @@ var Context = (function () {
             barKeys: this.barKeys,
             barlineX: this.barlineX,
             beat: this.loc.beat,
-            attributes: this.attributes,
+            _attributes: this._attributes || {},
             line: this.line,
             invisibleForBars: this.invisibleForBars,
             pageLines: this.pageLines,
@@ -80,7 +80,7 @@ var Context = (function () {
             maxY: this.maxY,
             prevLine: this.lines[this.line - 1],
             partialLine: this.lines[this.line],
-            attributes: this.attributes
+            _attributes: this._attributes
         };
     };
     Object.defineProperty(Context.prototype, "curr", {
@@ -240,14 +240,14 @@ var Context = (function () {
             while (this.body[nidx] && this.body[nidx].isAttribute) {
                 if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
                     this.body[nidx] = obj;
-                    recordMetreData(this._voices);
+                    recordMetreData(this.score.parts, this._voices);
                     return 10 /* Success */;
                 }
                 ++nidx;
             }
         }
         this.splice(index, 0, [obj], obj.isNote ? 3 /* Masked */ : 2 /* Additive */);
-        recordMetreData(this._voices);
+        recordMetreData(this.score.parts, this._voices);
         return 10 /* Success */;
     };
     Context.prototype.insertPast = function (obj, index, merge) {
@@ -263,10 +263,10 @@ var Context = (function () {
         var exitCode = this.idx === index ? 20 /* RetryCurrent */ : 90 /* RetryFromEntry */;
         var visibleIdx = -1;
         for (var i = 0; i < this._voices.length; ++i) {
-            var part = this._voices[i];
-            if (part.body) {
+            var voice = this._voices[i];
+            if (voice.body) {
                 ++visibleIdx;
-                part.body.splice(index, 0, objs[visibleIdx]);
+                voice.body.splice(index, 0, objs[visibleIdx]);
             }
         }
         return exitCode;
@@ -300,14 +300,14 @@ var Context = (function () {
             assert(this._assertionPolicy === 1 /* NoAssertions */);
         }
         for (var i = 0; i < this._voices.length; ++i) {
-            var part = this._voices[i];
-            if (part.body) {
-                if (this.body === part.body) {
+            var voice = this._voices[i];
+            if (voice.body) {
+                if (this.body === voice.body) {
                     if (replaceWith) {
-                        Array.prototype.splice.apply(part.body, [start, count].concat(replaceWith));
+                        Array.prototype.splice.apply(voice.body, [start, count].concat(replaceWith));
                     }
                     else {
-                        part.body.splice(start, count);
+                        voice.body.splice(start, count);
                     }
                 }
                 else {
@@ -317,14 +317,14 @@ var Context = (function () {
                     var ffidx = start + replaceWith.length;
                     var offset = 0;
                     for (var j = 0; j < replaceWith.length; ++j) {
-                        if (splicePolicy !== 5 /* Subtractive */ && vidx + j < Math.max(ffidx, fidx) && part.body[vidx + j] && part.body[vidx + j].priority === replaceWith[j].priority) {
+                        if (splicePolicy !== 5 /* Subtractive */ && vidx + j < Math.max(ffidx, fidx) && voice.body[vidx + j] && voice.body[vidx + j].priority === replaceWith[j].priority) {
                             if (vidx + j >= fidx) {
                                 placeholders.push(new PlaceholderModel({
                                     priority: replaceWith[j].priority
                                 }, replaceWith[j].annotated));
                             }
                             else {
-                                placeholders.push(part.body[vidx + j]);
+                                placeholders.push(voice.body[vidx + j]);
                                 if (splicePolicy === 4 /* ShortenOtherVoices */) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
@@ -345,11 +345,11 @@ var Context = (function () {
                         }
                     }
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
-                        while (startPriority > 300 /* Barline */ && replaceWith[0].priority > 300 /* Barline */ && part.body[start + offset] && part.body[start + offset].ctxData && part.body[start + offset].priority > 300 /* Barline */ && new C.Location(part.body[start + offset].ctxData).lt(ctxStartData)) {
+                        while (startPriority > 300 /* Barline */ && replaceWith[0].priority > 300 /* Barline */ && voice.body[start + offset] && voice.body[start + offset].ctxData && voice.body[start + offset].priority > 300 /* Barline */ && new C.Location(voice.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
-                    Array.prototype.splice.apply(part.body, [start + offset, count].concat(placeholders));
+                    Array.prototype.splice.apply(voice.body, [start + offset, count].concat(placeholders));
                 }
             }
         }
@@ -398,27 +398,27 @@ var Context = (function () {
         }
         return 10 /* Success */;
     };
-    Context.insertPlaceholders = function (parts) {
+    Context.insertPlaceholders = function (voices) {
         var PlaceholderModel = require("./placeholder");
         function length() {
             var l = 0;
-            for (var i = 0; i < parts.length; ++i) {
-                if (parts[i].body) {
-                    l = Math.max(parts[i].body.length, l);
+            for (var i = 0; i < voices.length; ++i) {
+                if (voices[i].body) {
+                    l = Math.max(voices[i].body.length, l);
                 }
             }
             return l;
         }
         for (var i = 0; i < length(); ++i) {
             var bestPri = 1111 /* Unknown */;
-            for (var j = 0; j < parts.length; ++j) {
-                if (parts[j].body && parts[j].body[i]) {
-                    bestPri = Math.min(parts[j].body[i].priority, bestPri);
+            for (var j = 0; j < voices.length; ++j) {
+                if (voices[j].body && voices[j].body[i]) {
+                    bestPri = Math.min(voices[j].body[i].priority, bestPri);
                 }
             }
-            for (var j = 0; j < parts.length; ++j) {
-                if (parts[j].body && (!parts[j].body[i] || parts[j].body[i].priority !== bestPri)) {
-                    parts[j].body.splice(i, 0, new PlaceholderModel({ priority: bestPri }, true));
+            for (var j = 0; j < voices.length; ++j) {
+                if (voices[j].body && (!voices[j].body[i] || voices[j].body[i].priority !== bestPri)) {
+                    voices[j].body.splice(i, 0, new PlaceholderModel({ priority: bestPri }, true));
                 }
             }
         }
@@ -480,7 +480,7 @@ var Context = (function () {
             Array.prototype.splice.apply(this._voices[k].body, [start, end + 1 - start].concat(aligned[j]));
             ++j;
         }
-        recordMetreData(this._voices);
+        recordMetreData(this.score.parts, this._voices);
     };
     Context.prototype.findVertical = function (where, idx) {
         if (isNaN(idx)) {
@@ -581,6 +581,7 @@ var Context = (function () {
     };
     Context.prototype._annotateImpl = function (from, cursor, disableRecordings) {
         from = from || { bar: 1, beat: 0 };
+        this._attributes = {};
         this.disableRecordings = disableRecordings;
         if (!this.disableRecordings) {
             this._recordings = {};
@@ -662,14 +663,18 @@ var Context = (function () {
     };
     Object.defineProperty(Context.prototype, "attributes", {
         get: function () {
-            return this._attributes || {};
+            if (!this.part) {
+                return null;
+            }
+            return this._attributes[this.part.id] || {};
         },
         set: function (a) {
+            assert(this.part, "Trying to set attributes on an undefined part!");
             var AttributesModel = require("./attributes");
             if (!!a && !(a instanceof AttributesModel)) {
                 a = new AttributesModel(a, true);
             }
-            this._attributes = a;
+            this._attributes[this.part.id] = a;
         },
         enumerable: true,
         configurable: true
@@ -691,10 +696,10 @@ var SplicePolicy = exports.SplicePolicy;
     AssertionPolicy[AssertionPolicy["NoAssertions"] = 1] = "NoAssertions";
 })(exports.AssertionPolicy || (exports.AssertionPolicy = {}));
 var AssertionPolicy = exports.AssertionPolicy;
-function recordMetreData(voices) {
+function recordMetreData(parts, voices) {
     "use strict";
     try {
-        _recordMetreData(voices);
+        _recordMetreData(parts, voices);
     }
     catch (err) {
         var AttributesModel = require("./attributes");
@@ -707,27 +712,24 @@ function recordMetreData(voices) {
     }
 }
 exports.recordMetreData = recordMetreData;
-function _recordMetreData(voices) {
+function _recordMetreData(parts, voices) {
     "use strict";
-    var i;
-    var j;
-    var attributesPerIdx = {};
-    for (i = 0; i < voices.length; ++i) {
-        var body = voices[i].body;
-        if (!body) {
-            continue;
-        }
-        var mctx1 = new C.MetreContext;
-        for (j = 0; j < body.length; ++j) {
-            if (attributesPerIdx[j]) {
-                mctx1.attributes = attributesPerIdx[j];
+    _.forEach(parts, function (part) {
+        var attributesPerIdx = {};
+        _(part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).sort().forEach(function (i) {
+            var body = voices[i].body;
+            var mctx1 = new C.MetreContext;
+            for (var j = 0; j < body.length; ++j) {
+                if (attributesPerIdx[j]) {
+                    mctx1.attributes = attributesPerIdx[j];
+                }
+                body[j].recordMetreDataImpl(mctx1);
+                if (body[j].type === 145 /* Attributes */) {
+                    attributesPerIdx[j] = mctx1.attributes;
+                }
             }
-            body[j].recordMetreDataImpl(mctx1);
-            if (body[j].type === 145 /* Attributes */) {
-                attributesPerIdx[j] = mctx1.attributes;
-            }
-        }
-    }
+        }).value();
+    });
 }
 var PrivIterator = (function () {
     function PrivIterator(parent, from, voices, cursor, assertionPolicy) {
@@ -741,10 +743,10 @@ var PrivIterator = (function () {
         this._from = from;
         this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
-        recordMetreData(this._voices);
+        recordMetreData(parent.score.parts, this._voices);
         this._components = _.map(voices, function (voice, idx) {
-            var part = _.find(parent.score.parts, function (part) { return _.any(part.voices, function (oVoice) { return voices[oVoice] === voice; }); });
-            var partVoices = _.map(part.voices, function (oVoice) { return voices[oVoice]; });
+            var part = _.find(parent.score.parts, function (part) { return _.any(part.containsVoice, function (true_, oVoice) { return voices[oVoice] === voice; }); });
+            var partVoices = _.chain(part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).sort().map(function (oVoice) { return voices[oVoice]; }).value();
             var idxInPart = _.indexOf(partVoices, voice);
             return new PrivIteratorComponent(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
         });
@@ -764,10 +766,11 @@ var PrivIterator = (function () {
             }
             this._parent.y = origSnapshot.y;
             this._assertOffsetsOK();
+            var oldType = this._components[i].curr.type;
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
             this._assertOffsetsOK();
             if (verbose) {
-                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], C.IterationStatus[componentStatus]);
+                console.log(i, this._components[i]._idx, C.Type[oldType], C.Type[this._components[i].curr.type], C.Type[this._components[i].curr.priority], C.IterationStatus[componentStatus]);
             }
             switch (componentStatus) {
                 case 70 /* LineCreated */:
@@ -886,7 +889,7 @@ var PrivIterator = (function () {
         }
         this._assertOffsetsOK();
         if (status !== 10 /* Success */) {
-            recordMetreData(this._voices);
+            recordMetreData(this._parent.score.parts, this._voices);
         }
         this._assertOffsetsOK();
     };
@@ -1255,7 +1258,7 @@ function _cpysnapshot(ctx, layout) {
                 ctx.maxY = layout.maxY;
                 break;
             case "attributes":
-                ctx.attributes = layout.attributes;
+                ctx._attributes = layout._attributes;
                 break;
             case "partialLine":
                 break;

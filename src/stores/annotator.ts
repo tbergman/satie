@@ -96,7 +96,7 @@ export class Context implements C.MetreContext {
             barKeys:                this.barKeys,
             barlineX:               this.barlineX,
             beat:                   this.loc.beat,
-            attributes:             this.attributes,
+            _attributes:            this._attributes || {},
             line:                   this.line,
             invisibleForBars:       this.invisibleForBars,
             pageLines:              this.pageLines,
@@ -114,7 +114,7 @@ export class Context implements C.MetreContext {
             maxY:                   this.maxY,
             prevLine:               this.lines[this.line - 1],
             partialLine:            this.lines[this.line],
-            attributes:             this.attributes
+            _attributes:            this._attributes
         };
     }
 
@@ -326,7 +326,7 @@ export class Context implements C.MetreContext {
             while(this.body[nidx] && this.body[nidx].isAttribute) {
                 if (this.body[nidx].priority === obj.priority && this.body[nidx].placeholder) {
                     this.body[nidx] = obj;
-                    recordMetreData(this._voices);
+                    recordMetreData(this.score.parts, this._voices);
                     return C.IterationStatus.Success;
                 }
                 ++nidx;
@@ -334,7 +334,7 @@ export class Context implements C.MetreContext {
         }
 
         this.splice(index, 0, [obj], obj.isNote ? SplicePolicy.Masked : SplicePolicy.Additive);
-        recordMetreData(this._voices);
+        recordMetreData(this.score.parts, this._voices);
 
         return C.IterationStatus.Success;
     }
@@ -370,10 +370,10 @@ export class Context implements C.MetreContext {
 
         var visibleIdx = -1;
         for (var i = 0; i < this._voices.length; ++i) {
-            var part = this._voices[i];
-            if (part.body) {
+            var voice = this._voices[i];
+            if (voice.body) {
                 ++visibleIdx;
-                part.body.splice(index, 0, objs[visibleIdx]);
+                voice.body.splice(index, 0, objs[visibleIdx]);
             }
         }
 
@@ -415,14 +415,14 @@ export class Context implements C.MetreContext {
         }
 
         for (var i = 0; i < this._voices.length; ++i) {
-            var part = this._voices[i];
-            if (part.body) {
-                if (this.body === part.body) {
+            var voice = this._voices[i];
+            if (voice.body) {
+                if (this.body === voice.body) {
                     if (replaceWith) {
-                        Array.prototype.splice.apply(part.body,
+                        Array.prototype.splice.apply(voice.body,
                             [start, count].concat(<any>replaceWith));
                     } else {
-                        part.body.splice(start, count);
+                        voice.body.splice(start, count);
                     }
                 } else {
                     var placeholders: Array<Model> = [];
@@ -433,14 +433,14 @@ export class Context implements C.MetreContext {
                     for (var j = 0; j < replaceWith.length; ++j) {
                         if (splicePolicy !== SplicePolicy.Subtractive &&
                                 vidx + j < Math.max(ffidx, fidx) &&
-                                part.body[vidx + j] &&
-                                part.body[vidx + j].priority === replaceWith[j].priority) {
+                                voice.body[vidx + j] &&
+                                voice.body[vidx + j].priority === replaceWith[j].priority) {
                             if (vidx + j >= fidx) {
                                 placeholders.push(new PlaceholderModel({
                                     priority: replaceWith[j].priority
                                 }, replaceWith[j].annotated));
                             } else {
-                                placeholders.push(part.body[vidx + j]);
+                                placeholders.push(voice.body[vidx + j]);
                                 if (splicePolicy === SplicePolicy.ShortenOtherVoices) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
@@ -462,14 +462,14 @@ export class Context implements C.MetreContext {
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
                         while (startPriority > C.Type.Barline &&
                             replaceWith[0].priority > C.Type.Barline &&
-                            part.body[start + offset] && part.body[start + offset].ctxData &&
-                            part.body[start + offset].priority > C.Type.Barline &&
-                            new C.Location(part.body[start + offset].ctxData).lt(ctxStartData)) {
+                            voice.body[start + offset] && voice.body[start + offset].ctxData &&
+                            voice.body[start + offset].priority > C.Type.Barline &&
+                            new C.Location(voice.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
 
-                    Array.prototype.splice.apply(part.body, [start + offset, count]
+                    Array.prototype.splice.apply(voice.body, [start + offset, count]
                         .concat(<any>placeholders));
                 }
             }
@@ -527,13 +527,13 @@ export class Context implements C.MetreContext {
         return C.IterationStatus.Success;
     }
 
-    static insertPlaceholders(parts: Array<C.IVoice>) {
+    static insertPlaceholders(voices: Array<C.IVoice>) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         function length() {
             var l = 0;
-            for (var i = 0; i < parts.length; ++i) {
-                if (parts[i].body) {
-                    l = Math.max(parts[i].body.length, l);
+            for (var i = 0; i < voices.length; ++i) {
+                if (voices[i].body) {
+                    l = Math.max(voices[i].body.length, l);
                 }
             }
             return l;
@@ -541,14 +541,14 @@ export class Context implements C.MetreContext {
 
         for (var i = 0; i < length(); ++i) {
             var bestPri = C.Type.Unknown;
-            for (var j = 0; j < parts.length; ++j) {
-                if (parts[j].body && parts[j].body[i]) {
-                    bestPri = Math.min(parts[j].body[i].priority, bestPri);
+            for (var j = 0; j < voices.length; ++j) {
+                if (voices[j].body && voices[j].body[i]) {
+                    bestPri = Math.min(voices[j].body[i].priority, bestPri);
                 }
             }
-            for (var j = 0; j < parts.length; ++j) {
-                if (parts[j].body && (!parts[j].body[i] || parts[j].body[i].priority !== bestPri)) {
-                    parts[j].body.splice(i, 0, new PlaceholderModel({ priority: bestPri }, true));
+            for (var j = 0; j < voices.length; ++j) {
+                if (voices[j].body && (!voices[j].body[i] || voices[j].body[i].priority !== bestPri)) {
+                    voices[j].body.splice(i, 0, new PlaceholderModel({ priority: bestPri }, true));
                 }
             }
         }
@@ -615,7 +615,7 @@ export class Context implements C.MetreContext {
             ++j;
         }
 
-        recordMetreData(this._voices);
+        recordMetreData(this.score.parts, this._voices);
     }
 
     findVertical(where?: (obj: Model) => boolean, idx?: number) {
@@ -688,10 +688,11 @@ export class Context implements C.MetreContext {
     }
 
     /**
-     * @deprecated DO NOT USE
-     * 
-     * The body in the current part. Annotation is now interlaced, so if you're using body,
-     * you're likely doing something dangerous.
+     * The Models in the current voice.
+     *
+     * Modifying body is dangerous, and you should understand the restrictions of body
+     * in multi-voice songs before modifying it.
+     *
      * @scope temporary
      */
     body: Model[];
@@ -893,6 +894,7 @@ export class Context implements C.MetreContext {
             C.IAnnotationResult {
         from = from || { bar: 1, beat: 0 };
 
+        this._attributes = {};
         this.disableRecordings = disableRecordings;
         if (!this.disableRecordings) {
             this._recordings = {};
@@ -1003,16 +1005,25 @@ export class Context implements C.MetreContext {
 
     _layout: ILayoutOpts;
     print: C.Print;
-    _attributes: C.MusicXML.Attributes;
+
+    /**
+     * The active attribute model in each part.
+     */
+    _attributes: {[key: string]: C.MusicXML.Attributes}; 
+
     get attributes() {
-        return this._attributes || {};
+        if (!this.part) {
+            return null;
+        }
+        return this._attributes[this.part.id] || {};
     }
     set attributes(a: C.MusicXML.Attributes) {
+        assert(this.part, "Trying to set attributes on an undefined part!");
         var AttributesModel: typeof AttributesModelType = require("./attributes");
         if(!!a && !(a instanceof AttributesModel)) {
             a = new AttributesModel(a, true);
         }
-        this._attributes = a;
+        this._attributes[this.part.id] = a;
     }
 
     /**
@@ -1067,7 +1078,7 @@ export interface ILayoutOpts {
  */
 export interface ILineSnapshot {
     accidentalsByStaff: Array<C.IAccidentals>;
-    attributes: C.MusicXML.Attributes;
+    _attributes: {[key: string]: C.MusicXML.Attributes};
     bar: number;
     barKeys: Array<string>;
     barlineX: Array<number>;
@@ -1087,24 +1098,24 @@ export interface ILineSnapshot {
  * contrast to ILineSnapshot which holds the line context.
  */
 export interface IPartialSnapshot {
-    fontSize: number;
-    maxX: number;
-    maxY: number;
-    attributes: C.MusicXML.Attributes;
-    prevLine: ILineSnapshot;
-    partialLine: ILineSnapshot;
+    fontSize:       number;
+    maxX:           number;
+    maxY:           number;
+    _attributes:    {[key: string]: C.MusicXML.Attributes};
+    prevLine:       ILineSnapshot;
+    partialLine:    ILineSnapshot;
 }
 
 export interface ICompleteSnapshot extends IPartialSnapshot {
     lines: Array<ILineSnapshot>;
 }
 
-export function recordMetreData(voices: C.IVoice[]) {
+export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
     "use strict";
     try {
         // Rumor is that the v8 optimizing compiler doesn't optimize functions
         // with try-catch.
-        _recordMetreData(voices);
+        _recordMetreData(parts, voices);
     } catch (err) {
         var AttributesModel: typeof AttributesModelType = require("./attributes");
         switch(true) {
@@ -1116,26 +1127,29 @@ export function recordMetreData(voices: C.IVoice[]) {
     }
 }
 
-function _recordMetreData(voices: C.IVoice[]) {
+function _recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
     "use strict";
-    var i: number;
-    var j: number;
-    var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
-    for (i = 0; i < voices.length; ++i) {
-        var body = voices[i].body;
-        if (!body) { continue; }
-        var mctx1 = new C.MetreContext;
-        for (j = 0; j < body.length; ++j) {
-            // STOPSHIP: Doesn't work with multiple MusicXML voices.
-            if (attributesPerIdx[j]) {
-                mctx1.attributes = attributesPerIdx[j];
-            }
-            body[j].recordMetreDataImpl(mctx1);
-            if (body[j].type === C.Type.Attributes) {
-                attributesPerIdx[j] = mctx1.attributes;
-            }
-        }
-    }
+    _.forEach(parts, part => {
+        var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
+        _(part.containsVoice)
+            .keys()
+            .map(a => parseInt(a, 10))
+            .sort()
+            .forEach(i => {
+                var body = voices[i].body;
+                var mctx1 = new C.MetreContext;
+                for (var j = 0; j < body.length; ++j) {
+                    if (attributesPerIdx[j]) {
+                        mctx1.attributes = attributesPerIdx[j];
+                    }
+                    body[j].recordMetreDataImpl(mctx1);
+                    if (body[j].type === C.Type.Attributes) {
+                        attributesPerIdx[j] = mctx1.attributes;
+                    }
+                }
+            })
+            .value();
+    });
 }
 
 ///////////   END OF EXPORTS   ///////////
@@ -1157,11 +1171,11 @@ class PrivIterator {
         this._from = from;
         this._parent.loc = C.JSONx.clone(from);
         this._assertionPolicy = assertionPolicy;
-        recordMetreData(this._voices);
+        recordMetreData(parent.score.parts, this._voices);
         this._components = _.map(voices, (voice, idx) => {
-            var part        = _.find(parent.score.parts, part => _.any(part.voices, oVoice => voices[oVoice] === voice)); 
-            var partVoices  = _.map(part.voices, oVoice => voices[oVoice])
-            var idxInPart   = _.indexOf(partVoices, voice);
+            var part: C.IPart   = _.find(parent.score.parts, part => _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice)); 
+            var partVoices      = _.chain(part.containsVoice).keys().map(a => parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
+            var idxInPart       = _.indexOf(partVoices, voice);
 
             return new PrivIteratorComponent(
                 /* starting location*/ from,
@@ -1196,6 +1210,7 @@ class PrivIterator {
             this._parent.y = origSnapshot.y;
 
             this._assertOffsetsOK();
+            var oldType = this._components[i].curr.type;
 
             // The most important line:
             var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
@@ -1203,7 +1218,7 @@ class PrivIterator {
             this._assertOffsetsOK();
 
             if (verbose) {
-                console.log(i, this._components[i]._idx, C.Type[this._components[i].curr.type],
+                console.log(i, this._components[i]._idx, C.Type[oldType], C.Type[this._components[i].curr.type],
                     C.Type[this._components[i].curr.priority],
                     C.IterationStatus[componentStatus]);
             }
@@ -1358,7 +1373,7 @@ class PrivIterator {
         this._assertOffsetsOK();
 
         if (status !== C.IterationStatus.Success) {
-            recordMetreData(this._voices);
+            recordMetreData(this._parent.score.parts, this._voices);
         }
 
         this._assertOffsetsOK();
@@ -1426,7 +1441,7 @@ class PrivIterator {
     }
 
     private _rollbackLine(i: number) {
-        this._parent.line               = i;
+        this._parent.line = i;
         _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.StartOfLine);
     }
 
@@ -1769,7 +1784,7 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
             case "fontSize":    ctx.fontSize   = layout.fontSize;   break;
             case "maxX":        ctx.maxX       = layout.maxX;       break;
             case "maxY":        ctx.maxY       = layout.maxY;       break;
-            case "attributes":  ctx.attributes = layout.attributes; break;
+            case "attributes":  ctx._attributes = layout._attributes; break;
             case "partialLine": /* pass */                          break;
             case "prevLine":    /* pass */                          break;
             default:            assert(false, "Not reached");

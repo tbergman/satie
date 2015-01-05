@@ -66,6 +66,7 @@ class BeginModel extends Model {
         ctx.y                   = pageMargins.topMargin + print.systemLayout.topSystemDistance;
         ctx.lines[ctx.line].y   = ctx.y;
         ctx.lines[ctx.line].x   = ctx.x;
+        ctx.lines[ctx.line]._attributes[ctx.part.id] = {}; // Begin only
         ctx.minBottomPaddings   = _.times(ctx._voices.length + 1, () => 0); // this is overkill. should be number of staves
         ctx.minTopPaddings      = _.times(ctx._voices.length + 1, () => 0); // but that's hard to calculate here.
 
@@ -74,7 +75,7 @@ class BeginModel extends Model {
         this.x                  = ctx.x;
         this.y              	= ctx.y;
         this.staveW          	= ctx.maxX - ctx.x;
-        this.startOfSystem      = !ctx.idxInPart && ctx.part.voices.length > 1;
+        this.startOfSystem      = !ctx.idxInPart && _.keys(ctx.part.containsVoice).length > 1;
 
         /*
          * Padding between beginning of part and the clef.
