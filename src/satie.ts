@@ -36,7 +36,10 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
     render(): any {
         var body: any;
 
-        if (!this.state.context) {
+        if (this.state.error) {
+            body = React.createElement("div", null, this.state.error.split("\n").map(
+                (v, k) => React.createElement("div", {key: k}, v || "\u00a0")));
+        } else if (!this.state.context) {
             body = React.createElement("div", null, "Loading...");
         } else {
             body = React.createElement(Renderer.Component, {
@@ -81,15 +84,33 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
     }
 
     componentDidMount() {
-        this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+        this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
     }
 
     componentDidUpdate(prevProps: ISatieProps) {
         if (prevProps.musicXML !== this.props.musicXML) {
             this.setState({
+                error: null,
                 context: null
             });
-            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+            debugger;
+            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
+        }
+    }
+
+    _onError(err: any) {
+        if (typeof err.toString === "function") {
+            console.warn(err.toString());
+            this.setState({
+                error: err.toString()
+            });
+        } else {
+            console.warn("Unknown error.");
+            this.setState({
+                error: "Unknown error."
+            });
+            console.warn(err);
+            throw err;
         }
     }
 
@@ -100,6 +121,7 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
 
     private _updateFromStore() {
         this.setState({
+            error: null,
             context: this.state.score.finalCtx
         });
     }
@@ -109,6 +131,7 @@ interface ISatieState {
     context?: Annotator.Context;
     score?: ScoreStore;
     dispatcher?: C.IDispatcher;
+    error?: string;
 }
 
 var cssInjected = false;

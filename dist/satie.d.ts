@@ -72,11 +72,11 @@ declare module '__satie/stores/contracts' {
     export interface IDispatcher {
         register: (callback: (payload: any) => boolean) => void;
         unregister: (callback: (payload: any) => boolean) => void;
-        GET: (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-        DELETE: (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-        PATCH: (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-        PUT: (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-        POST: (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+        GET: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+        DELETE: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+        PATCH: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+        PUT: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+        POST: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
         _events: string;
     }
     export class DispatcherRedirect {
@@ -109,6 +109,14 @@ declare module '__satie/stores/contracts' {
         query: string;
         postData: PostData;
         nested?: boolean;
+    }
+    export class InvalidMXMLException {
+        constructor(reason: string, bar: number, beat: number, part: string);
+        toString(): string;
+        part: string;
+        reason: string;
+        bar: number;
+        beat: number;
     }
     export class ScoreHeader implements MusicXML.ScoreHeader {
         credits: MusicXML.Credit[];

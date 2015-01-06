@@ -37,6 +37,19 @@ var DispatcherRedirect = (function () {
 })();
 exports.DispatcherRedirect = DispatcherRedirect;
 ;
+var InvalidMXMLException = (function () {
+    function InvalidMXMLException(reason, bar, beat, part) {
+        this.reason = reason;
+        this.bar = bar;
+        this.beat = beat;
+        this.part = part;
+    }
+    InvalidMXMLException.prototype.toString = function () {
+        return "Import failed in part " + this.part + " on bar " + this.bar + ", beat " + this.beat + ".\n\n" + this.reason + "If you believe this error is a bug, please report it at https://github.com/ripieno/satie";
+    };
+    return InvalidMXMLException;
+})();
+exports.InvalidMXMLException = InvalidMXMLException;
 var ScoreHeader = (function () {
     function ScoreHeader(spec) {
         this.credits = [];

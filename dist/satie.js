@@ -18,7 +18,10 @@ var MusicXMLViewSpec = (function (_super) {
     }
     MusicXMLViewSpec.prototype.render = function () {
         var body;
-        if (!this.state.context) {
+        if (this.state.error) {
+            body = React.createElement("div", null, this.state.error.split("\n").map(function (v, k) { return React.createElement("div", { key: k }, v || "\u00a0"); }));
+        }
+        else if (!this.state.context) {
             body = React.createElement("div", null, "Loading...");
         }
         else {
@@ -59,14 +62,32 @@ var MusicXMLViewSpec = (function (_super) {
         injectCSS();
     };
     MusicXMLViewSpec.prototype.componentDidMount = function () {
-        this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+        this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
     };
     MusicXMLViewSpec.prototype.componentDidUpdate = function (prevProps) {
         if (prevProps.musicXML !== this.props.musicXML) {
             this.setState({
+                error: null,
                 context: null
             });
-            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML);
+            debugger;
+            this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
+        }
+    };
+    MusicXMLViewSpec.prototype._onError = function (err) {
+        if (typeof err.toString === "function") {
+            console.warn(err.toString());
+            this.setState({
+                error: err.toString()
+            });
+        }
+        else {
+            console.warn("Unknown error.");
+            this.setState({
+                error: "Unknown error."
+            });
+            console.warn(err);
+            throw err;
         }
     };
     MusicXMLViewSpec.prototype.componentWillUnmount = function () {
@@ -75,6 +96,7 @@ var MusicXMLViewSpec = (function (_super) {
     };
     MusicXMLViewSpec.prototype._updateFromStore = function () {
         this.setState({
+            error: null,
             context: this.state.score.finalCtx
         });
     };

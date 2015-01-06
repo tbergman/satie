@@ -78,10 +78,10 @@ export class Context implements C.MetreContext {
     }
 
     abort(exception: any) {
-        console.warn("Satie failed to render the requested song. This could either be an error " +
-                     "in Satie or in your MusicXML. If the MusicXML is the output of a major " +
-                     "program, please report this as a bug to https://github.com/ripieno/satie");
-        throw exception;
+        throw new C.InvalidMXMLException("The Satie layout engine encountered an error.\n\n" +
+            exception.toString() + (exception.stack ?
+                "\n\n========== Stack trace ==========\n" + exception.stack + "\n========== End of trace =========\n" :
+                "\n\nStack trace unavailable!\n") + "\n\n", this.bar, this.beat, this.part.id);
     }
 
     /**

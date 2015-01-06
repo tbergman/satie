@@ -8,28 +8,25 @@ var Instruments = require("./instruments");
 var Model = require("./model");
 var PlaceholderModel = require("./placeholder");
 function toScore(score) {
-    var header = extractMXMLHeader(score);
-    var partData = extractMXMLPartsAndVoices(score);
-    return {
-        header: header,
-        parts: partData.parts,
-        voices: partData.voices
-    };
+    try {
+        var header = extractMXMLHeader(score);
+        var partData = extractMXMLPartsAndVoices(score);
+        return {
+            header: header,
+            parts: partData.parts,
+            voices: partData.voices
+        };
+    }
+    catch (err) {
+        return {
+            header: null,
+            parts: null,
+            voices: null,
+            error: err
+        };
+    }
 }
 exports.toScore = toScore;
-var InvalidMXML = (function () {
-    function InvalidMXML(reason, bar, beat, part) {
-        this.reason = reason;
-        this.bar = bar;
-        this.beat = beat;
-        this.part = part;
-    }
-    InvalidMXML.prototype.toString = function () {
-        return "Satie failed to import the requested MusicXML.\nA problem occurred in part " + this.part + "on bar " + this.bar + " beat " + this.beat + ".\nThe following error occured:\n\n" + this.reason;
-    };
-    return InvalidMXML;
-})();
-exports.InvalidMXML = InvalidMXML;
 function extractMXMLHeader(m) {
     var header = new C.ScoreHeader({
         work: m.work,
@@ -47,7 +44,7 @@ function extractMXMLHeader(m) {
 }
 function extractMXMLPartsAndVoices(mxmlJson) {
     if (!mxmlJson || !mxmlJson.partList || !mxmlJson.partList.scoreParts || !mxmlJson.partList.scoreParts.length) {
-        throw new InvalidMXML("At least one part is required", 0, 0, "Header");
+        throw new C.InvalidMXMLException("At least one part is required", 0, 0, "Header");
     }
     var idxToPart = {};
     var parts = [];
@@ -245,7 +242,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
             case "Note":
                 return 600 /* Duration */;
             default:
-                throw new InvalidMXML(type + " is not a known type", bar, beat, part);
+                throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }
     }
     ;

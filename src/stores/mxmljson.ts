@@ -17,26 +17,33 @@ import Model            = require("./model");
 import PlaceholderModel = require("./placeholder");
 
 
-
-// Exports
-// --------------
+/*---- Exports ----------------------------------------------------------------------------------*/
 
 /**
  * Converts a timewise MXMLJSON score to a Satie score.
  *
  * @param score Score produced by github.com/ripieno/musicxml-interfaces
- * @returns A structure that can be consumed by a ScoreStore
- * @throws InvalidMXML if the document could not be read.
+ * @returns A structure that can be consumed by a ScoreStore. If an error occurred
+ *          error will be set, and all other properties will be null.
  */
 export function toScore(score: C.MusicXML.ScoreTimewise): ISatieImport {
-    var header      = extractMXMLHeader(score);
-    var partData    = extractMXMLPartsAndVoices(score);
+    try {
+        var header      = extractMXMLHeader(score);
+        var partData    = extractMXMLPartsAndVoices(score);
 
-    return {
-        header:     header,
-        parts:  	partData.parts,
-        voices: 	partData.voices
-    };
+        return {
+            header:     header,
+            parts:  	partData.parts,
+            voices: 	partData.voices
+        };
+    } catch(err) {
+        return {
+            header:     null,
+            parts:      null,
+            voices:     null,
+            error:      err
+        };
+    }
 }
 
 /**
@@ -46,34 +53,12 @@ export interface ISatieImport {
     header:     C.ScoreHeader;
     voices:     C.IVoice[];
     parts:      C.IPart[];
-}
-
-/**
- * Catch this exception when processing toScore.
- */
-export class InvalidMXML {
-    constructor(reason: string, bar: number, beat: number, part: string) {
-        this.reason     = reason;
-        this.bar        = bar;
-        this.beat       = beat;
-        this.part       = part;
-    }
-
-    toString() {
-        return "Satie failed to import the requested MusicXML.\nA problem occurred in part " +
-            this.part + "on bar " + this.bar + " beat " + this.beat + ".\nThe following error occured:\n\n" + this.reason;
-    }
-
-    part:       string;
-    reason:     string;
-    bar:        number;
-    beat:       number;
+    error?:     any;
 }
 
 
 
-// Private
-// --------------
+/*---- Private ----------------------------------------------------------------------------------*/
 
 function extractMXMLHeader(m: C.MusicXML.ScoreTimewise): C.ScoreHeader {
     var header = new C.ScoreHeader({
@@ -98,7 +83,7 @@ function extractMXMLHeader(m: C.MusicXML.ScoreTimewise): C.ScoreHeader {
 function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices: C.IVoice[]; parts: C.IPart[]} {
     if (!mxmlJson || !mxmlJson.partList || !mxmlJson.partList.scoreParts ||
             !mxmlJson.partList.scoreParts.length) {
-        throw new InvalidMXML("At least one part is required", 0, 0, "Header");
+        throw new C.InvalidMXMLException("At least one part is required", 0, 0, "Header");
     }
 
     var idxToPart: {[key: number]: string}  = {};
@@ -360,7 +345,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
             case "Note":
                 return C.Type.Duration;
             default:
-                throw new InvalidMXML(type + " is not a known type", bar, beat, part);
+                throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }
     };
 }

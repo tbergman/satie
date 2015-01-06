@@ -118,11 +118,11 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET:                (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-    DELETE:             (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-    PATCH:              (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-    PUT:                (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
-    POST:               (url: string, p?: any, cb?: (response: any) => void, nested?: boolean) => Promise<void>;
+    GET:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+    DELETE:             (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+    PATCH:              (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+    PUT:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+    POST:               (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
 
     _events:            string;
 }
@@ -247,6 +247,30 @@ export interface IFluxAction<PostData>{
 
     nested?:            boolean;
 }
+
+/**
+ * Catch this exception when processing toScore.
+ */
+export class InvalidMXMLException {
+    constructor(reason: string, bar: number, beat: number, part: string) {
+        this.reason     = reason;
+        this.bar        = bar;
+        this.beat       = beat;
+        this.part       = part;
+    }
+
+    toString() {
+        return "Import failed in part " +
+            this.part + " on bar " + this.bar + ", beat " + this.beat + ".\n\n" + this.reason +
+            "If you believe this error is a bug, please report it at https://github.com/ripieno/satie";
+    }
+
+    part:       string;
+    reason:     string;
+    bar:        number;
+    beat:       number;
+}
+
 
 /** 
  * A header is a child of parts, and includes the title and other basic

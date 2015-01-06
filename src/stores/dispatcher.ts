@@ -37,18 +37,18 @@ class Dispatcher implements C.IDispatcher {
         this._callbacks = this._callbacks.filter(cb => cb !== callback);
     }
 
-	DELETE(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "DELETE", p, cb, nested); }
-	GET(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "GET", p, cb, nested); }
-    PATCH(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
-        return this._dispatch(url, "PATCH", p, cb, nested); }
-	POST(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "POST", p, cb, nested); }
-	PUT(url: string, p?: any, cb?: (response: any) => void, nested?: boolean): Promise<void> {
-	    return this._dispatch(url, "PUT", p, cb, nested); }
+	DELETE(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
+	    return this._dispatch(url, "DELETE", p, successCB, errorCB); }
+	GET(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
+	    return this._dispatch(url, "GET", p, successCB, errorCB); }
+    PATCH(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "PATCH", p, successCB, errorCB); }
+	POST(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
+	    return this._dispatch(url, "POST", p, successCB, errorCB); }
+	PUT(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
+	    return this._dispatch(url, "PUT", p, successCB, errorCB); }
 
-    _dispatch(url: string, verb: string, postData: any, cb?: (response: any) => void, nested: boolean = false) : Promise<void> {
+    _dispatch(url: string, verb: string, postData: any, successCB?: (response: any) => void, errorCB?: (error: any) => void) : Promise<void> {
 	    assert(verb, "Verb must be defined");
 
         var pr: Promise<void>;
@@ -75,12 +75,11 @@ class Dispatcher implements C.IDispatcher {
 	                query: query,
 	                url: url,
 	                response: response,
-                    postData: null,
-                    nexted: nested
-	            });
+                    postData: null
+	            }, errorCB);
 
-	            if (cb) {
-                    ev.then(() => cb(response));
+	            if (successCB) {
+                    ev.then(() => successCB(response));
 	            }
 	        });
 	    } else if (verb in immediateActions) {
@@ -90,9 +89,8 @@ class Dispatcher implements C.IDispatcher {
 	            response: null,
 	            status: null,
 	            query: query,
-                postData: postData,
-                nested: nested
-	        });
+                postData: postData
+	        }, errorCB);
 
 	        if ((verb in networkActions) && !url.indexOf("/api")) {
 	            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
@@ -103,16 +101,15 @@ class Dispatcher implements C.IDispatcher {
 	                    query: query,
 	                    url: url,
 	                    response: response,
-                        postData: null,
-                        nested: nested
-	                });
+                        postData: null
+	                }, errorCB);
 
-	                if (cb) {
-                        ev.then(() => cb(response));
+	                if (successCB) {
+                        ev.then(() => successCB(response));
 	                }
 	            });
 	        } else {
-	            assert(!cb, "Callbacks are only necessary for network actions.");
+	            assert(!successCB, "Callbacks are only necessary for network actions.");
 	        }
 	    }
 
@@ -154,7 +151,7 @@ class Dispatcher implements C.IDispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData>) {
+    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData>, onError?: (err?: any) => void) {
         if (FLUX_DEBUG) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
@@ -197,13 +194,6 @@ class Dispatcher implements C.IDispatcher {
             this._events += "\n";
         }
 
-        if (this._inAction && !action.nested) {
-            // In practice, this is causing more problems than it is solving.  Maybe it should just check that
-            // an action can not be queued by another action?
-            // assert(false, "Queuing an action (" + action.description +
-            //    ") during an action (" + this._inAction + ") is a violation of Flux");
-        }
-
         _.each(this._callbacks, callback => {
             this._addPromise(callback, action);
         });
@@ -214,13 +204,18 @@ class Dispatcher implements C.IDispatcher {
             .all(this._promises)
             .then(this._clearPromises)
             .catch((err) => {
+                this._clearPromises();
                 if (err instanceof C.DispatcherRedirect) {
                     var redirect: C.DispatcherRedirect = err;
                     this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
                 }
                 this._inAction = null;
-                console.warn("Exception occurred in promise", err);
-                console.log(err.stack);
+                if (onError) {
+                    onError(err);
+                } else {
+                    console.warn("Exception occurred in promise", err);
+                    console.log(err.stack);
+                }
             });
         /* tslint:enable */
     }

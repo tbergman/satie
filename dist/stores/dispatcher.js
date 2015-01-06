@@ -26,24 +26,23 @@ var Dispatcher = (function () {
     Dispatcher.prototype.unregister = function (callback) {
         this._callbacks = this._callbacks.filter(function (cb) { return cb !== callback; });
     };
-    Dispatcher.prototype.DELETE = function (url, p, cb, nested) {
-        return this._dispatch(url, "DELETE", p, cb, nested);
+    Dispatcher.prototype.DELETE = function (url, p, successCB, errorCB) {
+        return this._dispatch(url, "DELETE", p, successCB, errorCB);
     };
-    Dispatcher.prototype.GET = function (url, p, cb, nested) {
-        return this._dispatch(url, "GET", p, cb, nested);
+    Dispatcher.prototype.GET = function (url, p, successCB, errorCB) {
+        return this._dispatch(url, "GET", p, successCB, errorCB);
     };
-    Dispatcher.prototype.PATCH = function (url, p, cb, nested) {
-        return this._dispatch(url, "PATCH", p, cb, nested);
+    Dispatcher.prototype.PATCH = function (url, p, successCB, errorCB) {
+        return this._dispatch(url, "PATCH", p, successCB, errorCB);
     };
-    Dispatcher.prototype.POST = function (url, p, cb, nested) {
-        return this._dispatch(url, "POST", p, cb, nested);
+    Dispatcher.prototype.POST = function (url, p, successCB, errorCB) {
+        return this._dispatch(url, "POST", p, successCB, errorCB);
     };
-    Dispatcher.prototype.PUT = function (url, p, cb, nested) {
-        return this._dispatch(url, "PUT", p, cb, nested);
+    Dispatcher.prototype.PUT = function (url, p, successCB, errorCB) {
+        return this._dispatch(url, "PUT", p, successCB, errorCB);
     };
-    Dispatcher.prototype._dispatch = function (url, verb, postData, cb, nested) {
+    Dispatcher.prototype._dispatch = function (url, verb, postData, successCB, errorCB) {
         var _this = this;
-        if (nested === void 0) { nested = false; }
         assert(verb, "Verb must be defined");
         var pr;
         var root = url;
@@ -66,11 +65,10 @@ var Dispatcher = (function () {
                     query: query,
                     url: url,
                     response: response,
-                    postData: null,
-                    nexted: nested
-                });
-                if (cb) {
-                    ev.then(function () { return cb(response); });
+                    postData: null
+                }, errorCB);
+                if (successCB) {
+                    ev.then(function () { return successCB(response); });
                 }
             });
         }
@@ -81,9 +79,8 @@ var Dispatcher = (function () {
                 response: null,
                 status: null,
                 query: query,
-                postData: postData,
-                nested: nested
-            });
+                postData: postData
+            }, errorCB);
             if ((verb in networkActions) && !url.indexOf("/api")) {
                 ajax.untrusted.anyJSON(verb, url, postData, function (response, request) {
                     var ev = _this._dispatchImpl({
@@ -93,16 +90,15 @@ var Dispatcher = (function () {
                         query: query,
                         url: url,
                         response: response,
-                        postData: null,
-                        nested: nested
-                    });
-                    if (cb) {
-                        ev.then(function () { return cb(response); });
+                        postData: null
+                    }, errorCB);
+                    if (successCB) {
+                        ev.then(function () { return successCB(response); });
                     }
                 });
             }
             else {
-                assert(!cb, "Callbacks are only necessary for network actions.");
+                assert(!successCB, "Callbacks are only necessary for network actions.");
             }
         }
         return pr;
@@ -117,7 +113,7 @@ var Dispatcher = (function () {
             }
         }));
     };
-    Dispatcher.prototype._dispatchImpl = function (action) {
+    Dispatcher.prototype._dispatchImpl = function (action, onError) {
         var _this = this;
         if (FLUX_DEBUG) {
             console.log(action.description + (action.resource ? " " + action.resource : ""), (action.query ? " " + action.query : ""), (action.postData ? [action.postData] : []), [action]);
@@ -158,20 +154,24 @@ var Dispatcher = (function () {
             }
             this._events += "\n";
         }
-        if (this._inAction && !action.nested) {
-        }
         _.each(this._callbacks, function (callback) {
             _this._addPromise(callback, action);
         });
         this._inAction = action.description;
         return Promise.Promise.all(this._promises).then(this._clearPromises).catch(function (err) {
+            _this._clearPromises();
             if (err instanceof C.DispatcherRedirect) {
                 var redirect = err;
                 _this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
             }
             _this._inAction = null;
-            console.warn("Exception occurred in promise", err);
-            console.log(err.stack);
+            if (onError) {
+                onError(err);
+            }
+            else {
+                console.warn("Exception occurred in promise", err);
+                console.log(err.stack);
+            }
         });
     };
     return Dispatcher;
