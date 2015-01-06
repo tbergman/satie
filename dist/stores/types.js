@@ -9,6 +9,8 @@ var BeginModel = require("./begin");
 var BeginView = require("../views/begin");
 var ClefModel = require("./clef");
 var ClefView = require("../views/clef");
+var DirectionModel = require("./direction");
+var DirectionView = require("../views/direction");
 var DurationModel = require("./duration");
 var DurationView = require("../views/duration");
 var EndMarkerModel = require("./endMarker");
@@ -37,6 +39,7 @@ function ensureRegistered() {
     registerType(450 /* BeamGroup */, BeamGroupModel, BeamGroupView.Component);
     registerType(140 /* Begin */, BeginModel, BeginView.Component);
     registerType(150 /* Clef */, ClefModel, ClefView.Component);
+    registerType(410 /* Direction */, DirectionModel, DirectionView.Component);
     registerType(600 /* Duration */, DurationModel, DurationView.Component);
     registerType(110 /* EndMarker */, EndMarkerModel, null);
     registerType(160 /* KeySignature */, KeySignatureModel, KeySignatureView.Component);

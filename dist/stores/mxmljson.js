@@ -236,12 +236,14 @@ function extractMXMLPartsAndVoices(mxmlJson) {
     }
     function mxmlClassToType(type, bar, beat, part) {
         switch (type) {
-            case "Note":
-                return 600 /* Duration */;
             case "Attributes":
                 return 145 /* Attributes */;
             case "Barline":
                 return 300 /* Barline */;
+            case "Direction":
+                return 410 /* Direction */;
+            case "Note":
+                return 600 /* Duration */;
             default:
                 throw new InvalidMXML(type + " is not a known type", bar, beat, part);
         }

@@ -983,7 +983,7 @@ export enum Type {
 
     NewPage                 = 120,          // Page break flag. Folds into Attributes.
     NewLine                 = 130,          // Line break flag. Folds into Attributes.
-    Begin                   = 140,          // Need not be saved. Appears at start of 1st page.
+    Begin                   = 140,          // Need not be saved. Appears at index 1 of each body, after Print
 
     Attributes              = 145,          // Implements C.MusicXML.Attributes
     Clef                    = 150,          // Implements C.MusicXML.Clef
@@ -994,6 +994,7 @@ export enum Type {
     Barline                 = 300,          // Implements C.MusicXML.Barline
 
     START_OF_MODIFIERS      = 400,
+    Direction               = 410,          // Implements C.MusicXML.Direction
     Slur                    = 425,          // Implements C.MusicXML.Slur
     BeamGroup               = 450,          // Implements C.MusicXML.Beam
     Wedge                   = 475,          // Implements C.MusicXML.Wedge

@@ -351,12 +351,14 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     ////
     function mxmlClassToType(type: string, bar: number, beat: number, part: string) {
         switch(type) {
-            case "Note":
-                return C.Type.Duration;
             case "Attributes":
                 return C.Type.Attributes;
             case "Barline":
                 return C.Type.Barline;
+            case "Direction":
+                return C.Type.Direction;
+            case "Note":
+                return C.Type.Duration;
             default:
                 throw new InvalidMXML(type + " is not a known type", bar, beat, part);
         }

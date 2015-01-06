@@ -422,6 +422,7 @@ var EventType = exports.EventType;
     Type[Type["END_OF_ATTRIBUTES"] = 199] = "END_OF_ATTRIBUTES";
     Type[Type["Barline"] = 300] = "Barline";
     Type[Type["START_OF_MODIFIERS"] = 400] = "START_OF_MODIFIERS";
+    Type[Type["Direction"] = 410] = "Direction";
     Type[Type["Slur"] = 425] = "Slur";
     Type[Type["BeamGroup"] = 450] = "BeamGroup";
     Type[Type["Wedge"] = 475] = "Wedge";

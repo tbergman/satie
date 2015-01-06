@@ -20,6 +20,8 @@ import BeginModel           = require("./begin");
 import BeginView            = require("../views/begin");
 import ClefModel            = require("./clef");
 import ClefView             = require("../views/clef");
+import DirectionModel       = require("./direction");
+import DirectionView        = require("../views/direction");
 import DurationModel        = require("./duration");
 import DurationView         = require("../views/duration");
 import EndMarkerModel       = require("./endMarker");
@@ -48,6 +50,7 @@ export function ensureRegistered() {
     registerType(C.Type.BeamGroup, BeamGroupModel, BeamGroupView.Component);
     registerType(C.Type.Begin, BeginModel, BeginView.Component);
     registerType(C.Type.Clef, ClefModel, ClefView.Component);
+    registerType(C.Type.Direction, DirectionModel, DirectionView.Component);
     registerType(C.Type.Duration, DurationModel, DurationView.Component);
     registerType(C.Type.EndMarker, EndMarkerModel, null);
     registerType(C.Type.KeySignature, KeySignatureModel, KeySignatureView.Component);

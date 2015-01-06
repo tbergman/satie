@@ -9,7 +9,7 @@ var typescript          = require("gulp-typescript");
 
 var dirs = {
     build:              path.join(__dirname, "dist"),
-    partial:            path.join(__dirname, "partial"),
+    partial:            path.join(__dirname, ".partialBuild"),
     typings:            path.join(__dirname, "typings")
 };
 
@@ -50,8 +50,8 @@ gulp.task("buildTS", function() {
 gulp.task("bundleDTS", ["buildTS"], function() {
     return dtsBundle.bundle({
         name: "satie",
-        main: "partial/satie.d.ts",
-        baseDir: "partial",
+        main: ".partialBuild/satie.d.ts",
+        baseDir: ".partialBuild",
         out: "../dist/satie.d.ts",
         externals: false
     });

@@ -314,6 +314,7 @@ declare module '__satie/stores/contracts' {
         END_OF_ATTRIBUTES = 199,
         Barline = 300,
         START_OF_MODIFIERS = 400,
+        Direction = 410,
         Slur = 425,
         BeamGroup = 450,
         Wedge = 475,
