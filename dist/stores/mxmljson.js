@@ -81,11 +81,17 @@ function extractMXMLPartsAndVoices(mxmlJson) {
         var currBeat = 0;
         var beatPerPart = _.times(parts.length, function (part) { return 0; });
         var idxPerPart = _.times(parts.length, function (part) { return 0; });
+        var chords = [];
         do {
             var elements = _.map(measure.parts, extractElement);
             var splits = getSplits(elements);
             if (splits.length) {
                 _.forEach(splits, applySplit);
+                continue;
+            }
+            var chordContinuations = getChordContinuations(elements);
+            if (chordContinuations.length) {
+                _.forEach(chordContinuations, applyChordContinuation);
                 continue;
             }
             var priorities = _.map(elements, extractPriority);
@@ -110,6 +116,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                     var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[mPartIdx].id) : 1111 /* Unknown */;
                     if (minPriority === thisPriority && currBeat === beatPerPart[mPartIdx]) {
                         var beatsInEl = 0;
+                        var isChord = false;
                         if (minPriority === 145 /* Attributes */) {
                             assert(element.voice === undefined, "Attributes are voiceless");
                             assert(element.staff === undefined, "Attributes are staffless");
@@ -123,9 +130,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                                 _class: element._class,
                                 dots: note.dots ? note.dots.length : 0
                             };
-                            if (note.chord) {
-                                assert(false, "TODO");
-                            }
+                            isChord = !!note.chord;
                         }
                         var _class = element._class;
                         delete element._class;
@@ -144,6 +149,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                         Annotator.recordMetreData(parts, voices);
                         if (minPriority === 600 /* Duration */) {
                             beatsInEl = model._beats;
+                            chords[voiceIdx] = model;
                         }
                         ++idxPerPart[mPartIdx];
                         beatPerPart[mPartIdx] = currBeat + beatsInEl;
@@ -194,14 +200,33 @@ function extractMXMLPartsAndVoices(mxmlJson) {
         function extractElement(p, partID) {
             return p[idxPerPart[partToIdx[partID]]] || null;
         }
+        function getChordContinuations(elements) {
+            return _.map(elements, function (element, idx) {
+                if (!element) {
+                    return null;
+                }
+                var voiceIdx = getVoiceIdx(idx, element.voice, false);
+                return (element._class === "Note") && element.chord && !!chords[voiceIdx] ? { el: element, partIdx: idx, voiceIdx: voiceIdx } : null;
+            }).filter(function (a) { return !!a; });
+        }
+        function applyChordContinuation(continuation) {
+            chords[continuation.voiceIdx]._notes = chords[continuation.voiceIdx]._notes.concat(continuation.el);
+            if (continuation.el) {
+                ++idxPerPart[continuation.partIdx];
+            }
+            if (!continuation.el || !continuation.el.chord) {
+                chords[continuation.voiceIdx] = null;
+            }
+        }
     }
     function getSplits(elements) {
         return _.map(elements, function (element, idx) { return element && (element._class === "Forward" || element._class === "Backup") ? { el: element, idx: idx } : null; }).filter(function (a) { return !!a; });
     }
-    function getVoiceIdx(mPartIdx, voice) {
+    function getVoiceIdx(mPartIdx, voice, canUpdate) {
+        if (canUpdate === void 0) { canUpdate = true; }
         assert(!!~voice);
         var key = (mPartIdx || 0) + "_" + (voice || 1);
-        if (_voiceHash[key] === undefined) {
+        if (_voiceHash[key] === undefined && canUpdate) {
             ++_maxVoice;
             partToVoices[mPartIdx].push(_maxVoice);
             parts[mPartIdx].containsVoice[_maxVoice] = true;

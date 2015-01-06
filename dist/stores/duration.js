@@ -314,6 +314,7 @@ var DurationModel = (function (_super) {
             return this._p_notes;
         },
         set: function (notes) {
+            debugger;
             this.chord = this.chord || [];
             this.chord.length = notes.length;
             for (var i = 0; i < notes.length; ++i) {

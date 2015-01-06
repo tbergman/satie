@@ -143,6 +143,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         var currBeat: number            = 0;
         var beatPerPart: number[]       = _.times(parts.length, part => 0);
         var idxPerPart: number[]        = _.times(parts.length, part => 0);
+        var chords: DurationModel[]     = []; // by voices.
         do {
             var elements: any[]         = _.map(measure.parts, extractElement);
 
@@ -150,6 +151,12 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
             var splits                  = getSplits(elements);
             if (splits.length) {
                 _.forEach(splits, applySplit);
+                continue;
+            }
+
+            var chordContinuations      = getChordContinuations(elements);
+            if (chordContinuations.length) {
+                _.forEach(chordContinuations, applyChordContinuation);
                 continue;
             }
 
@@ -183,6 +190,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
                     if (minPriority === thisPriority && currBeat === beatPerPart[mPartIdx]) {
                         var beatsInEl = 0;
+                        var isChord = false;
                         if (minPriority === C.Type.Attributes) {
                             assert(element.voice === undefined, "Attributes are voiceless");
                             assert(element.staff === undefined, "Attributes are staffless");
@@ -195,9 +203,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                                 _class:     element._class,
                                 dots:       note.dots ? note.dots.length : 0 // FIXME
                             };
-                            if (note.chord) {
-                                assert(false, "TODO");
-                            }
+                            isChord = !!note.chord;
                         }
 
                         var _class = element._class;
@@ -228,6 +234,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                         if (minPriority === C.Type.Duration) {
                             // needs recordMetreData to be called.
                             beatsInEl = (<DurationModel>model)._beats;
+
+                            chords[voiceIdx] = <DurationModel> model;
                         }
 
                         ++idxPerPart[mPartIdx];
@@ -294,6 +302,30 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         function extractElement(p: any, partID: string) {
             return p[idxPerPart[partToIdx[partID]]] || <any> null;
         }
+
+        ////
+        function getChordContinuations(elements: any[]) {
+            return _.map(elements, (element, idx) => {
+                    if (!element) {
+                        return null;
+                    }
+                    var voiceIdx = getVoiceIdx(idx, element.voice, false);
+                    return (element._class === "Note") && element.chord && !!chords[voiceIdx] ? {el: element, partIdx: idx, voiceIdx: voiceIdx} : null;
+                })
+                .filter(a => !!a);
+        }
+
+        ////
+        function applyChordContinuation(continuation: {el: C.MusicXML.Note; partIdx: number; voiceIdx: number}) {
+            chords[continuation.voiceIdx]._notes = chords[continuation.voiceIdx]._notes.concat(continuation.el);
+            if (continuation.el) {
+                ++idxPerPart[continuation.partIdx];
+            }
+
+            if (!continuation.el || !continuation.el.chord) {
+                chords[continuation.voiceIdx] = null;
+            }
+        }
     }
 
     ////
@@ -304,10 +336,10 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     }
 
     ////
-    function getVoiceIdx(mPartIdx: number, voice: number) {
+    function getVoiceIdx(mPartIdx: number, voice: number, canUpdate: boolean = true) {
         assert(!!~voice)
         var key = (mPartIdx || 0) + "_" + (voice||1);
-        if (_voiceHash[key] === undefined) {
+        if (_voiceHash[key] === undefined && canUpdate) {
             ++_maxVoice;
             partToVoices[mPartIdx].push(_maxVoice);
             parts[mPartIdx].containsVoice[_maxVoice] = true;
