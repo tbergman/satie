@@ -147,6 +147,7 @@ var AttributesModel = (function (_super) {
     });
     AttributesModel.prototype.recordMetreDataImpl = function (mctx) {
         this._parent = mctx.attributes;
+        this._adjustCurrentDivision(mctx);
         this.divisions = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60;
         mctx.attributes = this;
         this.ctxData = new C.MetreContext(mctx);
@@ -163,13 +164,14 @@ var AttributesModel = (function (_super) {
     AttributesModel.prototype.annotateImpl = function (ctx) {
         assert(this._parent !== this);
         ctx.attributes = this;
+        this._adjustCurrentDivision(ctx);
         var potentialParent = ctx.prev(function (c) { return c.type === 145 /* Attributes */ || c.type === 130 /* NewLine */; });
         var sameLineAsParent = this._parent && potentialParent === this._parent;
         if (this._parent && !sameLineAsParent) {
             this.time = this.time || this._parent.time;
             this.keySignature = null;
             this.clefs = [];
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
         }
         if (this.time && !(this.time instanceof Model)) {
             ctx.insertFuture(new TimeSignatureModel(this.time, false));
@@ -189,7 +191,7 @@ var AttributesModel = (function (_super) {
             clef = null;
         }
         if (this._parent && sameLineAsParent) {
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
             this.time = this.time || this._parent.time;
             this.keySignature = this.keySignature || this._parent.keySignature;
             var clefs = [];
@@ -199,7 +201,7 @@ var AttributesModel = (function (_super) {
             this.clefs = clefs;
         }
         if (!this._parent) {
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
         }
         return 10 /* Success */;
     };
@@ -220,13 +222,19 @@ var AttributesModel = (function (_super) {
             transpose: this.transpose
         });
     };
-    AttributesModel.prototype.updateAttached = function (ctx) {
+    AttributesModel.prototype._updateAttached = function (ctx) {
         this.clefs = this.clefs || [];
         this.clefs[ctx.idxInPart] = ifAttribute(ctx.next(function (c) { return c.type === 150 /* Clef */ || c.type > 199 /* END_OF_ATTRIBUTES */; })) || this.clefs[ctx.idxInPart];
         this.time = ifAttribute(ctx.next(function (c) { return c.priority === 170 /* TimeSignature */ || c.priority > 199 /* END_OF_ATTRIBUTES */; })) || this.time;
         this.keySignature = ifAttribute(ctx.next(function (c) { return c.priority === 160 /* KeySignature */ || c.priority > 199 /* END_OF_ATTRIBUTES */; }));
         function ifAttribute(m) {
             return m && m.priority < 199 /* END_OF_ATTRIBUTES */ ? m : null;
+        }
+    };
+    AttributesModel.prototype._adjustCurrentDivision = function (mctx) {
+        if (this._parent && this._parent.divisions && this.divisions) {
+            var adjustment = this.divisions * this._parent.divisions;
+            mctx.division *= adjustment;
         }
     };
     return AttributesModel;

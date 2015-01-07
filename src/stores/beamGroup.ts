@@ -112,11 +112,11 @@ class BeamGroupModel extends Model {
         }
 
         // A beam must not cross a bar (for now)
-        var beats = 0;
+        var beamDivisions = 0;
         for (var i = 0; i < this.beam.length; ++i) {
-            beats += this.beam[i].calcBeats(ctx);
+            beamDivisions += this.beam[i].calcDivisions(ctx);
         }
-        if (ctx.beat + beats > ctx.ts.beats) {
+        if (ctx.division + beamDivisions > ctx.ts.beats*ctx.attributes.divisions) {
             _.each(this.beam, o => { o.inBeam = false; });
             ctx.eraseCurrent();
             return C.IterationStatus.RetryCurrent;
@@ -142,7 +142,7 @@ class BeamGroupModel extends Model {
 
         var next            	= ctx.next(obj => obj.isNote).note;
         this.tuplet         	= next ? next.displayTuplet : null;
-        ctx.startOfBeamBeat 	= ctx.beat;
+        ctx.startOfBeamDivision = ctx.division;
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {
@@ -193,10 +193,10 @@ class BeamGroupModel extends Model {
     // III. Util //
     ///////////////
 
-    calcBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
+    calcDivisions(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
         var sum = 0;
         for (var i = 0; i < this.beam.length; ++i) {
-            sum += this.beam[i].calcBeats(ctx, inheritedCount, force);
+            sum += this.beam[i].calcDivisions(ctx, inheritedCount, force);
         }
         return sum;
     }

@@ -172,12 +172,12 @@ declare module '__satie/stores/contracts' {
     }
     export interface ILocation {
         bar: number;
-        beat: number;
+        division: number;
         endMarker?: boolean;
     }
     export class Location implements ILocation {
         bar: number;
-        beat: number;
+        division: number;
         endMarker: boolean;
         eq(b: ILocation): boolean;
         lt(b: ILocation): boolean;
@@ -203,7 +203,7 @@ declare module '__satie/stores/contracts' {
         endMarker: boolean;
         ts: ISimpleTimeSignature;
         bar: number;
-        beat: number;
+        division: number;
         constructor(other?: MetreContext);
     }
     export interface IMidiEvent {
@@ -435,10 +435,10 @@ declare module '__satie/stores/annotator' {
         voiceIdx: number;
         part: C.IPart;
         idxInPart: number;
-        startOfBeamBeat: number;
-        beat: number;
-        __globalBeat__: number;
+        startOfBeamDivision: number;
+        __globalDivision__: number;
         bar: number;
+        division: number;
         endMarker: boolean;
         accidentalsByStaff: C.IAccidentals[];
         barlineX: number[];
@@ -497,7 +497,7 @@ declare module '__satie/stores/annotator' {
         bar: number;
         barKeys: string[];
         barlineX: number[];
-        beat: number;
+        division: number;
         invisibleForBars: number;
         line: number;
         pageLines: number[];
@@ -555,7 +555,7 @@ declare module '__satie/stores/model' {
         isAttribute: boolean;
         revision: string;
         priority: C.Type;
-        calcBeats(ctx: C.MetreContext): number;
+        calcDivisions(ctx: C.MetreContext): number;
         constructor(spec: any, annotated: boolean);
         modelDidLoad(body: Model[], idx: number): void;
         annotate(ctx: Annotator.Context): C.IterationStatus;

@@ -314,7 +314,7 @@ var Renderer = (function (_super) {
         if (data.ctxData) {
             this.props.dispatcher.PUT("/webapp/visualCursor", {
                 bar: data.ctxData.bar,
-                beat: data.ctxData.beat,
+                division: data.ctxData.division,
                 endMarker: data.ctxData.endMarker
             });
         }

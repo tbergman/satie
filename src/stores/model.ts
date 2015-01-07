@@ -121,7 +121,7 @@ class Model {
     get priority():     C.Type                  { return this.type; }
     set priority(p: C.Type)                     { throw "Not a Placeholder"; }
 
-    calcBeats(ctx: C.MetreContext)              { return 0; }
+    calcDivisions(ctx: C.MetreContext)          { return 0; }
 
     ////////////////////
     // II. Life-cycle //

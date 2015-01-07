@@ -130,7 +130,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
 
     private _continuePlay() {
         var Annotator: typeof AnnotatorType = require("./annotator");
-        var beats: number;
+        var divisions: number;
         var delays: Array<number> = [];
         _.each(this._remainingActions || [], m => {
             m();
@@ -157,7 +157,6 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
             var visualCursor = this._score.visualCursor;
             var delay = 0;
             var bpm = this.bpm;
-            var timePerBeat = 60/bpm;
             var foundIdx = false;
 
             var soundfont = this._score.voices[h].instrument.soundfont;
@@ -169,7 +168,7 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
                     var obj: Model = body[i];
-                    foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat &&
+                    foundIdx = foundIdx || (visualCursor.division === obj.ctxData.division &&
                             visualCursor.bar === obj.ctxData.bar);
 
                     switch (obj.type) {
@@ -182,12 +181,13 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
                     }
 
                     if (foundIdx && obj.isNote) {
-                        beats = Metre.calcBeats2(obj.note, ctx);
+                        var timePerDivision = 60/bpm/ctx.attributes.divisions;
+                        divisions = Metre.calcDivisions2(obj.note, ctx);
                         if (!obj.isRest) {
                             _.each(obj.note.chord.map(C.NoteUtil.pitchToMidiNumber), midiNote => {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
-                                MIDI.noteOff(channel, midiNote, startTime + delay + beats*timePerBeat);
+                                MIDI.noteOff(channel, midiNote, startTime + delay + divisions*ctx.attributes.divisions*timePerDivision);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
                                     this._remainingActions.push(() =>
                                         global.clearInterval(a));
@@ -198,13 +198,13 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
                                 }
                             });
                         }
-                        delay += beats*timePerBeat;
+                        delay += divisions*ctx.attributes.divisions*timePerDivision;
                         delays.push(delay);
                     }
 
                     if (obj.isNote) {
-                        beats = Metre.calcBeats2(obj.note, ctx);
-                        seek += beats*timePerBeat;
+                        divisions = Metre.calcDivisions2(obj.note, ctx);
+                        seek += divisions*timePerDivision;
                     }
                 }
             }

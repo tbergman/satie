@@ -34,7 +34,7 @@ class EndMarkerModel extends Model {
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,
             ts: mctx.ts,
-            beat: mctx.ts.beats,
+            division: mctx.ts.beats * mctx.attributes.divisions,
             bar: mctx.bar - 1,
             endMarker: true
         });
@@ -71,16 +71,16 @@ class EndMarkerModel extends Model {
 
         // Bars must not be under-filled (should be filled with rests)
         if (prev.type !== C.Type.Barline &&
-                    ctx.beat && ctx.beat < ctx.ts.beats) {
+                    ctx.division && ctx.division < ctx.ts.beats * ctx.attributes.divisions) {
             // XXX: extend to work on things other than 4/4
-            var beatsRemaining = ctx.ts.beats - ctx.beat;
+            var divisionsRemaining = ctx.ts.beats * ctx.attributes.divisions - ctx.division;
 
-            assert(beatsRemaining < ctx.ts.beats,
+            assert(divisionsRemaining < ctx.ts.beats * ctx.attributes.divisions,
                 "Don't run this on entirely blank bars!");
 
             var DurationModel: typeof DurationModelType = require("./duration");
 
-            var toAdd = Metre.subtract(ctx.ts.beats, ctx.beat, ctx)
+            var toAdd = Metre.subtract(ctx.ts.beats * ctx.attributes.divisions, ctx.division, ctx)
                 .map((beat: C.IPitchDuration) => {
                     beat.chord = [{ step: "R", octave: 0, alter: null }];
                     beat.tieds = [null];

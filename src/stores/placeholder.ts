@@ -115,15 +115,15 @@ class PlaceholderModel extends Model {
 
         // Only correct rhythm if the beat is valid (otherwise, our rhythmicSpellcheck
         // won't give sensible results!)
-        if (ctx.ts && ctx.__globalBeat__ < ctx.ts.beats) {
+        if (ctx.ts && ctx.__globalDivision__ < ctx.ts.beats*ctx.attributes.divisions) {
             // Add in rests, if needed. (This is part of the reason (2) is needed above).
-            if (ctx.beat < ctx.__globalBeat__) {
+            if (ctx.division < ctx.__globalDivision__) {
                 return PlaceholderModel.fillMissingBeats(ctx);
             }
 
-            if (ctx.beat === ctx.__globalBeat__ && this.priority === C.Type.Duration) {
+            if (ctx.division === ctx.__globalDivision__ && this.priority === C.Type.Duration) {
                 assert(realItems[0], "We can't have an entire column of fake durations,");
-                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].calcBeats(ctx));
+                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].calcDivisions(ctx));
             }
         }
 
@@ -232,11 +232,10 @@ class PlaceholderModel extends Model {
     // IV. Static //
     ////////////////
 
-    static fillMissingBeats(ctx: Annotator.Context, extraBeats?: number): C.IterationStatus {
-        extraBeats = extraBeats || 0;
+    static fillMissingBeats(ctx: Annotator.Context, extraDivisions?: number): C.IterationStatus {
+        extraDivisions = extraDivisions || 0;
         var rest: {} = { chord: [{ step: "R", octave: null, acc: null }] };
-        var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats,
-            ctx.beat, ctx).map(
+        var missingBeats = Metre.subtract(ctx.__globalDivision__ + extraDivisions, ctx.division, ctx).map(
                 spec => new DurationModel(<C.IPitchDuration>_.extend(spec, rest),
                     true));
         ctx.splice(ctx.idx, 1, missingBeats, Annotator.SplicePolicy.Masked);

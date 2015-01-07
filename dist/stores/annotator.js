@@ -3,17 +3,17 @@ var assert = require("assert");
 var C = require("./contracts");
 var Context = (function () {
     function Context(voices, layout, editor, assertionPolicy) {
-        this.startOfBeamBeat = NaN;
+        this.startOfBeamDivision = NaN;
         this.accidentalsByStaff = [];
         this.barlineX = [];
         this.line = 0;
         this.loc = {
             bar: 1,
-            beat: 0
+            division: 0
         };
         this.pageLines = [0];
         this.pageStarts = [0];
-        this.smallest = 10000;
+        this.smallest = C.MAX_NUM;
         this.minBottomPaddings = [];
         this.minTopPaddings = [];
         this.disableRecordings = true;
@@ -53,7 +53,7 @@ var Context = (function () {
         return result;
     };
     Context.prototype.abort = function (exception) {
-        throw new C.InvalidMXMLException("The Satie layout engine encountered an error.\n\n" + exception.toString() + (exception.stack ? "\n\n========== Stack trace ==========\n" + exception.stack + "\n========== End of trace =========\n" : "\n\nStack trace unavailable!\n") + "\n\n", this.bar, this.beat, this.part.id);
+        throw new C.InvalidMXMLException("The Satie layout engine encountered an error.\n\n" + exception.toString() + (exception.stack ? "\n\n========== Stack trace ==========\n" + exception.stack + "\n========== End of trace =========\n" : "\n\nStack trace unavailable!\n") + "\n\n", this.bar, this.division / this.attributes.divisions, this.part.id);
     };
     Context.prototype.captureLine = function () {
         return {
@@ -61,7 +61,7 @@ var Context = (function () {
             bar: this.loc.bar,
             barKeys: this.barKeys,
             barlineX: this.barlineX,
-            beat: this.loc.beat,
+            division: this.division,
             _attributes: this._attributes || {},
             line: this.line,
             invisibleForBars: this.invisibleForBars,
@@ -327,7 +327,7 @@ var Context = (function () {
                                 if (splicePolicy === 4 /* ShortenOtherVoices */) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
-                                    if (retained.calcBeats(this) > fromMainPart.calcBeats(this)) {
+                                    if (retained.calcDivisions(this) > fromMainPart.calcDivisions(this)) {
                                         assert(retained.isNote, "Only notes have durations");
                                         assert(replaceWith[j].isNote, "The retained and replaced notes should have the same priority");
                                         retained.note.count = fromMainPart.note.count;
@@ -425,7 +425,7 @@ var Context = (function () {
     Context.prototype._realign = function (start, end) {
         var PlaceholderModel = require("./placeholder");
         var bodies = this._voices.filter(function (s) { return !!s.body; }).map(function (s) { return s.body; });
-        var cBeats = bodies.map(function (b) { return 0; });
+        var cDivisions = bodies.map(function (b) { return 0; });
         var placeholders = bodies.map(function (b) { return []; });
         var reals = bodies.map(function (b) { return []; });
         var aligned = bodies.map(function (b) { return []; });
@@ -447,12 +447,12 @@ var Context = (function () {
             }
         }
         while (_.any(reals, function (r) { return r.length; })) {
-            var thisBeat = _.min(reals.map(function (r, j) { return r.length ? cBeats[j] : 100000; }));
-            var thisPriority = _.min(reals.map(function (r, j) { return r.length && cBeats[j] === thisBeat ? r[0].priority : 100000; }));
+            var thisDivision = _.min(reals.map(function (r, j) { return r.length ? cDivisions[j] : 100000; }));
+            var thisPriority = _.min(reals.map(function (r, j) { return r.length && cDivisions[j] === thisDivision ? r[0].priority : 100000; }));
             for (var j = 0; j < bodies.length; ++j) {
-                if (reals[j].length && (cBeats[j] === thisBeat) && reals[j][0].priority === thisPriority) {
+                if (reals[j].length && (cDivisions[j] === thisDivision) && reals[j][0].priority === thisPriority) {
                     if (reals[j][0].isNote) {
-                        cBeats[j] += reals[j][0].calcBeats(this);
+                        cDivisions[j] += reals[j][0].calcDivisions(this);
                     }
                     aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
                 }
@@ -539,22 +539,22 @@ var Context = (function () {
     Context.prototype.markEntireSongDirty = function () {
         this.nullEntry = true;
     };
-    Object.defineProperty(Context.prototype, "beat", {
-        get: function () {
-            return this.loc.beat;
-        },
-        set: function (b) {
-            this.loc.beat = b;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(Context.prototype, "bar", {
         get: function () {
             return this.loc.bar;
         },
         set: function (b) {
             this.loc.bar = b;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Context.prototype, "division", {
+        get: function () {
+            return this.loc.division;
+        },
+        set: function (d) {
+            this.loc.division = d;
         },
         enumerable: true,
         configurable: true
@@ -579,7 +579,7 @@ var Context = (function () {
         return serializable;
     };
     Context.prototype._annotateImpl = function (from, cursor, disableRecordings) {
-        from = from || { bar: 1, beat: 0 };
+        from = from || { bar: 1, division: 0 };
         this._attributes = {};
         this.disableRecordings = disableRecordings;
         if (!this.disableRecordings) {
@@ -596,7 +596,7 @@ var Context = (function () {
                 stopIn = 20;
             }
             if (--stopIn === 0) {
-                throw "because of timeout";
+                throw "Too many operations have occurred for the given input.";
             }
             status = it.annotate(verbose);
         }
@@ -811,10 +811,10 @@ var PrivIterator = (function () {
         if (!filtered) {
             ctx.y = componentSnapshots[0].y;
         }
-        ctx.beat = _.min(componentSnapshots, "beat").beat;
+        ctx.division = _.min(componentSnapshots, "division").division;
         for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].nextLocation.bar === ctx.bar && this._components[i].nextLocation.beat < ctx.beat) {
-                ctx.beat = this._components[i].nextLocation.beat;
+            if (this._components[i].nextLocation.bar === ctx.bar && this._components[i].nextLocation.division < ctx.division) {
+                ctx.division = this._components[i].nextLocation.division;
             }
         }
         var mergePolicy = 0 /* Invalid */;
@@ -875,7 +875,7 @@ var PrivIterator = (function () {
                 this._rollbackLine(this._parent.line - 1);
                 break;
             case 40 /* RetryBeam */:
-                this._parent.loc.beat = this._parent.startOfBeamBeat;
+                this._parent.division = this._parent.startOfBeamDivision;
                 this._rewind(450 /* BeamGroup */);
                 this._parent.x = this._componentWithPriority(450 /* BeamGroup */).x;
                 break;
@@ -1003,7 +1003,7 @@ var PrivIterator = (function () {
             if (this._parent.nullEntry) {
                 this._from = {
                     bar: 1,
-                    beat: 0
+                    division: 0
                 };
             }
             this._components[i].reset(this._from);
@@ -1013,8 +1013,8 @@ var PrivIterator = (function () {
 })();
 var PrivIteratorComponent = (function () {
     function PrivIteratorComponent(from, voice, idx, cursor, part, indexInPart, assertionPolicy) {
-        this._beat = null;
-        this._nextBeat = null;
+        this._division = null;
+        this._nextDivision = null;
         this._voice = voice;
         this._body = voice.body;
         this._sidx = idx;
@@ -1026,9 +1026,9 @@ var PrivIteratorComponent = (function () {
         assert(this._location.eq(from));
     }
     PrivIteratorComponent.prototype.annotate = function (ctx, canExitAtNewline) {
-        if (this._beat !== null) {
-            ctx.__globalBeat__ = ctx.beat;
-            ctx.beat = this._beat;
+        if (this._division !== null) {
+            ctx.__globalDivision__ = ctx.division;
+            ctx.division = this._division;
         }
         ctx.body = this._body;
         ctx.voice = this._voice;
@@ -1041,7 +1041,7 @@ var PrivIteratorComponent = (function () {
             return this._addPadding(ctx);
         }
         var status = this._body[this._idx].annotate(ctx);
-        this._nextBeat = ctx.beat;
+        this._nextDivision = ctx.division;
         var isClean = status === 10 /* Success */ && (!this._cursor || this._cursor.annotatedObj);
         var isNewline = this.curr && this.curr.type === 130 /* NewLine */;
         if (status === 10 /* Success */ && shouldUpdateVC) {
@@ -1060,7 +1060,7 @@ var PrivIteratorComponent = (function () {
         this._idx = -1;
         do {
             this._location = new C.Location(this._body[++this._idx].ctxData);
-        } while ((from.bar !== 1 || from.beat !== 0) && (this._location.lt(from) || this._location.eq(from) && (!this.curr || this.curr.priority <= 140 /* Begin */ || this.curr.priority === 300 /* Barline */)));
+        } while ((from.bar !== 1 || from.division !== 0) && (this._location.lt(from) || this._location.eq(from) && (!this.curr || this.curr.priority <= 140 /* Begin */ || this.curr.priority === 300 /* Barline */)));
         this._updateSubctx();
     };
     PrivIteratorComponent.prototype.rewind = function (priority) {
@@ -1082,12 +1082,12 @@ var PrivIteratorComponent = (function () {
     };
     PrivIteratorComponent.prototype._updateSubctx = function () {
         if (this.curr && this.curr.ctxData) {
-            this._beat = this.curr.ctxData.beat;
-            this._nextBeat = null;
+            this._division = this.curr.ctxData.division;
+            this._nextDivision = null;
         }
         else {
-            this._beat = null;
-            this._nextBeat = null;
+            this._division = null;
+            this._nextDivision = null;
         }
     };
     PrivIteratorComponent.prototype.trySeek = function (priority) {
@@ -1157,19 +1157,19 @@ var PrivIteratorComponent = (function () {
             return false;
         }
         var space = !!(ctx.findVertical(function (c) { return c.type !== 999 /* Placeholder */ && c !== ctx.curr; }).length);
-        return space && ctx.curr.type !== 999 /* Placeholder */ && ctx.beat > ctx.__globalBeat__;
+        return space && ctx.curr.type !== 999 /* Placeholder */ && ctx.division > ctx.__globalDivision__;
     };
     PrivIteratorComponent.prototype._addPadding = function (ctx) {
         var PlaceholderModel = require("./placeholder");
         ctx.splice(ctx.idx, 0, [new PlaceholderModel({
             priority: ctx.curr.priority
         }, true)], 2 /* Additive */);
-        ctx.beat = ctx.__globalBeat__;
+        ctx.division = ctx.__globalDivision__;
         return 30 /* RetryCurrentNoOptimizations */;
     };
     Object.defineProperty(PrivIteratorComponent.prototype, "_next", {
         get: function () {
-            this._beat = this._nextBeat;
+            this._division = this._nextDivision;
             return this._body[this._idx + 1];
         },
         enumerable: true,
@@ -1184,7 +1184,7 @@ var PrivIteratorComponent = (function () {
         }
         var target = this._cursor;
         var barMatches = ctx.bar === target.bar;
-        var beatMatches = (!target.beat && !target.annotatedObj) || ctx.beat === target.beat;
+        var beatMatches = (!target.division && !target.annotatedObj) || ctx.division === target.division;
         var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === 110 /* EndMarker */);
         return barMatches && beatMatches && typeMatches && !target.annotatedObj;
     };
@@ -1211,8 +1211,8 @@ function _cpyline(ctx, line, mode) {
     if (!!line.barKeys !== null) {
         ctx.barKeys = line.barKeys;
     }
-    if (line.beat !== null) {
-        ctx.beat = line.beat;
+    if (line.division !== null) {
+        ctx.division = line.division;
     }
     if (line.line !== null) {
         ctx.line = line.line;
@@ -1270,9 +1270,9 @@ function _cpysnapshot(ctx, layout) {
 }
 var MAX_LOCATION = new C.Location({
     bar: C.MAX_NUM,
-    beat: C.MAX_NUM
+    division: C.MAX_NUM
 });
 var MIN_LOCATION = new C.Location({
     bar: -1,
-    beat: -1
+    division: -1
 });

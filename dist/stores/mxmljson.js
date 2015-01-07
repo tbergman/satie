@@ -75,8 +75,8 @@ function extractMXMLPartsAndVoices(mxmlJson) {
         parts: parts
     };
     function processMeasure(measure, measureIdx) {
-        var currBeat = 0;
-        var beatPerPart = _.times(parts.length, function (part) { return 0; });
+        var currDivision = 0;
+        var currDivisionPerPart = _.times(parts.length, function (part) { return 0; });
         var idxPerPart = _.times(parts.length, function (part) { return 0; });
         var chords = [];
         do {
@@ -94,7 +94,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
             var priorities = _.map(elements, extractPriority);
             var minPriority = _.min(priorities);
             if (minPriority !== C.MAX_NUM) {
-                var newBeat = 1000;
+                var newDivision = C.MAX_NUM;
                 _.forEach(elements, function (element, mPartIdx) {
                     var voiceIdx = element ? getVoiceIdx(mPartIdx, element.voice) : -1;
                     parts[mPartIdx].staveCount = Math.max(parts[mPartIdx].staveCount, element ? element.staff || 1 : -1);
@@ -110,9 +110,9 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                         }
                     }
                     Annotator.recordMetreData(parts, voices);
-                    var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[mPartIdx].id) : 1111 /* Unknown */;
-                    if (minPriority === thisPriority && currBeat === beatPerPart[mPartIdx]) {
-                        var beatsInEl = 0;
+                    var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[mPartIdx].id) : 1111 /* Unknown */;
+                    if (minPriority === thisPriority && currDivision === currDivisionPerPart[mPartIdx]) {
+                        var divisionsInEl = 0;
                         var isChord = false;
                         if (minPriority === 145 /* Attributes */) {
                             assert(element.voice === undefined, "Attributes are voiceless");
@@ -134,7 +134,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                         element._ = [Model.newKey(), minPriority, 0];
                         var curr = voices[voiceIdx].body[outputIdx];
                         var model = Model.fromJSON(element);
-                        if (curr && curr.placeholder && curr.priority === minPriority && curr.ctxData.beat === currBeat) {
+                        if (curr && curr.placeholder && curr.priority === minPriority && curr.ctxData.division === currDivision) {
                             voices[voiceIdx].body[outputIdx] = model;
                         }
                         else {
@@ -145,20 +145,20 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                         delete element._;
                         Annotator.recordMetreData(parts, voices);
                         if (minPriority === 600 /* Duration */) {
-                            beatsInEl = model._beats;
+                            divisionsInEl = model._divisions;
                             chords[voiceIdx] = model;
                         }
                         ++idxPerPart[mPartIdx];
-                        beatPerPart[mPartIdx] = currBeat + beatsInEl;
-                        newBeat = Math.min(newBeat, beatPerPart[mPartIdx]);
+                        currDivisionPerPart[mPartIdx] = currDivision + divisionsInEl;
+                        newDivision = Math.min(newDivision, currDivisionPerPart[mPartIdx]);
                     }
                     else {
-                        beatPerPart[mPartIdx] = -1;
+                        currDivisionPerPart[mPartIdx] = -1;
                         _.chain(partToVoices[mPartIdx]).map(function (vidx) { return voices[vidx]; }).forEach(function (voice) { return voice.body.splice(outputIdx, 0, new PlaceholderModel({ priority: minPriority }, true)); }).value();
                     }
                 });
-                currBeat = newBeat;
-                beatPerPart = _.map(beatPerPart, function (m) { return !~m ? currBeat : m; });
+                currDivision = newDivision;
+                currDivisionPerPart = _.map(currDivisionPerPart, function (m) { return !~m ? currDivision : m; });
                 ++outputIdx;
             }
         } while (minPriority !== C.MAX_NUM);
@@ -177,14 +177,14 @@ function extractMXMLPartsAndVoices(mxmlJson) {
             idxPerPart[partIdx] = idxPerPart[partIdx] + 1;
             if (split.el._class === "Backup") {
                 var beats = split.el.duration / divisionsPerPart[partIdx];
-                currBeat = currBeat - beats;
-                beatPerPart[partIdx] = currBeat;
+                currDivision = currDivision - beats;
+                currDivisionPerPart[partIdx] = currDivision;
                 outputIdx = outputIdx - 1;
-                while (getCurrBeat() > currBeat) {
+                while (getCurrBeat() > currDivision) {
                     outputIdx = outputIdx - 1;
                 }
                 function getCurrBeat() {
-                    return _.chain(voices).map(function (voice) { return (voice.body[outputIdx].ctxData || { beat: 0 }).beat; }).max().value();
+                    return _.chain(voices).map(function (voice) { return (voice.body[outputIdx].ctxData || { division: 0 }).division; }).max().value();
                 }
             }
             else {
@@ -192,7 +192,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
             }
         }
         function extractPriority(element, pIdx) {
-            return !element ? C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[pIdx].id);
+            return !element ? C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[pIdx].id);
         }
         function extractElement(p, partID) {
             return p[idxPerPart[partToIdx[partID]]] || null;

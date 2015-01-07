@@ -93,7 +93,6 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
                 error: null,
                 context: null
             });
-            debugger;
             this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
         }
     }

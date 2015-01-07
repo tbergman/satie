@@ -23,9 +23,8 @@ import TimeSignatureModel   = require("./timeSignature");
  * is responsible for their serialization.
  */
 class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
-    ///////////////
-    // I.1 Model //
-    ///////////////
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                          { return C.Type.Attributes; }
     get visible()                       { return false; }
@@ -44,9 +43,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         ];
     }
 
-    ///////////////////////////////
-    // I.2 C.MusicXML.Attributes //
-    ///////////////////////////////
+    /*---- I.2 C.MusicXML.Attributes ------------------------------------------------------------*/
 
     _parent:            C.MusicXML.Attributes;
 
@@ -82,29 +79,24 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     get directive()     { return this._directive === undefined && this._parent ? this._parent.directive : this._directive; }
     set directive       (m: C.MusicXML.Directive) { this._directive = m; }
 
-    //////////////////////////////////////////////
-    // I.3 C.MusicXML.Attributes, outside class //
-    //////////////////////////////////////////////
+    /*---- I.3 C.MusicXML.Attributes, outside class ---------------------------------------------*/
 
     clefs:              C.MusicXML.Clef[];
     time:           	C.MusicXML.Time;
     keySignature:   	C.MusicXML.Key;
 
-    //////////////////////////////
-    // I.4 C.MusicXML.Editorial //
-    //////////////////////////////
+    /*---- I.4 C.MusicXML.Editorial -------------------------------------------------------------*/
 
     footnote:           C.MusicXML.Footnote;
     level:          	C.MusicXML.Level;
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle ----------------------------------------------------------------------*/
 
     recordMetreDataImpl(mctx: C.MetreContext) {
         this._parent            = mctx.attributes;
 
-        this.divisions          = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60; // ?
+        this._adjustCurrentDivision(mctx);
+        this.divisions          = this.divisions || (mctx.attributes && mctx.attributes.divisions) || 60;
         mctx.attributes     	= this;
         this.ctxData        	= new C.MetreContext(mctx);
         if (this.time) {
@@ -122,13 +114,15 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         assert(this._parent !== this);
         ctx.attributes      	= this;
 
+        this._adjustCurrentDivision(ctx);
+
         var potentialParent = ctx.prev(c => c.type === C.Type.Attributes || c.type === C.Type.NewLine);
         var sameLineAsParent = this._parent && potentialParent === this._parent;
         if (this._parent && !sameLineAsParent) {
             this.time           = this.time || this._parent.time;
             this.keySignature   = null;
             this.clefs          = [];
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
         }
 
         if (this.time && !(this.time instanceof Model)) {
@@ -150,7 +144,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         }
 
         if (this._parent && sameLineAsParent) {
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
             this.time           = this.time || this._parent.time;
             this.keySignature   = this.keySignature || this._parent.keySignature;
             var clefs: C.MusicXML.Clef[] = [];
@@ -161,7 +155,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         }
     
         if (!this._parent) {
-            this.updateAttached(ctx);
+            this._updateAttached(ctx);
         }
 
         return C.IterationStatus.Success;
@@ -185,11 +179,9 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         });
     }
 
-    ///////////////
-    // III. Util //
-    ///////////////
+    /*---- III. Util ---------------------------------------------------------------------------*/
 
-    updateAttached(ctx: Annotator.Context) {
+    private _updateAttached(ctx: Annotator.Context) {
         this.clefs          = this.clefs || [];
         this.clefs[ctx.idxInPart] = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef || c.type > C.Type.END_OF_ATTRIBUTES)) ||
             this.clefs[ctx.idxInPart];
@@ -199,6 +191,14 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
 
         function ifAttribute(m: Model) {
             return m && m.priority < C.Type.END_OF_ATTRIBUTES ? m : null;
+        }
+    }
+
+    private _adjustCurrentDivision(mctx: C.MetreContext) {
+        if (this._parent && this._parent.divisions && this.divisions) {
+            // DIFIX: Ensure we get a whole number, or else change the current division!
+            var adjustment = this.divisions * this._parent.divisions;
+            mctx.division *= adjustment;
         }
     }
 }

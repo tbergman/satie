@@ -75,7 +75,7 @@ var NewlineModel = (function (_super) {
         }
         ctx.lines[ctx.line]._attributes[ctx.part.id].time = ctx.attributes.time;
         ctx.line = ctx.line + 1;
-        ctx.smallest = 10000;
+        ctx.smallest = C.MAX_NUM;
         ctx.minBottomPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
         ctx.minTopPaddings = _.times(ctx._voices.length + 1, function () { return 0; });
         this.x = ctx.x;
@@ -92,7 +92,7 @@ var NewlineModel = (function (_super) {
                 bar: null,
                 barKeys: null,
                 barlineX: null,
-                beat: null,
+                division: null,
                 invisibleForBars: null,
                 line: ctx.line,
                 pageLines: null,
@@ -108,7 +108,7 @@ var NewlineModel = (function (_super) {
         ctx.lines[ctx.line].bar = ctx.bar;
         ctx.lines[ctx.line].barlineX = [];
         ctx.lines[ctx.line].barKeys = C.JSONx.clone(ctx.barKeys);
-        ctx.lines[ctx.line].beat = 0;
+        ctx.lines[ctx.line].division = 0;
         ctx.lines[ctx.line].x = ctx.x;
         ctx.lines[ctx.line].y = ctx.y;
         ctx.lines[ctx.line].pageLines = ctx.pageLines;

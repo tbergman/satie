@@ -236,7 +236,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var dynLine = 3;
         var foundObj: Model = null;
         var foundIdx: number;
-        var ctxData: { beat: number; bar: number };
+        var ctxData: { division: number; bar: number };
         var ctx = this.getCtx();
         var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
@@ -400,7 +400,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         if (data.ctxData) {
             this.props.dispatcher.PUT("/webapp/visualCursor", {
                 bar: data.ctxData.bar,
-                beat: data.ctxData.beat,
+                division: data.ctxData.division,
                 endMarker: data.ctxData.endMarker
             });
         }

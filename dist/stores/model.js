@@ -196,7 +196,7 @@ var Model = (function () {
         enumerable: true,
         configurable: true
     });
-    Model.prototype.calcBeats = function (ctx) {
+    Model.prototype.calcDivisions = function (ctx) {
         return 0;
     };
     Model.prototype.modelDidLoad = function (body, idx) {

@@ -148,7 +148,7 @@ var DurationModel = (function (_super) {
         set: function (n) {
             assert(!isNaN(n));
             this._count = n;
-            this._beats = null;
+            this._divisions = null;
         },
         enumerable: true,
         configurable: true
@@ -288,8 +288,8 @@ var DurationModel = (function (_super) {
     });
     Object.defineProperty(DurationModel.prototype, "beats", {
         get: function () {
-            assert(isFinite(this._beats));
-            return this._beats;
+            assert(isFinite(this._divisions));
+            return this._divisions;
         },
         set: function (n) {
             assert(false);
@@ -364,11 +364,10 @@ var DurationModel = (function (_super) {
         assert(this._count === this._notes[0].noteType.duration);
         this.ctxData = new C.MetreContext(mctx);
         assert(isFinite(this._count));
-        this._beats = this.calcBeats(mctx, null, true);
-        assert(isFinite(this._beats) && this._beats !== null);
-        mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.ts.beats);
-        mctx.beat = (mctx.beat + this._beats) % mctx.ts.beats;
-        Metre.correctRoundingErrors(mctx);
+        this._divisions = this.calcDivisions(mctx, null, true);
+        assert(isFinite(this._divisions) && this._divisions !== null);
+        mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats * mctx.attributes.divisions));
+        mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats * mctx.attributes.divisions);
     };
     DurationModel.prototype.annotateImpl = function (ctx) {
         var _this = this;
@@ -390,22 +389,22 @@ var DurationModel = (function (_super) {
                 }
             }
         }
-        assert(this._beats !== null, "Unknown beat count");
-        this.isWholebar = this._beats === -1 || this._beats === ctx.ts.beats;
+        assert(this._divisions !== null, "Unknown beat count");
+        this.isWholebar = this._divisions === -1 || this._divisions === ctx.ts.beats * ctx.attributes.divisions;
         if (ctx.isBeam || !this.inBeam) {
-            if (this._beats > ctx.ts.beats && ctx.beat >= ctx.ts.beats) {
+            if (this._divisions > ctx.ts.beats * ctx.attributes.divisions && ctx.division >= ctx.ts.beats * ctx.attributes.divisions) {
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
             }
             else {
-                if (ctx.beat + this._beats > ctx.ts.beats) {
-                    var overfill = ctx.beat + this._beats - ctx.ts.beats;
-                    if (this._beats === overfill) {
+                if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+                    var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
+                    if (this._divisions === overfill) {
                         var ret = BarlineModel.createBarline(ctx, 0 /* Regular */);
                         return ret;
                     }
                     else {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(function (t) { return new DurationModel(t, true); });
-                        var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx).map(function (t) { return new DurationModel(t, true); });
+                        var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx).map(function (t) { return new DurationModel(t, true); });
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                             if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
@@ -437,13 +436,13 @@ var DurationModel = (function (_super) {
                     return status;
                 }
             }
-            assert(isFinite(this._beats) && this._beats !== null);
-            if (ctx.smallest > this._beats) {
-                assert(this._beats > 0);
-                ctx.smallest = this._beats;
+            assert(isFinite(this._divisions) && this._divisions !== null);
+            if (ctx.smallest * ctx.attributes.divisions > this._divisions) {
+                assert(this._divisions > 0);
+                ctx.smallest = this._divisions / ctx.attributes.divisions;
                 return 60 /* RetryLine */;
             }
-            this.extraWidth = (Math.log(this._beats) - Math.log(ctx.smallest)) / C.log2 / 3 * 40;
+            this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) / C.log2 / 3 * 40;
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
                 return NewlineModel.createNewline(ctx);
             }
@@ -487,8 +486,7 @@ var DurationModel = (function (_super) {
             ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4) * 10);
         }
         if (!ctx.isBeam) {
-            ctx.beat = (ctx.beat || 0) + this._beats;
-            Metre.correctRoundingErrors(ctx);
+            ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
         if (!ctx.isBeam && this.inBeam) {
             ctx.x = this.x + this.getWidth(ctx);
@@ -525,11 +523,11 @@ var DurationModel = (function (_super) {
         assert(isFinite(width));
         return width;
     };
-    DurationModel.prototype.calcBeats = function (ctx, inheritedCount, force) {
-        if (!force && this._beats) {
-            return this._beats;
+    DurationModel.prototype.calcDivisions = function (ctx, inheritedCount, force) {
+        if (!force && this._divisions) {
+            return this._divisions;
         }
-        return Metre.calcBeats2(this, ctx, inheritedCount);
+        return Metre.calcDivisions2(this, ctx, inheritedCount);
     };
     DurationModel.prototype.getAccWidthAfterBar = function (ctx) {
         if (!ctx.attributes || !ctx.attributes.keySignature) {
@@ -537,13 +535,13 @@ var DurationModel = (function (_super) {
         }
         var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var backupAcc = ctx.accidentalsByStaff[this.staff];
-        var beat = ctx.beat;
+        var division = ctx.division;
         ctx.accidentalsByStaff[this.staff] = staffAcc;
-        ctx.beat = 1;
+        ctx.division = ctx.attributes.divisions;
         ctx.idx++;
         var acc = this.getAccidentals(ctx, true);
         ctx.accidentalsByStaff[this.staff] = backupAcc;
-        ctx.beat = beat;
+        ctx.division = division;
         ctx.idx--;
         var parens = _.any(acc, function (v) { return typeof v === "string" && !!~v.indexOf("p"); });
         if (parens) {
@@ -590,7 +588,7 @@ var DurationModel = (function (_super) {
     DurationModel.prototype.calcMiddleNoteDirection = function (ctx) {
         var prevLine = ctx.prev() && ctx.prev().isNote ? DurationModel.getAverageLine(ctx.prev().note, ctx) : null;
         var nextLine = ctx.next() && ctx.next().isNote ? DurationModel.getAverageLine(ctx.next().note, ctx) : null;
-        if ((nextLine !== null) && ctx.beat + this._beats + Metre.calcBeats2(ctx.next().note, ctx, this.count) > ctx.ts.beats) {
+        if ((nextLine !== null) && ctx.division + this._divisions + Metre.calcDivisions2(ctx.next().note, ctx, this.count) > ctx.ts.beats * ctx.attributes.divisions) {
             nextLine = null;
         }
         if (ctx.prev() && ctx.prev().forceMiddleNoteDirection) {
@@ -607,8 +605,8 @@ var DurationModel = (function (_super) {
             check = prevLine;
         }
         else {
-            var startsAt = ctx.beat;
-            var endsAt = ctx.beat + this._beats;
+            var startsAt = ctx.division;
+            var endsAt = ctx.division + this._divisions;
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
                 check = nextLine;
             }
@@ -675,7 +673,7 @@ var DurationModel = (function (_super) {
                     var otherChord = concurrentNotes[j].note.chord;
                     noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
                 }
-                if (ctx.beat === 1) {
+                if (ctx.division === ctx.attributes.divisions) {
                     var prevBarOrNote = ctx.prev(function (c) { return c.isNote && !c.isRest || c.type === 300 /* Barline */; });
                     if (prevBarOrNote && prevBarOrNote.type === 300 /* Barline */) {
                         var prevNote = ctx.prev(function (c) { return c.isNote && _.any(c.note.chord, function (c) { return c.step === pitch.step; }) || c.type === 300 /* Barline */; }, 2);

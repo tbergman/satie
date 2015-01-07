@@ -8,13 +8,13 @@ function rhythmicSpellcheck(ctx) {
     if (!ctx.curr.isNote) {
         return 10 /* Success */;
     }
-    if (ctx.curr.calcBeats(ctx) + ctx.beat > ctx.ts.beats) {
+    if (ctx.curr.calcDivisions(ctx) + ctx.division > ctx.ts.beats * ctx.attributes.divisions) {
         return 10 /* Success */;
     }
     var pattern = getBeamingPattern(ctx.ts);
     var currNote = ctx.curr.note;
-    var currNoteStartBeat = ctx.beat;
-    var currNoteEndBeat = currNoteStartBeat + calcBeats2(currNote, ctx);
+    var currNoteStartDivision = ctx.division;
+    var currNoteEndDivision = currNoteStartDivision + calcDivisions2(currNote, ctx);
     var nextIdx = ctx.nextIdx(function (c) { return c.type === 600 /* Duration */ || c.priority === 300 /* Barline */; });
     var nextObj = ctx.body[nextIdx];
     var nextNote = nextObj && nextObj.isNote ? nextObj.note : null;
@@ -24,12 +24,12 @@ function rhythmicSpellcheck(ctx) {
         var partial = 0;
         for (var i = ctx.idx; ctx.body[i] && ctx.body[i].type !== 300 /* Barline */ && isTupletIfNote(ctx.body[i]); --i) {
             if (ctx.body[i].isNote) {
-                partial = (partial + ctx.body[i].calcBeats(ctx)) % base;
+                partial = (partial + ctx.body[i].calcDivisions(ctx)) % base;
             }
         }
         if (partial) {
             var toRestoreUntuplet = (base - partial) * currNote.tuplet.den / currNote.tuplet.num;
-            var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.beat).map(function (m) { return new DurationModel(m, true); });
+            var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.division).map(function (m) { return new DurationModel(m, true); });
             for (var i = 0; i < toAdd.length; ++i) {
                 toAdd[i].tuplet = C.JSONx.clone(currNote.tuplet);
                 toAdd[i].isRest = true;
@@ -42,58 +42,58 @@ function rhythmicSpellcheck(ctx) {
         return 10 /* Success */;
     }
     var excessBeats = 0;
-    var patternStartBeat = 0;
+    var patternStartDivision = 0;
     for (var p = 0; p < pattern.length; ++p) {
-        var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
-        if (currNoteStartBeat > patternStartBeat && currNoteEndBeat > patternEndBeat && currNoteStartBeat < patternEndBeat) {
-            excessBeats = currNoteEndBeat - patternEndBeat;
+        var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
+        if (currNoteStartDivision > patternStartDivision && currNoteEndDivision > patternEndDivision && currNoteStartDivision < patternEndDivision) {
+            excessBeats = currNoteEndDivision - patternEndDivision;
             break;
         }
-        patternStartBeat = patternEndBeat;
+        patternStartDivision = patternEndDivision;
     }
     if (excessBeats > 0) {
         return clearExcessBeats(currNote, excessBeats, ctx);
     }
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartBeat + calcBeats2(nextNote, ctx);
-        patternStartBeat = 0;
+        var nextNoteEndBeat = currNoteStartDivision + calcDivisions2(nextNote, ctx);
+        patternStartDivision = 0;
         for (var p = 0; p < pattern.length; ++p) {
-            var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
-            if (currNoteStartBeat >= patternStartBeat && currNoteEndBeat < patternEndBeat && nextNoteEndBeat <= patternEndBeat + 0.0000001) {
+            var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
+            if (currNoteStartDivision >= patternStartDivision && currNoteEndDivision < patternEndDivision && nextNoteEndDivision <= patternEndDivision + 0.0000001) {
                 if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
                     return 60 /* RetryLine */;
                 }
             }
-            patternStartBeat = patternEndBeat;
+            patternStartDivision = patternEndDivision;
         }
     }
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartBeat + calcBeats2(nextNote, ctx);
-        patternStartBeat = 0;
+        var nextNoteEndDivision = currNoteStartDivision + calcDivisions2(nextNote, ctx);
+        patternStartDivision = 0;
         var gotFirstNote = false;
         for (var p = 0; p < pattern.length; ++p) {
-            var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
+            var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
             if (!gotFirstNote) {
-                if (currNoteStartBeat > patternStartBeat) {
+                if (currNoteStartDivision > patternStartDivision) {
                     break;
                 }
-                else if (currNoteStartBeat === patternStartBeat) {
+                else if (currNoteStartDivision === patternStartDivision) {
                     gotFirstNote = true;
                     continue;
                 }
             }
             else {
-                if (nextNoteEndBeat > patternEndBeat) {
+                if (nextNoteEndDivision > patternEndDivision) {
                     break;
                 }
-                else if (currNoteEndBeat === patternEndBeat) {
+                else if (currNoteEndDivision === patternEndDivision) {
                     if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
                         return 20 /* RetryCurrent */;
                     }
                     break;
                 }
             }
-            patternStartBeat = patternEndBeat;
+            patternStartDivision = patternEndDivision;
         }
     }
     return 10 /* Success */;
@@ -123,7 +123,7 @@ function tryMerge(currNote, nextObj, nextIdx, ctx) {
 function clearExcessBeats(currNote, excessBeats, ctx) {
     "use strict";
     var nextIdx = ctx.nextIdx(function (c) { return !c.placeholder; });
-    var replaceWith = subtract(currNote, excessBeats, ctx).concat(subtract(currNote, calcBeats2(currNote, ctx) - excessBeats, ctx, calcBeats2(currNote, ctx) - excessBeats));
+    var replaceWith = subtract(currNote, excessBeats, ctx).concat(subtract(currNote, calcDivisions2(currNote, ctx) - excessBeats, ctx, calcDivisions2(currNote, ctx) - excessBeats));
     replaceWith.forEach(function (m) {
         m.chord = C.JSONx.clone(currNote.chord);
     });
@@ -169,40 +169,40 @@ function getBeamingPattern(ts, alt) {
 }
 function add(durr1, durr2, ctx, beatOffset) {
     "use strict";
-    return subtract((isNaN(durr1) ? calcBeats2(durr1, ctx) : durr1) + calcBeats2(durr2, ctx), 0, ctx, beatOffset);
+    return subtract((isNaN(durr1) ? calcDivisions2(durr1, ctx) : durr1) + calcDivisions2(durr2, ctx), 0, ctx, beatOffset);
 }
 exports.add = add;
-function subtract(durr1, beats, ctx, beatOffset) {
+function subtract(durr1, divisions, ctx, divisionOffset) {
     "use strict";
     var tsName = getTSString(ctx.ts);
     var replaceWith = [];
-    var durr1Beats = isNaN(durr1) ? calcBeats2(durr1, ctx) : durr1;
-    var beatsToFill = durr1Beats - beats;
+    var durr1Divisions = isNaN(durr1) ? calcDivisions2(durr1, ctx) : durr1;
+    var beatsToFill = durr1Divisions - divisions;
     var bp = getBeamingPattern(ctx.ts);
-    var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.ts.beats;
+    var currDivision = (ctx.division + (divisionOffset || 0)) % (ctx.ts.beats * ctx.attributes.divisions);
     for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;
         var bpCount = 0;
-        while (bp[bpIdx] && bpCount + calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts) <= currBeat) {
+        while (bp[bpIdx] && bpCount + calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions) <= currDivision) {
             ++bpIdx;
             if (!bp[bpIdx]) {
                 return replaceWith;
             }
-            bpCount += calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
+            bpCount += calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
         }
         if (beatsToFill <= 0) {
             return replaceWith;
         }
         _.any(allNotes, function (note) {
-            var noteBeats = calcBeats(note.count, note.dots, null, ctx.ts);
-            if (noteBeats <= beatsToFill) {
+            var noteDivisions = calcDivisions(note.count, note.dots, null, ctx.ts, ctx.attributes.divisions);
+            if (noteDivisions <= beatsToFill) {
                 var completelyFills = false;
-                var tmpBeats = currBeat + noteBeats;
+                var tmpBeats = currDivision + noteDivisions;
                 for (var i = 0; bp[bpIdx + i]; ++i) {
                     if (tmpBeats < 0) {
                         break;
                     }
-                    var bpBeats = calcBeats(bp[bpIdx + i].count, bp[bpIdx + i].dots, null, ctx.ts);
+                    var bpBeats = calcDivisions(bp[bpIdx + i].count, bp[bpIdx + i].dots, null, ctx.ts, ctx.attributes.divisions);
                     if (tmpBeats === bpBeats) {
                         completelyFills = true;
                         break;
@@ -211,8 +211,8 @@ function subtract(durr1, beats, ctx, beatOffset) {
                 }
                 if (completelyFills || (i - bpIdx <= 1)) {
                     replaceWith.push(_.clone(note));
-                    beatsToFill -= noteBeats;
-                    currBeat += noteBeats;
+                    beatsToFill -= noteDivisions;
+                    currDivision += noteDivisions;
                     return true;
                 }
             }
@@ -223,19 +223,20 @@ function subtract(durr1, beats, ctx, beatOffset) {
 exports.subtract = subtract;
 function rebeamable(idx, ctx, alt) {
     "use strict";
+    var divisions = ctx.attributes.divisions;
     var tsName = getTSString(ctx.ts) + (alt ? "_" + alt : "");
     var replaceWith = [];
     var bp = getBeamingPattern(ctx.ts, alt);
     var body = ctx.body;
-    var currBeat = ctx.beat;
+    var currDivision = ctx.division;
     var bpIdx = 0;
     var bpCount = 0;
-    while (bp[bpIdx] && bpCount + calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts) <= currBeat) {
+    while (bp[bpIdx] && bpCount + calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions) <= currDivision) {
         ++bpIdx;
         if (!bp[bpIdx]) {
             return replaceWith;
         }
-        bpCount += calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
+        bpCount += calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
     }
     var needsReplacement = false;
     var prevCount;
@@ -267,10 +268,10 @@ function rebeamable(idx, ctx, alt) {
                     return null;
                 }
             }
-            var bBeats = calcBeats2(body[i].note, ctx, prevCount);
-            var bpBeats = calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
-            currBeat += bBeats;
-            if (currBeat > bpCount + bpBeats) {
+            var bDivisions = calcDivisions2(body[i].note, ctx, prevCount);
+            var bpBeats = calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
+            currDivision += bDivisions;
+            if (currDivision > bpCount + bpBeats) {
                 break;
             }
             if (prevInBeam && !body[i].inBeam) {
@@ -279,7 +280,7 @@ function rebeamable(idx, ctx, alt) {
             }
             assert(body[i].isNote);
             replaceWith.push(body[i]);
-            if (currBeat === bpCount + bpBeats) {
+            if (currDivision === bpCount + bpBeats) {
                 break;
             }
         }
@@ -288,7 +289,7 @@ function rebeamable(idx, ctx, alt) {
         var first = replaceWith[0];
         var last = replaceWith[replaceWith.length - 1];
         if (tsName.indexOf("/4") !== -1) {
-            while (((first.ctxData.beat % 1) !== 0 || (last.ctxData.beat % 1) === 0) && Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
+            while (((first.ctxData.division % divisions) !== 0 || (last.ctxData.division % divisions) === 0) && Math.floor(first.ctxData.division / divisions) !== Math.floor(last.ctxData.division / divisions)) {
                 replaceWith.pop();
                 last = replaceWith[replaceWith.length - 1];
             }
@@ -298,16 +299,16 @@ function rebeamable(idx, ctx, alt) {
     return null;
 }
 exports.rebeamable = rebeamable;
-function calcBeats2(durr, ctx, inheritedCount) {
+function calcDivisions2(durr, ctx, inheritedCount) {
     "use strict";
     if (inheritedCount === void 0) { inheritedCount = NaN; }
-    return calcBeats(durr.count || inheritedCount, durr.dots, durr.tuplet, ctx.ts);
+    return calcDivisions(durr.count || inheritedCount, durr.dots, durr.tuplet, ctx.ts, ctx.attributes.divisions);
 }
-exports.calcBeats2 = calcBeats2;
-function calcBeats(count, dots, tuplet, ts) {
+exports.calcDivisions2 = calcDivisions2;
+function calcDivisions(count, dots, tuplet, ts, divisions) {
     "use strict";
     if (count === -1) {
-        return ts.beats;
+        return ts.beats * divisions;
     }
     if (count === 9990 /* Breve */) {
         count = 0.5;
@@ -319,7 +320,7 @@ function calcBeats(count, dots, tuplet, ts) {
         count = 0.125;
     }
     assert(ts, "Not supplying a ts is deprecated");
-    var base = ts.beatType / count;
+    var base = divisions * ts.beatType / count;
     if (tuplet) {
         base *= tuplet.num / tuplet.den;
     }
@@ -330,7 +331,7 @@ function calcBeats(count, dots, tuplet, ts) {
     }
     return total;
 }
-exports.calcBeats = calcBeats;
+exports.calcDivisions = calcDivisions;
 ;
 function wholeNote(ctx) {
     "use strict";
@@ -338,15 +339,6 @@ function wholeNote(ctx) {
     return wholeNotePatterns[tsName];
 }
 exports.wholeNote = wholeNote;
-function correctRoundingErrors(mctx) {
-    "use strict";
-    var huge = 1000000000;
-    var rounded = Math.round(mctx.beat * huge) / huge;
-    if (Math.abs(rounded - mctx.beat) < 0.00000001) {
-        mctx.beat = Math.round(mctx.beat * 10000000) / 10000000;
-    }
-}
-exports.correctRoundingErrors = correctRoundingErrors;
 var _512 = C.NoteUtil.makeDuration({ count: 512 });
 var _256 = C.NoteUtil.makeDuration({ count: 256 });
 var _256D = C.NoteUtil.makeDuration({ count: 256, dots: 1 });

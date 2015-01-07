@@ -33,8 +33,8 @@ export function toScore(score: C.MusicXML.ScoreTimewise): ISatieImport {
 
         return {
             header:     header,
-            parts:  	partData.parts,
-            voices: 	partData.voices
+            parts:      partData.parts,
+            voices:     partData.voices
         };
     } catch(err) {
         return {
@@ -125,33 +125,34 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
     ////
     function processMeasure(measure: C.MusicXML.Measure, measureIdx: number) {
-        var currBeat: number            = 0;
-        var beatPerPart: number[]       = _.times(parts.length, part => 0);
-        var idxPerPart: number[]        = _.times(parts.length, part => 0);
-        var chords: DurationModel[]     = []; // by voices.
+        // DIFIX: Different divisions in different parts!
+        var currDivision: number            = 0;
+        var currDivisionPerPart: number[]   = _.times(parts.length, part => 0);
+        var idxPerPart: number[]            = _.times(parts.length, part => 0);
+        var chords: DurationModel[]         = []; // by voices.
         do {
-            var elements: any[]         = _.map(measure.parts, extractElement);
+            var elements: any[]             = _.map(measure.parts, extractElement);
 
             // Check for backups/forwards
-            var splits                  = getSplits(elements);
+            var splits                      = getSplits(elements);
             if (splits.length) {
                 _.forEach(splits, applySplit);
                 continue;
             }
 
-            var chordContinuations      = getChordContinuations(elements);
+            var chordContinuations          = getChordContinuations(elements);
             if (chordContinuations.length) {
                 _.forEach(chordContinuations, applyChordContinuation);
                 continue;
             }
 
-            var priorities              = _.map(elements, extractPriority);
-            var minPriority             = _.min(priorities);
+            var priorities                  = _.map(elements, extractPriority);
+            var minPriority                 = _.min(priorities);
 
             // Constraint: all parts at a given index have the same type. We add placeholders
             // so that this is true. See PlaceholderModel for details.
             if (minPriority !== C.MAX_NUM) {
-                var newBeat = 1000;
+                var newDivision = C.MAX_NUM;
                 _.forEach(elements, (element, mPartIdx) => {
                     var voiceIdx = element ? getVoiceIdx(mPartIdx, element.voice) : -1;
                     parts[mPartIdx].staveCount = Math.max(parts[mPartIdx].staveCount, element ? element.staff||1 : -1);
@@ -170,11 +171,11 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
                     Annotator.recordMetreData(parts, voices); // XXX: O(n^2) for no reason.
 
-                    var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[mPartIdx].id) :
+                    var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[mPartIdx].id) :
                         C.Type.Unknown;
 
-                    if (minPriority === thisPriority && currBeat === beatPerPart[mPartIdx]) {
-                        var beatsInEl = 0;
+                    if (minPriority === thisPriority && currDivision === currDivisionPerPart[mPartIdx]) {
+                        var divisionsInEl = 0;
                         var isChord = false;
                         if (minPriority === C.Type.Attributes) {
                             assert(element.voice === undefined, "Attributes are voiceless");
@@ -197,7 +198,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
                         var curr = voices[voiceIdx].body[outputIdx];
                         var model = Model.fromJSON(element);
-                        if (curr && curr.placeholder && curr.priority === minPriority && curr.ctxData.beat === currBeat) {
+                        if (curr && curr.placeholder && curr.priority === minPriority && curr.ctxData.division === currDivision) {
                             voices[voiceIdx].body[outputIdx] = model;
                         } else {
                             voices[voiceIdx].body.splice(outputIdx, 0, model);
@@ -218,17 +219,17 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
                         if (minPriority === C.Type.Duration) {
                             // needs recordMetreData to be called.
-                            beatsInEl = (<DurationModel>model)._beats;
+                            divisionsInEl = (<DurationModel>model)._divisions;
 
                             chords[voiceIdx] = <DurationModel> model;
                         }
 
                         ++idxPerPart[mPartIdx];
-                        beatPerPart[mPartIdx] = currBeat + beatsInEl;
-                        newBeat = Math.min(newBeat, beatPerPart[mPartIdx]);
+                        currDivisionPerPart[mPartIdx] = currDivision + divisionsInEl;
+                        newDivision = Math.min(newDivision, currDivisionPerPart[mPartIdx]);
                     } else {
                         // Most likely, we put in a placeholder.
-                        beatPerPart[mPartIdx] = -1;
+                        currDivisionPerPart[mPartIdx] = -1;
                         _.chain(partToVoices[mPartIdx])
                             .map(vidx => voices[vidx])
                             .forEach(voice => voice.body.splice(outputIdx, 0,
@@ -236,8 +237,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                             .value();
                     }
                 });
-                currBeat = newBeat;
-                beatPerPart = _.map(beatPerPart, m => !~m ? currBeat : m)
+                currDivision = newDivision;
+                currDivisionPerPart = _.map(currDivisionPerPart, m => !~m ? currDivision : m)
                 ++outputIdx;
             }
         } while(minPriority !== C.MAX_NUM);
@@ -256,20 +257,20 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         ////
         function applySplit(split: {el: any; idx: number}) {
             var partIdx                 = split.idx;
-            idxPerPart[partIdx]     	= idxPerPart[partIdx] + 1;
+            idxPerPart[partIdx]         = idxPerPart[partIdx] + 1;
             if (split.el._class === "Backup") {
                 var beats               = split.el.duration / divisionsPerPart[partIdx]; // Does this work in /8?
 
-                currBeat                = currBeat - beats;
-                beatPerPart[partIdx]    = currBeat;
+                currDivision                = currDivision - beats;
+                currDivisionPerPart[partIdx]    = currDivision;
                 outputIdx               = outputIdx - 1;
-                while (getCurrBeat() > currBeat) {
+                while (getCurrBeat() > currDivision) {
                     outputIdx           = outputIdx - 1;
                 }
 
                 function getCurrBeat() {
                     return _.chain(voices)
-                        .map(voice => (voice.body[outputIdx].ctxData||{beat:0}).beat)
+                        .map(voice => (voice.body[outputIdx].ctxData||{division:0}).division)
                         .max() // _should_ be all the same, but we're not quite that awesome yet.
                         .value();
                 }
@@ -280,7 +281,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
         ////
         function extractPriority(element: any, pIdx: number) {
-            return !element ?  C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currBeat, parts[pIdx].id);
+            return !element ?  C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[pIdx].id);
         }
 
         ////

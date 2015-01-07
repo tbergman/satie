@@ -49,7 +49,7 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
 
     // This function does not deal with overfilled bars. Instead, the BarModel
     // will split the note, and the line will be re-annotated.
-    if (ctx.curr.calcBeats(ctx) + ctx.beat > ctx.ts.beats) {
+    if (ctx.curr.calcDivisions(ctx) + ctx.division > ctx.ts.beats * ctx.attributes.divisions) {
         return C.IterationStatus.Success;
     }
 
@@ -57,8 +57,8 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
     var pattern = getBeamingPattern(ctx.ts);
 
     var currNote = ctx.curr.note;
-    var currNoteStartBeat = ctx.beat;
-    var currNoteEndBeat = currNoteStartBeat + calcBeats2(currNote, ctx);
+    var currNoteStartDivision = ctx.division;
+    var currNoteEndDivision = currNoteStartDivision + calcDivisions2(currNote, ctx);
 
     var nextIdx = ctx.nextIdx(c => c.type === C.Type.Duration || c.priority === C.Type.Barline);
     var nextObj = ctx.body[nextIdx];
@@ -73,24 +73,25 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
                     t => t && t.type !== C.MusicXML.StartStopContinue.Stop) ? // ... tied to the current noteA
             nextObj.note : null);
 
-    //////////////////////////////////////////////////////////////////////
-    // Checks that should be done even if the annotation status is User //
-    //////////////////////////////////////////////////////////////////////
 
-    // Check 0: Make sure tuplet groups don't end part of the way through
+    /*---- Checks that should be done even if the annotation status is User ---------------------*/
+    /*-------------------------------------------------------------------------------------------*/
+
+    /*---- Check 0: Make sure tuplet groups don't end part of the way through -------------------*/
+
     if (currNote.tuplet && (!nextNote || !nextNote.tuplet)) {
         var base = 1;
         var partial = 0;
         for (var i = ctx.idx; ctx.body[i] && ctx.body[i].type !== C.Type.Barline && isTupletIfNote(ctx.body[i]); --i) {
             if (ctx.body[i].isNote) {
-                partial = (partial + ctx.body[i].calcBeats(ctx)) % base;
+                partial = (partial + ctx.body[i].calcDivisions(ctx)) % base;
             }
         }
 
         if (partial) {
             // subtract does not yet support tuplets yet, so...
             var toRestoreUntuplet = (base - partial) * currNote.tuplet.den / currNote.tuplet.num;
-            var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.beat).map(m => new DurationModel(m, true));
+            var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.division).map(m => new DurationModel(m, true));
             for (var i = 0; i < toAdd.length; ++i) {
                 toAdd[i].tuplet = C.JSONx.clone(currNote.tuplet);
                 toAdd[i].isRest = true;
@@ -100,79 +101,81 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
         }
     }
 
-    // User-created durations cannot be spell-checked.
+    /*---- Check 0b: User-created durations cannot be spell-checked -----------------------------*/
+
     if (!ctx.curr.annotated) {
         return C.IterationStatus.Success;
     }
 
-    /////////////////////////////////////////////////////////////////////////
-    // Checks that should be done only if the annotation status isn't User //
-    /////////////////////////////////////////////////////////////////////////
+    /*---- Checks that should be done only if the annotation status isn't User ------------------*/
+    /*-------------------------------------------------------------------------------------------*/
 
-    // Check 1: Separate durations that cross a boundary and only partially fill that boundary.
+    /*---- Check 1: Separate durations that cross a boundary and partially fill it. -------------*/
     var excessBeats = 0;
-    var patternStartBeat = 0;
+    var patternStartDivision = 0;
     for (var p = 0; p < pattern.length; ++p) {
-        var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
-        if (currNoteStartBeat > patternStartBeat &&
-                currNoteEndBeat > patternEndBeat &&
-                currNoteStartBeat < patternEndBeat) {
-            excessBeats = currNoteEndBeat - patternEndBeat;
+        var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
+        if (currNoteStartDivision > patternStartDivision &&
+                currNoteEndDivision > patternEndDivision &&
+                currNoteStartDivision < patternEndDivision) {
+            excessBeats = currNoteEndDivision - patternEndDivision;
             break;
         }
-        patternStartBeat = patternEndBeat;
+        patternStartDivision = patternEndDivision;
     }
 
     if (excessBeats > 0) {
         return clearExcessBeats(currNote, excessBeats, ctx);
     }
 
-    // Check 2: Join rests and tied notes that don't cross a boundary.
+    /*---- Check 2: Join rests and tied notes that don't cross a boundary -----------------------*/
+
     // XXX: Right now this only considers combinations of two notes.
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartBeat + calcBeats2(nextNote, ctx);
-        patternStartBeat = 0;
+        var nextNoteEndBeat = currNoteStartDivision + calcDivisions2(nextNote, ctx);
+        patternStartDivision = 0;
 
         for (var p = 0; p < pattern.length; ++p) {
-            var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
-            if (currNoteStartBeat >= patternStartBeat &&
-                    currNoteEndBeat < patternEndBeat &&
-                    nextNoteEndBeat <= patternEndBeat + 0.0000001) {
+            var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
+            if (currNoteStartDivision >= patternStartDivision &&
+                    currNoteEndDivision < patternEndDivision &&
+                    nextNoteEndDivision <= patternEndDivision + 0.0000001) {
                 if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
                     return C.IterationStatus.RetryLine; // Should be bar
                 }
             }
-            patternStartBeat = patternEndBeat;
+            patternStartDivision = patternEndDivision;
         }
     }
 
-    // Check 3: Join rests and tied notes that fully cover multiple boundaries.
+    /*---- Check 3: Join rests and tied notes that fully cover multiple boundaries --------------*/
+
     // XXX: Right now this only covers combinations of two notes.
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartBeat + calcBeats2(nextNote, ctx);
-        patternStartBeat = 0;
+        var nextNoteEndDivision = currNoteStartDivision + calcDivisions2(nextNote, ctx);
+        patternStartDivision = 0;
 
         var gotFirstNote = false;
         for (var p = 0; p < pattern.length; ++p) {
-            var patternEndBeat = patternStartBeat + calcBeats2(pattern[p], ctx);
+            var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
             if (!gotFirstNote) {
-                if (currNoteStartBeat > patternStartBeat) {
+                if (currNoteStartDivision > patternStartDivision) {
                     break;
-                } else if (currNoteStartBeat === patternStartBeat) {
+                } else if (currNoteStartDivision === patternStartDivision) {
                     gotFirstNote = true;
                     continue;
                 }
             } else {
-                if (nextNoteEndBeat > patternEndBeat) {
+                if (nextNoteEndDivision > patternEndDivision) {
                     break;
-                } else if (currNoteEndBeat === patternEndBeat) {
+                } else if (currNoteEndDivision === patternEndDivision) {
                     if (tryMerge(currNote, nextObj, nextIdx, ctx)) {
                         return C.IterationStatus.RetryCurrent;
                     }
                     break;
                 }
             }
-            patternStartBeat = patternEndBeat;
+            patternStartDivision = patternEndDivision;
         }
     }
 
@@ -219,8 +222,8 @@ function clearExcessBeats(currNote: C.IPitchDuration, excessBeats: number, ctx: 
     "use strict";
     var nextIdx = ctx.nextIdx(c => !c.placeholder);
     var replaceWith = subtract(currNote, excessBeats, ctx).concat(
-        subtract(currNote, calcBeats2(currNote, ctx) - excessBeats,
-            ctx, calcBeats2(currNote, ctx) - excessBeats));
+        subtract(currNote, calcDivisions2(currNote, ctx) - excessBeats,
+            ctx, calcDivisions2(currNote, ctx) - excessBeats));
     replaceWith.forEach((m: any) => {
         // Ideally there would be a PitchDuration constructor that would do this for us.
         m.chord = C.JSONx.clone(currNote.chord);
@@ -288,7 +291,7 @@ export function add(durr1: any, durr2: C.IPitchDuration, ctx: Annotator.Context,
     "use strict";
 
     // Bizarrely, we use subtract to add. That's just because I wrote subtract first.
-    return subtract((isNaN(durr1) ? calcBeats2(durr1, ctx) : durr1) + calcBeats2(durr2, ctx), 0, ctx, beatOffset);
+    return subtract((isNaN(durr1) ? calcDivisions2(durr1, ctx) : durr1) + calcDivisions2(durr2, ctx), 0, ctx, beatOffset);
 }
 
 /**
@@ -306,28 +309,27 @@ export function subtract(durr1: C.IPitchDuration, beats: number,
 export function subtract(durr1: number, beats: number,
     ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration>;
 
-export function subtract(durr1: any, beats: number,
-        ctx: Annotator.Context, beatOffset?: number): Array<C.IDuration> {
+export function subtract(durr1: any, divisions: number,
+        ctx: Annotator.Context, divisionOffset?: number): Array<C.IDuration> {
     "use strict";
 
     var tsName = getTSString(ctx.ts);
     var replaceWith: Array<C.IDuration> = [];
-    var durr1Beats: number = isNaN(<any>durr1) ? calcBeats2(durr1, ctx) : <number> durr1;
-    var beatsToFill = durr1Beats - beats;
+    var durr1Divisions: number = isNaN(<any>durr1) ? calcDivisions2(durr1, ctx) : <number> durr1;
+    var beatsToFill = durr1Divisions - divisions;
     var bp = getBeamingPattern(ctx.ts);
-    var currBeat = (ctx.beat + (beatOffset || 0)) % ctx.ts.beats;
+    var currDivision = (ctx.division + (divisionOffset || 0)) % (ctx.ts.beats * ctx.attributes.divisions);
 
     for (var tries = 0; tries < 20; ++tries) {
         var bpIdx = 0;
         var bpCount = 0;
         while (bp[bpIdx] &&
-            bpCount + calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null,
-                ctx.ts) <= currBeat) {
+            bpCount + calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions) <= currDivision) {
             ++bpIdx;
             if (!bp[bpIdx]) {
                 return replaceWith;
             }
-            bpCount += calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
+            bpCount += calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
         }
 
         if (beatsToFill <= 0) {
@@ -335,19 +337,19 @@ export function subtract(durr1: any, beats: number,
             return replaceWith;
         }
         _.any(allNotes, function(note) { // stop at first 'true'
-            var noteBeats = calcBeats(note.count, note.dots, null, ctx.ts);
+            var noteDivisions = calcDivisions(note.count, note.dots, null, ctx.ts, ctx.attributes.divisions);
 
-            if (noteBeats <= beatsToFill) {
+            if (noteDivisions <= beatsToFill) {
                 // The subtraction is allowed to completely fill multiple pattern sections
                 // but cannot partially fill more than 1.
                 var completelyFills = false;
-                var tmpBeats = currBeat + noteBeats;
+                var tmpBeats = currDivision + noteDivisions;
                 for (var i = 0; bp[bpIdx + i]; ++i) {
                     if (tmpBeats < 0) {
                         break;
                     }
-                    var bpBeats = calcBeats(bp[bpIdx + i].count, bp[bpIdx + i].dots, null,
-                        ctx.ts);
+                    var bpBeats = calcDivisions(bp[bpIdx + i].count, bp[bpIdx + i].dots, null,
+                        ctx.ts, ctx.attributes.divisions);
                     if (tmpBeats === bpBeats) {
                         completelyFills = true;
                         break;
@@ -359,8 +361,8 @@ export function subtract(durr1: any, beats: number,
                     // This either fills multiple segments perfectly, or fills less than one
                     // segment.
                     replaceWith.push(_.clone(note));
-                    beatsToFill -= noteBeats;
-                    currBeat += noteBeats;
+                    beatsToFill -= noteDivisions;
+                    currDivision += noteDivisions;
                     return true;
                 }
             }
@@ -378,23 +380,23 @@ export function subtract(durr1: any, beats: number,
  */
 export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): Array<DurationModelType> {
     "use strict";
+    var divisions = ctx.attributes.divisions;
 
     var tsName = getTSString(ctx.ts) + (alt ? "_" + alt : "");
     var replaceWith: Array<DurationModelType> = [];
     var bp = getBeamingPattern(ctx.ts, alt);
     var body = ctx.body;
-    var currBeat = ctx.beat;
+    var currDivision = ctx.division;
 
     var bpIdx = 0;
     var bpCount = 0;
     while (bp[bpIdx] &&
-        bpCount + calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null,
-            ctx.ts) <= currBeat) {
+        bpCount + calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions) <= currDivision) {
         ++bpIdx;
         if (!bp[bpIdx]) {
             return replaceWith;
         }
-        bpCount += calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
+        bpCount += calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
     }
 
     var needsReplacement = false;
@@ -432,15 +434,15 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
                 }
             }
 
-            var bBeats = calcBeats2(body[i].note, ctx, prevCount);
+            var bDivisions = calcDivisions2(body[i].note, ctx, prevCount);
 
-            var bpBeats = calcBeats(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts);
+            var bpBeats = calcDivisions(bp[bpIdx].count, bp[bpIdx].dots, null, ctx.ts, ctx.attributes.divisions);
 
             // Note: A quarter note between a division should have ALREADY been made 2
             // tied eighth notes by now.
 
-            currBeat += bBeats;
-            if (currBeat > bpCount + bpBeats) {
+            currDivision += bDivisions;
+            if (currDivision > bpCount + bpBeats) {
                 break;
             }
             if (prevInBeam && !body[i].inBeam) {
@@ -451,7 +453,7 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
             assert(body[i].isNote);
             replaceWith.push(<DurationModelType> body[i]);
 
-            if (currBeat === bpCount + bpBeats) {
+            if (currDivision === bpCount + bpBeats) {
                 break;
             }
         }
@@ -464,8 +466,8 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
             // Rhythmic figures that are not part of a repeated pattern may be best beamed into separate beats,
             // so that they are not mistaken for triplets nor for groups of three quavers in compound time.
             // (Note doesn't solve the root issue)
-            while (((first.ctxData.beat % 1) !== 0 || (last.ctxData.beat % 1) === 0) &&
-                Math.floor(first.ctxData.beat) !== Math.floor(last.ctxData.beat)) {
+            while (((first.ctxData.division % divisions) !== 0 || (last.ctxData.division % divisions) === 0) &&
+                Math.floor(first.ctxData.division/divisions) !== Math.floor(last.ctxData.division/divisions)) {
                 replaceWith.pop();
                 last = replaceWith[replaceWith.length - 1];
             }
@@ -475,21 +477,22 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     return null;
 }
 
-export function calcBeats2(durr: C.IPitchDuration, ctx: C.MetreContext, inheritedCount: number = NaN) {
+export function calcDivisions2(durr: C.IPitchDuration, ctx: C.MetreContext, inheritedCount: number = NaN) {
     "use strict";
-    return calcBeats(
+    return calcDivisions(
         durr.count || inheritedCount,
         durr.dots,
         durr.tuplet,
-        ctx.ts);
+        ctx.ts,
+        ctx.attributes.divisions);
 }
 
-export function calcBeats(count: number, dots: number,
-        tuplet: C.ITuplet, ts: C.ISimpleTimeSignature) {
+export function calcDivisions(count: number, dots: number,
+        tuplet: C.ITuplet, ts: C.ISimpleTimeSignature, divisions: number) {
     "use strict";
 
     if (count === -1) {
-        return ts.beats;
+        return ts.beats * divisions;
     }
 
     if (count === C.MusicXML.Count.Breve) {
@@ -503,7 +506,7 @@ export function calcBeats(count: number, dots: number,
     }
 
     assert(ts, "Not supplying a ts is deprecated");
-    var base = ts.beatType/count;
+    var base = divisions * ts.beatType/count;
     if (tuplet) {
         base *= tuplet.num / tuplet.den;
     }
@@ -513,7 +516,7 @@ export function calcBeats(count: number, dots: number,
         base /= 2;
         total += base;
     }
-    return total;
+    return total; // DIFIX: fix divisions if needed.
 };
 
 /**
@@ -525,16 +528,6 @@ export function wholeNote(ctx: Annotator.Context): Array<C.IDuration> {
     "use strict";
     var tsName = getTSString(ctx.ts);
     return wholeNotePatterns[tsName];
-}
-
-export function correctRoundingErrors(mctx: C.MetreContext): void {
-    "use strict";
-    // Correct rounding errors
-    var huge = 1000000000;
-    var rounded = Math.round(mctx.beat * huge) / huge;
-    if (Math.abs(rounded - mctx.beat) < 0.00000001) {
-        mctx.beat = Math.round(mctx.beat * 10000000) / 10000000;
-    }
 }
 
 var _512   = C.NoteUtil.makeDuration({ count: 512          });

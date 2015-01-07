@@ -39,7 +39,7 @@ var EndMarkerModel = (function (_super) {
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,
             ts: mctx.ts,
-            beat: mctx.ts.beats,
+            division: mctx.ts.beats * mctx.attributes.divisions,
             bar: mctx.bar - 1,
             endMarker: true
         });
@@ -65,11 +65,11 @@ var EndMarkerModel = (function (_super) {
             ctx.eraseCurrent();
             return 20 /* RetryCurrent */;
         }
-        if (prev.type !== 300 /* Barline */ && ctx.beat && ctx.beat < ctx.ts.beats) {
-            var beatsRemaining = ctx.ts.beats - ctx.beat;
-            assert(beatsRemaining < ctx.ts.beats, "Don't run this on entirely blank bars!");
+        if (prev.type !== 300 /* Barline */ && ctx.division && ctx.division < ctx.ts.beats * ctx.attributes.divisions) {
+            var divisionsRemaining = ctx.ts.beats * ctx.attributes.divisions - ctx.division;
+            assert(divisionsRemaining < ctx.ts.beats * ctx.attributes.divisions, "Don't run this on entirely blank bars!");
             var DurationModel = require("./duration");
-            var toAdd = Metre.subtract(ctx.ts.beats, ctx.beat, ctx).map(function (beat) {
+            var toAdd = Metre.subtract(ctx.ts.beats * ctx.attributes.divisions, ctx.division, ctx).map(function (beat) {
                 beat.chord = [{ step: "R", octave: 0, alter: null }];
                 beat.tieds = [null];
                 return new DurationModel(beat, true);

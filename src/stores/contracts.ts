@@ -714,7 +714,7 @@ export interface ILocation {
      * LSD of cursor position. Represents the beat directly before the
      * cursor, so if it's at the beginning of bar, it is beat 0.
      */
-    beat:       number;
+    division:   number;
 
     /** 
      * True if the cursor is at the end of a bar. This information is added as
@@ -726,32 +726,32 @@ export interface ILocation {
 
 export class Location implements ILocation {
     bar:        number;
-    beat:       number;
+    division:   number;
     endMarker:  boolean;
 
     eq(b: ILocation) {
-        return this.bar === b.bar && this.beat === b.beat;
+        return this.bar === b.bar && this.division === b.division;
     }
 
     lt(b: ILocation) {
-        return this.bar < b.bar || this.bar === b.bar && this.beat < b.beat;
+        return this.bar < b.bar || this.bar === b.bar && this.division < b.division;
     }
 
     le(b: ILocation) {
-        return this.bar < b.bar || this.bar === b.bar && this.beat <= b.beat;
+        return this.bar < b.bar || this.bar === b.bar && this.division <= b.division;
     }
 
     ge(b: ILocation) {
-        return this.bar > b.bar || this.bar === b.bar && this.beat >= b.beat;
+        return this.bar > b.bar || this.bar === b.bar && this.division >= b.division;
     }
 
     gt(b: ILocation) {
-        return this.bar > b.bar || this.bar === b.bar && this.beat > b.beat;
+        return this.bar > b.bar || this.bar === b.bar && this.division > b.division;
     }
 
     constructor(opts: ILocation) {
         this.bar = opts.bar;
-        this.beat = opts.beat;
+        this.division = opts.division;
         this.endMarker = opts.endMarker;
     }
 }
@@ -782,7 +782,7 @@ export class MetreContext {
     endMarker:  boolean                 = false;
     ts:         ISimpleTimeSignature    = { beats: 4, beatType: 4, commonRepresentation: false };
     bar:        number                  = 1;
-    beat:       number                  = 0;
+    division:   number                  = 0;
 
     constructor(other?: MetreContext) {
         if (other) {
@@ -792,7 +792,7 @@ export class MetreContext {
                 commonRepresentation: other.ts.commonRepresentation
             };
             this.bar = other.bar;
-            this.beat = other.beat;
+            this.division = other.division;
             this.endMarker = other.endMarker || false;
         }
     }

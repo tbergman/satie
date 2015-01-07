@@ -107,7 +107,7 @@ var ClefModel = (function (_super) {
         if (this.isChange) {
         }
         else {
-            if (ctx.ts && ctx.beat >= ctx.ts.beats) {
+            if (ctx.ts && ctx.division >= ctx.ts.beats * ctx.attributes.divisions) {
                 var BarlineModel = require("./barline");
                 return BarlineModel.createBarline(ctx, 0 /* Regular */);
             }

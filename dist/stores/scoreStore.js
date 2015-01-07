@@ -256,7 +256,7 @@ var ScoreStoreStore = (function (_super) {
         var context = this.ctxFromSnapshot(pointerData, parts, assertionPolicy) || new Annotator.Context(parts, layout, this, assertionPolicy);
         var location = {
             bar: context.lines ? context.lines[context.line].bar : 1,
-            beat: context.lines ? context.lines[context.line].beat : 0
+            division: context.lines ? context.lines[context.line].division : 0
         };
         var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
         if (ScoreStoreStore.PROFILER_ENABLED) {
@@ -276,7 +276,7 @@ var ScoreStoreStore = (function (_super) {
         this._header = null;
         this._visualCursorIs({
             bar: 1,
-            beat: 0
+            division: 0
         });
     };
     ScoreStoreStore.prototype._recreateSnapshot = function (line) {
@@ -358,7 +358,7 @@ var ScoreStoreStore = (function (_super) {
             if (sign === 1 && spec.loopThroughEnd) {
                 this._visualCursor = {
                     bar: 0,
-                    beat: 0,
+                    division: 0,
                     endMarker: false,
                     annotatedObj: voices[voice].body[0],
                     annotatedLine: line,
@@ -374,7 +374,7 @@ var ScoreStoreStore = (function (_super) {
         }
         this._visualCursor = {
             bar: obj.ctxData.bar,
-            beat: obj.ctxData.beat,
+            division: obj.ctxData.division,
             endMarker: obj.priority <= 110 /* EndMarker */,
             annotatedObj: obj,
             annotatedLine: 0,
@@ -384,7 +384,7 @@ var ScoreStoreStore = (function (_super) {
     };
     ScoreStoreStore.prototype._visualCursorIs = function (visualCursor) {
         this._visualCursor.bar = visualCursor.bar;
-        this._visualCursor.beat = visualCursor.beat;
+        this._visualCursor.division = visualCursor.division;
         this._visualCursor.endMarker = visualCursor.endMarker;
         this._visualCursor.annotatedObj = null;
         this._visualCursor.annotatedLine = null;
@@ -396,7 +396,7 @@ var ScoreStoreStore = (function (_super) {
 })(TSEE);
 var defaultCursor = {
     bar: 1,
-    beat: 0,
+    division: 0,
     endMarker: null,
     annotatedObj: null,
     annotatedLine: null,

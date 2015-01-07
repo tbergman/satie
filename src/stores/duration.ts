@@ -101,7 +101,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     set count(n: C.MusicXML.Count) {
         assert(!isNaN(n));
         this._count = n;
-        this._beats = null; // Kill optimizer.
+        this._divisions = null; // Kill optimizer.
     }
 
     dots: number;
@@ -217,7 +217,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     private _extraWidth: number;
-    _beats: number;
+    _divisions: number;
     /** @deprecated */
     private _count: C.MusicXML.Count;
     /** @deprecated */
@@ -237,8 +237,8 @@ class DurationModel extends Model implements C.IPitchDuration {
     tieTo: DurationModel;
 
     get beats(): number {
-        assert(isFinite(this._beats));  // Not valid before metre has been recorded.
-        return this._beats;
+        assert(isFinite(this._divisions));  // Not valid before metre has been recorded.
+        return this._divisions;
     }
     set beats(n: number) {
         assert(false);
@@ -361,12 +361,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         this.ctxData = new C.MetreContext(mctx);
         assert(isFinite(this._count));
 
-        this._beats = this.calcBeats(mctx, null, true);
-        assert(isFinite(this._beats) && this._beats !== null);
-        mctx.bar += Math.floor((mctx.beat + this._beats) / mctx.ts.beats);
-        mctx.beat = (mctx.beat + this._beats) % mctx.ts.beats;
-
-        Metre.correctRoundingErrors(mctx);
+        this._divisions = this.calcDivisions(mctx, null, true);
+        assert(isFinite(this._divisions) && this._divisions !== null);
+        mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats*mctx.attributes.divisions));
+        mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats*mctx.attributes.divisions);
     }
 
     multiRest: number;
@@ -399,27 +397,27 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
         }
 
-        assert(this._beats !== null, "Unknown beat count");
+        assert(this._divisions !== null, "Unknown beat count");
 
-        this.isWholebar = this._beats === -1 || this._beats === ctx.ts.beats;
+        this.isWholebar = this._divisions === -1 || this._divisions === ctx.ts.beats * ctx.attributes.divisions;
 
         // Make sure the bar is not overfilled. Multi-bar rests are okay.
         if (ctx.isBeam || !this.inBeam) {
-            if (this._beats > ctx.ts.beats && ctx.beat >= ctx.ts.beats) {
+            if (this._divisions > ctx.ts.beats * ctx.attributes.divisions && ctx.division >= ctx.ts.beats*ctx.attributes.divisions) {
                 // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
                 // start at beat 0.
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
             } else {
                 // The number of beats in a bar must not exceed that specified by the time signature.
-                if (ctx.beat + this._beats > ctx.ts.beats) {
-                    var overfill = ctx.beat + this._beats - ctx.ts.beats;
-                    if (this._beats === overfill) {
+                if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+                    var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
+                    if (this._divisions === overfill) {
                         var ret = BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
                         return ret;
                     } else {
                         var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
                             new DurationModel(<any>t, true));
-                        var addAfterBar = Metre.subtract(this, this._beats - overfill, ctx)
+                        var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx)
                             .map(t => new DurationModel(<any>t, true));
                         for (i = 0; i < replaceWith.length; ++i) {
                             replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
@@ -454,15 +452,15 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
 
             // All notes, chords, and rests throughout a line on a given voice must have the same scale.
-            assert(isFinite(this._beats) && this._beats !== null);
-            if (ctx.smallest > this._beats) {
-                assert(this._beats > 0);
-                ctx.smallest = this._beats;
+            assert(isFinite(this._divisions) && this._divisions !== null);
+            if (ctx.smallest * ctx.attributes.divisions > this._divisions) {
+                assert(this._divisions > 0);
+                ctx.smallest = this._divisions / ctx.attributes.divisions;
                 return C.IterationStatus.RetryLine;
             }
 
             // Each note's width has a linear component proportional to the log of its duration.
-            this.extraWidth = (Math.log(this._beats) - Math.log(ctx.smallest)) /
+            this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) /
                 C.log2 / 3 * 40;
 
             // The width of a line must not exceed that specified by the page layout.
@@ -523,8 +521,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
 
         if (!ctx.isBeam) {
-            ctx.beat = (ctx.beat || 0) + this._beats;
-            Metre.correctRoundingErrors(ctx);
+            ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
 
         if (!ctx.isBeam && this.inBeam) {
@@ -577,11 +574,11 @@ class DurationModel extends Model implements C.IPitchDuration {
         return width;
     }
 
-    calcBeats(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
-        if (!force && this._beats) {
-            return this._beats;
+    calcDivisions(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
+        if (!force && this._divisions) {
+            return this._divisions;
         }
-        return Metre.calcBeats2(this, ctx, inheritedCount);
+        return Metre.calcDivisions2(this, ctx, inheritedCount);
     }
 
     getAccWidthAfterBar(ctx: Annotator.Context) {
@@ -590,13 +587,13 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
         var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var backupAcc = ctx.accidentalsByStaff[this.staff];
-        var beat = ctx.beat;
+        var division = ctx.division;
         ctx.accidentalsByStaff[this.staff] = staffAcc;
-        ctx.beat = 1;
+        ctx.division = ctx.attributes.divisions;
         ctx.idx++;
         var acc = this.getAccidentals(ctx, true);
         ctx.accidentalsByStaff[this.staff] = backupAcc;
-        ctx.beat = beat;
+        ctx.division = division;
         ctx.idx--;
 
         var parens = _.any(acc, v => typeof v === "string" && !!~v.indexOf("p"));
@@ -654,8 +651,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         var nextLine: number = ctx.next() && ctx.next().isNote ?
                 DurationModel.getAverageLine(<DurationModel> ctx.next().note, ctx) : null;
 
-        if ((nextLine !== null) && ctx.beat + this._beats +
-                Metre.calcBeats2(ctx.next().note, ctx, this.count) > ctx.ts.beats) {
+        if ((nextLine !== null) && ctx.division + this._divisions +
+                Metre.calcDivisions2(ctx.next().note, ctx, this.count) > ctx.ts.beats * ctx.attributes.divisions) {
             // Barlines aren't inserted yet.
             nextLine = null;
         }
@@ -672,8 +669,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else if (nextLine === null) {
             check = prevLine;
         } else {
-            var startsAt = ctx.beat;
-            var endsAt = ctx.beat + this._beats;
+            var startsAt = ctx.division;
+            var endsAt = ctx.division + this._divisions;
 
             if (Math.floor(startsAt) === Math.floor(endsAt)) {
                 check = nextLine;
@@ -756,7 +753,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
 
                 // 4. There isn't ambiguity because or a barline and this is the first beat.
-                if (ctx.beat === 1) {
+                if (ctx.division === ctx.attributes.divisions) { // DIFIX: Shouldn't this be 0?
                     var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
                     if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
                         var prevNote = ctx.prev(c => c.isNote && _.any(c.note.chord, c => c.step === pitch.step) || c.type === C.Type.Barline, 2);

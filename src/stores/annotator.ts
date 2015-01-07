@@ -81,7 +81,7 @@ export class Context implements C.MetreContext {
         throw new C.InvalidMXMLException("The Satie layout engine encountered an error.\n\n" +
             exception.toString() + (exception.stack ?
                 "\n\n========== Stack trace ==========\n" + exception.stack + "\n========== End of trace =========\n" :
-                "\n\nStack trace unavailable!\n") + "\n\n", this.bar, this.beat, this.part.id);
+                "\n\nStack trace unavailable!\n") + "\n\n", this.bar, this.division/this.attributes.divisions, this.part.id);
     }
 
     /**
@@ -95,7 +95,7 @@ export class Context implements C.MetreContext {
             bar:                    this.loc.bar,
             barKeys:                this.barKeys,
             barlineX:               this.barlineX,
-            beat:                   this.loc.beat,
+            division:               this.division,
             _attributes:            this._attributes || {},
             line:                   this.line,
             invisibleForBars:       this.invisibleForBars,
@@ -444,7 +444,7 @@ export class Context implements C.MetreContext {
                                 if (splicePolicy === SplicePolicy.ShortenOtherVoices) {
                                     var retained = placeholders[placeholders.length - 1];
                                     var fromMainPart = replaceWith[j];
-                                    if (retained.calcBeats(this) > fromMainPart.calcBeats(this)) {
+                                    if (retained.calcDivisions(this) > fromMainPart.calcDivisions(this)) {
                                         assert(retained.isNote, "Only notes have durations");
                                         assert(replaceWith[j].isNote, "The retained and replaced notes should have the same priority");
                                         retained.note.count = fromMainPart.note.count;
@@ -557,7 +557,7 @@ export class Context implements C.MetreContext {
     private _realign(start: number, end: number) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         var bodies = this._voices.filter(s => !!s.body).map(s => s.body);
-        var cBeats = bodies.map(b => 0);
+        var cDivisions = bodies.map(b => 0);
         var placeholders = bodies.map(b => <Array<Model>>[]);
         var reals = bodies.map(b => <Array<Model>>[]);
         var aligned = bodies.map(b => <Array<Model>>[]);
@@ -581,13 +581,13 @@ export class Context implements C.MetreContext {
         }
 
         while(_.any(reals, r => r.length)) {
-            var thisBeat = _.min(reals.map((r, j) => r.length ? cBeats[j] : 100000));
-            var thisPriority = _.min(reals.map((r, j) => r.length && cBeats[j] === thisBeat ? r[0].priority : 100000));
+            var thisDivision = _.min(reals.map((r, j) => r.length ? cDivisions[j] : 100000));
+            var thisPriority = _.min(reals.map((r, j) => r.length && cDivisions[j] === thisDivision ? r[0].priority : 100000));
             for (var j = 0; j < bodies.length; ++j) {
-                if (reals[j].length && (cBeats[j] === thisBeat) && reals[j][0].priority === thisPriority) {
+                if (reals[j].length && (cDivisions[j] === thisDivision) && reals[j][0].priority === thisPriority) {
                     if (reals[j][0].isNote) {
-                        // Beams have beats, but that's because it's usually processed instead of the notes beats.
-                        cBeats[j] += reals[j][0].calcBeats(this);
+                        // Beams have divisions, but that's because it's usually processed instead of the notes divisions.
+                        cDivisions[j] += reals[j][0].calcDivisions(this);
                     }
                     aligned[j] = aligned[j].concat(reals[j].splice(0, 1));
                 } else {
@@ -731,30 +731,15 @@ export class Context implements C.MetreContext {
      * to be "backed up", it can do so without recalculating from the beginning
      * of the line.
      */
-    startOfBeamBeat: number = NaN;
+    startOfBeamDivision: number = NaN;
 
     /**
-     * @deprecated DO NOT USE
-     * 
-     * Use loc.beat
+     * The lowest division of all components.
      */
-    get beat() {
-        return this.loc.beat;
-    }
-
-    set beat(b: number) {
-        this.loc.beat = b;
-    }
+    __globalDivision__: number;
 
     /**
-     * The lowest beat of all components.
-     */
-    __globalBeat__: number;
-
-    /**
-     * @deprecated DO NOT USE
-     * 
-     * Use loc.bar
+     * For MetreContext compatibility.
      */
     get bar() {
         return this.loc.bar;
@@ -764,8 +749,16 @@ export class Context implements C.MetreContext {
         this.loc.bar = b;
     }
 
+    get division() {
+        return this.loc.division;
+    }
+
+    set division(d: number) {
+        this.loc.division = d;
+    }
+
     /**
-     * @deprecated DO NOT USE
+     * For MetreContext compatibility.
      */
     get endMarker() {
         return false;
@@ -797,7 +790,7 @@ export class Context implements C.MetreContext {
      */
     loc: C.ILocation = {
         bar: 1,
-        beat: 0
+        division: 0
     };
 
     /**
@@ -813,10 +806,10 @@ export class Context implements C.MetreContext {
     pageStarts: Array<number> = [0];
 
     /**
-     * The smallest raw count (duration) in a line.
+     * The smallest raw beat count (not divisions) in a line.
      * @scope line
      */
-    smallest: number = 10000;
+    smallest: number = C.MAX_NUM;
 
     /**
      * The smallest acceptable amount of padding between staves.
@@ -892,7 +885,7 @@ export class Context implements C.MetreContext {
 
     private _annotateImpl(from?: C.ILocation, cursor?: C.IVisualCursor, disableRecordings?: boolean):
             C.IAnnotationResult {
-        from = from || { bar: 1, beat: 0 };
+        from = from || { bar: 1, division: 0 };
 
         this._attributes = {};
         this.disableRecordings = disableRecordings;
@@ -912,7 +905,7 @@ export class Context implements C.MetreContext {
                 stopIn = 20;
             }
             if (--stopIn === 0) {
-                throw "because of timeout";
+                throw "Too many operations have occurred for the given input.";
             }
             status = it.annotate(verbose);
         }
@@ -1082,7 +1075,7 @@ export interface ILineSnapshot {
     bar: number;
     barKeys: Array<string>;
     barlineX: Array<number>;
-    beat: number;
+    division: number;
     invisibleForBars: number;
     line: number;
     pageLines: Array<number>;
@@ -1282,11 +1275,11 @@ class PrivIterator {
 
         // The current beat that the context records is the lagging (minimum from all voices) beat.
         // Note: the maximum beat in any of the voices is tracked in ctx.__globalBeat__
-        ctx.beat               = _.min(componentSnapshots, "beat").beat;
+        ctx.division           = _.min(componentSnapshots, "division").division;
         for (var i = 0; i < this._components.length; ++i) {
             if (    this._components[i].nextLocation.bar === ctx.bar &&
-                    this._components[i].nextLocation.beat  < ctx.beat) {
-                ctx.beat       = this._components[i].nextLocation.beat;
+                    this._components[i].nextLocation.division  < ctx.division) {
+                ctx.division   = this._components[i].nextLocation.division;
             }
         }
 
@@ -1358,7 +1351,7 @@ class PrivIterator {
                 this._rollbackLine(this._parent.line - 1);
                 break;
             case C.IterationStatus.RetryBeam:
-                this._parent.loc.beat = this._parent.startOfBeamBeat;
+                this._parent.division = this._parent.startOfBeamDivision;
                 this._rewind(C.Type.BeamGroup);
                 this._parent.x = this._componentWithPriority(C.Type.BeamGroup).x;
                 break;
@@ -1508,7 +1501,7 @@ class PrivIterator {
             if (this._parent.nullEntry) {
                 this._from = {
                     bar: 1,
-                    beat: 0
+                    division: 0
                 };
             }
             this._components[i].reset(this._from);
@@ -1549,9 +1542,9 @@ class PrivIteratorComponent {
     }
 
     annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
-        if (this._beat !== null) {
-            ctx.__globalBeat__  = ctx.beat;
-            ctx.beat            = this._beat;
+        if (this._division !== null) {
+            ctx.__globalDivision__  = ctx.division;
+            ctx.division    = this._division;
         }
         ctx.body                = this._body;
         ctx.voice               = this._voice;
@@ -1568,7 +1561,7 @@ class PrivIteratorComponent {
 
         ///
         var status = this._body[this._idx].annotate(ctx);
-        this._nextBeat = ctx.beat;
+        this._nextDivision = ctx.division;
         ///
 
         var isClean = status === C.IterationStatus.Success && (!this._cursor || this._cursor.annotatedObj);
@@ -1596,7 +1589,7 @@ class PrivIteratorComponent {
         // Otherwise, it resets it to the beginning of a line.
         do {
             this._location = new C.Location(this._body[++this._idx].ctxData);
-        } while ((from.bar !== 1 || from.beat !== 0) &&
+        } while ((from.bar !== 1 || from.division !== 0) &&
             (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
             this.curr.priority <= C.Type.Begin || this.curr.priority === C.Type.Barline)));
         this._updateSubctx();
@@ -1629,11 +1622,11 @@ class PrivIteratorComponent {
 
     _updateSubctx() {
         if (this.curr && this.curr.ctxData) {
-            this._beat = this.curr.ctxData.beat;
-            this._nextBeat = null;
+            this._division = this.curr.ctxData.division;
+            this._nextDivision = null;
         } else {
-            this._beat = null;
-            this._nextBeat = null;
+            this._division = null;
+            this._nextDivision = null;
         }
     }
 
@@ -1699,7 +1692,7 @@ class PrivIteratorComponent {
             return false;
         }
         var space = !!(ctx.findVertical(c => c.type !== C.Type.Placeholder && c !== ctx.curr).length);
-        return space && ctx.curr.type !== C.Type.Placeholder && ctx.beat > ctx.__globalBeat__;
+        return space && ctx.curr.type !== C.Type.Placeholder && ctx.division > ctx.__globalDivision__;
     }
 
     private _addPadding(ctx: Context) {
@@ -1707,12 +1700,12 @@ class PrivIteratorComponent {
         ctx.splice(ctx.idx, 0, [new PlaceholderModel({
             priority: ctx.curr.priority
         }, true /* ? */)], SplicePolicy.Additive);
-        ctx.beat = ctx.__globalBeat__;
+        ctx.division = ctx.__globalDivision__;
         return C.IterationStatus.RetryCurrentNoOptimizations;
     }
 
     private get _next() {
-        this._beat = this._nextBeat;
+        this._division = this._nextDivision;
         return this._body[this._idx + 1];
     }
 
@@ -1722,7 +1715,7 @@ class PrivIteratorComponent {
 
         var target = this._cursor;
         var barMatches = ctx.bar === target.bar;
-        var beatMatches = (!target.beat && !target.annotatedObj) || ctx.beat === target.beat;
+        var beatMatches = (!target.division && !target.annotatedObj) || ctx.division === target.division;
         var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.EndMarker);
 
         return barMatches && beatMatches && typeMatches && !target.annotatedObj;
@@ -1730,8 +1723,8 @@ class PrivIteratorComponent {
 
 
     private _assertionPolicy:   AssertionPolicy;
-    private _beat:              number           = null;
-    private _nextBeat:          number             = null;
+    private _division:          number           = null;
+    private _nextDivision:      number             = null;
     private get _body() {
         return this._voice.body;
     }
@@ -1755,7 +1748,7 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
     if (  line.bar         !== null) { ctx.bar                = line.bar;                }
     if (!!line.barlineX    !== null) { ctx.barlineX           = line.barlineX;           }
     if (!!line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
-    if (  line.beat        !== null) { ctx.beat               = line.beat;               }
+    if (  line.division    !== null) { ctx.division           = line.division;           }
     if (  line.line        !== null) { ctx.line               = line.line;               }
     if (!!line.pageLines           ) { ctx.pageLines          = line.pageLines;          }
     if (!!line.pageStarts          ) { ctx.pageStarts         = line.pageStarts;         }
@@ -1794,10 +1787,10 @@ function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
 
 var MAX_LOCATION = new C.Location({
     bar:  C.MAX_NUM,
-    beat: C.MAX_NUM
+    division: C.MAX_NUM
 });
 
 var MIN_LOCATION = new C.Location({
     bar:  -1,
-    beat: -1
+    division: -1
 });

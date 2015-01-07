@@ -133,7 +133,7 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
             // }
         } else {
             // Otherwise, barlines should be before clefs when either is possible.
-            if (ctx.ts && ctx.beat >= ctx.ts.beats) {
+            if (ctx.ts && ctx.division >= ctx.ts.beats*ctx.attributes.divisions) {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
                 return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
             }

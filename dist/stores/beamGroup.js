@@ -87,11 +87,11 @@ var BeamGroupModel = (function (_super) {
         if (!ctx.ts) {
             return TimeSignatureModel.createTS(ctx);
         }
-        var beats = 0;
+        var beamDivisions = 0;
         for (var i = 0; i < this.beam.length; ++i) {
-            beats += this.beam[i].calcBeats(ctx);
+            beamDivisions += this.beam[i].calcDivisions(ctx);
         }
-        if (ctx.beat + beats > ctx.ts.beats) {
+        if (ctx.division + beamDivisions > ctx.ts.beats * ctx.attributes.divisions) {
             _.each(this.beam, function (o) {
                 o.inBeam = false;
             });
@@ -117,7 +117,7 @@ var BeamGroupModel = (function (_super) {
         var mret = 90 /* RetryFromEntry */;
         var next = ctx.next(function (obj) { return obj.isNote; }).note;
         this.tuplet = next ? next.displayTuplet : null;
-        ctx.startOfBeamBeat = ctx.beat;
+        ctx.startOfBeamDivision = ctx.division;
         var b1 = this.beam[0].count;
         if (_.all(this.beam, function (b) { return b.count === b1; })) {
             this.beams = Math.round(Math.log(this.beam[0].count) / Math.log(2)) - 2;
@@ -153,10 +153,10 @@ var BeamGroupModel = (function (_super) {
     BeamGroupModel.prototype.generate = function (options) {
         return _.map(this.beam, function (b, idx) { return b.render(options[idx]); });
     };
-    BeamGroupModel.prototype.calcBeats = function (ctx, inheritedCount, force) {
+    BeamGroupModel.prototype.calcDivisions = function (ctx, inheritedCount, force) {
         var sum = 0;
         for (var i = 0; i < this.beam.length; ++i) {
-            sum += this.beam[i].calcBeats(ctx, inheritedCount, force);
+            sum += this.beam[i].calcDivisions(ctx, inheritedCount, force);
         }
         return sum;
     };

@@ -91,13 +91,13 @@ var PlaceholderModel = (function (_super) {
             console.warn("Dangerously correcting a mismatched type.");
             this.priority = realItems[0].type;
         }
-        if (ctx.ts && ctx.__globalBeat__ < ctx.ts.beats) {
-            if (ctx.beat < ctx.__globalBeat__) {
+        if (ctx.ts && ctx.__globalDivision__ < ctx.ts.beats * ctx.attributes.divisions) {
+            if (ctx.division < ctx.__globalDivision__) {
                 return PlaceholderModel.fillMissingBeats(ctx);
             }
-            if (ctx.beat === ctx.__globalBeat__ && this.priority === 600 /* Duration */) {
+            if (ctx.division === ctx.__globalDivision__ && this.priority === 600 /* Duration */) {
                 assert(realItems[0], "We can't have an entire column of fake durations,");
-                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].calcBeats(ctx));
+                return PlaceholderModel.fillMissingBeats(ctx, realItems[0].calcDivisions(ctx));
             }
         }
         switch (this.priority) {
@@ -197,10 +197,10 @@ var PlaceholderModel = (function (_super) {
         }
         return 10 /* Success */;
     };
-    PlaceholderModel.fillMissingBeats = function (ctx, extraBeats) {
-        extraBeats = extraBeats || 0;
+    PlaceholderModel.fillMissingBeats = function (ctx, extraDivisions) {
+        extraDivisions = extraDivisions || 0;
         var rest = { chord: [{ step: "R", octave: null, acc: null }] };
-        var missingBeats = Metre.subtract(ctx.__globalBeat__ + extraBeats, ctx.beat, ctx).map(function (spec) { return new DurationModel(_.extend(spec, rest), true); });
+        var missingBeats = Metre.subtract(ctx.__globalDivision__ + extraDivisions, ctx.division, ctx).map(function (spec) { return new DurationModel(_.extend(spec, rest), true); });
         ctx.splice(ctx.idx, 1, missingBeats, 3 /* Masked */);
         return 60 /* RetryLine */;
     };

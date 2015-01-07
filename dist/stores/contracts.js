@@ -344,23 +344,23 @@ var IterationStatus = exports.IterationStatus;
 var Location = (function () {
     function Location(opts) {
         this.bar = opts.bar;
-        this.beat = opts.beat;
+        this.division = opts.division;
         this.endMarker = opts.endMarker;
     }
     Location.prototype.eq = function (b) {
-        return this.bar === b.bar && this.beat === b.beat;
+        return this.bar === b.bar && this.division === b.division;
     };
     Location.prototype.lt = function (b) {
-        return this.bar < b.bar || this.bar === b.bar && this.beat < b.beat;
+        return this.bar < b.bar || this.bar === b.bar && this.division < b.division;
     };
     Location.prototype.le = function (b) {
-        return this.bar < b.bar || this.bar === b.bar && this.beat <= b.beat;
+        return this.bar < b.bar || this.bar === b.bar && this.division <= b.division;
     };
     Location.prototype.ge = function (b) {
-        return this.bar > b.bar || this.bar === b.bar && this.beat >= b.beat;
+        return this.bar > b.bar || this.bar === b.bar && this.division >= b.division;
     };
     Location.prototype.gt = function (b) {
-        return this.bar > b.bar || this.bar === b.bar && this.beat > b.beat;
+        return this.bar > b.bar || this.bar === b.bar && this.division > b.division;
     };
     return Location;
 })();
@@ -374,7 +374,7 @@ var MetreContext = (function () {
         this.endMarker = false;
         this.ts = { beats: 4, beatType: 4, commonRepresentation: false };
         this.bar = 1;
-        this.beat = 0;
+        this.division = 0;
         if (other) {
             this.ts = {
                 beats: other.ts.beats,
@@ -382,7 +382,7 @@ var MetreContext = (function () {
                 commonRepresentation: other.ts.commonRepresentation
             };
             this.bar = other.bar;
-            this.beat = other.beat;
+            this.division = other.division;
             this.endMarker = other.endMarker || false;
         }
     }

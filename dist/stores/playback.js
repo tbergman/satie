@@ -124,7 +124,7 @@ var PlaybackStore = (function (_super) {
     PlaybackStore.prototype._continuePlay = function () {
         var _this = this;
         var Annotator = require("./annotator");
-        var beats;
+        var divisions;
         var delays = [];
         _.each(this._remainingActions || [], function (m) {
             m();
@@ -148,7 +148,6 @@ var PlaybackStore = (function (_super) {
             var visualCursor = this._score.visualCursor;
             var delay = 0;
             var bpm = this.bpm;
-            var timePerBeat = 60 / bpm;
             var foundIdx = false;
             var soundfont = this._score.voices[h].instrument.soundfont;
             var channel = this._soundfontToChannel[soundfont];
@@ -157,7 +156,7 @@ var PlaybackStore = (function (_super) {
             if (enabled) {
                 for (var i = 0; i < body.length; ++i) {
                     var obj = body[i];
-                    foundIdx = foundIdx || (visualCursor.beat === obj.ctxData.beat && visualCursor.bar === obj.ctxData.bar);
+                    foundIdx = foundIdx || (visualCursor.division === obj.ctxData.division && visualCursor.bar === obj.ctxData.bar);
                     switch (obj.type) {
                         case 145 /* Attributes */:
                             ctx.attributes = obj;
@@ -167,12 +166,13 @@ var PlaybackStore = (function (_super) {
                             break;
                     }
                     if (foundIdx && obj.isNote) {
-                        beats = Metre.calcBeats2(obj.note, ctx);
+                        var timePerDivision = 60 / bpm / ctx.attributes.divisions;
+                        divisions = Metre.calcDivisions2(obj.note, ctx);
                         if (!obj.isRest) {
                             _.each(obj.note.chord.map(C.NoteUtil.pitchToMidiNumber), function (midiNote) {
                                 var a = MIDI.noteOn(channel, midiNote, 127, startTime + delay);
                                 assert(a);
-                                MIDI.noteOff(channel, midiNote, startTime + delay + beats * timePerBeat);
+                                MIDI.noteOff(channel, midiNote, startTime + delay + divisions * ctx.attributes.divisions * timePerDivision);
                                 if (MIDI.noteOn === MIDI.Flash.noteOn) {
                                     _this._remainingActions.push(function () { return global.clearInterval(a); });
                                 }
@@ -183,12 +183,12 @@ var PlaybackStore = (function (_super) {
                                 }
                             });
                         }
-                        delay += beats * timePerBeat;
+                        delay += divisions * ctx.attributes.divisions * timePerDivision;
                         delays.push(delay);
                     }
                     if (obj.isNote) {
-                        beats = Metre.calcBeats2(obj.note, ctx);
-                        seek += beats * timePerBeat;
+                        divisions = Metre.calcDivisions2(obj.note, ctx);
+                        seek += divisions * timePerDivision;
                     }
                 }
             }
