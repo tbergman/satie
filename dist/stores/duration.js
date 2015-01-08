@@ -37,7 +37,7 @@ var DurationModel = (function (_super) {
         _.forEach(properties, setIfDefined);
         if (!this._p_notes) {
             this._p_notes = _.map(this.chord, function (pitch, idx) {
-                return new DurationModel.MNote(_this, idx, {
+                return new DurationModel.MXMLNote(_this, idx, {
                     pitch: pitch
                 });
             });
@@ -286,13 +286,13 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DurationModel.prototype, "beats", {
+    Object.defineProperty(DurationModel.prototype, "divisions", {
         get: function () {
             assert(isFinite(this._divisions));
             return this._divisions;
         },
         set: function (n) {
-            assert(false);
+            assert(false, "Read-only property.");
         },
         enumerable: true,
         configurable: true
@@ -317,8 +317,8 @@ var DurationModel = (function (_super) {
             this.chord = this.chord || [];
             this.chord.length = notes.length;
             for (var i = 0; i < notes.length; ++i) {
-                if (!(notes[i] instanceof DurationModel.MNote)) {
-                    notes[i] = new DurationModel.MNote(this, i, notes[i]);
+                if (!(notes[i] instanceof DurationModel.MXMLNote)) {
+                    notes[i] = new DurationModel.MXMLNote(this, i, notes[i]);
                 }
             }
             this._p_notes = notes;
@@ -347,8 +347,8 @@ var DurationModel = (function (_super) {
         if (this.chord.length !== this._p_notes.length) {
             var notes = this._p_notes;
             for (var i = 0; i < this.chord.length; ++i) {
-                if (!(notes[i] instanceof DurationModel.MNote)) {
-                    notes[i] = new DurationModel.MNote(this, i, notes[i] || {
+                if (!(notes[i] instanceof DurationModel.MXMLNote)) {
+                    notes[i] = new DurationModel.MXMLNote(this, i, notes[i] || {
                         pitch: this.chord[i],
                         dots: this.dots,
                         count: this.count
@@ -470,7 +470,7 @@ var DurationModel = (function (_super) {
             return 60 /* RetryLine */;
         }
         if (!ctx.next()) {
-            ctx.insertFuture(new EndMarkerModel({ endMarker: true }, true));
+            ctx.insertFuture(new EndMarkerModel({ endMarker: true }, true, this.engraved));
         }
         if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = this.calcMiddleNoteDirection(ctx);
@@ -900,8 +900,8 @@ var DurationModel = (function (_super) {
 })(Model);
 var DurationModel;
 (function (DurationModel) {
-    var MNote = (function () {
-        function MNote(parent, idx, note, updateParent) {
+    var MXMLNote = (function () {
+        function MXMLNote(parent, idx, note, updateParent) {
             if (updateParent === void 0) { updateParent = true; }
             this._color = 0x000000;
             var self = this;
@@ -971,7 +971,7 @@ var DurationModel;
                 }
             }
         }
-        MNote.prototype.toJSON = function () {
+        MXMLNote.prototype.toJSON = function () {
             var clone = {};
             if (this.pitch) {
                 clone["pitch"] = this.pitch;
@@ -998,14 +998,14 @@ var DurationModel;
             }
             return clone;
         };
-        Object.defineProperty(MNote.prototype, "chord", {
+        Object.defineProperty(MXMLNote.prototype, "chord", {
             get: function () {
                 return this._idx + 1 !== this._parent.chord.length;
             },
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "pitch", {
+        Object.defineProperty(MXMLNote.prototype, "pitch", {
             get: function () {
                 return this._parent.isRest ? null : this._parent.chord[this._idx];
             },
@@ -1017,7 +1017,7 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "rest", {
+        Object.defineProperty(MXMLNote.prototype, "rest", {
             get: function () {
                 return this._parent.isRest ? {
                     measure: this._parent.isWholebar,
@@ -1041,7 +1041,7 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "dots", {
+        Object.defineProperty(MXMLNote.prototype, "dots", {
             get: function () {
                 return _.times(this._parent.dots, function (idx) { return {}; });
             },
@@ -1051,7 +1051,7 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "noteType", {
+        Object.defineProperty(MXMLNote.prototype, "noteType", {
             get: function () {
                 return {
                     duration: this._parent.count,
@@ -1064,7 +1064,7 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "timeModification", {
+        Object.defineProperty(MXMLNote.prototype, "timeModification", {
             get: function () {
                 return this._parent.tuplet ? {
                     normalNotes: {
@@ -1086,14 +1086,14 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "defaultX", {
+        Object.defineProperty(MXMLNote.prototype, "defaultX", {
             get: function () {
                 return this._parent.x;
             },
             enumerable: true,
             configurable: true
         });
-        Object.defineProperty(MNote.prototype, "color", {
+        Object.defineProperty(MXMLNote.prototype, "color", {
             get: function () {
                 var hex = this._color.toString(16);
                 return "#" + "000000".substr(0, 6 - hex.length) + hex;
@@ -1113,28 +1113,28 @@ var DurationModel;
             enumerable: true,
             configurable: true
         });
-        MNote.prototype.ensureNotationsWrittable = function () {
+        MXMLNote.prototype.ensureNotationsWrittable = function () {
             this.notations = this.notations || [{}];
         };
-        Object.defineProperty(MNote.prototype, "notationObj", {
+        Object.defineProperty(MXMLNote.prototype, "notationObj", {
             get: function () {
                 return this.notations ? this.notations[0] : Object.freeze({});
             },
             enumerable: true,
             configurable: true
         });
-        MNote.prototype.ensureArticulationsWrittable = function () {
+        MXMLNote.prototype.ensureArticulationsWrittable = function () {
             this.ensureNotationsWrittable();
             this.notationObj.articulations = this.notationObj.articulations || [{}];
         };
-        Object.defineProperty(MNote.prototype, "articulationObj", {
+        Object.defineProperty(MXMLNote.prototype, "articulationObj", {
             get: function () {
                 return this.notationObj.articulations ? this.notationObj.articulations[0] : Object.freeze({});
             },
             enumerable: true,
             configurable: true
         });
-        MNote.prototype.unstupidifyNotations = function () {
+        MXMLNote.prototype.unstupidifyNotations = function () {
             if (this.notations) {
                 var notations = this.notations;
                 var notation = {
@@ -1179,15 +1179,15 @@ var DurationModel;
                 }
             }
         };
-        return MNote;
+        return MXMLNote;
     })();
-    DurationModel.MNote = MNote;
+    DurationModel.MXMLNote = MXMLNote;
     function getClefOffset(clef) {
         return DurationModel.clefOffsets[clef.sign] + clef.line - C.defaultClefLines[clef.sign.toUpperCase()] - 3.5 * parseInt(clef.clefOctaveChange || "0", 10);
     }
     DurationModel.getClefOffset = getClefOffset;
 })(DurationModel || (DurationModel = {}));
-DurationModel.MNote.prototype.staff = 1;
+DurationModel.MXMLNote.prototype.staff = 1;
 function _hasConflict(otherChord, step, target) {
     "use strict";
     for (var k = 0; k < otherChord.length; ++k) {

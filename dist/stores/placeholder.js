@@ -117,7 +117,7 @@ var PlaceholderModel = (function (_super) {
                 }
                 break;
             case 300 /* Barline */:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: { data: 0 /* Regular */ } }, true));
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: { data: 0 /* Regular */ } }, true, false));
                 ctx.body[ctx.idx].annotated = this.annotated;
                 ctx.body[ctx.idx].proposed = this.proposed;
                 return 20 /* RetryCurrent */;

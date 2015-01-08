@@ -144,7 +144,7 @@ class PlaceholderModel extends Model {
                 }
                 break;
             case C.Type.Barline:
-                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: {data: C.MusicXML.BarStyleType.Regular }}, true));
+                ctx.body.splice(ctx.idx, 1, new BarlineModel({ barStyle: {data: C.MusicXML.BarStyleType.Regular }}, true, false));
                 ctx.body[ctx.idx].annotated = this.annotated;
                 ctx.body[ctx.idx].proposed  = this.proposed;
                 return C.IterationStatus.RetryCurrent;

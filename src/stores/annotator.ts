@@ -1746,8 +1746,8 @@ function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
 
     if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff); }
     if (  line.bar         !== null) { ctx.bar                = line.bar;                }
-    if (!!line.barlineX    !== null) { ctx.barlineX           = line.barlineX;           }
-    if (!!line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
+    if (!!line.barlineX            ) { ctx.barlineX           = line.barlineX;           }
+    if (  line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
     if (  line.division    !== null) { ctx.division           = line.division;           }
     if (  line.line        !== null) { ctx.line               = line.line;               }
     if (!!line.pageLines           ) { ctx.pageLines          = line.pageLines;          }

@@ -1205,10 +1205,10 @@ function _cpyline(ctx, line, mode) {
     if (line.bar !== null) {
         ctx.bar = line.bar;
     }
-    if (!!line.barlineX !== null) {
+    if (!!line.barlineX) {
         ctx.barlineX = line.barlineX;
     }
-    if (!!line.barKeys !== null) {
+    if (line.barKeys !== null) {
         ctx.barKeys = line.barKeys;
     }
     if (line.division !== null) {

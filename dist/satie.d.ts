@@ -541,6 +541,7 @@ declare module '__satie/stores/model' {
         selected: boolean;
         annotated: boolean;
         proposed: boolean;
+        engraved: boolean;
         endMarker: boolean;
         beam: C.IPitchDuration[];
         note: C.IPitchDuration;
@@ -556,7 +557,7 @@ declare module '__satie/stores/model' {
         revision: string;
         priority: C.Type;
         calcDivisions(ctx: C.MetreContext): number;
-        constructor(spec: any, annotated: boolean);
+        constructor(spec: any, annotated: boolean, engraved?: boolean);
         modelDidLoad(body: Model[], idx: number): void;
         annotate(ctx: Annotator.Context): C.IterationStatus;
         annotateImpl(ctx: Annotator.Context): C.IterationStatus;
@@ -1150,10 +1151,10 @@ declare module '__satie/stores/barline' {
             barStyle: {
                 data: C.MusicXML.BarStyleType;
             };
-        }, annotated: boolean);
+        }, annotated: boolean, engraved: boolean);
         recordMetreDataImpl(mctx: C.MetreContext): void;
         annotateImpl(ctx: Annotator.Context): C.IterationStatus;
-        static createBarline: (ctx: Annotator.Context, type?: C.MusicXML.BarStyleType) => C.IterationStatus;
+        static createBarline: (ctx: Annotator.Context, type?: C.MusicXML.BarStyleType, engraved?: boolean) => C.IterationStatus;
     }
     export = BarlineModel;
 }

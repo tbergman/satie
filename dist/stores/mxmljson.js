@@ -67,6 +67,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
     _.forEach(mxmlJson.measures, processMeasure);
     _.forEach(voices, function (part) {
         _.forEach(part.body, function (model, j) {
+            model.engraved = true;
             model.modelDidLoad(part.body, j);
         });
     });
@@ -168,7 +169,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                     barStyle: {
                         data: 0 /* Regular */
                     }
-                }, true));
+                }, true, true));
                 outputIdx = voices[i].body.length;
             }
         }

@@ -12,9 +12,10 @@ var Metre = require("./metre");
 var TimeSignatureModel = require("./timeSignature");
 var BarlineModel = (function (_super) {
     __extends(BarlineModel, _super);
-    function BarlineModel(spec, annotated) {
-        _super.call(this, spec, annotated);
+    function BarlineModel(spec, annotated, engraved) {
+        _super.call(this, spec, annotated, engraved);
         this.location = 1 /* Right */;
+        debugger;
     }
     Object.defineProperty(BarlineModel.prototype, "type", {
         get: function () {
@@ -58,10 +59,10 @@ var BarlineModel = (function (_super) {
     };
     BarlineModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.prev().endMarker) {
-            return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true));
+            return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true, this.engraved));
         }
         if (!ctx.next()) {
-            ctx.insertFuture(new EndMarkerModel({ endMarker: true }, true));
+            ctx.insertFuture(new EndMarkerModel({ endMarker: true }, true, this.engraved));
         }
         var i;
         var okay;
@@ -159,14 +160,15 @@ var BarlineModel = (function (_super) {
         }
         return 10 /* Success */;
     };
-    BarlineModel.createBarline = function (ctx, type) {
+    BarlineModel.createBarline = function (ctx, type, engraved) {
         if (type === void 0) { type = 0 /* Regular */; }
+        if (engraved === void 0) { engraved = false; }
         if (ctx.curr.type === 450 /* BeamGroup */) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
-                    var newBarline = new BarlineModel({ barStyle: { data: type } }, true);
+                    var newBarline = new BarlineModel({ barStyle: { data: type } }, true, engraved);
                     if (j === ctx.idx) {
                         ctx.insertPast(newBarline);
                     }
@@ -178,19 +180,19 @@ var BarlineModel = (function (_super) {
             }
             return 60 /* RetryLine */;
         }
-        BarlineModel._seperate(ctx, type);
+        BarlineModel._seperate(ctx, type, engraved);
         return 30 /* RetryCurrentNoOptimizations */;
     };
-    BarlineModel._seperate = function (ctx, type) {
+    BarlineModel._seperate = function (ctx, type, engraved) {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === 300 /* Barline */) {
-            ctx.body[jdx] = new BarlineModel({ barStyle: { data: inTwo.barStyle.data } }, true);
+            ctx.body[jdx] = new BarlineModel({ barStyle: { data: inTwo.barStyle.data } }, true, engraved);
             inTwo.barStyle.data = type;
             ctx.insertPast(inTwo, null, true);
             return;
         }
-        ctx.insertPast(new BarlineModel({ barStyle: { data: type } }, true), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: { data: type } }, true, engraved), null, true);
     };
     return BarlineModel;
 })(Model);

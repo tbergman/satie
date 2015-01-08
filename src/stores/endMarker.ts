@@ -20,16 +20,15 @@ import NewlineModel         = require("./newline");
  * positioning and other logic. It is not rendered.
  */
 class EndMarkerModel extends Model {
-    //////////////
-    // I. Model //
-    //////////////
+
+    /*---- I. Model -----------------------------------------------------------------------------*/
+
     get visible()           { return false; }
     get type()              { return C.Type.EndMarker; }
     get xPolicy()           { return C.RectifyXPolicy.Max; }
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
+
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,
@@ -56,6 +55,7 @@ class EndMarkerModel extends Model {
                 }
             }
             ctx.eraseCurrent();
+            debugger;
             return C.IterationStatus.RetryLine;
         }
 
@@ -66,11 +66,12 @@ class EndMarkerModel extends Model {
                 ctx.body[ctx.idx + 2].priority !== C.Type.NewPage))) {
             ctx.eraseCurrent();
 
+            debugger;
             return C.IterationStatus.RetryCurrent;
         }
 
         // Bars must not be under-filled (should be filled with rests)
-        if (prev.type !== C.Type.Barline &&
+        if (!this.engraved && prev.type !== C.Type.Barline &&
                     ctx.division && ctx.division < ctx.ts.beats * ctx.attributes.divisions) {
             // XXX: extend to work on things other than 4/4
             var divisionsRemaining = ctx.ts.beats * ctx.attributes.divisions - ctx.division;
@@ -90,6 +91,7 @@ class EndMarkerModel extends Model {
             assert(toAdd.length);
             ctx.splice(this.idx, 0, toAdd);
 
+            debugger;
             return C.IterationStatus.RetryLine; // we really need a RETRY_BAR...
         }
 
@@ -101,7 +103,7 @@ class EndMarkerModel extends Model {
                 return C.IterationStatus.RetryLine;
             } else {
                 var BarlineModel: typeof BarlineModelType = require("./barline");
-                return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.LightHeavy);
+                return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.LightHeavy, this.engraved);
             }
         }
 

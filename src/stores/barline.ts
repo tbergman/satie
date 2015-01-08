@@ -88,8 +88,9 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     // II. Life-cycle //
     ////////////////////
 
-    constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean) {
-        super(spec, annotated);
+    constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean, engraved: boolean) {
+        super(spec, annotated, engraved);
+        debugger;
     }
 
     recordMetreDataImpl(mctx: C.MetreContext) {
@@ -103,11 +104,11 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         // A barline must be preceded by an endline marker.
         if (!ctx.prev().endMarker) {
-            return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true));
+            return ctx.insertPast(new EndMarkerModel({ endMarker: true }, true, this.engraved));
         }
 
         if (!ctx.next()) {
-            ctx.insertFuture(new EndMarkerModel({endMarker: true}, true));
+            ctx.insertFuture(new EndMarkerModel({endMarker: true}, true, this.engraved));
         }
 
         var i: number;
@@ -242,13 +243,13 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
-    static createBarline = (ctx: Annotator.Context, type = C.MusicXML.BarStyleType.Regular): C.IterationStatus => {
+    static createBarline = (ctx: Annotator.Context, type = C.MusicXML.BarStyleType.Regular, engraved = false): C.IterationStatus => {
         if (ctx.curr.type === C.Type.BeamGroup) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
                 ctx.body[j].inBeam = false;
                 if (ctx.body[j] === ctx.curr) {
-                    var newBarline = new BarlineModel({ barStyle: { data: type }}, true);
+                    var newBarline = new BarlineModel({ barStyle: { data: type }}, true, engraved);
                     if (j === ctx.idx) {
                         ctx.insertPast(newBarline);
                     } else {
@@ -260,22 +261,22 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             return C.IterationStatus.RetryLine;
         }
 
-        BarlineModel._seperate(ctx, type);
+        BarlineModel._seperate(ctx, type, engraved);
         return C.IterationStatus.RetryCurrentNoOptimizations;
     };
 
-    private static _seperate = (ctx: Annotator.Context, type: C.MusicXML.BarStyleType) => {
+    private static _seperate = (ctx: Annotator.Context, type: C.MusicXML.BarStyleType, engraved: boolean) => {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === C.Type.Barline) {
             // We want to keep this barline where it is!
-            ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }}, true);
+            ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }}, true, engraved);
             (<BarlineModel>inTwo).barStyle.data = type;
             ctx.insertPast(inTwo, null, true);
             return;
         }
 
-        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true, engraved), null, true);
     };
 }
 

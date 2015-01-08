@@ -113,6 +113,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     // Call model hooks
     _.forEach(voices, part => {
         _.forEach(part.body, (model, j) => {
+            model.engraved = true; // We trust the source material.
             model.modelDidLoad(part.body, j);
         });
     });
@@ -249,7 +250,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                     barStyle: {
                         data: C.MusicXML.BarStyleType.Regular
                     }
-                }, true));
+                }, true, true));
                 outputIdx = voices[i].body.length;
             }
         }

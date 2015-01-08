@@ -10,7 +10,8 @@ var _ = require("lodash");
 var assign = require("react/lib/Object.assign");
 var C = require("./contracts");
 var Model = (function () {
-    function Model(spec, annotated) {
+    function Model(spec, annotated, engraved) {
+        if (engraved === void 0) { engraved = false; }
         this.key = Model.newKey();
         this.idx = NaN;
         this.x = NaN;
@@ -35,6 +36,10 @@ var Model = (function () {
             this.x = spec.x;
             this.y = spec.y;
         }
+        if (this.priority === 110 /* EndMarker */) {
+            debugger;
+        }
+        this.engraved = engraved;
         this.annotated = annotated;
     }
     Object.defineProperty(Model.prototype, "isModifier", {
@@ -97,6 +102,16 @@ var Model = (function () {
         },
         set: function (b) {
             this._setFlag(Flags.Proposed, b);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Model.prototype, "engraved", {
+        get: function () {
+            return this._getFlag(Flags.Engraved);
+        },
+        set: function (b) {
+            this._setFlag(Flags.Engraved, b);
         },
         enumerable: true,
         configurable: true
@@ -209,6 +224,7 @@ var Model = (function () {
                 this.spacing = 0;
             }
         }
+        console.log("-", ctx.idx, ctx.barKeys, C.Type[this.priority]);
         var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== 300 /* Barline */);
         if (invisible) {
             this.soundOnly = true;
@@ -222,6 +238,7 @@ var Model = (function () {
         if (invisible) {
             ctx.x = this.x;
         }
+        console.log(ctx.idx, ctx.barKeys, C.IterationStatus[status]);
         assert(status !== undefined);
         return status;
     };
@@ -374,5 +391,6 @@ var Flags;
     Flags[Flags["Selected"] = 2 << 2] = "Selected";
     Flags[Flags["Annotator"] = 2 << 3] = "Annotator";
     Flags[Flags["Proposed"] = 2 << 4] = "Proposed";
+    Flags[Flags["Engraved"] = 2 << 5] = "Engraved";
 })(Flags || (Flags = {}));
 module.exports = Model;

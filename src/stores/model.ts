@@ -13,24 +13,24 @@ import Annotator        = require("./annotator");
 import C                = require("./contracts");
 
 /**
- * Subclasses of Models handle the gap between the abstract representation of
- * a score and the actual rendering (which is done by components in ./primitives).
+ * Models make up the body of a C.IVoice. They are processed by an Annotator.Annotator and modify
+ * an Annotator.Context. They may or may not be rendered by the Renderer. Examples of Models include
+ * Clefs, Durations, Barlines, and Attributes. A full list of subtypes is available in "types.ts".
+ *
+ * Models are created with a specification which may be incomplete. For example, before annotation,
+ * they may not include position or timing information. Types which extend Model implement two
+ * functions which put Models into a state where they can be rendered or played back:
  * 
- * In particular, classes which extend Model provide three two functions:
- *   - annotateImpl: adds any missing information (default values) not provided
- *      by the parser, adds any missing elements (e.g., clefs, time signatures,
- *      line breaks) to part.body
- *   - render: returns the instance of a React component which renders the
- *      component. Does not accept anything. Any processing should be done in
- *      annotateImpl.
- * 
- * To see the kind of information held by Models, in your web browser's
- * console, look at 'ScoreStore.voices[...].body'. Every item is a Model.
+ *   - recordMetreDataImpl: sets the current bar/division of the current model and
+ *      other state related to timing. Increments the bar/division of the
+ *      C.IMetreContext passed in.
+ *   - annotateImpl: Ensures that the state passed in supports the model, and adds/removes
+ *      other models to the context's active voice so that the current Model is valid.
+ *      Records the Model's position and other appearance properties.
  */
 class Model {
-    /////////////////////////////////////////
-    // I.1 Properties common to all models //
-    /////////////////////////////////////////
+
+    /*---- I.1 Properties common to all models --------------------------------------------------*/
 
     /** Unique identifier for this instance */
     key:                string                  = Model.newKey();
@@ -67,9 +67,7 @@ class Model {
         return -1;  // -1 means staff === voice if voice <= staves.length. Otherwise, an exception is thrown.
     }
 
-    ////////////////////////////////////
-    // I.2 Flags common to all models //
-    ////////////////////////////////////
+    /*---- I.2 Flags common to all models -------------------------------------------------------*/
 
     private _flags:     number                  = 0;
     get inBeam():       boolean     { return this._getFlag(Flags.InBeam); }
@@ -88,9 +86,10 @@ class Model {
     get proposed():     boolean     { return this._getFlag(Flags.Proposed); }
     set proposed(b:     boolean)    {        this._setFlag(Flags.Proposed, b); }
 
-    ////////////////////////////////////////////////////
-    // I.3 Properties to be reimplemented by subtypes //
-    ////////////////////////////////////////////////////
+    get engraved():     boolean     { return this._getFlag(Flags.Engraved); }
+    set engraved(b:     boolean)    {        this._setFlag(Flags.Engraved, b); }
+
+    /*---- I.3 Properties to be reimplemented by subtypes ---------------------------------------*/
 
     endMarker:          boolean;
     beam:               C.IPitchDuration[];
@@ -123,11 +122,10 @@ class Model {
 
     calcDivisions(ctx: C.MetreContext)          { return 0; }
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
 
-    constructor(spec: any, annotated: boolean) {
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
+
+    constructor(spec: any, annotated: boolean, engraved: boolean = false) {
         // By only setting attributes in the white-lists, we make omissions in
         // fields more obvious.
         var _this: any = this;
@@ -149,6 +147,10 @@ class Model {
             this.y          = spec.y;
         }
 
+        if (this.priority === C.Type.EndMarker) {
+            debugger;
+        }
+        this.engraved       = engraved;
         this.annotated      = annotated;
     }
 
@@ -166,6 +168,7 @@ class Model {
                 this.spacing    = 0;
             }
         }
+        console.log("-", ctx.idx, ctx.barKeys, C.Type[this.priority]);
 
         var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== C.Type.Barline);
         if (invisible) {
@@ -181,6 +184,7 @@ class Model {
         if (invisible) { // The value before "annotateImpl"
             ctx.x               = this.x;
         }
+        console.log(ctx.idx, ctx.barKeys, C.IterationStatus[status]);
 
         assert(status !== undefined);
         return status;
@@ -198,10 +202,6 @@ class Model {
         throw "No view has been set for " + C.Type[this.type] + ". See Model.setView(...)";
     }
 
-    //////////////////////
-    // III. Convenience //
-    //////////////////////
-
     toJSON(): {} {
         var json: {} = {
             _: [this.key, this.type, this._flags]
@@ -216,6 +216,8 @@ class Model {
         return json;
     }
 
+    /*---- III. Utilities -----------------------------------------------------------------------*/
+
     assign<T>(obj: T) {
         _.forEach(obj, (value, key) => {
             (<any>this)[key] = C.JSONx.clone(value);
@@ -229,9 +231,7 @@ class Model {
         this._flags = v ? (this._flags | f) : (this._flags & ~f);
     }
 
-    ////////////////
-    // IV. Static //
-    ////////////////
+    /*---- IV. Static----------------------------------------------------------------------------*/
 
     static _sessionId:  string                  = C.generateUUID();
     static _lastKey:    number                  = 0;
@@ -333,7 +333,7 @@ module Model {
     "use strict";
 
     /**
-     * See types.ts
+     * Map from Type ID in contracts.ts to constructor. See types.ts
      */
     export var constructorsByType: { [key: number /* C.Type */]: (spec: any) => Model } = {};
 
@@ -380,7 +380,8 @@ enum Flags {
     Placeholder     	= 2 << 1,
     Selected        	= 2 << 2,
     Annotator       	= 2 << 3,
-    Proposed        	= 2 << 4
+    Proposed        	= 2 << 4,
+    Engraved            = 2 << 5
     // Model-specific  >= 2 << 6
 }
 
