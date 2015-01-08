@@ -27,7 +27,6 @@ var DurationModel = (function (_super) {
             "dots",
             "displayCount",
             "displayDots",
-            "displayNotation",
             "isRest",
             "tuplet",
             "displayTuplet",
@@ -392,49 +391,44 @@ var DurationModel = (function (_super) {
         assert(this._divisions !== null, "Unknown beat count");
         this.isWholebar = this._divisions === -1 || this._divisions === ctx.ts.beats * ctx.attributes.divisions;
         if (ctx.isBeam || !this.inBeam) {
-            if (this._divisions > ctx.ts.beats * ctx.attributes.divisions && ctx.division >= ctx.ts.beats * ctx.attributes.divisions) {
-                return BarlineModel.createBarline(ctx, 0 /* Regular */);
+            if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+                var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
+                if (this._divisions === overfill) {
+                    var ret = BarlineModel.createBarline(ctx, 0 /* Regular */);
+                    return ret;
+                }
+                else {
+                    var replaceWith = Metre.subtract(this, overfill, ctx).map(function (t) { return new DurationModel(t, true); });
+                    var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx).map(function (t) { return new DurationModel(t, true); });
+                    for (i = 0; i < replaceWith.length; ++i) {
+                        replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
+                        if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
+                            replaceWith[i].tieds = this.chord.map(function (c) {
+                                return {
+                                    type: 0 /* Start */
+                                };
+                            });
+                        }
+                    }
+                    for (i = 0; i < addAfterBar.length; ++i) {
+                        addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
+                        if (i + 1 !== addAfterBar.length && !this.isRest) {
+                            replaceWith[i].tieds = this.chord.map(function (c) {
+                                return {
+                                    type: 0 /* Start */
+                                };
+                            });
+                        }
+                    }
+                    BarlineModel.createBarline(ctx, 0 /* Regular */);
+                    ctx.splice(ctx.idx, 0, replaceWith, 4 /* ShortenOtherVoices */);
+                    ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, 4 /* ShortenOtherVoices */);
+                    return 60 /* RetryLine */;
+                }
             }
-            else {
-                if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
-                    var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
-                    if (this._divisions === overfill) {
-                        var ret = BarlineModel.createBarline(ctx, 0 /* Regular */);
-                        return ret;
-                    }
-                    else {
-                        var replaceWith = Metre.subtract(this, overfill, ctx).map(function (t) { return new DurationModel(t, true); });
-                        var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx).map(function (t) { return new DurationModel(t, true); });
-                        for (i = 0; i < replaceWith.length; ++i) {
-                            replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
-                            if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                                replaceWith[i].tieds = this.chord.map(function (c) {
-                                    return {
-                                        type: 0 /* Start */
-                                    };
-                                });
-                            }
-                        }
-                        for (i = 0; i < addAfterBar.length; ++i) {
-                            addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
-                            if (i + 1 !== addAfterBar.length && !this.isRest) {
-                                replaceWith[i].tieds = this.chord.map(function (c) {
-                                    return {
-                                        type: 0 /* Start */
-                                    };
-                                });
-                            }
-                        }
-                        BarlineModel.createBarline(ctx, 0 /* Regular */);
-                        ctx.splice(ctx.idx, 0, replaceWith, 4 /* ShortenOtherVoices */);
-                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, 4 /* ShortenOtherVoices */);
-                        return 60 /* RetryLine */;
-                    }
-                }
-                var status = Metre.rhythmicSpellcheck(ctx);
-                if (status !== 10 /* Success */) {
-                    return status;
-                }
+            var status = Metre.rhythmicSpellcheck(ctx);
+            if (status !== 10 /* Success */) {
+                return status;
             }
             assert(isFinite(this._divisions) && this._divisions !== null);
             if (ctx.smallest * ctx.attributes.divisions > this._divisions) {
@@ -510,6 +504,27 @@ var DurationModel = (function (_super) {
                 ctx.accidentalsByStaff[this.staff][this.chord[i].step] = C.InvalidAccidental;
             }
         }
+        this.continuingNotations = _(this._p_notes).map(function (note) {
+            var n = note.notationObj;
+            if (!n) {
+                return null;
+            }
+            var toDisplay = [];
+            if (n.tuplets) {
+                toDisplay = toDisplay.concat(n.tuplets.map(function (tuplet) {
+                    if (tuplet.type !== 0 /* Start */) {
+                        return null;
+                    }
+                    var stop = ctx.next(function (t) { return t.isNote && _.any(t._p_notes, function (note) { return _.any(note.notationObj.tuplets, function (t) { return t.type === 1 /* Stop */; }); }); });
+                    return {
+                        body: [_this, stop],
+                        type: "tuplet",
+                        notation: tuplet
+                    };
+                }).filter(function (t) { return !!t; }));
+            }
+            return toDisplay;
+        }).flatten(true).filter(function (n) { return !!n; }).value();
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         if (this.multiRest !== undefined) {
@@ -920,10 +935,7 @@ var DurationModel;
                 if (count) {
                     parent.count = count;
                 }
-                parent.tuplet = note.timeModification ? {
-                    num: note.timeModification.normalNotes.count,
-                    den: note.timeModification.actualNotes.count
-                } : parent.tuplet;
+                parent.tuplet = note.timeModification || parent.tuplet;
             }
             var properties = [
                 "unpitched",
@@ -1066,22 +1078,10 @@ var DurationModel;
         });
         Object.defineProperty(MXMLNote.prototype, "timeModification", {
             get: function () {
-                return this._parent.tuplet ? {
-                    normalNotes: {
-                        count: this._parent.tuplet.num
-                    },
-                    actualNotes: {
-                        count: this._parent.tuplet.den
-                    },
-                    normalDots: [],
-                    normalType: "eighth"
-                } : null;
+                return this._parent.tuplet;
             },
             set: function (tm) {
-                this._parent.tuplet = {
-                    num: tm.normalNotes.count,
-                    den: tm.actualNotes.count
-                };
+                this._parent.tuplet = tm;
             },
             enumerable: true,
             configurable: true

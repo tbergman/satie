@@ -55,7 +55,6 @@ class EndMarkerModel extends Model {
                 }
             }
             ctx.eraseCurrent();
-            debugger;
             return C.IterationStatus.RetryLine;
         }
 
@@ -66,7 +65,6 @@ class EndMarkerModel extends Model {
                 ctx.body[ctx.idx + 2].priority !== C.Type.NewPage))) {
             ctx.eraseCurrent();
 
-            debugger;
             return C.IterationStatus.RetryCurrent;
         }
 
@@ -91,7 +89,6 @@ class EndMarkerModel extends Model {
             assert(toAdd.length);
             ctx.splice(this.idx, 0, toAdd);
 
-            debugger;
             return C.IterationStatus.RetryLine; // we really need a RETRY_BAR...
         }
 

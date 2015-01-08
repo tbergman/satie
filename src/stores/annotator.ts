@@ -228,14 +228,14 @@ export class Context implements C.MetreContext {
     /**
      * Returns a BeamGroup, if one follows. Otherwise, returns null.
      */
-    beamFollows(idx?: number): Array<{ inBeam: boolean; tuplet: C.ITuplet; }> {
+    beamFollows(idx?: number): Array<{ inBeam: boolean; tuplet: C.MusicXML.TimeModification; }> {
         // Must return .beam
         if (idx === null || idx === undefined) {
             idx = this.idx;
         }
         var inBeam = this.body[idx + 1].priority === C.Type.BeamGroup;
         if (inBeam) {
-            var beamed: Array<{ inBeam: boolean; tuplet: C.ITuplet; }> = [];
+            var beamed: Array<{ inBeam: boolean; tuplet: C.MusicXML.TimeModification; }> = [];
             for (var i = 0; i < this._voices.length; ++i) {
                 if (this._voices[i].body &&
                     this._voices[i].body[idx + 1].type === C.Type.BeamGroup) {
@@ -500,7 +500,7 @@ export class Context implements C.MetreContext {
             while (i >= 0 && this.body[i].type !== C.Type.BeamGroup) {
                 --i;
             }
-            var tuplet: C.ITuplet = (<any>this.body[i]).tuplet; // TS
+            var tuplet: C.MusicXML.TimeModification = (<any>this.body[i]).tuplet; // TS
             if (tuplet && note) {
                 note.tuplet = C.JSONx.clone(tuplet);
             }

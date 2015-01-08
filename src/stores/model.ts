@@ -147,9 +147,6 @@ class Model {
             this.y          = spec.y;
         }
 
-        if (this.priority === C.Type.EndMarker) {
-            debugger;
-        }
         this.engraved       = engraved;
         this.annotated      = annotated;
     }
@@ -168,7 +165,6 @@ class Model {
                 this.spacing    = 0;
             }
         }
-        console.log("-", ctx.idx, ctx.barKeys, C.Type[this.priority]);
 
         var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== C.Type.Barline);
         if (invisible) {
@@ -184,7 +180,6 @@ class Model {
         if (invisible) { // The value before "annotateImpl"
             ctx.x               = this.x;
         }
-        console.log(ctx.idx, ctx.barKeys, C.IterationStatus[status]);
 
         assert(status !== undefined);
         return status;

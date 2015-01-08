@@ -28,7 +28,7 @@ function rhythmicSpellcheck(ctx) {
             }
         }
         if (partial) {
-            var toRestoreUntuplet = (base - partial) * currNote.tuplet.den / currNote.tuplet.num;
+            var toRestoreUntuplet = (base - partial) * currNote.tuplet.actualNotes.count / currNote.tuplet.normalNotes.count;
             var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.division).map(function (m) { return new DurationModel(m, true); });
             for (var i = 0; i < toAdd.length; ++i) {
                 toAdd[i].tuplet = C.JSONx.clone(currNote.tuplet);
@@ -322,7 +322,7 @@ function calcDivisions(count, dots, tuplet, ts, divisions) {
     assert(ts, "Not supplying a ts is deprecated");
     var base = divisions * ts.beatType / count;
     if (tuplet) {
-        base *= tuplet.num / tuplet.den;
+        base *= tuplet.normalNotes.count / tuplet.actualNotes.count;
     }
     var total = base;
     for (var i = 0; i < dots; ++i) {

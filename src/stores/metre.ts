@@ -90,7 +90,7 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
 
         if (partial) {
             // subtract does not yet support tuplets yet, so...
-            var toRestoreUntuplet = (base - partial) * currNote.tuplet.den / currNote.tuplet.num;
+            var toRestoreUntuplet = (base - partial) * currNote.tuplet.actualNotes.count / currNote.tuplet.normalNotes.count;
             var toAdd = subtract(toRestoreUntuplet, 0, ctx, -ctx.division).map(m => new DurationModel(m, true));
             for (var i = 0; i < toAdd.length; ++i) {
                 toAdd[i].tuplet = C.JSONx.clone(currNote.tuplet);
@@ -405,7 +405,7 @@ export function rebeamable(idx: number, ctx: Annotator.Context, alt?: string): A
     var prevInBeam = true;
 
     var foundNote = false;
-    var tuplet: C.ITuplet;
+    var tuplet: C.MusicXML.TimeModification;
 
     for (var i = idx; body[i] && !body[i].endMarker; ++i) {
         if (body[i].type === C.Type.BeamGroup) {
@@ -488,7 +488,7 @@ export function calcDivisions2(durr: C.IPitchDuration, ctx: C.MetreContext, inhe
 }
 
 export function calcDivisions(count: number, dots: number,
-        tuplet: C.ITuplet, ts: C.ISimpleTimeSignature, divisions: number) {
+        tuplet: C.MusicXML.TimeModification, ts: C.ISimpleTimeSignature, divisions: number) {
     "use strict";
 
     if (count === -1) {
@@ -508,7 +508,7 @@ export function calcDivisions(count: number, dots: number,
     assert(ts, "Not supplying a ts is deprecated");
     var base = divisions * ts.beatType/count;
     if (tuplet) {
-        base *= tuplet.num / tuplet.den;
+        base *= tuplet.normalNotes.count / tuplet.actualNotes.count;
     }
 
     var total = base;

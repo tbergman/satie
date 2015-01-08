@@ -15,7 +15,6 @@ var BarlineModel = (function (_super) {
     function BarlineModel(spec, annotated, engraved) {
         _super.call(this, spec, annotated, engraved);
         this.location = 1 /* Right */;
-        debugger;
     }
     Object.defineProperty(BarlineModel.prototype, "type", {
         get: function () {

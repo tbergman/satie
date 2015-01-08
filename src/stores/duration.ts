@@ -28,8 +28,8 @@ import TimeSignatureModel   = require("./timeSignature");
  * To access the simple API, see DurationModel.chord, and convenience properties such as "rest".
  * To access the MusicXML-compliant API, see DurationModel._notes.
  * 
- * Note that MusicXML "chords" do not need to all have the same duration. Ripieno does not support this
- * (the notes must be in separate parts).
+ * Note that MusicXML "chords" do not need to all have the same duration. In Ripieno they must all
+ * have the same duration.
  */
 class DurationModel extends Model implements C.IPitchDuration {
 
@@ -120,7 +120,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return this._tuplet;
     }
 
-    set tuplet(t: C.ITuplet) {
+    set tuplet(t: C.MusicXML.TimeModification) {
         this._tuplet            = t;
         this._displayTuplet     = null;
     }
@@ -129,7 +129,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         return this._displayTuplet || this._tuplet;
     }
 
-    set displayTuplet(t: C.ITuplet) {
+    set displayTuplet(t: C.MusicXML.TimeModification) {
         this._displayTuplet     = t;
     }
 
@@ -189,6 +189,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         return DurationModel.countToNotehead[this.displayCount];
     }
 
+    continuingNotations: DurationModel.IContinuingNotation[];
+
     get restHead() {
         if (!isNaN(this.multiRest)) {
             // TODO: MusicXML useSymbol if specified
@@ -210,18 +212,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     private _extraWidth: number;
     _divisions: number;
-    /** @deprecated */
     private _count: C.MusicXML.Count;
-    /** @deprecated */
     private _displayCount: number;
-    /** @deprecated */
     private _displayDots: number;
-    /** @deprecated */
-    private _displayNotation: C.MusicXML.Notations[];
-    /** @deprecated */
-    private _displayTuplet: C.ITuplet;
-    /** @deprecated */
-    private _tuplet: C.ITuplet;
+    private _displayTuplet: C.MusicXML.TimeModification;
+    private _tuplet: C.MusicXML.TimeModification;
 
     _displayedAccidentals: Array<number>;
     forceMiddleNoteDirection: number;
@@ -272,7 +267,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         // TODO: Remove this {
         var self : {[key:string]: any} = <any> this;
         var properties                 = [
-            "count", "dots", "displayCount", "displayDots", "displayNotation", "isRest", "tuplet",
+            "count", "dots", "displayCount", "displayDots", "isRest", "tuplet",
             "displayTuplet", "chord", "_notes"
         ];
 
@@ -389,55 +384,49 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         this.isWholebar = this._divisions === -1 || this._divisions === ctx.ts.beats * ctx.attributes.divisions;
 
-        // Make sure the bar is not overfilled. Multi-bar rests are okay.
+        // Make sure the bar is not overfilled.
         if (ctx.isBeam || !this.inBeam) {
-            if (this._divisions > ctx.ts.beats * ctx.attributes.divisions && ctx.division >= ctx.ts.beats*ctx.attributes.divisions) {
-                // The current note/rest is multi-bar, which is allowed. However, multi-bar rests must
-                // start at beat 0.
-                return BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
-            } else {
-                // The number of beats in a bar must not exceed that specified by the time signature.
-                if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
-                    var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
-                    if (this._divisions === overfill) {
-                        var ret = BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
-                        return ret;
-                    } else {
-                        var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
-                            new DurationModel(<any>t, true));
-                        var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx)
-                            .map(t => new DurationModel(<any>t, true));
-                        for (i = 0; i < replaceWith.length; ++i) {
-                            replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
-                            if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                                replaceWith[i].tieds = this.chord.map(c => {
-                                    return {
-                                        type: C.MusicXML.StartStopContinue.Start
-                                    };
-                                });
-                            }
+            // The number of beats in a bar must not exceed that specified by the time signature.
+            if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+                var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
+                if (this._divisions === overfill) {
+                    var ret = BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
+                    return ret;
+                } else {
+                    var replaceWith = Metre.subtract(this, overfill, ctx).map(t =>
+                        new DurationModel(<any>t, true));
+                    var addAfterBar = Metre.subtract(this, this._divisions - overfill, ctx)
+                        .map(t => new DurationModel(<any>t, true));
+                    for (i = 0; i < replaceWith.length; ++i) {
+                        replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
+                        if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
+                            replaceWith[i].tieds = this.chord.map(c => {
+                                return {
+                                    type: C.MusicXML.StartStopContinue.Start
+                                };
+                            });
                         }
-                        for (i = 0; i < addAfterBar.length; ++i) {
-                            addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
-                            if (i + 1 !== addAfterBar.length && !this.isRest) {
-                                replaceWith[i].tieds = this.chord.map(c => {
-                                    return {
-                                        type: C.MusicXML.StartStopContinue.Start
-                                    };
-                                });
-                            }
-                        }
-                        BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
-                        ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherVoices);
-                        ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherVoices);
-                        return C.IterationStatus.RetryLine;
                     }
+                    for (i = 0; i < addAfterBar.length; ++i) {
+                        addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
+                        if (i + 1 !== addAfterBar.length && !this.isRest) {
+                            replaceWith[i].tieds = this.chord.map(c => {
+                                return {
+                                    type: C.MusicXML.StartStopContinue.Start
+                                };
+                            });
+                        }
+                    }
+                    BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
+                    ctx.splice(ctx.idx, 0, replaceWith, Annotator.SplicePolicy.ShortenOtherVoices);
+                    ctx.splice(ctx.idx + 1 + replaceWith.length, 1, addAfterBar, Annotator.SplicePolicy.ShortenOtherVoices);
+                    return C.IterationStatus.RetryLine;
                 }
-
-                // Check rhythmic spelling
-                var status = Metre.rhythmicSpellcheck(ctx);
-                if (status !== C.IterationStatus.Success) { return status; }
             }
+
+            // Check rhythmic spelling
+            var status = Metre.rhythmicSpellcheck(ctx);
+            if (status !== C.IterationStatus.Success) { return status; }
 
             // All notes, chords, and rests throughout a line on a given voice must have the same scale.
             assert(isFinite(this._divisions) && this._divisions !== null);
@@ -540,6 +529,37 @@ class DurationModel extends Model implements C.IPitchDuration {
                 ctx.accidentalsByStaff[this.staff][this.chord[i].step] = C.InvalidAccidental;
             }
         }
+
+        // Set continuing notations.
+        this.continuingNotations = <any> _(this._p_notes)
+            .map((note: DurationModel.MXMLNote) => {
+                var n = note.notationObj;
+                if (!n) {
+                    return null;
+                }
+                var toDisplay: any[] = [];
+                if (n.tuplets) {
+                    toDisplay = toDisplay.concat(n.tuplets.map(tuplet => {
+                        if (tuplet.type !== C.MusicXML.StartStop.Start) {
+                            return null;
+                        }
+                        var stop = ctx.next(t => t.isNote &&
+                            _.any((<DurationModel>t)._p_notes,
+                                note => _.any(note.notationObj.tuplets,
+                                    t => t.type === C.MusicXML.StartStop.Stop)
+                            ));
+                        return {
+                            body:       [this, stop],
+                            type:       "tuplet",
+                            notation:   tuplet
+                        };
+                    }).filter(t => !!t));
+                }
+                return toDisplay;
+            })
+            .flatten(true)
+            .filter(n => !!n)
+            .value();
 
         ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
@@ -1026,10 +1046,7 @@ module DurationModel {
                     parent.count    =   count;
                 }
 
-                parent.tuplet       =   note.timeModification ? {
-                    num:                note.timeModification.normalNotes.count,
-                    den:                note.timeModification.actualNotes.count
-                }                           : parent.tuplet;
+                parent.tuplet       =   note.timeModification || parent.tuplet;
             }
 
             /* Properties owned by MNote */
@@ -1146,25 +1163,11 @@ module DurationModel {
         }
 
         get timeModification(): C.MusicXML.TimeModification {
-            return this._parent.tuplet ? {
-                normalNotes: {
-                    count:      this._parent.tuplet.num
-                },
-                actualNotes: {
-                    count:      this._parent.tuplet.den
-                },
-                normalDots:     [],
-                normalType:     "eighth"    // MXFIX
-            } : null;
+            return this._parent.tuplet;
         }
 
         set timeModification(tm: C.MusicXML.TimeModification) {
-            // TODO: normalDots
-            // TODO: normalType
-            this._parent.tuplet = {
-                num: tm.normalNotes.count,
-                den: tm.actualNotes.count
-            };
+            this._parent.tuplet = tm;
         }
 
         /* C.MusicXML.Note > Extended */
@@ -1368,6 +1371,11 @@ module DurationModel {
             - 3.5*parseInt(clef.clefOctaveChange||"0", 10);
     }
 
+    export interface IContinuingNotation {
+        body:       DurationModel[];
+        type:       string;
+        notation:   any;
+    }
 }
 
 DurationModel.MXMLNote.prototype.staff = 1;

@@ -59,12 +59,10 @@ var EndMarkerModel = (function (_super) {
                 }
             }
             ctx.eraseCurrent();
-            debugger;
             return 60 /* RetryLine */;
         }
         if (next && next.priority !== 300 /* Barline */ && (!ctx.body[ctx.idx + 2] || (ctx.body[ctx.idx + 2].priority !== 130 /* NewLine */ && ctx.body[ctx.idx + 2].priority !== 120 /* NewPage */))) {
             ctx.eraseCurrent();
-            debugger;
             return 20 /* RetryCurrent */;
         }
         if (!this.engraved && prev.type !== 300 /* Barline */ && ctx.division && ctx.division < ctx.ts.beats * ctx.attributes.divisions) {
@@ -78,7 +76,6 @@ var EndMarkerModel = (function (_super) {
             });
             assert(toAdd.length);
             ctx.splice(this.idx, 0, toAdd);
-            debugger;
             return 60 /* RetryLine */;
         }
         if (!ctx.next() && (prev.type !== 300 /* Barline */ || prev.barStyle.data !== 5 /* LightHeavy */)) {

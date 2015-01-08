@@ -169,7 +169,7 @@ export interface IDuration {
     /** 
      * The tuplet to be displayed, if different from tuplet.
      */
-    displayTuplet?:     ITuplet;
+    displayTuplet?:     MusicXML.TimeModification;
 
     hasFlagOrBeam?:     boolean;
 
@@ -178,7 +178,7 @@ export interface IDuration {
     /** 
      * The displayed tuplet, or null.
      */
-    tuplet:             ITuplet;
+    tuplet:             MusicXML.TimeModification;
 }
 
 /** 
@@ -202,7 +202,7 @@ export interface IDurationSpec {
     /** 
      * The displayed tuplet, or null.
      */
-    tuplet?:            ITuplet
+    tuplet?:            MusicXML.TimeModification
 }
 
 /** 
@@ -1073,20 +1073,6 @@ export interface IUser {
 
     whitelisted:            boolean;
 };
-
-/** 
- * Tuplet information, found in IDuration.
- * 
- * A triplet would have the following ITuplet:
- * {
- *     "num": 3,
- *        "den": 2
- * }
- */
-export interface ITuplet {
-    num:                    number;
-    den:                    number;
-}
 
 /** 
  * The solid blue line on the page is the VisualCursor.

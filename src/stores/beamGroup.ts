@@ -55,7 +55,7 @@ class BeamGroupModel extends Model {
     /** The beam counts if beams is VARIABLE.  */
     variableBeams:      number[];
 
-    tuplet:             C.ITuplet       // See BeamGroupModel.prototype.tuplet.
+    tuplet:             C.MusicXML.TimeModification       // See BeamGroupModel.prototype.tuplet.
     tupletsTemporary:   boolean;
 
     ////////////////////

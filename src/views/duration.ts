@@ -17,6 +17,7 @@ import Note                 = require("./_note");
 import NoteNotation         = require("./_noteNotation");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import Rest                 = require("./_rest");
+import UnbeamedTuplet       = require("./_unbeamedTuplet");
 
 /**
  * This is a pseudo-component to maintain compatibility with
@@ -30,7 +31,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         var spec = props.spec;
         assert(spec instanceof DurationModel);
 
-        var notations: any[] = [];
+        var notations: any[] = spec.continuingNotations.map(this._mapContinuingNotation).filter(n => !!n);
         // _.map(spec.displayNotations || [], (m, idx) =>
         //     <!NoteNotation.Component
         //         idx={1}
@@ -132,6 +133,27 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
             </g>
         } else {
             return note;
+        }
+    }
+
+    private _mapContinuingNotation(m: DurationModel.IContinuingNotation, idx: number): any {
+        switch (m.type) {
+            case "tuplet":
+                return React.createElement(UnbeamedTuplet.Component, <UnbeamedTuplet.IProps> {
+                    key: "cn_" + idx,
+                    direction: this.props.spec.direction,
+                    line1: m.body[0].lines[0], // FIX 
+                    line2: m.body[1].lines[1], // FIX
+                    stemWidth: 0,
+                    stroke: "black",
+                    tuplet: m.notation,
+                    tupletsTemporary: null,
+                    width:m.body[1].x - m.body[0].x,
+                    x: m.body[1].x,
+                    y: m.body[0].y
+                });
+            default:
+                assert(false, "Not implemented");
         }
     }
 }

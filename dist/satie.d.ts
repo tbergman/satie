@@ -89,15 +89,15 @@ declare module '__satie/stores/contracts' {
         count: number;
         dots: number;
         displayDots?: number;
-        displayTuplet?: ITuplet;
+        displayTuplet?: MusicXML.TimeModification;
         hasFlagOrBeam?: boolean;
         temporary?: boolean;
-        tuplet: ITuplet;
+        tuplet: MusicXML.TimeModification;
     }
     export interface IDurationSpec {
         count: number;
         dots?: number;
-        tuplet?: ITuplet;
+        tuplet?: MusicXML.TimeModification;
     }
     export interface IError {
         type: string;
@@ -345,10 +345,6 @@ declare module '__satie/stores/contracts' {
         };
         whitelisted: boolean;
     }
-    export interface ITuplet {
-        num: number;
-        den: number;
-    }
     export interface IVisualCursor extends ILocation {
         annotatedObj?: Model;
         annotatedLine?: number;
@@ -408,7 +404,7 @@ declare module '__satie/stores/annotator' {
         intersects(type: C.Type, idx?: number, after?: boolean, before?: boolean): Model[];
         beamFollows(idx?: number): {
             inBeam: boolean;
-            tuplet: C.ITuplet;
+            tuplet: C.MusicXML.TimeModification;
         }[];
         removeFollowingBeam(idx?: number, past?: boolean): C.IterationStatus;
         prev(condition?: (m: Model) => boolean, offset?: number): Model;

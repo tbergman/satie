@@ -36,9 +36,6 @@ var Model = (function () {
             this.x = spec.x;
             this.y = spec.y;
         }
-        if (this.priority === 110 /* EndMarker */) {
-            debugger;
-        }
         this.engraved = engraved;
         this.annotated = annotated;
     }
@@ -224,7 +221,6 @@ var Model = (function () {
                 this.spacing = 0;
             }
         }
-        console.log("-", ctx.idx, ctx.barKeys, C.Type[this.priority]);
         var invisible = ctx.invisibleForBars && (ctx.invisibleForBars !== 1 || this.type !== 300 /* Barline */);
         if (invisible) {
             this.soundOnly = true;
@@ -238,7 +234,6 @@ var Model = (function () {
         if (invisible) {
             ctx.x = this.x;
         }
-        console.log(ctx.idx, ctx.barKeys, C.IterationStatus[status]);
         assert(status !== undefined);
         return status;
     };

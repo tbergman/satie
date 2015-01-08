@@ -90,7 +90,6 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
 
     constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean, engraved: boolean) {
         super(spec, annotated, engraved);
-        debugger;
     }
 
     recordMetreDataImpl(mctx: C.MetreContext) {

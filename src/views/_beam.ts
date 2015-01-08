@@ -184,7 +184,7 @@ module Beam {
         line2: number;
         stemWidth: number;
         stroke: string;
-        tuplet: C.ITuplet;
+        tuplet: C.MusicXML.TimeModification;
         tupletsTemporary: boolean;
         variableBeams: Array<number>; // MXFIX: make sure a new copy is created every time
         variableX: Array<number>;

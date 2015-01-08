@@ -13,6 +13,7 @@ var DurationModel = require("../stores/duration");
 var Note = require("./_note");
 var PureModelViewMixin = require("./pureModelViewMixin");
 var Rest = require("./_rest");
+var UnbeamedTuplet = require("./_unbeamedTuplet");
 var Duration = (function (_super) {
     __extends(Duration, _super);
     function Duration() {
@@ -22,7 +23,7 @@ var Duration = (function (_super) {
         var props = this.props;
         var spec = props.spec;
         assert(spec instanceof DurationModel);
-        var notations = [];
+        var notations = spec.continuingNotations.map(this._mapContinuingNotation).filter(function (n) { return !!n; });
         var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest && !_.any(spec.tieds, function (t) { return t && t.type !== 1 /* Stop */; });
         var lyKey = 0;
         var lyrics = _.chain(spec._notes).map(function (n) { return n.lyrics; }).filter(function (l) { return !!l; }).flatten(true).filter(function (l) { return !!l; }).map(function (l) {
@@ -53,6 +54,26 @@ var Duration = (function (_super) {
         }
         else {
             return note;
+        }
+    };
+    Duration.prototype._mapContinuingNotation = function (m, idx) {
+        switch (m.type) {
+            case "tuplet":
+                return React.createElement(UnbeamedTuplet.Component, {
+                    key: "cn_" + idx,
+                    direction: this.props.spec.direction,
+                    line1: m.body[0].lines[0],
+                    line2: m.body[1].lines[1],
+                    stemWidth: 0,
+                    stroke: "black",
+                    tuplet: m.notation,
+                    tupletsTemporary: null,
+                    width: m.body[1].x - m.body[0].x,
+                    x: m.body[1].x,
+                    y: m.body[0].y
+                });
+            default:
+                assert(false, "Not implemented");
         }
     };
     return Duration;
