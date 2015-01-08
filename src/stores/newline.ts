@@ -299,14 +299,9 @@ class NewlineModel extends Model {
      * Given an incomplete line ending at current index, spreads out the line
      * comfortably.
      */
-    static semiJustify = (ctx: Annotator.Context) => {
-        var fullJustify = false;
+    static semiJustify = (ctx: Annotator.Context, fullJustify = ctx.curr.x > ctx.maxX) => {
         var i: number;
 
-        if ((<any>ctx._voices).isScale) {
-            // XXX: HACK!!!
-            fullJustify = true;
-        }
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
                     C.Type.NewLine); --i) {

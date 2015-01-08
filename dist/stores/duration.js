@@ -443,7 +443,7 @@ var DurationModel = (function (_super) {
                 return 60 /* RetryLine */;
             }
             this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) / C.log2 / 3 * 40;
-            if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
+            if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
                 return NewlineModel.createNewline(ctx);
             }
         }

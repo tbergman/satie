@@ -464,7 +464,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 C.log2 / 3 * 40;
 
             // The width of a line must not exceed that specified by the page layout.
-            if ((ctx.x + this.getWidth(ctx) > ctx.maxX)) {
+            if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
                 return NewlineModel.createNewline(ctx);
             }
         }

@@ -280,12 +280,9 @@ var NewlineModel = (function (_super) {
         }, true), fidx + 1);
         return 70 /* LineCreated */;
     };
-    NewlineModel.semiJustify = function (ctx) {
-        var fullJustify = false;
+    NewlineModel.semiJustify = function (ctx, fullJustify) {
+        if (fullJustify === void 0) { fullJustify = ctx.curr.x > ctx.maxX; }
         var i;
-        if (ctx._voices.isScale) {
-            fullJustify = true;
-        }
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== 130 /* NewLine */); --i) {
             if (ctx.body[i].priority === 600 /* Duration */ && !ctx.body[i].soundOnly) {
