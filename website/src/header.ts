@@ -40,17 +40,8 @@ class Header extends TypedReact.Component<Header.IProps, IState> {
             <!Bootstrap.Nav className="partialnav"
                     role="nav" onSelect={this.props.onSelect} style={{fontFamily: "Alegreya SC, Alegreya"}}
                     eventKey={0}>
-                <!Bootstrap.NavItem eventKey="about" active={this.props.selectedKey === "about"}>
-                    About
-                </Bootstrap.NavItem>
-                <!Bootstrap.NavItem eventKey="start" active={this.props.selectedKey === "start"}>
-                    Getting Started
-                </Bootstrap.NavItem>
                 <!Bootstrap.NavItem eventKey="playground" active={this.props.selectedKey === "playground"}>
                     Playground
-                </Bootstrap.NavItem>
-                <!Bootstrap.NavItem eventKey="spec" active={this.props.selectedKey === "spec"}>
-                    Specification
                 </Bootstrap.NavItem>
             </Bootstrap.Nav>
             <!ul className="ripieno-backlink navbar-right" role="button"

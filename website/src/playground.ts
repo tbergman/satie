@@ -21,7 +21,6 @@
 import About        = require("./about");
 import Header       = require("./header");
 import Start        = require("./start");
-import Spec         = require("./spec");
 import ajax         = require("./ajax");
 
 import Bootstrap    = require("react-bootstrap");
@@ -46,7 +45,7 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
 
     getInitialState(): IState {
         return {
-            test: "23a",
+            test: "01a",
             width: 1
         };
     }

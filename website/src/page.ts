@@ -21,7 +21,6 @@
 import About        = require("./about");
 import Header       = require("./header");
 import Start        = require("./start");
-import Spec         = require("./spec");
 import Playground   = require("./playground");
 
 import Bootstrap    = require("react-bootstrap");
@@ -37,7 +36,6 @@ class Page extends TypedReact.Component<Header.IProps, IState> {
             {this.state.pageKey === "about" && <!About.Component key="about" />}
             {this.state.pageKey === "start" && <!Start.Component key="start" />}
             {this.state.pageKey === "playground" && <!Playground.Component key="playground" />}
-            {this.state.pageKey === "spec" && <!Spec.Component key="spec" />}
             <!div style={{width: "100%", textAlign: "center"}}>
                 {"\u00a9"} <!a href="https://nettek.ca"> Josh Netterfield </a> 2015.
                 Some rights reserved.<!br />
