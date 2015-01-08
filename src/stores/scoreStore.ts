@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import _                = require("lodash");
@@ -35,9 +47,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         this._clear();
     }
 
-    /////////////////////////////////
-    // PROPERTIES AND DERIVED DATA // 
-    /////////////////////////////////
+    /*---- Properties and derived data ----------------------------------------------------------*/
 
     get dirty() {
         return this._dirty; }
@@ -62,9 +72,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
     get visualCursor() {
         return this._visualCursor; }
 
-    ////////////////////
-    // STAVE MUTATORS // 
-    ////////////////////
+    /*---- Staff Mutators -----------------------------------------------------------------------*/
 
     ctxFromSnapshot(pointerData: C.IPointerData, voices: Array<C.IVoice>, assertionPolicy: Annotator.AssertionPolicy): Annotator.Context {
         var i: number;
@@ -144,9 +152,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
 
     ensureSoundfontLoaded: (soundfont: string, avoidEvent?: boolean) => void = (s: string, e?: boolean) => false;
 
-    /////////////
-    // STATICS // 
-    /////////////
+    /*---- Statics ------------------------------------------------------------------------------*/
 
     static parse(src: string): { voices: Array<C.IVoice>; header: C.ScoreHeader; } {
         var song: { header: C.ScoreHeader; voices: Array<C.IVoice>; } = null;
@@ -181,9 +187,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
 
     static PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
-    //////////////////
-    // FLUX METHODS // 
-    //////////////////
+    /*---- Store Methods ------------------------------------------------------------------------*/
 
     "DELETE /webapp/song/lineDirty"(action: C.IFluxAction<number>) {
         this._linesToUpdate[action.postData] = false;
@@ -252,9 +256,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         this.emit(C.EventType.MidiOut, out);
     }
 
-    /////////////
-    // PRIVATE //
-    /////////////
+    /*---- Private ------------------------------------------------------------------------------*/
 
     /**
      * Calls Context.anotate on each part with a body

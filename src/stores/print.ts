@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, December 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model        = require("./model");
@@ -15,9 +27,7 @@ import C            = require("./contracts");
  */
 class PrintModel extends Model implements C.MusicXML.PrintComplete {
 
-    ///////////////
-    // I.1 Model //
-    ///////////////
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()          { return C.Type.Print; }
     get visible()       { return false; }
@@ -40,9 +50,7 @@ class PrintModel extends Model implements C.MusicXML.PrintComplete {
         ];
     }
 
-    /////////////////////////////////////////////
-    // I.2 C.MusicXML.PrintComplete properties //
-    /////////////////////////////////////////////
+    /*---- I.2 C.MusicXML.PrintComplete ---------------------------------------------------------*/
 
     measureNumbering:           C.MusicXML.MeasureNumbering;
     partNameDisplay:            C.MusicXML.PartNameDisplay;
@@ -57,10 +65,7 @@ class PrintModel extends Model implements C.MusicXML.PrintComplete {
     staffLayouts:               C.MusicXML.StaffLayout[];
     pageNumber:                 string;
 
-
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData                    = new C.MetreContext(mctx);

@@ -1,10 +1,19 @@
 /**
- * @file The clef model is created by a ClefTool or another model to satisfy
- * a precondition and is read by the Clef view component.
- * 
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                    = require("./model");
@@ -16,8 +25,14 @@ import AttributesModelType      = require("./attributes");  // Cyclic.
 import BarlineModelType         = require("./barline");     // Cyclic.
 import C                        = require("./contracts");
 
+/**
+ * The clef model is created by a ClefTool or another model to satisfy
+ * a precondition and is read by the Clef view component.
+ */
 class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComplete {
-    /* Model */
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
+
     get type()                                          { return C.Type.Clef; }
     get visible():              boolean                 { return this.isVisible !== false && !this.soundOnly; }
     get xPolicy()                                       { return C.RectifyXPolicy.Max; }
@@ -32,7 +47,8 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         ];
     }
 
-    /* ClefModel */
+    /*---- I.2 ClefModel ------------------------------------------------------------------------*/
+
     get displayedClef()                                 { return this._displayedClef || this; }
     set displayedClef(clef: C.MusicXML.ClefComplete)    { this._displayedClef = clef; }
 
@@ -43,11 +59,11 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
     get retryStatus()                                   { return C.IterationStatus.RetryLine; }
     private _displayedClef:     C.MusicXML.ClefComplete;
 
-    /* Extensions */
     /** If false, it's a reminder rather than a change and shouldn't be saved in MusicXML */
     isLocked:                   boolean;
 
-    /* C.MusicXML.Clef */
+    /*---- I.3 C.MusicXML.Clef ------------------------------------------------------------------*/
+
     clefOctaveChange:           string;
     sign:                       string;
     number_:                    number;
@@ -56,30 +72,29 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
     afterBarline:               boolean;
     additional:                 boolean;
 
-    /* C.MusicXML.PrintStyle */
+    /*---- I.4 C.MusicXML.PrintStyle >> Position ------------------------------------------------*/
 
-    /* C.MusicXML.PrintStyle >> Position */
     defaultX: number;
     relativeY: number;
     defaultY: number;
     relativeX: number;
 
-    /* C.MusicXML.PrintStyle >> Font */
+    /*---- I.5 C.MusicXML.PrintStyle >> Font ----------------------------------------------------*/
+
     fontFamily: string;
     fontWeight: C.MusicXML.NormalBold;
     fontStyle: C.MusicXML.NormalItalic;
     fontSize: string;
 
-    /* C.MusicXML.PrintStyle >> Color */
+    /*---- I.6 C.MusicXML.PrintStyle >> Color ---------------------------------------------------*/
+
     color: string;
 
-    /* C.MusicXML.PrintObject */
+    /*---- I.7 C.MusicXML.PrintObject -----------------------------------------------------------*/
+
     printObject: boolean;
 
-
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     constructor(spec: C.MusicXML.Clef, annotated: boolean) {
         super(spec, annotated);
@@ -168,7 +183,8 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         return C.IterationStatus.Success;
     }
 
-    /* Convenience */
+    /*---- III. Util ----------------------------------------------------------------------------*/
+
     private _clefIsRedundant(ctx: Annotator.Context): boolean {
         var possiblePrevClef = ctx.prev(c => c.priority === C.Type.Clef || c.priority === C.Type.NewLine);
         var prevClef: C.MusicXML.Clef = possiblePrevClef && possiblePrevClef.type === C.Type.Clef ? <any> possiblePrevClef : null;
@@ -182,7 +198,8 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         return false;
     }
 
-    /* Static */
+    /*---- IV. Static ---------------------------------------------------------------------------*/
+
     static createClef = function (ctx: Annotator.Context): C.IterationStatus {
         var clef: C.MusicXML.Clef = <any> ctx.prev(c => c.type === C.Type.Clef) ||
             {

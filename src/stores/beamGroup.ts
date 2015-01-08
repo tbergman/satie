@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
@@ -26,17 +38,14 @@ import TimeSignatureModel   = require("./timeSignature");
  * independently, just as any other model would be.
  */
 class BeamGroupModel extends Model {
-    ///////////////
-    // I.1 Model //
-    ///////////////
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                          { return C.Type.BeamGroup; }
     get xPolicy()                   	{ return C.RectifyXPolicy.Min; }
     get fields() { return ["beamCount", "variableBeams"]; }
 
-    ////////////////////////
-    // I.2 BeamGroupModel //
-    ////////////////////////
+    /*---- I.2 BeamGroupModel -------------------------------------------------------------------*/
 
     get beamCount()                     { return this.beam ? this.beam.length : 0; }
     set beamCount(l: number) {
@@ -58,9 +67,7 @@ class BeamGroupModel extends Model {
     tuplet:             C.MusicXML.TimeModification       // See BeamGroupModel.prototype.tuplet.
     tupletsTemporary:   boolean;
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     constructor(spec: any, placeholder: boolean) {
         super(spec, placeholder);
@@ -189,9 +196,7 @@ class BeamGroupModel extends Model {
         return <any> _.map(this.beam, (b, idx) => b.render(options[idx]));
     }
 
-    ///////////////
-    // III. Util //
-    ///////////////
+    /*---- III. Util ----------------------------------------------------------------------------*/
 
     calcDivisions(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
         var sum = 0;
@@ -201,9 +206,7 @@ class BeamGroupModel extends Model {
         return sum;
     }
 
-    ////////////////
-    // IV. Static //
-    ////////////////
+    /*---- IV. Statics --------------------------------------------------------------------------*/
 
     static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
         var replaceMode         = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BeamGroup;

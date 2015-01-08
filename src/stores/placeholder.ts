@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, September 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
@@ -41,9 +53,8 @@ import TimeSignatureModel   = require("./timeSignature");
  * not on beat 3.
  */
 class PlaceholderModel extends Model {
-    ///////////////
-    // I.1 Model //
-    ///////////////
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get visible()                                       { return false; }
     get xPolicy()                                       { return C.RectifyXPolicy.Invalid; }
@@ -56,17 +67,13 @@ class PlaceholderModel extends Model {
         assert(false, "A PlaceholderModel cannot help but be a placeholder, however much it tries...");
     }
 
-    //////////////////////////
-    // I.2 PlaceholderModel //
-    //////////////////////////
+    /*---- I.2 PlaceholderModel -----------------------------------------------------------------*/
 
     _priority:              C.Type;                     // See Object.prototype._priority
     get priority()                                      { return this._priority; }
     set priority(c: C.Type)                             { this._priority = c; }
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     constructor(spec: {priority: number}, annotated: boolean) {
         super(spec, annotated);
@@ -228,9 +235,7 @@ class PlaceholderModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    ////////////////
-    // IV. Static //
-    ////////////////
+    /*---- IV. Static ---------------------------------------------------------------------------*/
 
     static fillMissingBeats(ctx: Annotator.Context, extraDivisions?: number): C.IterationStatus {
         extraDivisions = extraDivisions || 0;

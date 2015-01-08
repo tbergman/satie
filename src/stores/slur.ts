@@ -1,9 +1,19 @@
 /**
- * @file Occurs before notes of a slur. The notes are neighbors, not children.
- * 
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
@@ -16,18 +26,18 @@ import KeySignatureModel    = require("./keySignature");
 import DurationModel        = require("./duration");
 import TimeSignatureModel   = require("./timeSignature");
 
+/**
+ * @file Occurs before notes of a slur. The notes are neighbors, not children.
+ */
 class SlurGroupModel extends Model {
-    //
-    // I.1 Model
-    //
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                          { return C.Type.Slur; }
     get fields()                        { return ["slur"]; }
     get xPolicy()                       { return C.RectifyXPolicy.Min; }
 
-    //
-    // I.2 SlurGroupModel
-    //
+    /*---- I.2 SlurGroupModel -------------------------------------------------------------------*/
 
     slur:           number;             // See prototype.
     _beam:          BeamGroupModel      = null; // Cannot be added to fields() with initializer.
@@ -40,9 +50,8 @@ class SlurGroupModel extends Model {
     m_x:            number;             // See prototype.
     m_y:            number;             // See prototype.
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
+
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         if (ctx.prev().type === C.Type.Placeholder) {
             this.x          = ctx.prev().x;

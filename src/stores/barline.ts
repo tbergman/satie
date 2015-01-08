@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
@@ -20,9 +32,7 @@ import TimeSignatureModel   = require("./timeSignature");
  */
 class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
 
-    ///////////////
-    // I.1 Model //
-    ///////////////
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                                      { return C.Type.Barline; }
     get xPolicy()                                   { return C.RectifyXPolicy.Max; }
@@ -45,9 +55,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         ];
     }
 
-    ////////////////////////////////////////
-    // I.3 Ripieno Internal and annotated //
-    ////////////////////////////////////////
+    /*---- I.2 BarlineModel ---------------------------------------------------------------------*/
 
     annotatedAccidentalSpacing: number;
     height:                     number;
@@ -56,9 +64,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     temporary:                  boolean;
     yOffset:                    number;
 
-    ////////////////////////////
-    // I.4 C.MusicXML.Barline //
-    ////////////////////////////
+    /*---- I.3 C.MusicXML.Barline ---------------------------------------------------------------*/
 
     segno:                      C.MusicXML.Segno;
     coda:                       C.MusicXML.Coda;
@@ -77,16 +83,12 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     ending:                     C.MusicXML.Ending;
     repeat:                     C.MusicXML.Repeat;
 
-    //////////////////////////////
-    // I.5 C.MusicXML.Editorial //
-    //////////////////////////////
+    /*---- I.4 C.MusicXML.Editorial -------------------------------------------------------------*/
 
     footnote:                   C.MusicXML.Footnote;
     level:                      C.MusicXML.Level;
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean, engraved: boolean) {
         super(spec, annotated, engraved);
@@ -235,9 +237,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return C.IterationStatus.Success;
     }
 
-    /////////////////
-    // IV. Statics //
-    /////////////////
+    /*---- IV. Statics --------------------------------------------------------------------------*/
 
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).

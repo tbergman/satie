@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model            = require("./model");
@@ -22,31 +34,26 @@ import PrintModel       = require("./print");
  */
 class NewlineModel extends Model {
 
-    ///////////////
-    // I.1 Model //
-    ///////////////
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()          { return C.Type.NewLine; }
     get xPolicy()       { return C.RectifyXPolicy.Max; }
 
-    //////////////////////
-    // I.2 NewlineModel //
-    //////////////////////
+    /*---- I.2 NewlineModel ---------------------------------------------------------------------*/
 
     extraWidth:         number;
     braceY:             number;
     braceY2:            number;
     staveW:             number;
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     recordMetreDataImpl(mctx: C.MetreContext) {
         this.ctxData = new C.MetreContext(mctx);
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+        /*---- Check State ------------------------------------------------------------*/
         if (ctx.prev().priority !== C.Type.Print) {
             return ctx.insertPast(new PrintModel({}, true));
         }
@@ -81,12 +88,11 @@ class NewlineModel extends Model {
         this.braceY2            = this.y;
         NewlineModel.explode(ctx);
 
-        // Pages should not overflow.
+        /*---- Update state -----------------------------------------------------------*/
 
         ctx.lines[ctx.line].y   = ctx.y;
         ctx.lines[ctx.line].x   = ctx.x;
 
-        /////////////////////////////////////////////////////////////
         var print               = ctx.print;
 
         var systemMargins       = print.systemLayout.systemMargins;
@@ -106,7 +112,6 @@ class NewlineModel extends Model {
         ctx.lines[ctx.line]._attributes[ctx.part.id].time = ctx.attributes.time;
 
         ctx.line                = ctx.line + 1;
-        /////////////////////////////////////////////////////////////
 
         ctx.smallest            = C.MAX_NUM;
         ctx.minBottomPaddings   = _.times(ctx._voices.length + 1, () => 0);
@@ -114,6 +119,8 @@ class NewlineModel extends Model {
 
         this.x                  = ctx.x;
         this.staveW             = ctx.maxX - ctx.x;
+
+        /*---- Record information for view --------------------------------------------*/
 
         /*
          * 8 is the padding between BeginModel and ClefModel.
@@ -163,9 +170,7 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    //////////////////////
-    // III. Convenience //
-    //////////////////////
+    /*---- III. Util ----------------------------------------------------------------------------*/
 
     /**
      * Spaces things out to fill the entire page width, while maintaining
@@ -257,9 +262,7 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
     }
 
-    ////////////////
-    // IV. Static //
-    ////////////////
+    /*---- IV. Statics --------------------------------------------------------------------------*/
 
     static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
         if (ctx.score) {

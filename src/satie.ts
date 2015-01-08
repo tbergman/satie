@@ -1,5 +1,6 @@
 /**
- * (c) Josh Netterfield <joshua@nettek.ca> 2015
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as

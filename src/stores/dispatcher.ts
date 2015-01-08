@@ -1,16 +1,19 @@
 ﻿/**
- * @file Dispatcher based on the Flux TodoMVC Tutorial.
- * http://facebook.github.io/react/docs/flux-todo-list.html
- * 
- * "Flux is the application architecture that Facebook uses for building
- * client-side web applications. It complements React"s composable view
- * components by utilizing a unidirectional data flow. It's more of a pattern
- * rather than a formal framework, and you can start using Flux immediately
- * without a lot of new code."
- * 
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Promise = require("es6-promise");
@@ -24,6 +27,16 @@ import types = require("./types");
 var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 
+/**
+ * @file Dispatcher lightly based on the Flux TodoMVC Tutorial.
+ * http://facebook.github.io/react/docs/flux-todo-list.html
+ * 
+ * "Flux is the application architecture that Facebook uses for building
+ * client-side web applications. It complements React"s composable view
+ * components by utilizing a unidirectional data flow. It's more of a pattern
+ * rather than a formal framework, and you can start using Flux immediately
+ * without a lot of new code."
+ */
 class Dispatcher implements C.IDispatcher {
     constructor() {
         types.ensureRegistered();

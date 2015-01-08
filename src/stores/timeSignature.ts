@@ -1,7 +1,19 @@
 /**
- * @copyright (C) Joshua Netterfield. Proprietary and confidential.
- * Unauthorized copying of this file, via any medium is strictly prohibited.
- * Written by Joshua Netterfield <joshua@nettek.ca>, August 2014
+ * (C) Josh Netterfield <joshua@nettek.ca> 2015.
+ * Part of the Satie music engraver <https://github.com/ripieno/satie>.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
@@ -16,9 +28,8 @@ import DurationModelType    = require("./duration");        // Cyclic.
 import KeySignatureModel 	= require("./keySignature");
 
 class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.TimeComplete {
-    ///////////////
-    // I.1 Model //
-    ///////////////
+
+    /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                                              { return C.Type.TimeSignature; }
     get xPolicy()                   						{ return C.RectifyXPolicy.Max; }
@@ -30,18 +41,14 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
             "color", "halign", "valign", "printObject"];
     }
 
-    ///////////////////////
-    // I.2 TimeSignature //
-    ///////////////////////
+    /*---- I.2 TimeSignature --------------------------------------------------------------------*/
 
     _annotatedSpacing:              number;
     temporary:                      boolean;
     selected:                       boolean;
     _displayTimeSignature:          C.ISimpleTimeSignature; // See prototype.
 
-    ////////////////////////////////
-    // I.2 TimeSignature (simple) //
-    ////////////////////////////////
+    /*---- I.3 TimeSignature (simple) -----------------------------------------------------------*/
 
     get ts(): C.ISimpleTimeSignature {
         return C.tsToSimpleTS(this);
@@ -78,81 +85,58 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
             _.reduce(time.split("+"), (memo, time) => memo + parseInt(time, 10), 0), 0);
     }
 
-    /////////////////////////
-    // I.3 C.MusicXML.Time //
-    /////////////////////////
+    /*---- I.3 C.MusicXML.Time ------------------------------------------------------------------*/
 
     interchangeables:               C.MusicXML.Interchangeable[];
     beats:                          string[];
     beatTypes:                      number[];
     senzaMisura:                    boolean;
 
-    ///////////////////////////////
-    // I.4 C.MusicXML.TimeSymbol //
-    ///////////////////////////////
+    /*---- I.4 C.MusicXML.TimeSymbol ------------------------------------------------------------*/
 
     symbol:                         C.MusicXML.TimeSymbolType;
 
-    //////////////////////////////
-    // I.5 C.MusicXML.Seperator //
-    //////////////////////////////
+    /*---- I.5 C.MusicXML.Seperator -------------------------------------------------------------*/
 
     separator:                      C.MusicXML.SeparatorType;
 
-
-    //////////////////////////////////////////////////////////////////////
-    // I.6.a.i C.MusicXML.PrintStyleAlign / PrintStyle / EditorialVoice //
-    //////////////////////////////////////////////////////////////////////
+    /*---- I.6 C.MusicXML.PrintStyleAlign >> PrintStyle >> EditoralVoice ------------------------*/
 
     voice:                          string;
     footnote:                       C.MusicXML.Footnote;
     level:                          C.MusicXML.Level;
 
-    /////////////////////////////////////////////////////////////////
-    // I.6.a.ii C.MusicXML.PrintStyleAlign / PrintStyle / Position //
-    /////////////////////////////////////////////////////////////////
+    /*---- I.7 C.MusicXML.PrintStyleAlign >> PrintStyle >> Position -----------------------------*/
 
     defaultX:                       number;
     relativeY:                      number;
     defaultY:                       number;
     relativeX:                      number;
 
-    ///////////////////////////////////////////////////////////////
-    // I.6.a.iii C.MusicXML.PrintStyleAlign / PrintStyle / Font //
-    //////////////////////////////////////////////////////////////
+    /*---- I.8 C.MusicXML.PrintStyleAlign >> PrintStyle >> Font ---------------------------------*/
 
     fontFamily:                     string;
     fontWeight:                     C.MusicXML.NormalBold;
     fontStyle:                      C.MusicXML.NormalItalic;
     fontSize:                       string;
 
-    //////////////////////////////////////////////////////////////
-    // I.6.a.iv C.MusicXML.PrintStyleAlign / PrintStyle / Color //
-    //////////////////////////////////////////////////////////////
+    /*---- I.9 C.MusicXML.PrintStyleAlign >> PrintStyle >> Color --------------------------------*/
 
     color:                          string;
 
-    ////////////////////////////////////////////////////////////
-    // I.6.b C.MusicXML.PrintStyleAlign / PrintStyle / HAlign //
-    ////////////////////////////////////////////////////////////
+    /*---- I.a C.MusicXML.PrintStyleAlign >> PrintStyle >> HAlign -------------------------------*/
 
     halign:                         C.MusicXML.LeftCenterRight;
 
-    ////////////////////////////////////////////////////////////
-    // I.6.c C.MusicXML.PrintStyleAlign / PrintStyle / VAlign //
-    ////////////////////////////////////////////////////////////
+    /*---- I.b C.MusicXML.PrintStyleAlign >> PrintStyle >> VAlign -------------------------------*/
 
     valign:                         C.MusicXML.TopMiddleBottomBaseline;
 
-    ////////////////////////////////////////////////////
-    // I.6.d C.MusicXML.PrintStyleAlign / PrintObject //
-    ////////////////////////////////////////////////////
+    /*---- I.c C.MusicXML.PrintStyleAlign >> PrintObject ----------------------------------------*/
 
     printObject:                    boolean;
 
-    ////////////////////
-    // II. Life-cycle //
-    ////////////////////
+    /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     constructor(spec: C.MusicXML.Time, annotated: boolean) {
         super(spec, annotated);
@@ -226,9 +210,7 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
         };
     }
 
-    /////////////////
-    // IV. Statics //
-    /////////////////
+    /*---- IV. Statics --------------------------------------------------------------------------*/
 
     static createTS = (ctx: Annotator.Context): C.IterationStatus => {
         ctx.insertPast(new TimeSignatureModel({
