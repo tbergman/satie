@@ -222,13 +222,6 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DurationModel.prototype, "direction", {
-        get: function () {
-            return isNaN(this.forceMiddleNoteDirection) ? undefined : this.forceMiddleNoteDirection;
-        },
-        enumerable: true,
-        configurable: true
-    });
     Object.defineProperty(DurationModel.prototype, "displayCount", {
         get: function () {
             return this._displayCount || this.count;
@@ -504,22 +497,35 @@ var DurationModel = (function (_super) {
                 ctx.accidentalsByStaff[this.staff][this.chord[i].step] = C.InvalidAccidental;
             }
         }
+        this.stemHeight = this._getStemHeight();
         this.continuingNotations = _(this._p_notes).map(function (note) {
             var n = note.notationObj;
             if (!n) {
                 return null;
             }
             var toDisplay = [];
-            if (n.tuplets) {
+            if (n.tuplets && !_this.inBeam) {
                 toDisplay = toDisplay.concat(n.tuplets.map(function (tuplet) {
                     if (tuplet.type !== 0 /* Start */) {
                         return null;
                     }
                     var stop = ctx.next(function (t) { return t.isNote && _.any(t._p_notes, function (note) { return _.any(note.notationObj.tuplets, function (t) { return t.type === 1 /* Stop */; }); }); });
+                    assert(!!stop, "Unterminated beam!!!");
+                    var intermediates = [_this];
+                    var idx = _this.idx;
+                    do {
+                        ++idx;
+                        if (ctx.body[idx].isNote) {
+                            intermediates.push(ctx.body[idx]);
+                        }
+                    } while (ctx.body[idx] && ctx.body[idx] !== stop);
                     return {
-                        body: [_this, stop],
+                        body: intermediates,
                         type: "tuplet",
-                        notation: tuplet
+                        notation: tuplet,
+                        getDirection: function () {
+                            return _.reduce(intermediates, function (sum, note) { return sum + note.averageLine / intermediates.length; }, 0) >= 3 ? -1 : 1;
+                        }
                     };
                 }).filter(function (t) { return !!t; }));
             }
@@ -780,6 +786,94 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(DurationModel.prototype, "direction", {
+        get: function () {
+            if (!isNaN(this.forceMiddleNoteDirection)) {
+                return this.forceMiddleNoteDirection;
+            }
+            var average = this.averageLine;
+            if (average > 3) {
+                return -1;
+            }
+            else if (average <= 3) {
+                return 1;
+            }
+            assert(0);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DurationModel.prototype, "averageLine", {
+        get: function () {
+            var _this = this;
+            return _.reduce(this.lines, function (memo, i) { return memo + i / _this.lines.length; }, 0);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DurationModel.prototype, "lowestLine", {
+        get: function () {
+            return _.reduce(this.lines, function (a, b) { return Math.min(a, b); }, C.MAX_NUM);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DurationModel.prototype, "highestLine", {
+        get: function () {
+            return _.reduce(this.lines, function (a, b) { return Math.max(a, b); }, -C.MAX_NUM);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DurationModel.prototype, "startingLine", {
+        get: function () {
+            return this.direction === 1 ? this.lowestLine : this.highestLine;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(DurationModel.prototype, "heightDeterminingLine", {
+        get: function () {
+            return this.direction === 1 ? this.highestLine : this.lowestLine;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    DurationModel.prototype._getStemHeight = function () {
+        var heightFromOtherNotes = (this.highestLine - this.lowestLine) * 10;
+        var idealStemHeight = DurationModel.IDEAL_STEM_HEIGHT + heightFromOtherNotes;
+        var minStemHeight = DurationModel.MIN_STEM_HEIGHT + heightFromOtherNotes;
+        var start = this.heightDeterminingLine * 10;
+        var idealExtreme = start + this.direction * idealStemHeight;
+        var result;
+        if (idealExtreme >= 65) {
+            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
+        }
+        else if (idealExtreme <= -15) {
+            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
+        }
+        else {
+            result = 35;
+        }
+        if (start > 30 && this.direction === -1 && start - result > 30) {
+            result = start - 30;
+        }
+        else if (start < 30 && this.direction === 1 && start + result < 30) {
+            result = 30 - start;
+        }
+        return result;
+    };
+    Object.defineProperty(DurationModel.prototype, "onLedger", {
+        get: function () {
+            var lowest = this.lowestLine;
+            var highest = this.highestLine;
+            return lowest < 0.5 || highest > 5.5;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    DurationModel.IDEAL_STEM_HEIGHT = 35;
+    DurationModel.MIN_STEM_HEIGHT = 25;
     DurationModel.clefOffsets = {
         G: -3.5,
         F: 2.5,

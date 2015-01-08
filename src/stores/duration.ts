@@ -157,10 +157,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         this._extraWidth = w;
     }
 
-    get direction() {
-        return isNaN(this.forceMiddleNoteDirection) ? undefined : this.forceMiddleNoteDirection;
-    }
-
     /**
      * Returns the length of the beat, without dots or tuplet modifiers
      * that should be rendered. This can differ from the actual count
@@ -530,6 +526,9 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
         }
 
+        // Set height
+        this.stemHeight = this._getStemHeight();
+
         // Set continuing notations.
         this.continuingNotations = <any> _(this._p_notes)
             .map((note: DurationModel.MXMLNote) => {
@@ -538,7 +537,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     return null;
                 }
                 var toDisplay: any[] = [];
-                if (n.tuplets) {
+                if (n.tuplets && !this.inBeam) {
                     toDisplay = toDisplay.concat(n.tuplets.map(tuplet => {
                         if (tuplet.type !== C.MusicXML.StartStop.Start) {
                             return null;
@@ -548,10 +547,26 @@ class DurationModel extends Model implements C.IPitchDuration {
                                 note => _.any(note.notationObj.tuplets,
                                     t => t.type === C.MusicXML.StartStop.Stop)
                             ));
+
+                        assert(!!stop, "Unterminated beam!!!");
+
+                        var intermediates = [this];
+                        var idx = this.idx;
+
+                        do {
+                            ++idx;
+                            if (ctx.body[idx].isNote) {
+                                intermediates.push(<DurationModel> ctx.body[idx]);
+                            }
+                        } while(ctx.body[idx] && ctx.body[idx] !== stop);
+
                         return {
-                            body:       [this, stop],
-                            type:       "tuplet",
-                            notation:   tuplet
+                            body:           intermediates,
+                            type:       	"tuplet",
+                            notation:   	tuplet,
+                            getDirection:   function(): number {
+                                return _.reduce(intermediates, (sum, note) => sum + note.averageLine/intermediates.length, 0) >= 3 ? -1 : 1;
+                            }
                         };
                     }).filter(t => !!t));
                 }
@@ -871,6 +886,73 @@ class DurationModel extends Model implements C.IPitchDuration {
      */
     get staff() {
         return _.chain(this._p_notes).map(n => n.staff).max().value();
+    }
+
+    /*---- III.2 Vertical layout ----------------------------------------------------------------*/
+    get direction(): number {
+        if (!isNaN(this.forceMiddleNoteDirection)) {
+            return this.forceMiddleNoteDirection;
+        }
+
+        var average = this.averageLine;
+
+        if (average > 3) {
+            return -1;
+        } else if (average <= 3) {
+            return 1;
+        }
+        assert(0);
+    }
+    get averageLine(): number {
+        return _.reduce(this.lines, (memo: number, i: number) => memo + i/this.lines.length, 0);
+    }
+    get lowestLine() {
+        return _.reduce(this.lines, (a: number, b: number) => Math.min(a, b), C.MAX_NUM);
+    }
+    get highestLine() {
+        return _.reduce(this.lines, (a: number, b: number) => Math.max(a, b), -C.MAX_NUM);
+    }
+    get startingLine() {
+        return this.direction === 1 ? this.lowestLine : this.highestLine;
+    }
+    get heightDeterminingLine() {
+        return this.direction === 1 ? this.highestLine : this.lowestLine;
+    }
+
+    static IDEAL_STEM_HEIGHT = 35;
+	static MIN_STEM_HEIGHT = 25;
+
+    stemHeight: number;
+    private _getStemHeight(): number {
+        var heightFromOtherNotes = (this.highestLine - this.lowestLine) * 10;
+        var idealStemHeight = DurationModel.IDEAL_STEM_HEIGHT + heightFromOtherNotes;
+        var minStemHeight = DurationModel.MIN_STEM_HEIGHT + heightFromOtherNotes;
+
+        var start = this.heightDeterminingLine*10;
+        var idealExtreme = start + this.direction*idealStemHeight;
+
+        var result: number;
+        if (idealExtreme >= 65) {
+            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
+        } else if (idealExtreme <= -15) {
+            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
+        } else {
+            result = 35;
+        }
+
+        // All stems should in the main voice should touch the center line.
+        if (start > 30 && this.direction === -1 && start - result > 30) {
+            result = start - 30;
+        } else if (start < 30 && this.direction === 1 && start + result < 30) {
+            result = 30 - start;
+        }
+
+        return result;
+    }
+    get onLedger() {
+        var lowest = this.lowestLine;
+        var highest = this.highestLine;
+        return lowest < 0.5 || highest > 5.5;
     }
 
     /*---- IV. Statics --------------------------------------------------------------------------*/
@@ -1372,9 +1454,10 @@ module DurationModel {
     }
 
     export interface IContinuingNotation {
-        body:       DurationModel[];
-        type:       string;
-        notation:   any;
+        body:           DurationModel[];
+        type:       	string;
+        notation:   	any;
+        getDirection:   () => number;
     }
 }
 

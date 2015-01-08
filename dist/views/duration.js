@@ -48,7 +48,7 @@ var Duration = (function (_super) {
         if (spec.isRest) {
             return React.createElement(Rest.Component, { dotOffset: dotOffset, dotted: spec.displayDots, line: spec.lines, key: spec.key, isNote: true, notehead: spec.restHead, multiRest: spec.multiRest, spacing: spec.spacing, stroke: spec.color, x: spec.x, y: spec.y }, notations);
         }
-        var note = React.createElement(Note.Component, { accidentals: spec._displayedAccidentals, accStrokes: spec.accStrokes, direction: this.props.direction || spec.direction, dotOffset: dotOffset, dotted: spec.displayDots, flag: spec.flag, hasStem: spec.hasStem, isNote: true, key: spec.key, lyrics: lyrics, line: spec.lines, notehead: spec.noteheadGlyph, secondaryStroke: spec.color, stemHeight: this.props.stemHeight, strokes: spec.strokes, tieTo: spec.tieTo && spec.tieTo.x, x: zeroOffsetMode ? 0 : spec.x, y: zeroOffsetMode ? 0 : spec.y }, notations);
+        var note = React.createElement(Note.Component, { accidentals: spec._displayedAccidentals, accStrokes: spec.accStrokes, direction: this.props.direction || spec.direction, dotOffset: dotOffset, dotted: spec.displayDots, flag: spec.flag, hasStem: spec.hasStem, isNote: true, onLedger: spec.onLedger, lowestLine: spec.lowestLine, highestLine: spec.highestLine, startingLine: spec.startingLine, key: spec.key, lyrics: lyrics, lines: spec.lines, notehead: spec.noteheadGlyph, secondaryStroke: spec.color, stemHeight: this.props.spec.stemHeight || this.props.stemHeight, strokes: spec.strokes, tieTo: spec.tieTo && spec.tieTo.x, x: zeroOffsetMode ? 0 : spec.x, y: zeroOffsetMode ? 0 : spec.y }, notations);
         if (zeroOffsetMode) {
             return React.createElement("g", { key: spec.key, x: spec.x, y: spec.y, transform: "translate(" + spec.x + "," + spec.y + ")" }, note);
         }
@@ -59,21 +59,30 @@ var Duration = (function (_super) {
     Duration.prototype._mapContinuingNotation = function (m, idx) {
         switch (m.type) {
             case "tuplet":
+                var d = m.getDirection();
+                var first = m.body[0];
+                var last = m.body[m.body.length - 1];
+                var offset = 5.0 * d;
+                var line1 = (d === -1 ? first.lowestLine + d * first.stemHeight / 40 : first.highestLine + d * first.stemHeight / 40);
+                var line2 = (d === -1 ? last.lowestLine + d * last.stemHeight / 40 : last.highestLine + d * last.stemHeight / 40);
+                line1 = d === -1 ? Math.min(line1, 4) : Math.max(line1, 1);
+                line2 = d === -1 ? Math.min(line2, 4) : Math.max(line2, 1);
                 return React.createElement(UnbeamedTuplet.Component, {
                     key: "cn_" + idx,
-                    direction: this.props.spec.direction,
-                    line1: m.body[0].lines[0],
-                    line2: m.body[1].lines[1],
+                    direction: d,
+                    line1: line1 + offset,
+                    line2: line2 + offset,
                     stemWidth: 0,
                     stroke: "black",
-                    tuplet: m.notation,
+                    tuplet: this.props.spec.tuplet,
                     tupletsTemporary: null,
-                    width: m.body[1].x - m.body[0].x,
-                    x: m.body[1].x,
-                    y: m.body[0].y
+                    width: last.x - first.x,
+                    x: first.x,
+                    y: first.y
                 });
             default:
-                assert(false, "Not implemented");
+                console.warn("Ignoring notation of type " + m.type);
+                return null;
         }
     };
     return Duration;

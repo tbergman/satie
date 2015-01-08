@@ -29,8 +29,8 @@ import SlurModel        = require("../stores/slur");
 
 class Note extends TypedReact.Component<Note.IProps, {}> {
     render() {
-        var direction = this.direction();
-        var lines = this.getLines();
+        var direction = this.props.direction;
+        var lines = this.props.lines;
         var linesObj: { [key: string]: boolean } = {};
         var linesOffset: { [key: string]: number } = {};
         var i: number;
@@ -80,17 +80,17 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     y={this.props.y}
                     key="_2"
                     direction={direction}
-                    line={this.getStartingLine()}
+                    line={this.props.startingLine}
                     stroke={this.props.secondaryStroke}
-                    height={this.getStemHeight()}
+                    height={this.props.stemHeight}
                     notehead={this.props.notehead} />}
                 {this.props.flag && <!Flag.Component
                     key="_3"
                     x={this.props.x}
                     y={this.props.y}
-                    line={this.getStartingLine()}
+                    line={this.props.startingLine}
                     stroke={this.props.secondaryStroke}
-                    stemHeight={this.getStemHeight()}
+                    stemHeight={this.props.stemHeight}
                     stemWidth={1.4}
                     flag={this.props.flag}
                     notehead={this.props.notehead}
@@ -99,7 +99,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     (component: React.ReactElement<NoteNotation.IProps>, idx: number) => {
                         component.key = "_4_" + idx;
                         component.props.direction = direction;
-                        component.props.line = this.getStartingLine();
+                        component.props.line = this.props.startingLine;
                         component.props.x = this.props.x;
                         component.props.y = this.props.y;
                         component.props.idx = idx;
@@ -119,7 +119,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         return <Note.IProps> {
             x: 0,
             y: 0,
-            line: 3,
+            lines: 3,
             dotted: null,
             hasStem: true,
             accidentals: null,
@@ -127,81 +127,13 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         };
     }
 
-    direction(): number {
-        if (this.props.direction) {
-            return this.props.direction;
-        }
-        var consider: number;
-        if (this.props.line.length) {
-            consider = _.reduce(this.props.line, (memo: number, i: number) => memo + i/this.props.line.length, 0);
-        } else {
-            consider = this.props.line;
-        }
-
-        if (consider > 3) {
-            return -1;
-        } else if (consider <= 3) {
-            return 1;
-        }
-        assert(0);
-    }
-    getLines(): Array<number> {
-        return this.props.line.length ? this.props.line : [this.props.line];
-    }
-    getLowestLine() {
-        return _.reduce(this.getLines(), (a: number, b: number) => Math.min(a, b), 99999);
-    }
-    getHighestLine() {
-        return _.reduce(this.getLines(), (a: number, b: number) => Math.max(a, b), -99999);
-    }
-    getStartingLine() {
-        return this.direction() === 1 ? this.getLowestLine() : this.getHighestLine();
-    }
-    getHeightDeterminingLine() {
-        return this.direction() === 1 ? this.getHighestLine() : this.getLowestLine();
-    }
-    getStemHeight(): number {
-        if (this.props.stemHeight) {
-            return this.props.stemHeight;
-        }
-
-        var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 10;
-        var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes;
-        var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes;
-
-        var start = this.getHeightDeterminingLine()*10;
-        var idealExtreme = start + this.direction()*idealStemHeight;
-
-        var result: number;
-        if (idealExtreme >= 65) {
-            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
-        } else if (idealExtreme <= -15) {
-            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
-        } else {
-            result = 35;
-        }
-
-        // All stems should in the main voice should touch the center line.
-        if (start > 30 && this.direction() === -1 && start - result > 30) {
-            result = start - 30;
-        } else if (start < 30 && this.direction() === 1 && start + result < 30) {
-            result = 30 - start;
-        }
-
-        return result;
-    }
-    isOnLedger() {
-        var lowest = this.getLowestLine();
-        var highest = this.getHighestLine();
-        return lowest < 0.5 || highest > 5.5;
-    }
     ledgerLines(): any {
-        if (!this.isOnLedger()) { // check is here to force isOnLedgerLine to be accurate
+        if (!this.props.onLedger) {
             return false;
         }
         var ret: Array<React.ReactElement<any>> = [];
-        var lowest = this.getLowestLine();
-        var highest = this.getHighestLine();
+        var lowest = this.props.lowestLine;
+        var highest = this.props.highestLine;
         if (lowest < 0.5) {
             ret = ret.concat(_.times(Math.floor(1 - lowest), idx =>
                 <!LedgerLine.Component
@@ -224,7 +156,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         return ret;
     }
     accidentalSpacing() {
-        if (this.isOnLedger()) {
+        if (this.props.onLedger) {
             return 14.4;
         } else {
             return 12;
@@ -238,7 +170,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         var accidentals = this.props.accidentals;
         accidentals = accidentals.length ? accidentals : [accidentals];
 
-        var l = this.getLines();
+        var l = this.props.lines;
         var glyphOffset = 0;
 
         return _.map(accidentals, (acc: any, idx: number) => {
@@ -319,17 +251,14 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
         return <!Slur.Component
             key={0}
             spec={<SlurModel>{
-                direction: -this.direction(),
+                direction: -this.props.direction,
                 x: this.props.x + fullWidth/8 + 6,
                 y: this.props.y,
-                lines1: [this.getStartingLine()],
-                lines2: [this.getStartingLine()],
+                lines1: [this.props.startingLine],
+                lines2: [this.props.startingLine],
                 slurW: fullWidth*0.75}} />;
     }
 };
-
-var IDEAL_STEM_HEIGHT = 35;
-var MIN_STEM_HEIGHT = 25;
 
 module Note {
     "use strict";
@@ -356,8 +285,11 @@ module Note {
         idx?: number;
         flag?: string;
         hasStem?: boolean;
+        onLedger?: boolean;
         key?: string;
-        line?: any;
+        lines?: any;
+        lowestLine?: number;
+        highestLine?: number;
         lyrics?: any;
         notehead?: string;
         secondaryStroke?: string;
@@ -366,6 +298,7 @@ module Note {
         tieTo?: any;
         x?: number;
         y?: number;
+        startingLine?: number;
     }
 }
 

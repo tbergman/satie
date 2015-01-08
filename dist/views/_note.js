@@ -22,8 +22,8 @@ var Note = (function (_super) {
     }
     Note.prototype.render = function () {
         var _this = this;
-        var direction = this.direction();
-        var lines = this.getLines();
+        var direction = this.props.direction;
+        var lines = this.props.lines;
         var linesObj = {};
         var linesOffset = {};
         var i;
@@ -52,10 +52,10 @@ var Note = (function (_super) {
                 }
             }
         }
-        return React.createElement("g", null, _.map(lines, function (line, idx) { return React.createElement("g", { key: "_" + idx }, React.createElement(NoteHead.Component, { key: "_0", x: _this.props.x + (linesOffset[line] || 0), y: _this.props.y, line: line, stroke: _this.props.strokes[idx], notehead: _this.props.notehead }), _this.props.dotted ? _.times(_this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: "_1_" + idx, stroke: _this.props.strokes[0], radius: 2.4, x: _this.props.x + _this.props.dotOffset, y: _this.props.y, line: line }); }) : null, _this.props.hasStem && React.createElement(NoteStem.Component, { x: _this.props.x, y: _this.props.y, key: "_2", direction: direction, line: _this.getStartingLine(), stroke: _this.props.secondaryStroke, height: _this.getStemHeight(), notehead: _this.props.notehead }), _this.props.flag && React.createElement(Flag.Component, { key: "_3", x: _this.props.x, y: _this.props.y, line: _this.getStartingLine(), stroke: _this.props.secondaryStroke, stemHeight: _this.getStemHeight(), stemWidth: 1.4, flag: _this.props.flag, notehead: _this.props.notehead, direction: direction }), _this.props.children && _.map(_this.props.children, function (component, idx) {
+        return React.createElement("g", null, _.map(lines, function (line, idx) { return React.createElement("g", { key: "_" + idx }, React.createElement(NoteHead.Component, { key: "_0", x: _this.props.x + (linesOffset[line] || 0), y: _this.props.y, line: line, stroke: _this.props.strokes[idx], notehead: _this.props.notehead }), _this.props.dotted ? _.times(_this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: "_1_" + idx, stroke: _this.props.strokes[0], radius: 2.4, x: _this.props.x + _this.props.dotOffset, y: _this.props.y, line: line }); }) : null, _this.props.hasStem && React.createElement(NoteStem.Component, { x: _this.props.x, y: _this.props.y, key: "_2", direction: direction, line: _this.props.startingLine, stroke: _this.props.secondaryStroke, height: _this.props.stemHeight, notehead: _this.props.notehead }), _this.props.flag && React.createElement(Flag.Component, { key: "_3", x: _this.props.x, y: _this.props.y, line: _this.props.startingLine, stroke: _this.props.secondaryStroke, stemHeight: _this.props.stemHeight, stemWidth: 1.4, flag: _this.props.flag, notehead: _this.props.notehead, direction: direction }), _this.props.children && _.map(_this.props.children, function (component, idx) {
             component.key = "_4_" + idx;
             component.props.direction = direction;
-            component.props.line = _this.getStartingLine();
+            component.props.line = _this.props.startingLine;
             component.props.x = _this.props.x;
             component.props.y = _this.props.y;
             component.props.idx = idx;
@@ -67,88 +67,21 @@ var Note = (function (_super) {
         return {
             x: 0,
             y: 0,
-            line: 3,
+            lines: 3,
             dotted: null,
             hasStem: true,
             accidentals: null,
             strokes: ["black"]
         };
     };
-    Note.prototype.direction = function () {
-        var _this = this;
-        if (this.props.direction) {
-            return this.props.direction;
-        }
-        var consider;
-        if (this.props.line.length) {
-            consider = _.reduce(this.props.line, function (memo, i) { return memo + i / _this.props.line.length; }, 0);
-        }
-        else {
-            consider = this.props.line;
-        }
-        if (consider > 3) {
-            return -1;
-        }
-        else if (consider <= 3) {
-            return 1;
-        }
-        assert(0);
-    };
-    Note.prototype.getLines = function () {
-        return this.props.line.length ? this.props.line : [this.props.line];
-    };
-    Note.prototype.getLowestLine = function () {
-        return _.reduce(this.getLines(), function (a, b) { return Math.min(a, b); }, 99999);
-    };
-    Note.prototype.getHighestLine = function () {
-        return _.reduce(this.getLines(), function (a, b) { return Math.max(a, b); }, -99999);
-    };
-    Note.prototype.getStartingLine = function () {
-        return this.direction() === 1 ? this.getLowestLine() : this.getHighestLine();
-    };
-    Note.prototype.getHeightDeterminingLine = function () {
-        return this.direction() === 1 ? this.getHighestLine() : this.getLowestLine();
-    };
-    Note.prototype.getStemHeight = function () {
-        if (this.props.stemHeight) {
-            return this.props.stemHeight;
-        }
-        var heightFromOtherNotes = (this.getHighestLine() - this.getLowestLine()) * 10;
-        var idealStemHeight = IDEAL_STEM_HEIGHT + heightFromOtherNotes;
-        var minStemHeight = MIN_STEM_HEIGHT + heightFromOtherNotes;
-        var start = this.getHeightDeterminingLine() * 10;
-        var idealExtreme = start + this.direction() * idealStemHeight;
-        var result;
-        if (idealExtreme >= 65) {
-            result = Math.max(minStemHeight, idealStemHeight - (idealExtreme - 65));
-        }
-        else if (idealExtreme <= -15) {
-            result = Math.max(minStemHeight, idealStemHeight - (-15 - idealExtreme));
-        }
-        else {
-            result = 35;
-        }
-        if (start > 30 && this.direction() === -1 && start - result > 30) {
-            result = start - 30;
-        }
-        else if (start < 30 && this.direction() === 1 && start + result < 30) {
-            result = 30 - start;
-        }
-        return result;
-    };
-    Note.prototype.isOnLedger = function () {
-        var lowest = this.getLowestLine();
-        var highest = this.getHighestLine();
-        return lowest < 0.5 || highest > 5.5;
-    };
     Note.prototype.ledgerLines = function () {
         var _this = this;
-        if (!this.isOnLedger()) {
+        if (!this.props.onLedger) {
             return false;
         }
         var ret = [];
-        var lowest = this.getLowestLine();
-        var highest = this.getHighestLine();
+        var lowest = this.props.lowestLine;
+        var highest = this.props.highestLine;
         if (lowest < 0.5) {
             ret = ret.concat(_.times(Math.floor(1 - lowest), function (idx) { return React.createElement(LedgerLine.Component, { key: idx + "low", line: -idx, notehead: _this.props.notehead, x: _this.props.x, y: _this.props.y }); }));
         }
@@ -159,7 +92,7 @@ var Note = (function (_super) {
         return ret;
     };
     Note.prototype.accidentalSpacing = function () {
-        if (this.isOnLedger()) {
+        if (this.props.onLedger) {
             return 14.4;
         }
         else {
@@ -173,7 +106,7 @@ var Note = (function (_super) {
         }
         var accidentals = this.props.accidentals;
         accidentals = accidentals.length ? accidentals : [accidentals];
-        var l = this.getLines();
+        var l = this.props.lines;
         var glyphOffset = 0;
         return _.map(accidentals, function (acc, idx) {
             var paren = false;
@@ -240,19 +173,17 @@ var Note = (function (_super) {
         }
         var fullWidth = this.props.tieTo - this.props.x;
         return React.createElement(Slur.Component, { key: 0, spec: {
-            direction: -this.direction(),
+            direction: -this.props.direction,
             x: this.props.x + fullWidth / 8 + 6,
             y: this.props.y,
-            lines1: [this.getStartingLine()],
-            lines2: [this.getStartingLine()],
+            lines1: [this.props.startingLine],
+            lines2: [this.props.startingLine],
             slurW: fullWidth * 0.75
         } });
     };
     return Note;
 })(TypedReact.Component);
 ;
-var IDEAL_STEM_HEIGHT = 35;
-var MIN_STEM_HEIGHT = 25;
 var Note;
 (function (Note) {
     "use strict";
