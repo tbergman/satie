@@ -447,7 +447,7 @@ var DurationModel = (function (_super) {
                 return NewlineModel.createNewline(ctx);
             }
         }
-        if (!ctx.isBeam && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {
+        if (!this.engraved && !ctx.isBeam && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {
             var b = DurationModel.BEAMDATA;
             DurationModel.BEAMDATA = null;
             while (_.any(b, function (b) { return b.inBeam; })) {

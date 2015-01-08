@@ -458,7 +458,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
 
         // Beams must follow the beam patterns
-        if (!ctx.isBeam && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {
+        if (!this.engraved && !ctx.isBeam && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {
             var b = DurationModel.BEAMDATA;
             DurationModel.BEAMDATA = null;
 
