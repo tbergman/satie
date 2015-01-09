@@ -53,7 +53,7 @@ gulp.task("bundleDTS", ["buildTS"], function() {
         main: ".partialBuild/satie.d.ts",
         baseDir: ".partialBuild",
         out: "../dist/satie.d.ts",
-        externals: false
+        externals: true
     });
 });
 
