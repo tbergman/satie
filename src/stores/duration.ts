@@ -353,9 +353,11 @@ class DurationModel extends Model implements C.IPitchDuration {
         assert(isFinite(this._count));
 
         this._divisions = this.calcDivisions(mctx, null, true);
-        assert(isFinite(this._divisions) && this._divisions !== null);
-        mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats*mctx.attributes.divisions));
-        mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats*mctx.attributes.divisions);
+        if (!this._notes[0].grace) {
+            assert(isFinite(this._divisions) && this._divisions !== null);
+            mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats*mctx.attributes.divisions));
+            mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats*mctx.attributes.divisions);
+        }
     }
 
     multiRest: number;
@@ -395,7 +397,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         // Make sure the bar is not overfilled.
         if (ctx.isBeam || !this.inBeam) {
             // The number of beats in a bar must not exceed that specified by the time signature.
-            if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+            if (!this._notes[0].grace && ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
                 var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
                 if (this._divisions === overfill) {
                     var ret = BarlineModel.createBarline(ctx, C.MusicXML.BarStyleType.Regular);
@@ -447,6 +449,9 @@ class DurationModel extends Model implements C.IPitchDuration {
             // Each note's width has a linear component proportional to the log of its duration.
             this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) /
                 C.log2 / 3 * 40;
+            if (this._notes[0].grace) {
+                this.extraWidth /= 10; // FIXME: Ideally we have proper rythmic spacing within a grace part.
+            }
 
             // The width of a line must not exceed that specified by the page layout.
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
@@ -505,7 +510,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4)*10);
         }
 
-        if (!ctx.isBeam) {
+        if (!ctx.isBeam && !this._notes[0].grace) {
             ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
 
@@ -602,9 +607,14 @@ class DurationModel extends Model implements C.IPitchDuration {
     /*---- III. Util ----------------------------------------------------------------------------*/
 
     getWidth(ctx: Annotator.Context) {
-        var width = 22.8 + (this.extraWidth || 0) + (this._displayedAccidentals ? 9.6 : 0);
-        assert(isFinite(width));
-        return width;
+        var grace = this._notes[0].grace;
+        var baseWidth = grace ? 11.4 : 22.8;
+
+        var accidentalWidth = this._displayedAccidentals ? 9.6*(grace ? 0.6 : 1.0) : 0;
+        var totalWidth = baseWidth + (this.extraWidth || 0) + accidentalWidth;
+
+        assert(isFinite(totalWidth));
+        return totalWidth;
     }
 
     calcDivisions(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {
@@ -901,6 +911,7 @@ class DurationModel extends Model implements C.IPitchDuration {
     }
 
     /*---- III.2 Vertical layout ----------------------------------------------------------------*/
+
     get direction(): number {
         if (!isNaN(this.forceMiddleNoteDirection)) {
             return this.forceMiddleNoteDirection;
@@ -908,12 +919,11 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         var average = this.averageLine;
 
-        if (average > 3) {
-            return -1;
-        } else if (average <= 3) {
+        if (this._notes[0].grace || average <= 3) {
             return 1;
         }
-        assert(0);
+
+        return -1;
     }
     get averageLine(): number {
         return _.reduce(this.lines, (memo: number, i: number) => memo + i/this.lines.length, 0);
@@ -957,6 +967,11 @@ class DurationModel extends Model implements C.IPitchDuration {
             result = start - 30;
         } else if (start < 30 && this.direction === 1 && start + result < 30) {
             result = 30 - start;
+        }
+
+        // Grace note stems are short (though still proportionally pretty tall)
+        if (this._notes[0].grace) {
+            result *= 0.75;
         }
 
         return result;
@@ -1143,7 +1158,7 @@ module DurationModel {
                 parent.tuplet       =   note.timeModification || parent.tuplet;
             }
 
-            /* Properties owned by MNote */
+            /* Properties owned by MXMLNote */
             var properties          = [
                 "unpitched", "noteheadText", "accidental", "instrument",
                 "attack", "endDynamics", "lyrics", "notations", "stem", "cue", "ties", "dynamics", "duration",
@@ -1162,7 +1177,8 @@ module DurationModel {
             }
         }
 
-        /* JSON */
+        /*---- MXMLNote -------------------------------------------------------------------------*/
+
         toJSON(): {} {
             var clone: {[key: string]: any} = {};
 
@@ -1195,9 +1211,10 @@ module DurationModel {
             return clone;
         }
 
-        /* C.MusicXML.Note */
+        /*---- C.MusicXML.Note ------------------------------------------------------------------*/
 
-        /* C.MusicXML.Note > Core */
+        /*---- C.MusicXML.Note > Core -----------------------------------------------------------*/
+
         get chord(): C.MusicXML.Chord {
             return this._idx + 1 !== this._parent.chord.length;
         }
@@ -1264,7 +1281,7 @@ module DurationModel {
             this._parent.tuplet = tm;
         }
 
-        /* C.MusicXML.Note > Extended */
+        /*---- C.MusicXML.Note > Extended -------------------------------------------------------*/
         unpitched:          C.MusicXML.Unpitched;
         noteheadText:       C.MusicXML.NoteheadText;
         accidental:         C.MusicXML.Accidental;
@@ -1294,14 +1311,16 @@ module DurationModel {
         beams:              C.MusicXML.Beam[];
 
 
-        /* C.MusicXML.PrintStyle */
+        /*---- C.MusicXML.PrintStyle ------------------------------------------------------------*/
 
-        /* C.MusicXML.PrintStyle >> EditorialVoice */
+        /*---- C.MusicXML.PrintStyle >> EditorialVoice ------------------------------------------*/
+
         voice:              number;
         footnote:           C.MusicXML.Footnote;
         level:              C.MusicXML.Level;
 
-        /* C.MusicXML.PrintStyle >> Position */
+        /*---- C.MusicXML.PrintStyle >> Position ------------------------------------------------*/
+
         get defaultX(): number {
             return this._parent.x;
         }
@@ -1309,13 +1328,15 @@ module DurationModel {
         defaultY:           number;
         relativeX:          number;
 
-        /* C.MusicXML.PrintStyle >> Font */
+        /*---- C.MusicXML.PrintStyle >> Font ----------------------------------------------------*/
+
         fontFamily:         string;
         fontWeight:         C.MusicXML.NormalBold;
         fontStyle:          C.MusicXML.NormalItalic;
         fontSize:           string;
 
-        /* C.MusicXML.PrintStyle >> Color */
+        /*---- C.MusicXML.PrintStyle >> Color ---------------------------------------------------*/
+
         get color(): string {
             var hex = this._color.toString(16);
             return "#" + "000000".substr(0, 6 - hex.length) + hex;
@@ -1334,26 +1355,26 @@ module DurationModel {
             }
         }
 
+        private _color:     number = 0x000000;
 
-        /* C.MusicXML.Printout */
+        /*---- C.MusicXML.Printout --------------------------------------------------------------*/
+
         printDot:           boolean;
         printLyric:         boolean;
 
-        /* C.MusicXML.Printout >> PrintObject */
+        /*---- C.MusicXML.Printout >> PrintObject -----------------------------------------------*/
+
         printObject:        boolean;
 
-        /* C.MusicXML.Printout >> PrintSpacing */
+        /*---- C.MusicXML.Printout >> PrintSpacing ----------------------------------------------*/
+
         printSpacing:       boolean;
 
+        /*---- C.MusicXML.TimeOnly --------------------------------------------------------------*/
 
-        /* C.MusicXML.TimeOnly */
         timeOnly:           string;
 
-
-        private _color:     number = 0x000000;
-
-        // Util
-        // ---------
+        /*---- Util -----------------------------------------------------------------------------*/
 
         ensureNotationsWrittable() {
             this.notations = this.notations || [{}];

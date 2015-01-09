@@ -14,7 +14,7 @@ var NoteHead = (function (_super) {
         _super.apply(this, arguments);
     }
     NoteHead.prototype.render = function () {
-        return React.createElement(Glyph.Component, { x: this.props.x, y: this.props.y - (this.props.line - 3) * 10, fill: this.props.stroke, glyphName: this.props.notehead });
+        return React.createElement(Glyph.Component, { x: this.props.x, y: this.props.y - (this.props.line - 3) * 10, fill: this.props.stroke, scale: this.props.grace ? 0.6 : 1.0, glyphName: this.props.notehead });
     };
     NoteHead.prototype.getDefaultProps = function () {
         return {

@@ -18,29 +18,30 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+import React            = require("react");
+import TypedReact       = require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Line = require("./_line");
-import SMuFL = require("../util/SMuFL");
-import getFontOffset = require("./_getFontOffset");
+import C                = require("../stores/contracts");
+import Line             = require("./_line");
+import getFontOffset    = require("./_getFontOffset");
 
-var stemThickness: number = SMuFL.bravuraMetadata.engravingDefaults.stemThickness*10;
+var stemThickness: number = C.SMuFL.bravuraMetadata.engravingDefaults.stemThickness*10;
 
 /**
  * Renders a stem based on a height decided in Note.
  */
 class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     render() {
-        var fontOffset = this.getFontOffset();
+        var fontOffsetX = this.getFontOffset()[0] * (this.props.grace ? 0.6 : 1.0);
+        var fontOffsetY = this.getFontOffset()[1];
         return <!Line.Component
-            x1={this.props.x + fontOffset[0]*10 + this.lineXOffset()}
-            x2={this.props.x + fontOffset[0]*10 + this.lineXOffset()}
-            y1={this.props.y - fontOffset[1]*10 - (this.props.line - 3)*10}
+            x1={this.props.x + fontOffsetX*10 + this.lineXOffset()}
+            x2={this.props.x + fontOffsetX*10 + this.lineXOffset()}
+            y1={this.props.y - fontOffsetY*10 - (this.props.line - 3)*10}
             y2={this.props.y -
                 (this.props.line - 3)*10 -
-                fontOffset[1]*10 -
+                fontOffsetY*10 -
                 this.direction()*this.height()}
             stroke={this.props.stroke}
             strokeWidth={stemThickness} />;
@@ -79,6 +80,7 @@ module NoteStem {
         direction: number; // -1 or 1
         line: number;
         notehead: string;
+        grace: C.MusicXML.Grace;
         stroke: string;
         x: number;
         y: number;

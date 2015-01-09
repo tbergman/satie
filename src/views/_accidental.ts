@@ -18,6 +18,7 @@ class Accidental extends TypedReact.Component<Accidental.IProps, {}> {
             x={this.props.x}
             y={this.props.y - (this.props.line - 3)*10}
             fill={this.props.stroke}
+            scale={this.props.grace ? 0.6 : 1.0}
             opacity={this.props.opacity}
             glyphName={this.props.accidental}
 			"selection-info"={"accidental-" + this.props.idx} />;
@@ -50,6 +51,7 @@ module Accidental {
         opacity?: number;
         idx?: number;
         paren?: boolean;
+        grace?: C.MusicXML.Grace;
         line: number;
         stroke?: string;
         x: number;

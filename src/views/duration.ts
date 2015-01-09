@@ -121,6 +121,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                     isNote={true}
                     onLedger={spec.onLedger}
                     lowestLine={spec.lowestLine}
+                    grace={_.map(spec._notes, n => n.grace)}
                     highestLine={spec.highestLine}
                     startingLine={spec.startingLine}
                     key={spec.key}

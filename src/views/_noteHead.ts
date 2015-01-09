@@ -18,11 +18,12 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+import React            = require("react");
+import TypedReact       = require("typed-react");
+var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Glyph = require("./_glyph");
+import C                = require("../stores/contracts");
+import Glyph            = require("./_glyph");
 
 /**
  * Renders a note head.
@@ -33,6 +34,7 @@ class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
             x={this.props.x}
             y={this.props.y - (this.props.line - 3)*10}
             fill={this.props.stroke}
+            scale={this.props.grace ? 0.6 : 1.0}
             glyphName={this.props.notehead} />;
     }
     getDefaultProps() {
@@ -51,6 +53,7 @@ module NoteHead {
     export interface IProps {
         line: number;
         notehead: string;
+        grace: C.MusicXML.Grace;
         stroke: string;
         x: number;
         y: number;

@@ -52,7 +52,7 @@ var Note = (function (_super) {
                 }
             }
         }
-        return React.createElement("g", null, _.map(lines, function (line, idx) { return React.createElement("g", { key: "_" + idx }, React.createElement(NoteHead.Component, { key: "_0", x: _this.props.x + (linesOffset[line] || 0), y: _this.props.y, line: line, stroke: _this.props.strokes[idx], notehead: _this.props.notehead }), _this.props.dotted ? _.times(_this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: "_1_" + idx, stroke: _this.props.strokes[0], radius: 2.4, x: _this.props.x + _this.props.dotOffset, y: _this.props.y, line: line }); }) : null, _this.props.hasStem && React.createElement(NoteStem.Component, { x: _this.props.x, y: _this.props.y, key: "_2", direction: direction, line: _this.props.startingLine, stroke: _this.props.secondaryStroke, height: _this.props.stemHeight, notehead: _this.props.notehead }), _this.props.flag && React.createElement(Flag.Component, { key: "_3", x: _this.props.x, y: _this.props.y, line: _this.props.startingLine, stroke: _this.props.secondaryStroke, stemHeight: _this.props.stemHeight, stemWidth: 1.4, flag: _this.props.flag, notehead: _this.props.notehead, direction: direction }), _this.props.children && _.map(_this.props.children, function (component, idx) {
+        return React.createElement("g", null, _.map(lines, function (line, idx) { return React.createElement("g", { key: "_" + idx }, React.createElement(NoteHead.Component, { key: "_0", x: _this.props.x + (linesOffset[line] || 0), y: _this.props.y, line: line, stroke: _this.props.strokes[idx], grace: _this.props.grace[idx], notehead: _this.props.notehead }), _this.props.dotted ? _.times(_this.props.dotted, function (idx) { return React.createElement(Dot.Component, { idx: idx, key: "_1_" + idx, stroke: _this.props.strokes[0], radius: 2.4, x: _this.props.x + _this.props.dotOffset, y: _this.props.y, line: line }); }) : null); }), this.props.hasStem && React.createElement(NoteStem.Component, { x: this.props.x, y: this.props.y, key: "_2", direction: direction, line: this.props.startingLine, stroke: this.props.secondaryStroke, height: this.props.stemHeight, grace: this.props.grace[0], notehead: this.props.notehead }), this.props.flag && React.createElement(Flag.Component, { key: "_3", x: this.props.x, y: this.props.y, line: this.props.startingLine, stroke: this.props.secondaryStroke, stemHeight: this.props.stemHeight, stemWidth: 1.4, flag: this.props.flag, notehead: this.props.notehead, grace: this.props.grace[0], direction: direction }), this.props.children && _.map(this.props.children, function (component, idx) {
             component.key = "_4_" + idx;
             component.props.direction = direction;
             component.props.line = _this.props.startingLine;
@@ -61,7 +61,7 @@ var Note = (function (_super) {
             component.props.idx = idx;
             component.props.notehead = _this.props.notehead;
             return component;
-        }), _this.accidentals(), _this.ledgerLines(), _this.tie(), _this.props.lyrics); }));
+        }), this.accidentals(), this.ledgerLines(), this.tie(), this.props.lyrics);
     };
     Note.prototype.getDefaultProps = function () {
         return {
@@ -159,7 +159,7 @@ var Note = (function (_super) {
                         glyphOffset = 18;
                     }
                 }
-                return React.createElement(Accidental.Component, { x: _this.props.x - (glyphOffset || _this.accidentalSpacing()), y: _this.props.y, stroke: _this.props.accStrokes[idx], line: l[idx], key: "acc_" + idx, idx: idx, paren: paren, accidental: glyphName });
+                return React.createElement(Accidental.Component, { x: _this.props.x - (glyphOffset || _this.accidentalSpacing()) * (_this.props.grace[idx] ? 0.6 : 1.0), y: _this.props.y, grace: _this.props.grace[idx], stroke: _this.props.accStrokes[idx], line: l[idx], key: "acc_" + idx, idx: idx, paren: paren, accidental: glyphName });
             }
             else {
                 return null;

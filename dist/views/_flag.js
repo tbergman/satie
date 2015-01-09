@@ -17,9 +17,11 @@ var Flag = (function (_super) {
         this.getFontOffset = getFontOffset;
     }
     Flag.prototype.render = function () {
-        var fontOffset = this.getFontOffset(this.glyphName());
-        var noteOffset = this.getFontOffset();
-        return React.createElement(Glyph.Component, { x: this.props.x + fontOffset[0] * 10 + ((this.props.direction === 1) ? noteOffset[0] * 10 - this.props.stemWidth : 0), y: this.props.y - (this.props.line - 3) * 10 - noteOffset[1] * 10 - this.direction() * this.props.stemHeight, fill: this.props.stroke, glyphName: this.glyphName() });
+        var xscale = this.props.grace ? 0.6 : 1.0;
+        var fontOffsetX = this.getFontOffset(this.glyphName())[0] * xscale;
+        var noteOffsetX = this.getFontOffset()[0] * xscale;
+        var noteOffsetY = this.getFontOffset()[1];
+        return React.createElement(Glyph.Component, { x: this.props.x + fontOffsetX * 10 + ((this.props.direction === 1) ? noteOffsetX * 10 - this.props.stemWidth : 0), y: this.props.y - (this.props.line - 3) * 10 - noteOffsetY * 10 - this.direction() * this.props.stemHeight, fill: this.props.stroke, scale: this.props.grace ? 0.6 : 1.0, glyphName: this.glyphName() });
     };
     Flag.prototype.directionString = function () {
         if (this.direction() === 1) {

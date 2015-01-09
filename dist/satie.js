@@ -28,7 +28,7 @@ function injectStyles(spec) {
     if (typeof window === "undefined") {
         return;
     }
-    if (spec.useGoogleFonts) {
+    if (spec.useGoogleFonts !== false) {
         window.WebFontConfig = {
             google: { families: ['Alegreya:400italic,700italic,900italic,400,700:latin', 'Alegreya+SC:700,400:latin'] }
         };
@@ -37,9 +37,9 @@ function injectStyles(spec) {
         wf.src = protocol + '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
         wf.type = 'text/javascript';
         wf.async = true;
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(wf, s);
     }
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(wf, s);
     var style = document.createElement("style");
     style.appendChild(document.createTextNode(""));
     document.head.appendChild(style);

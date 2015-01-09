@@ -25,6 +25,7 @@ import assert           = require("assert");
 var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import Accidental       = require("./_accidental");
+import C                = require("../stores/contracts");
 import Dot              = require("./_dot");
 import Flag             = require("./_flag");
 import LedgerLine       = require("./_ledgerLine");
@@ -77,6 +78,7 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     y={this.props.y}
                     line={line}
                     stroke={this.props.strokes[idx]}
+                    grace={this.props.grace[idx]}
                     notehead={this.props.notehead} />
                 {this.props.dotted ? _.times(this.props.dotted, idx => <!Dot.Component
                     idx={idx}
@@ -86,43 +88,45 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     x={this.props.x + this.props.dotOffset}
                     y={this.props.y}
                     line={line} />) : null}
-                {this.props.hasStem && <!NoteStem.Component
-                    x={this.props.x}
-                    y={this.props.y}
-                    key="_2"
-                    direction={direction}
-                    line={this.props.startingLine}
-                    stroke={this.props.secondaryStroke}
-                    height={this.props.stemHeight}
-                    notehead={this.props.notehead} />}
-                {this.props.flag && <!Flag.Component
-                    key="_3"
-                    x={this.props.x}
-                    y={this.props.y}
-                    line={this.props.startingLine}
-                    stroke={this.props.secondaryStroke}
-                    stemHeight={this.props.stemHeight}
-                    stemWidth={1.4}
-                    flag={this.props.flag}
-                    notehead={this.props.notehead}
-                    direction={direction} />}
-                {this.props.children && _.map(this.props.children,
-                    (component: React.ReactElement<NoteNotation.IProps>, idx: number) => {
-                        component.key = "_4_" + idx;
-                        component.props.direction = direction;
-                        component.props.line = this.props.startingLine;
-                        component.props.x = this.props.x;
-                        component.props.y = this.props.y;
-                        component.props.idx = idx;
-                        component.props.notehead = this.props.notehead;
-                        return component;
-                    }
-                )}
-                {this.accidentals()}
-                {this.ledgerLines()}
-                {this.tie()}
-                {this.props.lyrics}
             </g>)}
+            {this.props.hasStem && <!NoteStem.Component
+                x={this.props.x}
+                y={this.props.y}
+                key="_2"
+                direction={direction}
+                line={this.props.startingLine}
+                stroke={this.props.secondaryStroke}
+                height={this.props.stemHeight}
+                grace={this.props.grace[0]}
+                notehead={this.props.notehead} />}
+            {this.props.flag && <!Flag.Component
+                key="_3"
+                x={this.props.x}
+                y={this.props.y}
+                line={this.props.startingLine}
+                stroke={this.props.secondaryStroke}
+                stemHeight={this.props.stemHeight}
+                stemWidth={1.4}
+                flag={this.props.flag}
+                notehead={this.props.notehead}
+                grace={this.props.grace[0]}
+                direction={direction} />}
+            {this.props.children && _.map(this.props.children,
+                (component: React.ReactElement<NoteNotation.IProps>, idx: number) => {
+                    component.key = "_4_" + idx;
+                    component.props.direction = direction;
+                    component.props.line = this.props.startingLine;
+                    component.props.x = this.props.x;
+                    component.props.y = this.props.y;
+                    component.props.idx = idx;
+                    component.props.notehead = this.props.notehead;
+                    return component;
+                }
+            )}
+            {this.accidentals()}
+            {this.ledgerLines()}
+            {this.tie()}
+            {this.props.lyrics}
         </g>;
     }
 
@@ -239,8 +243,9 @@ class Note extends TypedReact.Component<Note.IProps, {}> {
                     }
                 }
                 return <!Accidental.Component
-                    x={this.props.x - (glyphOffset || this.accidentalSpacing())}
+                    x={this.props.x - (glyphOffset || this.accidentalSpacing())*(this.props.grace[idx] ? 0.6 : 1.0)}
                     y={this.props.y}
+                    grace={this.props.grace[idx]}
                     stroke={this.props.accStrokes[idx]}
                     line={l[idx]}
                     key={"acc_" + idx}
@@ -299,6 +304,7 @@ module Note {
         onLedger?: boolean;
         key?: string;
         lines?: any;
+        grace?: C.MusicXML.Grace[];
         lowestLine?: number;
         highestLine?: number;
         lyrics?: any;

@@ -40,7 +40,7 @@ var Glyph = (function (_super) {
             fillOpacity: this.props.opacity,
             strokeOpacity: this.props.opacity,
             transform: this.props.transform,
-            fontSize: 40,
+            fontSize: 40 * (this.props.scale || 1),
             className: "mn_"
         }, C.SMuFL.getGlyphCode(this.props.glyphName));
         if (!this.props["selection-info"] || global.isChoreServer) {

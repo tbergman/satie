@@ -130,7 +130,7 @@ function injectStyles(spec: ISatieOptions = {}) {
         return;
     }
 
-    if (spec.useGoogleFonts) {
+    if (spec.useGoogleFonts !== false) {
         (<any>window).WebFontConfig = {
             google: { families: ['Alegreya:400italic,700italic,900italic,400,700:latin', 'Alegreya+SC:700,400:latin'] }
         };
@@ -140,10 +140,11 @@ function injectStyles(spec: ISatieOptions = {}) {
             '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
         wf.type = 'text/javascript';
         wf.async = true;
+
+        var s = document.getElementsByTagName('script')[0];
+        s.parentNode.insertBefore(wf, s);
     }
 
-    var s = document.getElementsByTagName('script')[0];
-    s.parentNode.insertBefore(wf, s);
 	var style = document.createElement("style");
 	style.appendChild(document.createTextNode("")); // WebKit hack
 	document.head.appendChild(style);

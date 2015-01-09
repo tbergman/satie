@@ -357,9 +357,11 @@ var DurationModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
         assert(isFinite(this._count));
         this._divisions = this.calcDivisions(mctx, null, true);
-        assert(isFinite(this._divisions) && this._divisions !== null);
-        mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats * mctx.attributes.divisions));
-        mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats * mctx.attributes.divisions);
+        if (!this._notes[0].grace) {
+            assert(isFinite(this._divisions) && this._divisions !== null);
+            mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats * mctx.attributes.divisions));
+            mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats * mctx.attributes.divisions);
+        }
     };
     DurationModel.prototype.annotateImpl = function (ctx) {
         var _this = this;
@@ -384,7 +386,7 @@ var DurationModel = (function (_super) {
         assert(this._divisions !== null, "Unknown beat count");
         this.isWholebar = this._divisions === -1 || this._divisions === ctx.ts.beats * ctx.attributes.divisions;
         if (ctx.isBeam || !this.inBeam) {
-            if (ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
+            if (!this._notes[0].grace && ctx.division + this._divisions > ctx.ts.beats * ctx.attributes.divisions) {
                 var overfill = ctx.division + this._divisions - ctx.ts.beats * ctx.attributes.divisions;
                 if (this._divisions === overfill) {
                     var ret = BarlineModel.createBarline(ctx, 0 /* Regular */);
@@ -430,6 +432,9 @@ var DurationModel = (function (_super) {
                 return 60 /* RetryLine */;
             }
             this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) / C.log2 / 3 * 40;
+            if (this._notes[0].grace) {
+                this.extraWidth /= 10;
+            }
             if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
                 return NewlineModel.createNewline(ctx);
             }
@@ -472,7 +477,7 @@ var DurationModel = (function (_super) {
             ctx.minBottomPaddings[this.staff] = Math.max(ctx.minBottomPaddings[this.staff], -(this.lines[i] - 3) * 10);
             ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4) * 10);
         }
-        if (!ctx.isBeam) {
+        if (!ctx.isBeam && !this._notes[0].grace) {
             ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
         if (!ctx.isBeam && this.inBeam) {
@@ -540,9 +545,12 @@ var DurationModel = (function (_super) {
         return 10 /* Success */;
     };
     DurationModel.prototype.getWidth = function (ctx) {
-        var width = 22.8 + (this.extraWidth || 0) + (this._displayedAccidentals ? 9.6 : 0);
-        assert(isFinite(width));
-        return width;
+        var grace = this._notes[0].grace;
+        var baseWidth = grace ? 11.4 : 22.8;
+        var accidentalWidth = this._displayedAccidentals ? 9.6 * (grace ? 0.6 : 1.0) : 0;
+        var totalWidth = baseWidth + (this.extraWidth || 0) + accidentalWidth;
+        assert(isFinite(totalWidth));
+        return totalWidth;
     };
     DurationModel.prototype.calcDivisions = function (ctx, inheritedCount, force) {
         if (!force && this._divisions) {
@@ -792,13 +800,10 @@ var DurationModel = (function (_super) {
                 return this.forceMiddleNoteDirection;
             }
             var average = this.averageLine;
-            if (average > 3) {
-                return -1;
-            }
-            else if (average <= 3) {
+            if (this._notes[0].grace || average <= 3) {
                 return 1;
             }
-            assert(0);
+            return -1;
         },
         enumerable: true,
         configurable: true
@@ -860,6 +865,9 @@ var DurationModel = (function (_super) {
         }
         else if (start < 30 && this.direction === 1 && start + result < 30) {
             result = 30 - start;
+        }
+        if (this._notes[0].grace) {
+            result *= 0.75;
         }
         return result;
     };

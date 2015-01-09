@@ -7,10 +7,10 @@ var __extends = this.__extends || function (d, b) {
 var React = require("react");
 var TypedReact = require("typed-react");
 var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+var C = require("../stores/contracts");
 var Line = require("./_line");
-var SMuFL = require("../util/SMuFL");
 var getFontOffset = require("./_getFontOffset");
-var stemThickness = SMuFL.bravuraMetadata.engravingDefaults.stemThickness * 10;
+var stemThickness = C.SMuFL.bravuraMetadata.engravingDefaults.stemThickness * 10;
 var NoteStem = (function (_super) {
     __extends(NoteStem, _super);
     function NoteStem() {
@@ -18,8 +18,9 @@ var NoteStem = (function (_super) {
         this.getFontOffset = getFontOffset;
     }
     NoteStem.prototype.render = function () {
-        var fontOffset = this.getFontOffset();
-        return React.createElement(Line.Component, { x1: this.props.x + fontOffset[0] * 10 + this.lineXOffset(), x2: this.props.x + fontOffset[0] * 10 + this.lineXOffset(), y1: this.props.y - fontOffset[1] * 10 - (this.props.line - 3) * 10, y2: this.props.y - (this.props.line - 3) * 10 - fontOffset[1] * 10 - this.direction() * this.height(), stroke: this.props.stroke, strokeWidth: stemThickness });
+        var fontOffsetX = this.getFontOffset()[0] * (this.props.grace ? 0.6 : 1.0);
+        var fontOffsetY = this.getFontOffset()[1];
+        return React.createElement(Line.Component, { x1: this.props.x + fontOffsetX * 10 + this.lineXOffset(), x2: this.props.x + fontOffsetX * 10 + this.lineXOffset(), y1: this.props.y - fontOffsetY * 10 - (this.props.line - 3) * 10, y2: this.props.y - (this.props.line - 3) * 10 - fontOffsetY * 10 - this.direction() * this.height(), stroke: this.props.stroke, strokeWidth: stemThickness });
     };
     NoteStem.prototype.height = function () {
         return this.props.height;

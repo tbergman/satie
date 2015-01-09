@@ -55,7 +55,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
                 fillOpacity: this.props.opacity,
                 strokeOpacity: this.props.opacity,
                 transform: this.props.transform,
-                fontSize: 40,
+                fontSize: 40*(this.props.scale||1),
                 className: "mn_"},
             C.SMuFL.getGlyphCode(this.props.glyphName)
         );
@@ -101,9 +101,6 @@ module Glyph {
         y: number;
         opacity?: number;
         code?: string;
-        /**
-         * Only for FA glyphs for now
-         */
         scale?: number
     }
 }

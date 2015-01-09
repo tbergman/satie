@@ -18,32 +18,36 @@
 
 /* tslint:disable */
 
-import React = require("react");
-import TypedReact = require("typed-react");
-import assert = require("assert");
-var PureRenderMixin = require("react/lib/ReactComponentWithPureRenderMixin");
+import React                = require("react");
+import TypedReact           = require("typed-react");
+import assert               = require("assert");
+var    PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Glyph = require("./_glyph");
-import getFontOffset = require("./_getFontOffset");
+import C                    = require("../stores/contracts");
+import Glyph                = require("./_glyph");
+import getFontOffset        = require("./_getFontOffset");
 
 /**
  * Responsible for rendering the "flag" on un-beamed notes shorter than quarter notes.
  */
 class Flag extends TypedReact.Component<Flag.IProps, {}> {
     render() {
-        var fontOffset = this.getFontOffset(this.glyphName());
-        var noteOffset = this.getFontOffset();
+        var xscale = this.props.grace ? 0.6 : 1.0;
+        var fontOffsetX = this.getFontOffset(this.glyphName())[0] * xscale;
+        var noteOffsetX = this.getFontOffset()[0] * xscale;
+        var noteOffsetY = this.getFontOffset()[1];
         return <!Glyph.Component
             x={this.props.x +
-                fontOffset[0]*10 +
+                fontOffsetX*10 +
                 ((this.props.direction === 1) ?
-                    noteOffset[0]*10 - this.props.stemWidth :
+                    noteOffsetX*10 - this.props.stemWidth :
                     0)}
             y={this.props.y -
                 (this.props.line - 3)*10 -
-                noteOffset[1]*10 -
+                noteOffsetY*10 -
                 this.direction()*this.props.stemHeight}
             fill={this.props.stroke}
+            scale={this.props.grace ? 0.6 : 1.0}
             glyphName={this.glyphName() } />;
     }
 
@@ -85,6 +89,7 @@ module Flag {
         stemHeight: number;
         stemWidth: number;
         stroke: string;
+        grace: C.MusicXML.Grace;
         x: number;
         y: number;
     };
