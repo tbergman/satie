@@ -5,3 +5,4 @@
 /// <reference path="react-bootstrap/react-bootstrap.d.ts" />
 /// <reference path="es6-promise/es6-promise.d.ts" />
 /// <reference path="../node_modules/satie/dist/satie.d.ts" />
+/// <reference path="react-invariant.d.ts" />

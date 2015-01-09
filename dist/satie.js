@@ -7,10 +7,53 @@ var __extends = this.__extends || function (d, b) {
 exports.MusicXML = require("musicxml-interfaces");
 var React = require("react");
 var TypedReact = require("typed-react");
+var invariant = require("react/lib/invariant");
 var C = require("./stores/contracts");
 var Dispatcher = require("./stores/dispatcher");
 var Renderer = require("./renderer/renderer");
 var ScoreStore = require("./stores/scoreStore");
+function init(options) {
+    invariant(!cssInjected, "initSatie must be called before any Satie component is mounted " + "and must only be called once");
+    injectStyles(options);
+}
+exports.init = init;
+exports.MusicXMLView;
+var cssInjected = false;
+function injectStyles(spec) {
+    if (spec === void 0) { spec = {}; }
+    if (cssInjected) {
+        return;
+    }
+    cssInjected = true;
+    if (typeof window === "undefined") {
+        return;
+    }
+    if (spec.useGoogleFonts) {
+        window.WebFontConfig = {
+            google: { families: ['Alegreya:400italic,700italic,900italic,400,700:latin', 'Alegreya+SC:700,400:latin'] }
+        };
+        var protocol = 'https:' === document.location.protocol ? 'https' : 'http';
+        var wf = document.createElement('script');
+        wf.src = protocol + '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+        wf.type = 'text/javascript';
+        wf.async = true;
+    }
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(wf, s);
+    var style = document.createElement("style");
+    style.appendChild(document.createTextNode(""));
+    document.head.appendChild(style);
+    var bravuraFontFace;
+    if (spec.bravuraURL === "none") {
+        bravuraFontFace = "";
+    }
+    else {
+        invariant(!spec.bravuraURL || validateURL(spec.bravuraURL), "The bravuraURL must be undefined, a valid URL with protocol, or \"none\", but is \"%s\".", spec.bravuraURL);
+        var bravuraURL = spec.bravuraURL || (protocol + "://cdn.rawgit.com/ripieno/satie/724fa96260b40e455e9e5217e226825066ba8312/res/bravura.woff");
+        bravuraFontFace = "@font-face {" + "font-family: 'bravura';" + "src: url('" + bravuraURL + "') format('woff');" + "font-weight: normal;" + "font-style: normal;" + "}";
+    }
+    style.innerHTML = bravuraFontFace + ".mn_ {" + "-moz-user-select: none;" + "-ms-user-select: none;" + "-webkit-touch-callout: none;" + "-webkit-user-select: none;" + "cursor: default;" + "font-family: 'bravura';" + "user-select: none;" + "pointer-events: none;" + "text-rendering: optimizeSpeed;" + "}" + ".mmn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: middle;" + "stroke: #7a7a7a;" + "}" + ".bn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: end;" + "stroke: #7a7a7a;" + "}";
+}
 var MusicXMLViewSpec = (function (_super) {
     __extends(MusicXMLViewSpec, _super);
     function MusicXMLViewSpec() {
@@ -59,7 +102,7 @@ var MusicXMLViewSpec = (function (_super) {
         };
     };
     MusicXMLViewSpec.prototype.componentWillMount = function () {
-        injectCSS();
+        injectStyles();
     };
     MusicXMLViewSpec.prototype.componentDidMount = function () {
         this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
@@ -72,6 +115,10 @@ var MusicXMLViewSpec = (function (_super) {
             });
             this.state.dispatcher.PUT("/webapp/song/mxmlJSON", this.props.musicXML, null, this._onError);
         }
+    };
+    MusicXMLViewSpec.prototype.componentWillUnmount = function () {
+        this.state.score.removeListener(1 /* Annotate */, this._updateFromStore);
+        this.state.score.destructor();
     };
     MusicXMLViewSpec.prototype._onError = function (err) {
         if (typeof err.toString === "function") {
@@ -89,10 +136,6 @@ var MusicXMLViewSpec = (function (_super) {
             throw err;
         }
     };
-    MusicXMLViewSpec.prototype.componentWillUnmount = function () {
-        this.state.score.removeListener(1 /* Annotate */, this._updateFromStore);
-        this.state.score.destructor();
-    };
     MusicXMLViewSpec.prototype._updateFromStore = function () {
         this.setState({
             error: null,
@@ -101,15 +144,7 @@ var MusicXMLViewSpec = (function (_super) {
     };
     return MusicXMLViewSpec;
 })(TypedReact.Component);
-var cssInjected = false;
-function injectCSS() {
-    if (cssInjected || typeof window === "undefined") {
-        return;
-    }
-    cssInjected = true;
-    var style = document.createElement("style");
-    style.appendChild(document.createTextNode(""));
-    document.head.appendChild(style);
-    style.innerHTML = "@font-face {" + "font-family: 'bravura';" + "src: url('/res/bravura.woff') format('woff');" + "font-weight: normal;" + "font-style: normal;" + "}" + ".mn_ {" + "-moz-user-select: none;" + "-ms-user-select: none;" + "-webkit-touch-callout: none;" + "-webkit-user-select: none;" + "cursor: default;" + "font-family: 'bravura';" + "user-select: none;" + "pointer-events: none;" + "text-rendering: optimizeSpeed;" + "}" + ".mmn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: middle;" + "stroke: #7a7a7a;" + "}" + ".bn_ {" + "font-family: 'Alegreya';" + "font-style: italic;" + "text-anchor: end;" + "stroke: #7a7a7a;" + "}";
-}
 exports.MusicXMLView = TypedReact.createClass(MusicXMLViewSpec);
+function validateURL(url) {
+    return /^http:\/\/\w+(\.\w+)*(:[0-9]+)?\/?(\/[.\w]*)*$/i.test(url);
+}

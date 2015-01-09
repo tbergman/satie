@@ -23,6 +23,7 @@ import React            = require("react");
 import TypedReact   	= require("typed-react");
 import _            	= require("lodash");
 import assert       	= require("assert");
+import invariant        = require("react/lib/invariant");
 
 import Annotator        = require("./stores/annotator");
 import BeginModel   	= require("./stores/begin");
@@ -32,6 +33,164 @@ import Instruments  	= require("./stores/instruments");
 import Model        	= require("./stores/model");
 import Renderer     	= require("./renderer/renderer");
 import ScoreStore   	= require("./stores/scoreStore");
+
+/*---- Public Interface -------------------------------------------------------------------------*/
+
+/**
+ * Optional initialization function. Call this if you don't want the default options. Must be called
+ * before any Satie component is mounted, and must only be called once.
+ */
+export function init(options: ISatieOptions) {
+    invariant(!cssInjected, "initSatie must be called before any Satie component is mounted " +
+        "and must only be called once");
+    injectStyles(options);
+}
+
+/**
+ * Options for initSatie. All options have defaults.
+ */
+export interface ISatieOptions {
+    /**
+     * Absolute URL of Bravura font, including protocol. By default, Bravura is loaded from Rawgit's CDN.
+     * If you are using Satie in production, you should host Bravura yourself (otherwise you are relying on
+     * Rawgit's uptime, which has no guarantee).
+     *
+     * Set to "none" if Satie should not load Bravura at all. This is useful if you are also using Bravura
+     * outside of Satie.
+     * 
+     * Default: location.protocol + "//cdn.rawgit.com/ripieno/satie/724fa96260b40e455e9e5217e226825066ba8312/" +
+     *          "res/bravura.woff"
+     *
+     * Server behavior: This value is ignored on the server.
+     */
+    bravuraURL?: string;
+
+    /**
+     * Download fonts from Google Fonts as needed. Currently, just Alegreya is downloaded.
+     * In future versions, other fonts defined in sheet music will also be downloaded.
+     *
+     * Default: true
+     * 
+     * Server behavior: This value is ignored on the server.
+     */
+    useGoogleFonts?: boolean;
+}
+
+/**
+ * React component which renders MusicXML. For props, see ISatieProps.
+ * 
+ * @example
+ * // Renders the XML in variable `xml`.
+ * var React = require("react");
+ * var Satie = require("satie");
+ * 
+ * var xml = ...your song goes here...;
+ * var score = Satie.MusicXML.parseXML(xml);
+ * React.render(
+ *    <Satie.MusicXMLView
+ *        musicXML={score}
+ *        width={780}
+ *        height={1280} />,
+ *    document.body);
+ */
+export var MusicXMLView: React.ComponentClass<ISatieProps>;
+
+/**
+ * Props of MusicXMLView.
+ */
+export interface ISatieProps {
+    /**
+     * MXMLJSON structure returned from Satie.MusicXML.parseXML or musicxml-interfaces.
+     */
+    musicXML: C.MusicXML.ScoreTimewise;
+
+    /**
+     * Width of component in pixels. The score will be scaled to fit within the width.
+     */
+    width: number;
+
+    /**
+     * Height of component in pixels. A scrollbar will be used if the score does not
+     * fit within this height.
+     */
+    height: number;
+}
+
+/*---- Private ----------------------------------------------------------------------------------*/
+
+var cssInjected = false;
+
+function injectStyles(spec: ISatieOptions = {}) {
+    // Only run this function once.
+    if (cssInjected) {
+        return;
+    }
+    cssInjected = true;
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (spec.useGoogleFonts) {
+        (<any>window).WebFontConfig = {
+            google: { families: ['Alegreya:400italic,700italic,900italic,400,700:latin', 'Alegreya+SC:700,400:latin'] }
+        };
+        var protocol = 'https:' === document.location.protocol ? 'https' : 'http';
+        var wf = document.createElement('script');
+        wf.src = protocol +
+            '://ajax.googleapis.com/ajax/libs/webfont/1/webfont.js';
+        wf.type = 'text/javascript';
+        wf.async = true;
+    }
+
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(wf, s);
+	var style = document.createElement("style");
+	style.appendChild(document.createTextNode("")); // WebKit hack
+	document.head.appendChild(style);
+
+    var bravuraFontFace: string;
+    if (spec.bravuraURL === "none") {
+        bravuraFontFace = "";
+    } else {
+        invariant(!spec.bravuraURL || validateURL(spec.bravuraURL),
+            "The bravuraURL must be undefined, a valid URL with protocol, or \"none\", but is \"%s\".", spec.bravuraURL);
+        var bravuraURL = spec.bravuraURL ||
+            (protocol + "://cdn.rawgit.com/ripieno/satie/724fa96260b40e455e9e5217e226825066ba8312/res/bravura.woff");
+        bravuraFontFace = "@font-face {"+
+    	    "font-family: 'bravura';"+
+    		"src: url('" + bravuraURL + "') format('woff');"+
+    		"font-weight: normal;"+
+    		"font-style: normal;"+
+    	"}";
+    }
+
+    style.innerHTML =
+        bravuraFontFace +
+    	".mn_ {"+
+    	    "-moz-user-select: none;"+
+    		"-ms-user-select: none;"+
+    		"-webkit-touch-callout: none;"+
+    		"-webkit-user-select: none;"+
+    		"cursor: default;"+
+    		"font-family: 'bravura';"+
+    		"user-select: none;"+
+    		"pointer-events: none;"+
+    		"text-rendering: optimizeSpeed;"+
+    	"}" +
+        ".mmn_ {"+
+            "font-family: 'Alegreya';" +
+            "font-style: italic;" +
+            "text-anchor: middle;" +
+            "stroke: #7a7a7a;" +
+        "}" +
+        ".bn_ {"+
+            "font-family: 'Alegreya';" +
+            "font-style: italic;" +
+            "text-anchor: end;" +
+            "stroke: #7a7a7a;" +
+        "}";
+}
+
 
 class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
     render(): any {
@@ -81,7 +240,7 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
     }
 
     componentWillMount() {
-        injectCSS();
+        injectStyles();
     }
 
     componentDidMount() {
@@ -98,7 +257,12 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
         }
     }
 
-    _onError(err: any) {
+    componentWillUnmount() {
+        this.state.score.removeListener(C.EventType.Annotate, this._updateFromStore);
+        this.state.score.destructor();
+    }
+
+    private _onError(err: any) {
         if (typeof err.toString === "function") {
             console.warn(err.toString());
             this.setState({
@@ -112,11 +276,6 @@ class MusicXMLViewSpec extends TypedReact.Component<ISatieProps, ISatieState> {
             console.warn(err);
             throw err;
         }
-    }
-
-    componentWillUnmount() {
-        this.state.score.removeListener(C.EventType.Annotate, this._updateFromStore);
-        this.state.score.destructor();
     }
 
     private _updateFromStore() {
@@ -134,54 +293,8 @@ interface ISatieState {
     error?: string;
 }
 
-var cssInjected = false;
-function injectCSS() {
-    if (cssInjected || typeof window === "undefined") {
-        return;
-    }
-    cssInjected = true;
+MusicXMLView = TypedReact.createClass(MusicXMLViewSpec);
 
-	var style = document.createElement("style");
-	style.appendChild(document.createTextNode("")); // WebKit hack
-	document.head.appendChild(style);
-
-    style.innerHTML =
-        "@font-face {"+
-    	    "font-family: 'bravura';"+
-    		"src: url('/res/bravura.woff') format('woff');"+
-    		"font-weight: normal;"+
-    		"font-style: normal;"+
-    	"}"+
-    	".mn_ {"+
-    	    "-moz-user-select: none;"+
-    		"-ms-user-select: none;"+
-    		"-webkit-touch-callout: none;"+
-    		"-webkit-user-select: none;"+
-    		"cursor: default;"+
-    		"font-family: 'bravura';"+
-    		"user-select: none;"+
-    		"pointer-events: none;"+
-    		"text-rendering: optimizeSpeed;"+
-    	"}" +
-        ".mmn_ {"+
-            "font-family: 'Alegreya';" +
-            "font-style: italic;" +
-            "text-anchor: middle;" +
-            "stroke: #7a7a7a;" +
-        "}" +
-        ".bn_ {"+
-            "font-family: 'Alegreya';" +
-            "font-style: italic;" +
-            "text-anchor: end;" +
-            "stroke: #7a7a7a;" +
-        "}";
-}
-
-export interface ISatieProps {
-    musicXML: C.MusicXML.ScoreTimewise;
-    width: number;
-    height: number;
-}
-
-export var MusicXMLView = TypedReact.createClass(MusicXMLViewSpec);
-
+function validateURL(url: string){
+    return /^http:\/\/\w+(\.\w+)*(:[0-9]+)?\/?(\/[.\w]*)*$/i.test(url);
+} 

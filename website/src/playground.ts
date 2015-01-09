@@ -18,17 +18,23 @@
 
 /* tslint:disable */
 
+import Bootstrap    = require("react-bootstrap");
+import React        = require("react");
+import Satie        = require("satie");
+import TypedReact   = require("typed-react");
+import _            = require("lodash");
+import assert       = require("assert");
+
 import About        = require("./about");
 import Header       = require("./header");
 import Start        = require("./start");
 import ajax         = require("./ajax");
 
-import Bootstrap    = require("react-bootstrap");
-import Satie        = require("satie");
-import React        = require("react");
-import TypedReact   = require("typed-react");
-import _            = require("lodash");
-import assert       = require("assert");
+(function () {
+    Satie.init({
+        bravuraURL: location.protocol + "//" + location.host + location.pathname + "res/bravura.woff"
+    });
+}());
 
 class Playground extends TypedReact.Component<Playground.IProps, IState> {
     render(): any {
