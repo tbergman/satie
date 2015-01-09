@@ -123,7 +123,7 @@ var NewlineModel = (function (_super) {
         var i;
         var l = 0;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ++l;
             }
             if (i + 1 !== ctx.body.length) {
@@ -139,7 +139,7 @@ var NewlineModel = (function (_super) {
             if (ctx.body[i].priority === 130 /* NewLine */) {
                 break;
             }
-            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ctx.body[i].extraWidth = (ctx.body[i].extraWidth || 0) + diff / l;
                 xOffset -= diff / l;
             }
@@ -151,27 +151,27 @@ var NewlineModel = (function (_super) {
                     var j;
                     var noteCount = 0;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== 300 /* Barline */; --j) {
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== 300 /* Barline */; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             remaining -= offset / noteCount;
                         }
                     }
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !== 300 /* Barline */; ++j) {
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             ++noteCount;
                         }
                     }
                     remaining = offset;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !== 300 /* Barline */; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[j])) {
                             remaining -= offset / noteCount;
                         }
                     }
@@ -186,6 +186,9 @@ var NewlineModel = (function (_super) {
             }
         }
         return 10 /* Success */;
+        function expandable(c) {
+            return c.priority === 600 /* Duration */ && !c.soundOnly && !c._notes[0].grace;
+        }
     };
     NewlineModel.centerWholeBarRests = function (body, idx) {
         var toCenter = [];
@@ -285,7 +288,7 @@ var NewlineModel = (function (_super) {
         var i;
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== 130 /* NewLine */); --i) {
-            if (ctx.body[i].priority === 600 /* Duration */ && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ++n;
             }
             if (i + 1 !== ctx.body.length) {
@@ -305,7 +308,7 @@ var NewlineModel = (function (_super) {
                 lw = nw * n;
             }
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== 130 /* NewLine */; --i) {
-                if (ctx.body[i].priority === 600 /* Duration */ && !ctx.body[i].soundOnly) {
+                if (expandable(ctx.body[i])) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
@@ -315,6 +318,9 @@ var NewlineModel = (function (_super) {
                     NewlineModel.centerWholeBarRests(ctx.body, i);
                 }
             }
+        }
+        function expandable(c) {
+            return c.priority === 600 /* Duration */ && !c.soundOnly && !c._notes[0].grace;
         }
     };
     return NewlineModel;

@@ -23,6 +23,7 @@ import _                = require("lodash");
 import Annotator        = require("./annotator");
 import AttributesModel  = require("./attributes")
 import C                = require("./contracts");
+import DurationModel    = require("./duration");
 import NewPageModel     = require("./newpage");
 import TimeSignatureMT  = require("./timeSignature");   // Cyclic
 import PrintModel       = require("./print");
@@ -181,7 +182,7 @@ class NewlineModel extends Model {
         var i: number;
         var l = 0;
         for (i = ctx.idx - 1; i >= 0; --i) {
-            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ++l;
             }
             // Calculate width BEFORE centering whole bars.
@@ -198,7 +199,7 @@ class NewlineModel extends Model {
             if (ctx.body[i].priority === C.Type.NewLine) {
                 break;
             }
-            if (ctx.body[i].isNote && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ctx.body[i].extraWidth =
                     (ctx.body[i].extraWidth || 0) +
                     diff/l;
@@ -218,14 +219,14 @@ class NewlineModel extends Model {
                     // ADJUST PRECEEDING BAR
                     var noteCount = 0;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             ++noteCount;
                         }
                     }
                     var remaining = offset;
                     for (j = i - 1; j >= 0 && ctx.body[j].priority !== C.Type.Barline; --j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             remaining -= offset/noteCount;
                         }
                     }
@@ -235,7 +236,7 @@ class NewlineModel extends Model {
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.Barline; ++j) {
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[i])) {
                             ++noteCount;
                         }
                     }
@@ -243,7 +244,7 @@ class NewlineModel extends Model {
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
                             C.Type.Barline; ++j) {
                         ctx.body[j].x = ctx.body[j].x + remaining;
-                        if (ctx.body[j].isNote && !ctx.body[i].soundOnly) {
+                        if (expandable(ctx.body[j])) {
                             remaining -= offset/noteCount;
                         }
                     }
@@ -259,7 +260,12 @@ class NewlineModel extends Model {
                 NewlineModel.centerWholeBarRests(ctx.body, i);
             }
         }
+
         return C.IterationStatus.Success;
+
+        function expandable(c: Model) {
+            return c.priority === C.Type.Duration && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
+        }
     }
 
     /*---- IV. Statics --------------------------------------------------------------------------*/
@@ -308,7 +314,7 @@ class NewlineModel extends Model {
         var n = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
                     C.Type.NewLine); --i) {
-            if (ctx.body[i].priority === C.Type.Duration && !ctx.body[i].soundOnly) {
+            if (expandable(ctx.body[i])) {
                 ++n;
             }
 
@@ -329,7 +335,7 @@ class NewlineModel extends Model {
                 lw = nw * n;
             }
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
-                if (ctx.body[i].priority === C.Type.Duration && !ctx.body[i].soundOnly) {
+                if (expandable(ctx.body[i])) {
                     lw -= nw;
                 }
                 ctx.body[i].x = ctx.body[i].x + lw;
@@ -340,6 +346,10 @@ class NewlineModel extends Model {
                     NewlineModel.centerWholeBarRests(ctx.body, i);
                 }
             }
+        }
+
+        function expandable(c: Model) {
+            return c.priority === C.Type.Duration && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
         }
     };
 
