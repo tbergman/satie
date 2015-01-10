@@ -6,6 +6,7 @@ var __extends = this.__extends || function (d, b) {
 };
 var Model = require("./model");
 var assert = require("assert");
+var AttributesModel = require("./attributes");
 var C = require("./contracts");
 var Metre = require("./metre");
 var NewlineModel = require("./newline");
@@ -36,6 +37,9 @@ var EndMarkerModel = (function (_super) {
         configurable: true
     });
     EndMarkerModel.prototype.recordMetreDataImpl = function (mctx) {
+        if (!mctx.attributes) {
+            throw new AttributesModel.AttributesUndefinedException();
+        }
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,
             ts: mctx.ts,

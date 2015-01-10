@@ -321,6 +321,10 @@ var DurationModel = (function (_super) {
     });
     DurationModel.prototype.modelDidLoad = function (body, idx) {
         for (var i = 0; i < this.chord.length; ++i) {
+            if (!this.chord[i]) {
+                this.isRest = true;
+                break;
+            }
             if (this.chord[i].temporary) {
                 this.chord.splice(i, 1);
                 if (this._p_notes && i < this._p_notes.length) {

@@ -270,7 +270,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
             if (split.el._class === "Backup") {
                 var beats               = split.el.duration / divisionsPerPart[partIdx]; // Does this work in /8?
 
-                currDivision                = currDivision - beats;
+                currDivision            = Math.max(currDivision - beats, 0);
                 currDivisionPerPart[partIdx]    = currDivision;
                 outputIdx               = outputIdx - 1;
                 while (getCurrBeat() > currDivision) {

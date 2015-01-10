@@ -21,6 +21,7 @@ import Model                = require("./model");
 import assert       		= require("assert");
 
 import Annotator        	= require("./annotator");
+import AttributesModel      = require("./attributes");
 import BarlineModelType 	= require("./barline");     // Cyclic
 import C                	= require("./contracts");
 import DurationModelType    = require("./duration");    // Cyclic
@@ -42,6 +43,9 @@ class EndMarkerModel extends Model {
     /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
     recordMetreDataImpl(mctx: C.MetreContext) {
+        if (!mctx.attributes) {
+            throw new AttributesModel.AttributesUndefinedException();
+        }
         this.ctxData = new C.MetreContext({
             attributes: mctx.attributes,
             ts: mctx.ts,
