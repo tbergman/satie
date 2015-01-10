@@ -27,6 +27,7 @@ import BarlineModel         = require("./barline");
 import BeamGroupModelType   = require("./beamGroup");       // Cyclic
 import C                    = require("./contracts");
 import EndMarkerModel       = require("./endMarker");
+import FontMetrics          = require("../util/fontMetrics");
 import KeySignatureModel    = require("./keySignature");
 import Metre                = require("./metre");
 import NewlineModel         = require("./newline");
@@ -501,6 +502,16 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         /*---- Set data needed for view -------------------------------------*/
 
+        var maybePrev = ctx.prev(c => !c || c.isNote || c.priority === C.Type.Barline || c.type === C.Type.NewLine);
+        if (maybePrev) {
+            var space = this.x - maybePrev.x;
+            if (maybePrev.isNote) {
+                var p: DurationModel = <any>maybePrev;
+                space -= p.getLyricWidth()/2;
+            }
+            ctx.x += Math.max(this.getLyricWidth()/2 - space, 0);
+        }
+
         // Middle note directions are set by surrounding notes.
         if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = this.calcMiddleNoteDirection(ctx);
@@ -528,8 +539,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         } else if (!this.inBeam) {
             this._handleTie(ctx);
         }
-
-        this.x = ctx.x;
 
         // Set which accidentals are displayed, and then update the accidentals currently
         // active in the bar.
@@ -603,6 +612,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         /*---- Update context -----------------------------------------------*/
 
+        this.x = ctx.x;
         ctx.x += this.getWidth(ctx);
 
         if (!ctx.isBeam && !this._notes[0].grace) {
@@ -619,15 +629,39 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     /*---- III. Util ----------------------------------------------------------------------------*/
 
-    getWidth(ctx: Annotator.Context) {
+    private getWidth(ctx: Annotator.Context) {
         var grace = this._notes[0].grace;
         var baseWidth = grace ? 11.4 : 22.8;
 
         var accidentalWidth = this._displayedAccidentals ? 9.6*(grace ? 0.6 : 1.0) : 0;
         var totalWidth = baseWidth + (this.extraWidth || 0) + accidentalWidth;
 
+        var lyricWidth = this.getLyricWidth();
+        totalWidth = Math.max(lyricWidth/2, totalWidth);
+
         assert(isFinite(totalWidth));
         return totalWidth;
+    }
+
+    getLyricWidth() {
+        var lyrics: C.MusicXML.Lyric[] = <any[]> _.chain(this._notes)
+                        .map(n => n.lyrics)
+                        .filter(l => !!l)
+                        .flatten(true)
+                        .filter((l: C.MusicXML.Lyric) => !!l)
+                        .value();
+
+        var lyricWidth = _.reduce(lyrics, (width: number, lyric: C.MusicXML.Lyric) => {
+            var words = "";
+            _.forEach(lyric.lyricParts, part => {
+                if (part._class === "Text") {
+                    words += part.data;
+                }
+            });
+            return Math.max(FontMetrics.getAlegreyaWidth(words, 22), width); // Font size?
+        }, 0);
+
+        return (lyricWidth ? lyricWidth + 10 : 0);
     }
 
     calcDivisions(ctx: C.MetreContext, inheritedCount?: number, force?: boolean) {

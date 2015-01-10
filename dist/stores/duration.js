@@ -12,6 +12,7 @@ var AttributesModel = require("./attributes");
 var BarlineModel = require("./barline");
 var C = require("./contracts");
 var EndMarkerModel = require("./endMarker");
+var FontMetrics = require("../util/fontMetrics");
 var KeySignatureModel = require("./keySignature");
 var Metre = require("./metre");
 var NewlineModel = require("./newline");
@@ -469,6 +470,15 @@ var DurationModel = (function (_super) {
         if (!ctx.next()) {
             ctx.insertFuture(new EndMarkerModel({ endMarker: true }, true, this.engraved));
         }
+        var maybePrev = ctx.prev(function (c) { return !c || c.isNote || c.priority === 300 /* Barline */ || c.type === 130 /* NewLine */; });
+        if (maybePrev) {
+            var space = this.x - maybePrev.x;
+            if (maybePrev.isNote) {
+                var p = maybePrev;
+                space -= p.getLyricWidth() / 2;
+            }
+            ctx.x += Math.max(this.getLyricWidth() / 2 - space, 0);
+        }
         if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = this.calcMiddleNoteDirection(ctx);
         }
@@ -490,7 +500,6 @@ var DurationModel = (function (_super) {
         else if (!this.inBeam) {
             this._handleTie(ctx);
         }
-        this.x = ctx.x;
         this._displayedAccidentals = this.getDisplayedAccidentals(ctx);
         var accidentals = this.getAccidentals(ctx);
         _.forEach(accidentals, function (a, i) {
@@ -539,6 +548,7 @@ var DurationModel = (function (_super) {
             return toDisplay;
         }).flatten(true).filter(function (n) { return !!n; }).value();
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        this.x = ctx.x;
         ctx.x += this.getWidth(ctx);
         if (!ctx.isBeam && !this._notes[0].grace) {
             ctx.division = (ctx.loc.division || 0) + this._divisions;
@@ -554,8 +564,23 @@ var DurationModel = (function (_super) {
         var baseWidth = grace ? 11.4 : 22.8;
         var accidentalWidth = this._displayedAccidentals ? 9.6 * (grace ? 0.6 : 1.0) : 0;
         var totalWidth = baseWidth + (this.extraWidth || 0) + accidentalWidth;
+        var lyricWidth = this.getLyricWidth();
+        totalWidth = Math.max(lyricWidth / 2, totalWidth);
         assert(isFinite(totalWidth));
         return totalWidth;
+    };
+    DurationModel.prototype.getLyricWidth = function () {
+        var lyrics = _.chain(this._notes).map(function (n) { return n.lyrics; }).filter(function (l) { return !!l; }).flatten(true).filter(function (l) { return !!l; }).value();
+        var lyricWidth = _.reduce(lyrics, function (width, lyric) {
+            var words = "";
+            _.forEach(lyric.lyricParts, function (part) {
+                if (part._class === "Text") {
+                    words += part.data;
+                }
+            });
+            return Math.max(FontMetrics.getAlegreyaWidth(words, 22), width);
+        }, 0);
+        return (lyricWidth ? lyricWidth + 10 : 0);
     };
     DurationModel.prototype.calcDivisions = function (ctx, inheritedCount, force) {
         if (!force && this._divisions) {
