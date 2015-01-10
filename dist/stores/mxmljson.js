@@ -102,6 +102,10 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                     }
                     Annotator.recordMetreData(parts, voices);
                     var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[mPartIdx].id) : 1111 /* Unknown */;
+                    if (!thisPriority) {
+                        ++idxPerPart[mPartIdx];
+                        return false;
+                    }
                     if (minPriority === thisPriority && currDivision === currDivisionPerPart[mPartIdx]) {
                         var divisionsInEl = 0;
                         var isChord = false;
@@ -232,6 +236,8 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                 return 410 /* Direction */;
             case "Note":
                 return 600 /* Duration */;
+            case "Grouping":
+                return null;
             default:
                 throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }

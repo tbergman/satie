@@ -178,6 +178,11 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                     var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[mPartIdx].id) :
                         C.Type.Unknown;
 
+                    if (!thisPriority) {
+                        ++idxPerPart[mPartIdx];
+                        return false;
+                    }
+
                     if (minPriority === thisPriority && currDivision === currDivisionPerPart[mPartIdx]) {
                         var divisionsInEl = 0;
                         var isChord = false;
@@ -349,6 +354,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                 return C.Type.Direction;
             case "Note":
                 return C.Type.Duration;
+            case "Grouping":
+                return null;
             default:
                 throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }
