@@ -4292,6 +4292,7 @@ declare module '__satie/stores/annotator' {
         lines: ILineSnapshot[];
     }
     export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]): void;
+    export function initVoice(voices: C.IVoice[], voiceIdx: number): C.IterationStatus;
 }
 
 declare module '__satie/stores/model' {

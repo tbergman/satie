@@ -264,7 +264,7 @@ class NewlineModel extends Model {
         return C.IterationStatus.Success;
 
         function expandable(c: Model) {
-            return c.priority === C.Type.Duration && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
+            return c.isNote && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
         }
     }
 
@@ -349,7 +349,7 @@ class NewlineModel extends Model {
         }
 
         function expandable(c: Model) {
-            return c.priority === C.Type.Duration && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
+            return c.isNote && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
         }
     };
 

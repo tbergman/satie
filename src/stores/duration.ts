@@ -366,6 +366,8 @@ class DurationModel extends Model implements C.IPitchDuration {
         var i: number;
         var j: number;
 
+        /*---- Check context ------------------------------------------------*/
+
         // A key signature must exist on each line;
         // The key signature ensures a clef exists.
         if (!ctx.attributes.keySignature) {
@@ -375,6 +377,12 @@ class DurationModel extends Model implements C.IPitchDuration {
         // A time signature must exist on the first line of every page.
         if (!ctx.ts) {
             return TimeSignatureModel.createTS(ctx);
+        }
+
+        if (ctx.attributes && !ctx.attributes.clefs[this.staff - 1]) {
+            ctx.part.containsVoice[ctx._voices.length] = true;
+            var ret = Annotator.initVoice(ctx._voices, ctx._voices.length);
+            return ret;
         }
 
         // Get the measureStyle owned by the most recent attribute...
@@ -491,6 +499,8 @@ class DurationModel extends Model implements C.IPitchDuration {
             ctx.insertFuture(new EndMarkerModel({endMarker: true}, true, this.engraved));
         }
 
+        /*---- Set data needed for view -------------------------------------*/
+
         // Middle note directions are set by surrounding notes.
         if (DurationModel.getAverageLine(this, ctx) === 3) {
             this.forceMiddleNoteDirection = this.calcMiddleNoteDirection(ctx);
@@ -498,7 +508,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             this.forceMiddleNoteDirection = NaN;
         }
 
-        // Copy information the view needs from the context.
+        // Set lines
         this.lines = DurationModel.getLines(this, ctx);
         assert(this.lines);
         assert(_.forEach(this.lines, l => isFinite(l)));
@@ -508,10 +518,6 @@ class DurationModel extends Model implements C.IPitchDuration {
                 Math.max(ctx.minBottomPaddings[this.staff], -(this.lines[i] - 3)*10);
             ctx.minTopPaddings[this.staff] =
                 Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4)*10);
-        }
-
-        if (!ctx.isBeam && !this._notes[0].grace) {
-            ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
 
         if (!ctx.isBeam && this.inBeam) {
@@ -593,8 +599,15 @@ class DurationModel extends Model implements C.IPitchDuration {
             .filter(n => !!n)
             .value();
 
-        ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+
+        /*---- Update context -----------------------------------------------*/
+
+        ctx.x += this.getWidth(ctx);
+
+        if (!ctx.isBeam && !this._notes[0].grace) {
+            ctx.division = (ctx.loc.division || 0) + this._divisions;
+        }
 
         if (this.multiRest !== undefined) {
             ctx.invisibleForBars = this.multiRest;
@@ -844,8 +857,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var beats = factor * (this._notes[0].duration / mctx.attributes.divisions);
         this._count = 4 / (this._notes[0].duration / mctx.attributes.divisions);
 
-        // TRY DOTS
-        // ----------------
+        // Try dots
         var dotFactor = 1;
         var dots = 0;
         while (!isPO2(1/(beats/dotFactor/4)) && dots < 5) { // /8?
@@ -859,13 +871,10 @@ class DurationModel extends Model implements C.IPitchDuration {
             this.dots = dots;
         }
 
-        // Try tuplets?
-        // ------------
+        // Try tuplets
         // TODO
 
-        // TRY Ties
-        // ------------------
-
+        // Try ties
         if (!isPO2(this.count)) {
             // Whole bar rests can still exist even when there's no single NOTE duration
             // that spans a bar.
@@ -879,6 +888,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
 
         // TODO: Find the best match for performance data
+
         function isPO2(n: number) {
             if (Math.abs(Math.round(n) - n) > 0.00001) {
                 return false;
@@ -908,6 +918,10 @@ class DurationModel extends Model implements C.IPitchDuration {
      */
     get staff() {
         return _.chain(this._p_notes).map(n => n.staff).max().value();
+    }
+
+    set staff(n: number) {
+        _.forEach(this._p_notes, note => note.staff = n);
     }
 
     /*---- III.2 Vertical layout ----------------------------------------------------------------*/

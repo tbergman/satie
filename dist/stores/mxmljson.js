@@ -1,10 +1,8 @@
 var _ = require("lodash");
 var assert = require("assert");
 var Annotator = require("./annotator");
-var BeginModel = require("./begin");
 var BarlineModel = require("./barline");
 var C = require("./contracts");
-var Instruments = require("./instruments");
 var Model = require("./model");
 var PlaceholderModel = require("./placeholder");
 function toScore(score) {
@@ -100,15 +98,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                     var voiceIdx = element ? getVoiceIdx(mPartIdx, element.voice) : -1;
                     parts[mPartIdx].staveCount = Math.max(parts[mPartIdx].staveCount, element ? element.staff || 1 : -1);
                     if (!!~voiceIdx && !voices[voiceIdx]) {
-                        voices[voiceIdx] = {
-                            instrument: Instruments.List[0],
-                            body: [new BeginModel({}, true)]
-                        };
-                        if (voiceIdx) {
-                            for (var i = 1; i < voices[0].body.length; ++i) {
-                                voices[voiceIdx].body.push(new PlaceholderModel({ priority: voices[0].body[i].priority }, true));
-                            }
-                        }
+                        Annotator.initVoice(voices, voiceIdx);
                     }
                     Annotator.recordMetreData(parts, voices);
                     var thisPriority = element ? mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[mPartIdx].id) : 1111 /* Unknown */;

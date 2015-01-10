@@ -711,6 +711,22 @@ function recordMetreData(parts, voices) {
     }
 }
 exports.recordMetreData = recordMetreData;
+function initVoice(voices, voiceIdx) {
+    var Instruments = require("./instruments");
+    var BeginModel = require("./begin");
+    var PlaceholderModel = require("./placeholder");
+    voices[voiceIdx] = {
+        instrument: Instruments.List[0],
+        body: [new BeginModel({}, true)]
+    };
+    if (voiceIdx) {
+        for (var i = 1; i < voices[0].body.length; ++i) {
+            voices[voiceIdx].body.push(new PlaceholderModel({ priority: voices[0].body[i].priority }, true));
+        }
+    }
+    return 90 /* RetryFromEntry */;
+}
+exports.initVoice = initVoice;
 function _recordMetreData(parts, voices) {
     "use strict";
     _.forEach(parts, function (part) {
@@ -732,24 +748,27 @@ function _recordMetreData(parts, voices) {
 }
 var PrivIterator = (function () {
     function PrivIterator(parent, from, voices, cursor, assertionPolicy) {
-        var _this = this;
         this.eofJustificationDirty = true;
         this._canExitAtNewline = false;
         this._components = [];
-        this._parent = parent;
-        this._voices = voices;
-        this._cursor = cursor;
-        this._from = from;
-        this._parent.loc = C.JSONx.clone(from);
-        this._assertionPolicy = assertionPolicy;
-        recordMetreData(parent.score.parts, this._voices);
-        this._components = _.map(voices, function (voice, idx) {
-            var part = _.find(parent.score.parts, function (part) { return _.any(part.containsVoice, function (true_, oVoice) { return voices[oVoice] === voice; }); });
-            var partVoices = _.chain(part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).sort().map(function (oVoice) { return voices[oVoice]; }).value();
-            var idxInPart = _.indexOf(partVoices, voice);
-            return new PrivIteratorComponent(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
-        });
-        this._assertOffsetsOK();
+        this._reset = function reset() {
+            var _this = this;
+            this._parent = parent;
+            this._voices = voices;
+            this._cursor = cursor;
+            this._from = from;
+            this._parent.loc = C.JSONx.clone(from);
+            this._assertionPolicy = assertionPolicy;
+            recordMetreData(parent.score.parts, this._voices);
+            this._components = _.map(voices, function (voice, idx) {
+                var part = _.find(parent.score.parts, function (part) { return _.any(part.containsVoice, function (true_, oVoice) { return voices[oVoice] === voice; }); });
+                var partVoices = _.chain(part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).sort().map(function (oVoice) { return voices[oVoice]; }).value();
+                var idxInPart = _.indexOf(partVoices, voice);
+                return new PrivIteratorComponent(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
+            });
+            this._assertOffsetsOK();
+        };
+        this._reset();
     }
     PrivIterator.prototype.annotate = function (verbose) {
         this._assertOffsetsOK();
@@ -997,17 +1016,6 @@ var PrivIterator = (function () {
             this._parent.score.dangerouslyMarkRendererLineDirty(this._parent.line);
         }
         this._canExitAtNewline = false;
-    };
-    PrivIterator.prototype._reset = function () {
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._parent.nullEntry) {
-                this._from = {
-                    bar: 1,
-                    division: 0
-                };
-            }
-            this._components[i].reset(this._from);
-        }
     };
     return PrivIterator;
 })();

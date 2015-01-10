@@ -673,8 +673,8 @@ export enum IterationStatus {
     RetryCurrent                    = 20,
 
     /** 
-     * Like RETRY_CURRENT, but explicitly state that the entire
-     * remainder of the document must be re-annotated.
+     * Like RetryCurrent, but all following lines must be re-annotated.
+     * This is a hack which may be removed later.
      */
     RetryCurrentNoOptimizations     = 30,
 

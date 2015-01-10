@@ -170,16 +170,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                     var voiceIdx = element ? getVoiceIdx(mPartIdx, element.voice) : -1;
                     parts[mPartIdx].staveCount = Math.max(parts[mPartIdx].staveCount, element ? element.staff||1 : -1);
                     if (!!~voiceIdx && !voices[voiceIdx]) {
-                        voices[voiceIdx] = {
-                            instrument: Instruments.List[0],
-                            body: <Model[]> [new BeginModel({}, true)]
-                        };
-                        if (voiceIdx) {
-                            for (var i = 1; i < voices[0].body.length; ++i) {
-                                voices[voiceIdx].body.push(new PlaceholderModel(
-                                    {priority: voices[0].body[i].priority}, true));
-                            }
-                        }
+                        Annotator.initVoice(voices, voiceIdx);
                     }
 
                     Annotator.recordMetreData(parts, voices); // XXX: O(n^2) for no reason.

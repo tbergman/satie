@@ -1132,6 +1132,23 @@ export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
     }
 }
 
+export function initVoice(voices: C.IVoice[], voiceIdx: number) {
+    var Instruments          = require("./instruments");
+    var BeginModel           = require("./begin");
+    var PlaceholderModel     = require("./placeholder");
+    voices[voiceIdx] = {
+        instrument: Instruments.List[0],
+        body: <Model[]> [new BeginModel({}, true)]
+    };
+    if (voiceIdx) {
+        for (var i = 1; i < voices[0].body.length; ++i) {
+            voices[voiceIdx].body.push(new PlaceholderModel(
+                {priority: voices[0].body[i].priority}, true));
+        }
+    }
+    return C.IterationStatus.RetryFromEntry;
+}
+
 function _recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
     "use strict";
     _.forEach(parts, part => {
@@ -1170,29 +1187,32 @@ function _recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
 class PrivIterator {
     constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
             cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
-        this._parent = parent;
-        this._voices = voices;
-        this._cursor = cursor;
-        this._from = from;
-        this._parent.loc = C.JSONx.clone(from);
-        this._assertionPolicy = assertionPolicy;
-        recordMetreData(parent.score.parts, this._voices);
-        this._components = _.map(voices, (voice, idx) => {
-            var part: C.IPart   = _.find(parent.score.parts, part => _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice)); 
-            var partVoices      = _.chain(part.containsVoice).keys().map(a => parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
-            var idxInPart       = _.indexOf(partVoices, voice);
+        this._reset = function reset() {
+            this._parent = parent;
+            this._voices = voices;
+            this._cursor = cursor;
+            this._from = from;
+            this._parent.loc = C.JSONx.clone(from);
+            this._assertionPolicy = assertionPolicy;
+            recordMetreData(parent.score.parts, this._voices);
+            this._components = _.map(voices, (voice, idx) => {
+                var part: C.IPart   = _.find(parent.score.parts, part => _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice)); 
+                var partVoices      = _.chain(part.containsVoice).keys().map(a => parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
+                var idxInPart       = _.indexOf(partVoices, voice);
 
-            return new PrivIteratorComponent(
-                /* starting location*/ from,
-                /* voice */ voice,
-                /* part index */ idx,
-                /* visual cursor */ cursor,
-                /* part */ part,
-                /* index in part */ idxInPart,
-                this._assertionPolicy);
-        });
-        
-        this._assertOffsetsOK();
+                return new PrivIteratorComponent(
+                    /* starting location*/ from,
+                    /* voice */ voice,
+                    /* part index */ idx,
+                    /* visual cursor */ cursor,
+                    /* part */ part,
+                    /* index in part */ idxInPart,
+                    this._assertionPolicy);
+            });
+            
+            this._assertOffsetsOK();
+        }
+        this._reset();
     }
 
     annotate(verbose: boolean): C.IterationStatus {
@@ -1508,18 +1528,7 @@ class PrivIterator {
         this._canExitAtNewline = false;
     }
 
-    private _reset() {
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._parent.nullEntry) {
-                this._from = {
-                    bar: 1,
-                    division: 0
-                };
-            }
-            this._components[i].reset(this._from);
-        }
-    }
-
+    private _reset: () => void;
     private _canExitAtNewline: boolean = false;
     private _components: Array<PrivIteratorComponent> = [];
     private _cursor: C.IVisualCursor;

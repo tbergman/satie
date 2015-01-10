@@ -187,7 +187,7 @@ var NewlineModel = (function (_super) {
         }
         return 10 /* Success */;
         function expandable(c) {
-            return c.priority === 600 /* Duration */ && !c.soundOnly && !c._notes[0].grace;
+            return c.isNote && !c.soundOnly && !c._notes[0].grace;
         }
     };
     NewlineModel.centerWholeBarRests = function (body, idx) {
@@ -320,7 +320,7 @@ var NewlineModel = (function (_super) {
             }
         }
         function expandable(c) {
-            return c.priority === 600 /* Duration */ && !c.soundOnly && !c._notes[0].grace;
+            return c.isNote && !c.soundOnly && !c._notes[0].grace;
         }
     };
     return NewlineModel;

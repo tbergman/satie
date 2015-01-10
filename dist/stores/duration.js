@@ -373,6 +373,11 @@ var DurationModel = (function (_super) {
         if (!ctx.ts) {
             return TimeSignatureModel.createTS(ctx);
         }
+        if (ctx.attributes && !ctx.attributes.clefs[this.staff - 1]) {
+            ctx.part.containsVoice[ctx._voices.length] = true;
+            var ret = Annotator.initVoice(ctx._voices, ctx._voices.length);
+            return ret;
+        }
         var measureStyle = ctx.attributes._measureStyle;
         delete this.multiRest;
         if (measureStyle && !ctx.invisibleForBars) {
@@ -477,9 +482,6 @@ var DurationModel = (function (_super) {
             ctx.minBottomPaddings[this.staff] = Math.max(ctx.minBottomPaddings[this.staff], -(this.lines[i] - 3) * 10);
             ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4) * 10);
         }
-        if (!ctx.isBeam && !this._notes[0].grace) {
-            ctx.division = (ctx.loc.division || 0) + this._divisions;
-        }
         if (!ctx.isBeam && this.inBeam) {
             ctx.x = this.x + this.getWidth(ctx);
             this._handleTie(ctx);
@@ -536,8 +538,11 @@ var DurationModel = (function (_super) {
             }
             return toDisplay;
         }).flatten(true).filter(function (n) { return !!n; }).value();
-        ctx.x += this.getWidth(ctx);
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
+        ctx.x += this.getWidth(ctx);
+        if (!ctx.isBeam && !this._notes[0].grace) {
+            ctx.division = (ctx.loc.division || 0) + this._divisions;
+        }
         if (this.multiRest !== undefined) {
             ctx.invisibleForBars = this.multiRest;
             ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], 40);
@@ -790,6 +795,9 @@ var DurationModel = (function (_super) {
     Object.defineProperty(DurationModel.prototype, "staff", {
         get: function () {
             return _.chain(this._p_notes).map(function (n) { return n.staff; }).max().value();
+        },
+        set: function (n) {
+            _.forEach(this._p_notes, function (note) { return note.staff = n; });
         },
         enumerable: true,
         configurable: true
