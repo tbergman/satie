@@ -105,13 +105,13 @@ class Model {
 
     endMarker:          boolean;
     beam:               C.IPitchDuration[];
-    get note():         C.IPitchDuration        { throw "Not a Duration"; }
+    get note():         C.IPitchDuration        { return null; }
     get isNote():       boolean                 { return false; }
     get isRest():       boolean                 { return false; }
     get visible():      boolean                 { return !this.soundOnly; }
 
-    get xPolicy():      C.RectifyXPolicy        { throw "Not implemented"; }
-    get type():         C.Type                  { throw "Not implemented"; }
+    get xPolicy():      C.RectifyXPolicy        { return null; }
+    get type():         C.Type                  { return null; }
     get fields():       string[]                { return []; }
     get mxmlJsonOnlyFields(): string[]          { return []; }
 
@@ -126,11 +126,11 @@ class Model {
         return this.priority > C.Type.START_OF_ATTRIBUTES && this.priority < C.Type.END_OF_ATTRIBUTES;
     }
 
-    get revision():     string                  { throw "Not a Barline"; }
-    set revision(n: string)                     { throw "Not a Barline"; }
+    get revision():     string                  { return null; }
+    set revision(n: string)                     { }
 
     get priority():     C.Type                  { return this.type; }
-    set priority(p: C.Type)                     { throw "Not a Placeholder"; }
+    set priority(p: C.Type)                     { }
 
     calcDivisions(ctx: C.MetreContext)          { return 0; }
 

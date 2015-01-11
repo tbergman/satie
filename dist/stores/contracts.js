@@ -188,7 +188,7 @@ var ScoreHeader = (function () {
     }
     Object.defineProperty(ScoreHeader.prototype, "composer", {
         get: function () {
-            if (!(this.identification.creators || []).length) {
+            if (!this.identification || !(this.identification.creators || []).length) {
                 return "";
             }
             var idComposer = this.identification.creators.filter(function (c) { return c.type === "composer"; }).map(function (c) { return c.creator; }).join(", ");
@@ -198,6 +198,14 @@ var ScoreHeader = (function () {
             return this.credits.filter(function (c) { return !!~c.creditTypes.indexOf("composer"); }).map(function (m) { return m.creditWords.map(function (w) { return w.words; }).join(" "); }).join(", ");
         },
         set: function (composer) {
+            this.identification = this.identification || {
+                miscellaneous: [],
+                creators: [],
+                encoding: [],
+                relations: [],
+                rights: [],
+                source: null
+            };
             this.identification.creators = this.identification.creators || [];
             if (!_.any(this.identification.creators, function (c) {
                 var isComposer = c.type === "composer";

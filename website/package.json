@@ -29,7 +29,6 @@
     "main": "./src/main.ts",
     "scripts": {
         "start": "gulp watch",
-        "build": "gulp build",
-        "test": "gulp test-once"
+        "build": "gulp build"
     }
 }

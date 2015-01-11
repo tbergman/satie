@@ -18,11 +18,11 @@
         "browserify": "7.0.3",
         "dts-bundle": "0.2.0",
         "event-stream": "3.1.7",
+        "jest-cli": "0.2.1",
         "gulp": "3.8.10",
         "gulp-concat": "2.4.2",
         "gulp-exit": "0.0.2",
         "gulp-jasmine": "1.0.1",
-        "gulp-karma": "git://github.com/jimthedev/gulp-karma.git",
         "gulp-newer": "0.5.0",
         "gulp-mocha-browserify-sweet": "0.2.1",
         "gulp-streamify": "0.0.5",
@@ -40,10 +40,25 @@
     "typescript": {
         "definition": "dist/satie.d.ts"
     },
+    "jest": {
+        "moduleFileExtensions": ["js", "node"],
+        "testPathIgnorePatterns": [
+            "node_modules",
+            "src"
+        ],
+        "unmockedModulePathPatterns": [
+            "node_modules/react",
+            "node_modules/typed-react",
+            "node_modules/lodash",
+            "node_modules/musicxml-interfaces",
+            "src/stores/contracts.js",
+            "assert"
+        ]
+    },
     "scripts": {
         "build": "NODE_ENV=production gulp build",
         "buildDev": "gulp build",
         "start": "gulp watch",
-        "test": "gulp test"
+        "test": "gulp build && jest ./dist"
     }
 }

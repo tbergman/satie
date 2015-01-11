@@ -55,6 +55,7 @@ var BarlineModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
         this.ctxData.division = 0;
         mctx.division = 0;
+        ++mctx.bar;
     };
     BarlineModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.prev().endMarker) {

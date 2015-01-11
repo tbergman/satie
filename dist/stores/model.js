@@ -115,7 +115,7 @@ var Model = (function () {
     });
     Object.defineProperty(Model.prototype, "note", {
         get: function () {
-            throw "Not a Duration";
+            return null;
         },
         enumerable: true,
         configurable: true
@@ -143,14 +143,14 @@ var Model = (function () {
     });
     Object.defineProperty(Model.prototype, "xPolicy", {
         get: function () {
-            throw "Not implemented";
+            return null;
         },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(Model.prototype, "type", {
         get: function () {
-            throw "Not implemented";
+            return null;
         },
         enumerable: true,
         configurable: true
@@ -190,10 +190,9 @@ var Model = (function () {
     });
     Object.defineProperty(Model.prototype, "revision", {
         get: function () {
-            throw "Not a Barline";
+            return null;
         },
         set: function (n) {
-            throw "Not a Barline";
         },
         enumerable: true,
         configurable: true
@@ -203,7 +202,6 @@ var Model = (function () {
             return this.type;
         },
         set: function (p) {
-            throw "Not a Placeholder";
         },
         enumerable: true,
         configurable: true

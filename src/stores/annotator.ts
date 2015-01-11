@@ -141,6 +141,10 @@ export class Context implements C.MetreContext {
 
     get staveSpacing(): number {
         var print                   = C.getPrint(this._layout.header);
+        if (!print /* Jest */) {
+            assert(typeof jest !== "undefined", "This is only true if mocked.");
+            return 10;
+        }
         var staffLayout             = print.staffLayouts[this.voiceIdx];
         var staffSpacing            = staffLayout ? staffLayout.staffDistance : null;
 
@@ -1753,7 +1757,7 @@ class PrivIteratorComponent {
     public  _idx:               number;
     private _location:          C.Location;
     private _sidx:              number;
-    private _voice:             C.IVoice;
+    _voice:                     C.IVoice;
     private _part:              C.IPart;
     private _idxInPart:         number;
 }
@@ -1815,3 +1819,23 @@ var MIN_LOCATION = new C.Location({
     bar:  -1,
     division: -1
 });
+
+PrivIteratorComponent.prototype._voice = {
+    body: [],
+    instrument: null
+};
+
+Context.prototype.body = [];
+Context.prototype.voiceIdx = 0;
+Context.prototype.pageStarts = [];
+Context.prototype._layout = <any> {
+    header: null,
+    snapshot: null,
+    proto: true
+};
+Context.prototype.loc = {
+    bar: 1,
+    division: 0,
+    endMarker: false,
+    proto: true
+};

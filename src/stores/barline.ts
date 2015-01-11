@@ -100,6 +100,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.division = 0;
         mctx.division = 0;
+        ++mctx.bar;
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {

@@ -441,7 +441,7 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
         }
     }
     get composer() {
-        if (!(this.identification.creators||[]).length) {
+        if (!this.identification || !(this.identification.creators||[]).length) {
             return "";
         }
         var idComposer = this.identification.creators
@@ -457,6 +457,14 @@ export class ScoreHeader implements MusicXML.ScoreHeader {
             .join(", ");
     }
     set composer(composer: string) {
+        this.identification = this.identification || {
+                miscellaneous: [],
+                creators: [],
+                encoding: [],
+                relations: [],
+                rights: [],
+                source: null
+            };
         this.identification.creators = this.identification.creators || [];
 
         // This is not as powerful as manually setting creators... It only supports a single composer.
@@ -559,7 +567,7 @@ export class Print implements MusicXML.Print {
     staffLayouts:                MusicXML.StaffLayout[];
     pageNumber:                 string;
 
-    /* Convienience */
+    /* Convenience */
     constructor(print: MusicXML.Print) {
         assign(this, print);
     }
