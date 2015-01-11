@@ -294,6 +294,12 @@ var Model = (function () {
         });
         return model;
     };
+    Model.setView = function (View) {
+        this.prototype.render = function (options) {
+            var props = _.extend({}, options, { key: this.key, spec: this });
+            return React.createElement(View, props);
+        };
+    };
     Model._sessionId = C.generateUUID();
     Model._lastKey = 0;
     return Model;
@@ -348,14 +354,6 @@ var Model;
         return SubAttributeModel;
     })(Model);
     Model.SubAttributeModel = SubAttributeModel;
-    function setView(View) {
-        this.prototype.render = function (options) {
-            var props = _.extend({}, options, { key: this.key, spec: this });
-            return React.createElement(View, props);
-        };
-    }
-    Model.setView = setView;
-    ;
     function removeAnnotations(voices) {
         for (var i = 0; i < voices.length; ++i) {
             for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {

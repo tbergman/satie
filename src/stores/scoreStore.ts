@@ -347,7 +347,8 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         });
     }
 
-    private _handleAction(action: C.IFluxAction<void>) {
+    private _handleAction: (action: C.IFluxAction<void>) => boolean =
+            (action: C.IFluxAction<void>) => {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {

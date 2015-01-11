@@ -1585,7 +1585,6 @@ module Priv {
                 cursor: C.IVisualCursor, part: C.IPart, indexInPart: number,
                 assertionPolicy: AssertionPolicy) {
             this._voice             = voice;
-            this._body              = voice.body;
             this._sidx              = idx;
             this._cursor            = cursor;
             this._part              = part;

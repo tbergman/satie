@@ -291,6 +291,15 @@ class Model {
         return model;
     }
 
+    /**
+     * Sets the type used for render().
+     */
+    static setView(View: (opts: { key: number; spec: Model;}) => any) {
+        this.prototype.render = function (options: any) {
+            var props = _.extend({}, options, {key: this.key, spec: this});
+            return React.createElement(View, props);
+        };
+    }
 }
 
 Model.prototype.soundOnly = false;
@@ -339,16 +348,6 @@ module Model {
         }
         get retryStatus() { return C.IterationStatus.RetryCurrent; }
     }
-
-    /**
-     * Sets the type used for render().
-     */
-    export function setView(View: (opts: { key: number; spec: Model;}) => any) {
-        this.prototype.render = function (options: any) {
-            var props = _.extend({}, options, {key: this.key, spec: this});
-            return React.createElement(View, props);
-        };
-    };
 
     /**
      * Given an array of voices, remove all annotated objects

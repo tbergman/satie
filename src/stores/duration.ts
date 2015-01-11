@@ -1343,9 +1343,9 @@ module DurationModel {
             if (this.notations) {
                 var notations = this.notations;
                 var notation: C.MusicXML.Notations = {
-                    articulations:          combineArticulations                   ("articulations"),
+                    articulations:          combineArticulations                ("articulations"),
                     accidentalMarks:        combine<C.MusicXML.AccidentalMark>  ("accidentalMarks"),
-                    arpeggiates:            combine<C.MusicXML.Arpeggiate>         ("arpeggiates"),
+                    arpeggiates:            combine<C.MusicXML.Arpeggiate>      ("arpeggiates"),
                     dynamics:               combine<C.MusicXML.Dynamics>        ("dynamics"),
                     fermatas:               combine<C.MusicXML.Fermata>         ("fermatas"),
                     glissandos:             combine<C.MusicXML.Glissando>       ("glissandos"),
@@ -1362,32 +1362,32 @@ module DurationModel {
                     printObject:               last<boolean>                    ("printObject")
                 };
                 this.notations = [notation];
+            }
 
-                function combine<T>(key: string): T[] {
-                    return _.reduce(notations, (memo: any, n:any) =>
-                        n[key] ? (memo||<T[]>[]).concat(n[key]) : memo, null);
+            function combine<T>(key: string): T[] {
+                return _.reduce(notations, (memo: any, n:any) =>
+                    n[key] ? (memo||<T[]>[]).concat(n[key]) : memo, null);
+            }
+
+            function combineArticulations(key: string): C.MusicXML.Articulations[] {
+                var array = combine<C.MusicXML.Articulations>(key);
+                if (!array) {
+                    return null;
                 }
-
-                function combineArticulations(key: string): C.MusicXML.Articulations[] {
-                    var array = combine<C.MusicXML.Articulations>(key);
-                    if (!array) {
-                        return null;
-                    }
-                    var articulations: C.MusicXML.Articulations = <any> {};
-                    for (var i = 0; i < array.length; ++i) {
-                        for (var akey in array[i]) {
-                            if (array[i].hasOwnProperty(akey)) {
-                                (<any>articulations)[akey] = (<any>array[i])[akey];
-                            }
+                var articulations: C.MusicXML.Articulations = <any> {};
+                for (var i = 0; i < array.length; ++i) {
+                    for (var akey in array[i]) {
+                        if (array[i].hasOwnProperty(akey)) {
+                            (<any>articulations)[akey] = (<any>array[i])[akey];
                         }
                     }
-                    return [articulations];
                 }
+                return [articulations];
+            }
 
-                function last<T>(key: string): T {
-                    return _.reduce(notations, (memo: any, n:any) =>
-                        n[key] ? n[key] : memo, []);
-                }
+            function last<T>(key: string): T {
+                return _.reduce(notations, (memo: any, n:any) =>
+                    n[key] ? n[key] : memo, []);
             }
         }
     }

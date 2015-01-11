@@ -1166,27 +1166,27 @@ var DurationModel;
                     printObject: last("printObject")
                 };
                 this.notations = [notation];
-                function combine(key) {
-                    return _.reduce(notations, function (memo, n) { return n[key] ? (memo || []).concat(n[key]) : memo; }, null);
+            }
+            function combine(key) {
+                return _.reduce(notations, function (memo, n) { return n[key] ? (memo || []).concat(n[key]) : memo; }, null);
+            }
+            function combineArticulations(key) {
+                var array = combine(key);
+                if (!array) {
+                    return null;
                 }
-                function combineArticulations(key) {
-                    var array = combine(key);
-                    if (!array) {
-                        return null;
-                    }
-                    var articulations = {};
-                    for (var i = 0; i < array.length; ++i) {
-                        for (var akey in array[i]) {
-                            if (array[i].hasOwnProperty(akey)) {
-                                articulations[akey] = array[i][akey];
-                            }
+                var articulations = {};
+                for (var i = 0; i < array.length; ++i) {
+                    for (var akey in array[i]) {
+                        if (array[i].hasOwnProperty(akey)) {
+                            articulations[akey] = array[i][akey];
                         }
                     }
-                    return [articulations];
                 }
-                function last(key) {
-                    return _.reduce(notations, function (memo, n) { return n[key] ? n[key] : memo; }, []);
-                }
+                return [articulations];
+            }
+            function last(key) {
+                return _.reduce(notations, function (memo, n) { return n[key] ? n[key] : memo; }, []);
             }
         };
         return MXMLNote;

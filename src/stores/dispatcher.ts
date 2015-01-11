@@ -16,23 +16,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import Promise = require("es6-promise");
-import _ = require("lodash");
-import assert = require("assert");
+import _        = require("lodash");
+import assert   = require("assert");
 
-import C = require("./contracts");
-import ajax = require("../util/ajax");
-import types = require("./types");
+import C        = require("./contracts");
+import ajax     = require("../util/ajax");
+import types    = require("./types");
 
-var isBrowser = typeof window !== "undefined";
-var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
+var isBrowser   = typeof window !== "undefined";
+var FLUX_DEBUG  = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 
 /**
  * @file Dispatcher lightly based on the Flux TodoMVC Tutorial.
  * http://facebook.github.io/react/docs/flux-todo-list.html
  * 
  * "Flux is the application architecture that Facebook uses for building
- * client-side web applications. It complements React"s composable view
+ * client-side web applications. It complements React's composable view
  * components by utilizing a unidirectional data flow. It's more of a pattern
  * rather than a formal framework, and you can start using Flux immediately
  * without a lot of new code."
@@ -50,22 +49,22 @@ class Dispatcher implements C.IDispatcher {
         this._callbacks = this._callbacks.filter(cb => cb !== callback);
     }
 
-    DELETE(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+    DELETE(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): void {
         return this._dispatch(url, "DELETE", p, onSuccess, onError); }
-    GET(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+    GET(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): void {
         return this._dispatch(url, "GET", p, onSuccess, onError); }
-    PATCH(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+    PATCH(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): void {
         return this._dispatch(url, "PATCH", p, onSuccess, onError); }
-    POST(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+    POST(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): void {
         return this._dispatch(url, "POST", p, onSuccess, onError); }
-    PUT(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+    PUT(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): void {
         return this._dispatch(url, "PUT", p, onSuccess, onError); }
 
-    _dispatch(url: string, verb: string, postData: any, onSuccess?: (response: any) => void,
-            onError?: (error: any) => void) : Promise<void> {
+    _dispatch: (url: string, verb: string, postData: any, onSuccess?: (response: any) => void,
+                onError?: (error: any) => void) => void =
+            _.debounce((url: string, verb: string, postData: any, onSuccess?: (response: any) => void,
+                onError?: (error: any) => void) => {
         assert(verb, "Verb must be defined");
-
-        var pr: Promise<void>;
 
         var root = url;
         var resource: string = null;
@@ -82,7 +81,7 @@ class Dispatcher implements C.IDispatcher {
 
         if (verb === "GET") {
             ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
-                var ev = this._dispatchImpl({
+                this._dispatchImpl({
                     description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
                     status: request.status,
                     resource: resource,
@@ -90,25 +89,23 @@ class Dispatcher implements C.IDispatcher {
                     url: url,
                     response: response,
                     postData: null
-                }, onError);
-
-                if (onSuccess) {
-                    ev.then(() => onSuccess(response));
-                }
+                }, onSuccess, onError);
             });
         } else if (verb in immediateActions) {
-            pr = this._dispatchImpl({
+            this._dispatchImpl({
                 description: verb + " " + root,
                 resource: resource,
                 response: null,
                 status: null,
                 query: query,
                 postData: postData
-            }, onError);
+            }, fireAction, onError);
+        }
 
+        function fireAction() {
             if ((verb in networkActions) && !url.indexOf("/api")) {
                 ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
-                    var ev = this._dispatchImpl({
+                    this._dispatchImpl({
                         description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
                         status: request.status,
                         resource: resource,
@@ -116,42 +113,13 @@ class Dispatcher implements C.IDispatcher {
                         url: url,
                         response: response,
                         postData: null
-                    }, onError);
-
-                    if (onSuccess) {
-                        ev.then(() => onSuccess(response));
-                    }
+                    }, onSuccess, onError);
                 });
             } else {
                 assert(!onSuccess, "Callbacks are only necessary for network actions.");
             }
         }
-
-        return pr;
-    }
-
-    /**
-     * Add a promise to the queue of callback invocation promises.
-     * @param {function} callback The Store"s registered callback.
-     * @param {object} payload The data from the Action.
-     */
-    private _addPromise(callback: (payload: any) => boolean, payload: any) {
-        this._promises.push(new Promise.Promise(function resolvePromise(resolve, reject) {
-            if (callback(payload)) {
-                resolve(payload);
-            } else {
-                reject(new Error("Dispatcher callback unsuccessful"));
-            }
-        }));
-    }
-
-    /**
-     * Empty the queue of callback invocation promises.
-     */
-    private _clearPromises() {
-        this._promises = [];
-        this._inAction = null;
-    }
+    }, 0);
 
     /**
      * For debugging
@@ -164,7 +132,9 @@ class Dispatcher implements C.IDispatcher {
      * dispatch
      * @param  {object} action The data from the action.
      */
-    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData>, onError?: (err?: any) => void) {
+    private _dispatchImpl<PostData, Response>(action: C.IFluxAction<PostData>,
+            onSuccess?: (payload?: any) => void,
+            onError?: (err?: any) => void) {
         if (FLUX_DEBUG) {
             console.log(action.description +
                 (action.resource ? " " + action.resource : ""),
@@ -207,34 +177,31 @@ class Dispatcher implements C.IDispatcher {
             this._events += "\n";
         }
 
-        _.each(this._callbacks, callback => {
-            this._addPromise(callback, action);
-        });
-
-        this._inAction = action.description;
-        /* tslint:disable */
-        return Promise.Promise
-            .all(this._promises)
-            .then(this._clearPromises)
-            .catch((err) => {
-                this._clearPromises();
-                if (err instanceof C.DispatcherRedirect) {
-                    var redirect: C.DispatcherRedirect = err;
-                    this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
-                }
-                this._inAction = null;
-                if (onError) {
-                    onError(err);
-                } else {
-                    console.warn("Exception occurred in promise", err);
-                    console.log(err.stack);
-                }
+        try {
+            this._inAction = action.description;
+            _.forEach(this._callbacks, callback => {
+                callback(action);
             });
-        /* tslint:enable */
+            this._inAction = null;
+        } catch(err) {
+            this._inAction = null;
+            if (err instanceof C.DispatcherRedirect) {
+                var redirect: C.DispatcherRedirect = err;
+                this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
+            }
+            if (onError) {
+                onError(err);
+            } else {
+                console.warn("Exception occurred in promise", err);
+                console.log(err.stack);
+            }
+        }
+        if (onSuccess) {
+            onSuccess(action);
+        }
     }
 
     _callbacks: Array<(payload: any) => boolean> = [];
-    _promises: Array<Promise<any>> = [];
 }
 
 var immediateActions = {

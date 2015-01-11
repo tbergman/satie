@@ -272,15 +272,15 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                 while (getCurrBeat() > currDivision) {
                     outputIdx           = outputIdx - 1;
                 }
-
-                function getCurrBeat() {
-                    return _.chain(voices)
-                        .map(voice => (voice.body[outputIdx].ctxData||{division:0}).division)
-                        .max() // _should_ be all the same, but we're not quite that awesome yet.
-                        .value();
-                }
             } else {
                 assert(false, "Forward not implemented yet.");
+            }
+
+            function getCurrBeat() {
+                return _.chain(voices)
+                    .map(voice => (voice.body[outputIdx].ctxData||{division:0}).division)
+                    .max() // _should_ be all the same, but we're not quite that awesome yet.
+                    .value();
             }
         }
 

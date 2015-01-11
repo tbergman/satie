@@ -1,4 +1,3 @@
-var Promise = require("es6-promise");
 var _ = require("lodash");
 var assert = require("assert");
 var C = require("./contracts");
@@ -8,10 +7,66 @@ var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 var Dispatcher = (function () {
     function Dispatcher() {
+        var _this = this;
+        this._dispatch = _.debounce(function (url, verb, postData, onSuccess, onError) {
+            assert(verb, "Verb must be defined");
+            var root = url;
+            var resource = null;
+            var query = null;
+            if (root.indexOf("?") !== -1) {
+                query = root.substr(root.indexOf("?") + 1);
+                root = root.substr(0, root.indexOf("?"));
+            }
+            if (root.indexOf("/_") !== -1) {
+                resource = root.substr(root.indexOf("/_") + 2);
+                root = root.substr(0, root.indexOf("/_"));
+            }
+            if (verb === "GET") {
+                ajax.untrusted.getJSON(url, function (response, request) {
+                    _this._dispatchImpl({
+                        description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
+                        status: request.status,
+                        resource: resource,
+                        query: query,
+                        url: url,
+                        response: response,
+                        postData: null
+                    }, onSuccess, onError);
+                });
+            }
+            else if (verb in immediateActions) {
+                _this._dispatchImpl({
+                    description: verb + " " + root,
+                    resource: resource,
+                    response: null,
+                    status: null,
+                    query: query,
+                    postData: postData
+                }, fireAction, onError);
+            }
+            function fireAction() {
+                var _this = this;
+                if ((verb in networkActions) && !url.indexOf("/api")) {
+                    ajax.untrusted.anyJSON(verb, url, postData, function (response, request) {
+                        _this._dispatchImpl({
+                            description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
+                            status: request.status,
+                            resource: resource,
+                            query: query,
+                            url: url,
+                            response: response,
+                            postData: null
+                        }, onSuccess, onError);
+                    });
+                }
+                else {
+                    assert(!onSuccess, "Callbacks are only necessary for network actions.");
+                }
+            }
+        }, 0);
         this._events = "";
         this._inAction = null;
         this._callbacks = [];
-        this._promises = [];
         types.ensureRegistered();
     }
     Dispatcher.prototype.register = function (callback) {
@@ -36,84 +91,7 @@ var Dispatcher = (function () {
     Dispatcher.prototype.PUT = function (url, p, onSuccess, onError) {
         return this._dispatch(url, "PUT", p, onSuccess, onError);
     };
-    Dispatcher.prototype._dispatch = function (url, verb, postData, onSuccess, onError) {
-        var _this = this;
-        assert(verb, "Verb must be defined");
-        var pr;
-        var root = url;
-        var resource = null;
-        var query = null;
-        if (root.indexOf("?") !== -1) {
-            query = root.substr(root.indexOf("?") + 1);
-            root = root.substr(0, root.indexOf("?"));
-        }
-        if (root.indexOf("/_") !== -1) {
-            resource = root.substr(root.indexOf("/_") + 2);
-            root = root.substr(0, root.indexOf("/_"));
-        }
-        if (verb === "GET") {
-            ajax.untrusted.getJSON(url, function (response, request) {
-                var ev = _this._dispatchImpl({
-                    description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
-                    status: request.status,
-                    resource: resource,
-                    query: query,
-                    url: url,
-                    response: response,
-                    postData: null
-                }, onError);
-                if (onSuccess) {
-                    ev.then(function () { return onSuccess(response); });
-                }
-            });
-        }
-        else if (verb in immediateActions) {
-            pr = this._dispatchImpl({
-                description: verb + " " + root,
-                resource: resource,
-                response: null,
-                status: null,
-                query: query,
-                postData: postData
-            }, onError);
-            if ((verb in networkActions) && !url.indexOf("/api")) {
-                ajax.untrusted.anyJSON(verb, url, postData, function (response, request) {
-                    var ev = _this._dispatchImpl({
-                        description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
-                        status: request.status,
-                        resource: resource,
-                        query: query,
-                        url: url,
-                        response: response,
-                        postData: null
-                    }, onError);
-                    if (onSuccess) {
-                        ev.then(function () { return onSuccess(response); });
-                    }
-                });
-            }
-            else {
-                assert(!onSuccess, "Callbacks are only necessary for network actions.");
-            }
-        }
-        return pr;
-    };
-    Dispatcher.prototype._addPromise = function (callback, payload) {
-        this._promises.push(new Promise.Promise(function resolvePromise(resolve, reject) {
-            if (callback(payload)) {
-                resolve(payload);
-            }
-            else {
-                reject(new Error("Dispatcher callback unsuccessful"));
-            }
-        }));
-    };
-    Dispatcher.prototype._clearPromises = function () {
-        this._promises = [];
-        this._inAction = null;
-    };
-    Dispatcher.prototype._dispatchImpl = function (action, onError) {
-        var _this = this;
+    Dispatcher.prototype._dispatchImpl = function (action, onSuccess, onError) {
         if (FLUX_DEBUG) {
             console.log(action.description + (action.resource ? " " + action.resource : ""), (action.query ? " " + action.query : ""), (action.postData ? [action.postData] : []), [action]);
         }
@@ -153,17 +131,19 @@ var Dispatcher = (function () {
             }
             this._events += "\n";
         }
-        _.each(this._callbacks, function (callback) {
-            _this._addPromise(callback, action);
-        });
-        this._inAction = action.description;
-        return Promise.Promise.all(this._promises).then(this._clearPromises).catch(function (err) {
-            _this._clearPromises();
+        try {
+            this._inAction = action.description;
+            _.forEach(this._callbacks, function (callback) {
+                callback(action);
+            });
+            this._inAction = null;
+        }
+        catch (err) {
+            this._inAction = null;
             if (err instanceof C.DispatcherRedirect) {
                 var redirect = err;
-                _this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
+                this._dispatch(redirect.newUrl, redirect.verb, redirect.postData);
             }
-            _this._inAction = null;
             if (onError) {
                 onError(err);
             }
@@ -171,7 +151,10 @@ var Dispatcher = (function () {
                 console.warn("Exception occurred in promise", err);
                 console.log(err.stack);
             }
-        });
+        }
+        if (onSuccess) {
+            onSuccess(action);
+        }
     };
     return Dispatcher;
 })();

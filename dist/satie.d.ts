@@ -3848,11 +3848,11 @@ declare module '__satie/stores/contracts' {
     export interface IDispatcher {
         register: (callback: (payload: any) => boolean) => void;
         unregister: (callback: (payload: any) => boolean) => void;
-        GET: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-        DELETE: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-        PATCH: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-        PUT: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-        POST: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+        GET: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+        DELETE: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+        PATCH: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+        PUT: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+        POST: (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
         _events: string;
     }
     export class DispatcherRedirect {
@@ -4348,6 +4348,10 @@ declare module '__satie/stores/model' {
         static fromJSON(json: string, existingObjects?: {
             [x: string]: Model;
         }): Model;
+        static setView(View: (opts: {
+            key: number;
+            spec: Model;
+        }) => any): void;
     }
     module Model {
         var constructorsByType: {
@@ -4357,10 +4361,6 @@ declare module '__satie/stores/model' {
             annotate(ctx: Annotator.Context): C.IterationStatus;
             retryStatus: C.IterationStatus;
         }
-        function setView(View: (opts: {
-            key: number;
-            spec: Model;
-        }) => any): void;
         function removeAnnotations(voices: C.IVoice[]): void;
         function newKey(): string;
     }

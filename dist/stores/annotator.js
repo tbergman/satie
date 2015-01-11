@@ -1082,7 +1082,6 @@ var Priv;
             this._division = null;
             this._nextDivision = null;
             this._voice = voice;
-            this._body = voice.body;
             this._sidx = idx;
             this._cursor = cursor;
             this._part = part;

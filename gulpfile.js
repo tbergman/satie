@@ -1,10 +1,8 @@
 var dtsBundle           = require("dts-bundle");
 var eventStream         = require("event-stream");
 var gulp                = require("gulp");
-var gutil               = require("gulp-util");
 var newer               = require("gulp-newer");
 var path                = require("path");
-var source              = require("vinyl-source-stream");
 var tslint              = require("gulp-tslint");
 var typescript          = require("gulp-typescript");
 
@@ -68,5 +66,5 @@ gulp.task("lint", function() {
 });
 
 gulp.task("watch", ["build"], function() {
-    gulp.watch(files.ts, ["build"]);
+    gulp.watch(files.ts, ["buildTS"]);
 });

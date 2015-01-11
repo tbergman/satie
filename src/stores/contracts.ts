@@ -21,6 +21,7 @@
  */
 
 export import MusicXML   = require("musicxml-interfaces");
+import        _          = require("lodash");
 
 import        Annotator  = require("./annotator");
 import        Model      = require("./model");
@@ -130,11 +131,11 @@ export interface IDispatcher {
      * be a network request. The callback will be called regardless of whether
      * the event succeeded or not.
      */
-    GET:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-    DELETE:             (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-    PATCH:              (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-    PUT:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
-    POST:               (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => Promise<void>;
+    GET:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+    DELETE:             (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+    PATCH:              (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+    PUT:                (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
+    POST:               (url: string, p?: any, onSuccess?: (response: any) => void, onError?: (response: any) => void) => void;
 
     _events:            string;
 }

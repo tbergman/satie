@@ -16,10 +16,19 @@ var isBrowser = typeof window !== "undefined";
 var ScoreStoreStore = (function (_super) {
     __extends(ScoreStoreStore, _super);
     function ScoreStoreStore(dispatcher) {
+        var _this = this;
         _super.call(this);
         this.dangerouslyMarkRendererLineClean = this["DELETE /webapp/song/lineDirty"].bind(this);
         this.dangerouslySetVisualCursor = this._visualCursorIs.bind(this);
         this.ensureSoundfontLoaded = function (s, e) { return false; };
+        this._handleAction = function (action) {
+            assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
+            var fn = _this[action.description];
+            if (fn) {
+                fn.call(_this, action);
+            }
+            return true;
+        };
         this._activeStaveIdx = NaN;
         this._ctx = null;
         this._dirty = false;
@@ -269,14 +278,6 @@ var ScoreStoreStore = (function (_super) {
             bar: 1,
             division: 0
         });
-    };
-    ScoreStoreStore.prototype._handleAction = function (action) {
-        assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
-        var fn = this[action.description];
-        if (fn) {
-            fn.call(this, action);
-        }
-        return true;
     };
     ScoreStoreStore.prototype._recreateSnapshot = function (line) {
         var lines = [];

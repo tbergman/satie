@@ -6,59 +6,31 @@
     "author": "Josh Netterfield",
     "license": "AGPLv3",
 
+    "peerDependencies": {
+        "react": "0.12.x"
+    },
     "dependencies": {
-        "es5-shim": "4.0.5",
-        "es6-promise": "2.0.1",
-        "musicxml-interfaces": "0.0.3-alpha1",
         "lodash": "2.4.1",
-        "react": "0.12.2",
-        "typed-react": "3.2.0"
+        "musicxml-interfaces": "git://github.com/ripieno/musicxml-interfaces",
+        "typed-react": "3.2.x"
     },
     "devDependencies": {
-        "browserify": "7.0.3",
         "dts-bundle": "0.2.0",
         "event-stream": "3.1.7",
-        "jest-cli": "0.2.1",
         "gulp": "3.8.10",
-        "gulp-concat": "2.4.2",
-        "gulp-exit": "0.0.2",
-        "gulp-jasmine": "1.0.1",
         "gulp-newer": "0.5.0",
-        "gulp-mocha-browserify-sweet": "0.2.1",
-        "gulp-streamify": "0.0.5",
         "gulp-tslint": "1.4.1",
         "gulp-typescript": "git://github.com/jnetterf/gulp-typescript-react-jsx#fe6ced",
-        "gulp-uglify": "1.0.2",
-        "gulp-util": "3.0.1",
-        "uglify-js": "2.4.16",
-        "vinyl-buffer": "1.0.0",
-        "vinyl-source-stream": "1.0.0",
-        "watchify": "2.2.1"
+        "react": "0.12.x"
     },
 
     "main": "./dist/satie.js",
     "typescript": {
         "definition": "dist/satie.d.ts"
     },
-    "jest": {
-        "moduleFileExtensions": ["js", "node"],
-        "testPathIgnorePatterns": [
-            "node_modules",
-            "src"
-        ],
-        "unmockedModulePathPatterns": [
-            "node_modules/react",
-            "node_modules/typed-react",
-            "node_modules/lodash",
-            "node_modules/musicxml-interfaces",
-            "src/stores/contracts.js",
-            "assert"
-        ]
-    },
     "scripts": {
         "build": "NODE_ENV=production gulp build",
         "buildDev": "gulp build",
-        "start": "gulp watch",
-        "test": "gulp build && jest ./dist"
+        "start": "gulp watch"
     }
 }

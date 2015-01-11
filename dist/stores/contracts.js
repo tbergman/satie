@@ -1,4 +1,5 @@
 exports.MusicXML = require("musicxml-interfaces");
+var _ = require("lodash");
 exports.SMuFL = require("../util/SMuFL");
 exports.renderUtil = require("../util/renderUtil");
 exports.strHash = require("../util/hash");

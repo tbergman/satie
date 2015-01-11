@@ -181,12 +181,12 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                 while (getCurrBeat() > currDivision) {
                     outputIdx = outputIdx - 1;
                 }
-                function getCurrBeat() {
-                    return _.chain(voices).map(function (voice) { return (voice.body[outputIdx].ctxData || { division: 0 }).division; }).max().value();
-                }
             }
             else {
                 assert(false, "Forward not implemented yet.");
+            }
+            function getCurrBeat() {
+                return _.chain(voices).map(function (voice) { return (voice.body[outputIdx].ctxData || { division: 0 }).division; }).max().value();
             }
         }
         function extractPriority(element, pIdx) {
