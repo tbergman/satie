@@ -160,7 +160,12 @@ var BeamGroupModel = (function (_super) {
         }
         return sum;
     };
-    BeamGroupModel.createBeam = function (ctx, beam) {
+    return BeamGroupModel;
+})(Model);
+var BeamGroupModel;
+(function (BeamGroupModel) {
+    "use strict";
+    function createBeam(ctx, beam) {
         var replaceMode = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === 450 /* BeamGroup */;
         var model = new BeamGroupModel({ beam: beam }, true);
         var offset = replaceMode ? 1 : 0;
@@ -169,16 +174,19 @@ var BeamGroupModel = (function (_super) {
         model.tuplet = model.beam[0].tuplet;
         ctx.splice(idx, offset, [model], spliceMode);
         return 90 /* RetryFromEntry */;
-    };
-    BeamGroupModel.decideDirection = function (firstLines, lastLines) {
+    }
+    BeamGroupModel.createBeam = createBeam;
+    ;
+    function decideDirection(firstLines, lastLines) {
         var firstAvgLine;
         var lastAvgLine;
         firstAvgLine = _.reduce(firstLines, function (m, s) { return m + s; }, 0) / firstLines.length;
         lastAvgLine = _.reduce(lastLines, function (m, s) { return m + s; }, 0) / lastLines.length;
         var avgLine = (firstAvgLine + lastAvgLine) / 2;
         return avgLine >= 3 ? -1 : 1;
-    };
-    return BeamGroupModel;
-})(Model);
+    }
+    BeamGroupModel.decideDirection = decideDirection;
+    ;
+})(BeamGroupModel || (BeamGroupModel = {}));
 BeamGroupModel.prototype.tuplet = null;
 module.exports = BeamGroupModel;

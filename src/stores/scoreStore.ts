@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -118,7 +118,8 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         this._dirty = true;
     }
 
-    dangerouslyMarkRendererLineClean = this["DELETE /webapp/song/lineDirty"].bind(this);
+    dangerouslyMarkRendererLineClean: (action: C.IFluxAction<string>) => void =
+        this["DELETE /webapp/song/lineDirty"].bind(this);
 
     /**
      * Marks a specific line as dirty.
@@ -185,11 +186,11 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         return song;
     }
 
-    static PROFILER_ENABLED = isBrowser && global.location.search.indexOf("profile=1") !== -1;
+    static PROFILER_ENABLED: boolean = isBrowser && global.location.search.indexOf("profile=1") !== -1;
 
     /*---- Store Methods ------------------------------------------------------------------------*/
 
-    "DELETE /webapp/song/lineDirty"(action: C.IFluxAction<number>) {
+    "DELETE /webapp/song/lineDirty"(action: C.IFluxAction<string>) {
         this._linesToUpdate[action.postData] = false;
         // don"t emit.
     }
@@ -346,14 +347,14 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
         });
     }
 
-    private _handleAction = (action: C.IFluxAction<void>) => {
+    private _handleAction(action: C.IFluxAction<void>) {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
             fn.call(this, action);
         }
         return true; // (Success)
-    };
+    }
 
     private _recreateSnapshot(line: number) {
         var lines: Array<any> = [];

@@ -133,18 +133,25 @@ var TimeSignatureModel = (function (_super) {
             valign: this.valign
         };
     };
-    TimeSignatureModel.isEqual = function (ts1, ts2) {
-        return (!!ts1 === !!ts2) && (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType && ts1.commonRepresentation === ts2.commonRepresentation);
-    };
-    TimeSignatureModel.createTS = function (ctx) {
+    return TimeSignatureModel;
+})(Model.SubAttributeModel);
+var TimeSignatureModel;
+(function (TimeSignatureModel) {
+    "use strict";
+    function createTS(ctx) {
         ctx.insertPast(new TimeSignatureModel({
             beats: ["4"],
             beatTypes: [4],
             senzaMisura: false
         }, true));
         return 60 /* RetryLine */;
-    };
-    return TimeSignatureModel;
-})(Model.SubAttributeModel);
+    }
+    TimeSignatureModel.createTS = createTS;
+    ;
+    function isEqual(ts1, ts2) {
+        return (!!ts1 === !!ts2) && (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType && ts1.commonRepresentation === ts2.commonRepresentation);
+    }
+    TimeSignatureModel.isEqual = isEqual;
+})(TimeSignatureModel || (TimeSignatureModel = {}));
 TimeSignatureModel.prototype._displayTimeSignature = null;
 module.exports = TimeSignatureModel;

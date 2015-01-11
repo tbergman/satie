@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -19,7 +19,6 @@
 import React            = require("react");                     // For setView.
 import assert           = require("assert");
 import _                = require("lodash");
-var    assign           = require("react/lib/Object.assign");
 
 import Annotator        = require("./annotator");
 import C                = require("./contracts");
@@ -28,7 +27,7 @@ import C                = require("./contracts");
  * Models make up the body of a C.IVoice. They are processed by an Annotator.Annotator and modify
  * an Annotator.Context. They may or may not be rendered by the Renderer. Examples of Models include
  * Clefs, Durations, Barlines, and Attributes. A full list of subtypes is available in "types.ts".
- *
+ * 
  * Models are created with a specification which may be incomplete. For example, before annotation,
  * they may not include position or timing information. Types which extend Model implement two
  * functions which put Models into a state where they can be rendered or played back:
@@ -85,7 +84,6 @@ class Model {
     get inBeam():       boolean     { return this._getFlag(Flags.InBeam); }
     set inBeam(b:       boolean)    {        this._setFlag(Flags.InBeam, b); }
 
-
     get placeholder():  boolean     { return this._getFlag(Flags.Placeholder); }
     set placeholder(b:  boolean)    {        this._setFlag(Flags.Placeholder, b); }
 
@@ -127,13 +125,12 @@ class Model {
     }
 
     get revision():     string                  { return null; }
-    set revision(n: string)                     { }
+    set revision(n: string)                     { /* noop */ }
 
     get priority():     C.Type                  { return this.type; }
-    set priority(p: C.Type)                     { }
+    set priority(p: C.Type)                     { /* noop */ }
 
     calcDivisions(ctx: C.MetreContext)          { return 0; }
-
 
     /*---- II. Life-cycle -----------------------------------------------------------------------*/
 
@@ -244,38 +241,6 @@ class Model {
     static _lastKey:    number                  = 0;
 
     /**
-     * Sets the type used for render().
-     */
-    static setView = function (View: (opts: { key: number; spec: Model;}) => any) {
-        this.prototype.render = function (options: any) {
-            var props = assign({}, options, {key: this.key, spec: this});
-            return React.createElement(View, props);
-        };
-    };
-
-    /**
-     * Given an array of voices, remove all annotated objects
-     * created through a Model.
-     */
-    static removeAnnotations = (voices: Array<C.IVoice>) => {
-        for (var i = 0; i < voices.length; ++i) {
-            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
-                var item = voices[i].body[j];
-                if (item.annotated && !item.placeholder) {
-                    for (var k = 0; k < voices.length; ++k) {
-                        if (voices[k].body) {
-                            voices[k].body.splice(j, 1);
-                        }
-                    }
-                    --j;
-                } else if (item.inBeam) {
-                    item.inBeam = false;
-                }
-            }
-        }
-    };
-
-    /**
      * Return a Model that is equivalent to one that has been JSON.stringified.
      * 
      * @param json Model, stringified model, or parsed stringified model
@@ -326,12 +291,6 @@ class Model {
         return model;
     }
 
-    /**
-     * Creates a new unique identifier for an instance of a model.
-     */
-    static newKey(): string {
-        return Model._sessionId + "-" + ++Model._lastKey;
-    }
 }
 
 Model.prototype.soundOnly = false;
@@ -379,6 +338,45 @@ module Model {
             return super.annotate(ctx);
         }
         get retryStatus() { return C.IterationStatus.RetryCurrent; }
+    }
+
+    /**
+     * Sets the type used for render().
+     */
+    export function setView(View: (opts: { key: number; spec: Model;}) => any) {
+        this.prototype.render = function (options: any) {
+            var props = _.extend({}, options, {key: this.key, spec: this});
+            return React.createElement(View, props);
+        };
+    };
+
+    /**
+     * Given an array of voices, remove all annotated objects
+     * created through a Model.
+     */
+    export function removeAnnotations(voices: Array<C.IVoice>) {
+        for (var i = 0; i < voices.length; ++i) {
+            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
+                var item = voices[i].body[j];
+                if (item.annotated && !item.placeholder) {
+                    for (var k = 0; k < voices.length; ++k) {
+                        if (voices[k].body) {
+                            voices[k].body.splice(j, 1);
+                        }
+                    }
+                    --j;
+                } else if (item.inBeam) {
+                    item.inBeam = false;
+                }
+            }
+        }
+    };
+
+    /**
+     * Creates a new unique identifier for an instance of a model.
+     */
+    export function newKey(): string {
+        return Model._sessionId + "-" + ++Model._lastKey;
     }
 }
 

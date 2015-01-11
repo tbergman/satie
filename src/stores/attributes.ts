@@ -1,24 +1,23 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
 
-import _                    = require("lodash");
 import assert               = require("assert");
 
 import Annotator            = require("./annotator");
@@ -165,7 +164,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
             }
             this.clefs = clefs;
         }
-    
+
         if (!this._parent) {
             this._updateAttached(ctx);
         }
@@ -198,8 +197,13 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
         this.clefs[ctx.idxInPart] = <any> ifAttribute(ctx.next(c => c.type === C.Type.Clef || c.type > C.Type.END_OF_ATTRIBUTES)) ||
             this.clefs[ctx.idxInPart];
 
-        this.time           = <any> ifAttribute(ctx.next(c => c.priority === C.Type.TimeSignature || c.priority > C.Type.END_OF_ATTRIBUTES)) || this.time;
-        this.keySignature   = <any> ifAttribute(ctx.next(c => c.priority === C.Type.KeySignature  || c.priority > C.Type.END_OF_ATTRIBUTES));
+        this.time           = <any> ifAttribute(ctx.next(c =>
+                                        c.priority === C.Type.TimeSignature ||
+                                        c.priority > C.Type.END_OF_ATTRIBUTES)) ||
+                                this.time;
+        this.keySignature   = <any> ifAttribute(ctx.next(c =>
+                                    c.priority === C.Type.KeySignature ||
+                                    c.priority > C.Type.END_OF_ATTRIBUTES));
 
         function ifAttribute(m: Model) {
             return m && m.priority < C.Type.END_OF_ATTRIBUTES ? m : null;

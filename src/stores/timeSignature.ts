@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -210,9 +210,12 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
         };
     }
 
-    /*---- IV. Statics --------------------------------------------------------------------------*/
+}
 
-    static createTS = (ctx: Annotator.Context): C.IterationStatus => {
+module TimeSignatureModel {
+    "use strict";
+
+    export function createTS(ctx: Annotator.Context): C.IterationStatus {
         ctx.insertPast(new TimeSignatureModel({
                 beats:          ["4"],
                 beatTypes:      [4],
@@ -221,7 +224,7 @@ class TimeSignatureModel extends Model.SubAttributeModel implements C.MusicXML.T
         return C.IterationStatus.RetryLine; // Cache bug
     };
 
-    static isEqual(ts1: C.ISimpleTimeSignature, ts2: C.ISimpleTimeSignature) {
+    export function isEqual(ts1: C.ISimpleTimeSignature, ts2: C.ISimpleTimeSignature) {
         return (!!ts1 === !!ts2) &&
             (!ts1 || ts1.beats === ts2.beats && ts1.beatType === ts2.beatType &&
                 ts1.commonRepresentation === ts2.commonRepresentation);

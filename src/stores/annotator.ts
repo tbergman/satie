@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,6 +25,8 @@ import C                        = require("./contracts");
 import Model                    = require("./model");
 import NewlineModelType         = require("./newline");         // Cyclic.
 import PlaceholderModelType     = require("./placeholder");     // Cyclic.
+
+/*---- Public Interface -------------------------------------------------------------------------*/
 
 /**
  * Annotator has two goals:
@@ -50,7 +52,7 @@ export class Context implements C.MetreContext {
 
         if (layout) {
             if (layout.snapshot) {
-                _cpysnapshot(this, layout.snapshot);
+                Priv._cpysnapshot(this, layout.snapshot);
             } else {
                 this.lines      = [this.captureLine()];
             }
@@ -129,8 +131,6 @@ export class Context implements C.MetreContext {
             _attributes:            this._attributes
         };
     }
-
-
 
     /**
      * The element currently being annotated.
@@ -216,7 +216,7 @@ export class Context implements C.MetreContext {
      * 
      * @param idx?: Index to search from.
      */
-    intersects(type: C.Type, idx: number = this.idx, after = true, before = true) {
+    intersects(type: C.Type, idx: number = this.idx, after: boolean = true, before: boolean = true) {
         var intersects: Array<Model> = [];
         for (var i = 0; i < this._voices.length; ++i) {
             var body = this._voices[i].body;
@@ -274,7 +274,7 @@ export class Context implements C.MetreContext {
                 "removing an already-processed beam (this is inefficient)");
         var beam = this.beamFollows(idx);
         assert(beam, "There must be a beam to remove");
-        beam.forEach(p => { p.inBeam = false; });
+        _.forEach(beam, p => { p.inBeam = false; });
         return (past ? this.erasePast : this.eraseFuture).call(this, idx + 1);
     }
 
@@ -693,7 +693,6 @@ export class Context implements C.MetreContext {
         }
     }
 
-
     /**
      * Makes C.IterationStatus.RETRY_FROM_ENTRY restart from the very beginning of the song.
      * 
@@ -705,10 +704,10 @@ export class Context implements C.MetreContext {
 
     /**
      * The Models in the current voice.
-     *
+     * 
      * Modifying body is dangerous, and you should understand the restrictions of body
      * in multi-voice songs before modifying it.
-     *
+     * 
      * @scope temporary
      */
     body: Model[];
@@ -780,8 +779,6 @@ export class Context implements C.MetreContext {
         return false;
     }
 
-
-
     /**
      * The default accidental for all notes. Reset to the key signature on each barline
      * @scope line
@@ -830,7 +827,7 @@ export class Context implements C.MetreContext {
     /**
      * The smallest acceptable amount of padding between staves.
      * Used to prevent collisions.
-     *
+     * 
      * @scope line
      */
     minBottomPaddings: number[] = [];
@@ -853,7 +850,6 @@ export class Context implements C.MetreContext {
      * @scope line
      */
     barKeys: Array<string>;
-
 
     /**
      * The font size.
@@ -914,7 +910,7 @@ export class Context implements C.MetreContext {
         var verbose = false;
         var stopIn = NaN;
 
-        for (var it = new PrivIterator(this, from, this._voices, cursor, this._assertionPolicy);
+        for (var it = new Priv.MultiIterator(this, from, this._voices, cursor, this._assertionPolicy);
                 !it.atEnd; it.next(status)) {
             if (++ops/initialLength >= 500 && isNaN(stopIn)) {
                 verbose = true;
@@ -1018,7 +1014,7 @@ export class Context implements C.MetreContext {
     /**
      * The active attribute model in each part.
      */
-    _attributes: {[key: string]: C.MusicXML.Attributes}; 
+    _attributes: {[key: string]: C.MusicXML.Attributes};
 
     get attributes() {
         if (!this.part) {
@@ -1040,6 +1036,21 @@ export class Context implements C.MetreContext {
      */
     lines: Array<ILineSnapshot> = [];
 }
+
+Context.prototype.body = [];
+Context.prototype.voiceIdx = 0;
+Context.prototype.pageStarts = [];
+Context.prototype._layout = <any> {
+    header: null,
+    snapshot: null,
+    proto: true
+};
+Context.prototype.loc = {
+    bar: 1,
+    division: 0,
+    endMarker: false,
+    proto: true
+};
 
 export enum SplicePolicy {
     /**
@@ -1083,7 +1094,7 @@ export interface ILayoutOpts {
  * does not involve a trace from the start of the document. Some of these properties
  * are part-specific.
  * 
- * WARNING: If you change this, you may also want to change PrivIterator._rectify!
+ * WARNING: If you change this, you may also want to change P.MultiIterator._rectify!
  */
 export interface ILineSnapshot {
     accidentalsByStaff: Array<C.IAccidentals>;
@@ -1124,7 +1135,7 @@ export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
     try {
         // Rumor is that the v8 optimizing compiler doesn't optimize functions
         // with try-catch.
-        _recordMetreData(parts, voices);
+        Priv._recordMetreData(parts, voices);
     } catch (err) {
         var AttributesModel: typeof AttributesModelType = require("./attributes");
         switch(true) {
@@ -1137,6 +1148,7 @@ export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
 }
 
 export function initVoice(voices: C.IVoice[], voiceIdx: number) {
+    "use strict";
     var Instruments          = require("./instruments");
     var BeginModel           = require("./begin");
     var PlaceholderModel     = require("./placeholder");
@@ -1153,689 +1165,663 @@ export function initVoice(voices: C.IVoice[], voiceIdx: number) {
     return C.IterationStatus.RetryFromEntry;
 }
 
-function _recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
+/*---- Internal ---------------------------------------------------------------------------------*/
+
+module Priv {
     "use strict";
-    _.forEach(parts, part => {
-        var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
-        _(part.containsVoice)
-            .keys()
-            .map(a => parseInt(a, 10))
-            .sort()
-            .forEach(i => {
-                var body = voices[i].body;
-                var mctx1 = new C.MetreContext;
-                for (var j = 0; j < body.length; ++j) {
-                    if (attributesPerIdx[j]) {
-                        mctx1.attributes = attributesPerIdx[j];
+
+    export function _recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
+        "use strict";
+        _.forEach(parts, part => {
+            var attributesPerIdx: {[key: number]: C.MusicXML.Attributes} = {};
+            _(part.containsVoice)
+                .keys()
+                .map(a => parseInt(a, 10))
+                .sort()
+                .forEach(i => {
+                    var body = voices[i].body;
+                    var mctx1 = new C.MetreContext;
+                    for (var j = 0; j < body.length; ++j) {
+                        if (attributesPerIdx[j]) {
+                            mctx1.attributes = attributesPerIdx[j];
+                        }
+                        body[j].recordMetreDataImpl(mctx1);
+                        if (body[j].type === C.Type.Attributes) {
+                            attributesPerIdx[j] = mctx1.attributes;
+                        }
                     }
-                    body[j].recordMetreDataImpl(mctx1);
-                    if (body[j].type === C.Type.Attributes) {
-                        attributesPerIdx[j] = mctx1.attributes;
-                    }
-                }
-            })
-            .value();
-    });
-}
-
-///////////   END OF EXPORTS   ///////////
-
-
-
-
-
-
-/**
- * Internal. Iterates over a set of bodies in voices and annotates them. Owned by an Annotator.
- */
-class PrivIterator {
-    constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
-            cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
-        this._reset = function reset() {
-            this._parent = parent;
-            this._voices = voices;
-            this._cursor = cursor;
-            this._from = from;
-            this._parent.loc = C.JSONx.clone(from);
-            this._assertionPolicy = assertionPolicy;
-            recordMetreData(parent.score.parts, this._voices);
-            this._components = _.map(voices, (voice, idx) => {
-                var part: C.IPart   = _.find(parent.score.parts, part => _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice)); 
-                var partVoices      = _.chain(part.containsVoice).keys().map(a => parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
-                var idxInPart       = _.indexOf(partVoices, voice);
-
-                return new PrivIteratorComponent(
-                    /* starting location*/ from,
-                    /* voice */ voice,
-                    /* part index */ idx,
-                    /* visual cursor */ cursor,
-                    /* part */ part,
-                    /* index in part */ idxInPart,
-                    this._assertionPolicy);
-            });
-            
-            this._assertOffsetsOK();
-        }
-        this._reset();
+                })
+                .value();
+        });
     }
 
-    annotate(verbose: boolean): C.IterationStatus {
-        this._assertOffsetsOK();
-        // Statuses with higher numbers go back further. Return the highest one.
-        var maxStatus: C.IterationStatus = C.IterationStatus.ExitEarly;
+    export function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
+        "use strict";
 
-        var origSnapshot: ILineSnapshot = C.JSONx.clone(this._parent.captureLine());
-        var componentSnapshots: Array<ILineSnapshot> = [];
-        var filtered = false;
-
-        for (var i = 0; i < this._components.length; ++i) {
-            this._ensureCurrPrioritiesMatch();
-            if (this.atEnd) {
-                // All voices are now at the end.
-                this._assertOffsetsOK();
-                return C.IterationStatus.RetryCurrent; // Don't go to next!
+        _.each(layout, (v, attrib) => {
+            if ((<any>layout)[attrib] === null) {
+                return;
             }
-
-            this._parent.y = origSnapshot.y;
-
-            this._assertOffsetsOK();
-            var oldType = this._components[i].curr.type;
-
-            // The most important line:
-            var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
-
-            this._assertOffsetsOK();
-
-            if (verbose) {
-                console.log(i, this._components[i]._idx, C.Type[oldType], C.Type[this._components[i].curr.type],
-                    C.Type[this._components[i].curr.priority],
-                    C.IterationStatus[componentStatus]);
-            }
-
-            switch(componentStatus) {
-                case C.IterationStatus.LineCreated:
-                    this._clearCursor();
-                    this._markLineDirty();
+            switch (attrib) {
+                case "lines":
+                    ctx.lines = layout.lines;
+                    ctx.line  = layout.lines.length - 1;
+                    _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.StartOfLine);
                     break;
-                case C.IterationStatus.RetryPreviousLine:
-                    this._markLineDirty();
-                    break;
-                case C.IterationStatus.RetryCurrentNoOptimizations:
-                    this._canExitAtNewline = false;
-                    break;
-            }
-
-            maxStatus = Math.max(maxStatus, componentStatus);
-            var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.Placeholder;
-            if (!isPlaceholder) {
-                componentSnapshots.push(this._parent.captureLine());
-            } else {
-                filtered = true;
-            }
-            _cpyline(this._parent, origSnapshot, NewlineMode.MiddleOfLine); // pop state
-        }
-
-        this._assertOffsetsOK();
-
-        if (maxStatus <= C.IterationStatus.Success) {
-            this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
-        }
-
-        this._assertOffsetsOK();
-        return maxStatus;
-    }
-
-    /**
-     * Merges information from all componentSnapshots into context.
-     * 
-     * @param origSnapshot the snapshot from the previous index
-     * @param componentSnapshots the snapshots to merge into the context
-     * @param filtered true if at least one placeholder has been removed from componentSnapshots
-     */
-    private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
-        // Most parameters should be the same in all components, so we just pick the first.
-        // It may be worthwhile to actually check them for consistency at some point...
-        ctx.bar                = componentSnapshots[0].bar;
-        ctx.barKeys            = componentSnapshots[0].barKeys || [];
-        ctx.barlineX           = componentSnapshots[0].barlineX;
-        ctx.line               = componentSnapshots[0].line;
-        ctx.invisibleForBars   = componentSnapshots[0].invisibleForBars;
-        ctx.pageLines          = componentSnapshots[0].pageLines;
-        ctx.pageStarts         = componentSnapshots[0].pageStarts;
-
-        // When "filtered" is true, some placeholders have been removed, and the vertical location will be corrected
-        // later.
-        if (!filtered) {
-            ctx.y              = componentSnapshots[0].y;
-        }
-
-        // The current beat that the context records is the lagging (minimum from all voices) beat.
-        // Note: the maximum beat in any of the voices is tracked in ctx.__globalBeat__
-        ctx.division           = _.min(componentSnapshots, "division").division;
-        for (var i = 0; i < this._components.length; ++i) {
-            if (    this._components[i].nextLocation.bar === ctx.bar &&
-                    this._components[i].nextLocation.division  < ctx.division) {
-                ctx.division   = this._components[i].nextLocation.division;
-            }
-        }
-
-        // The horizontal location usually depends on the mergePolicy of the Model.
-        // All models of a given type have the same priority.
-        var mergePolicy        = C.RectifyXPolicy.Invalid;
-        for (var j = 0; j < ctx._voices.length; ++j) {
-            mergePolicy        = Math.max(mergePolicy, ctx._voices[j].body[ctx.idx].xPolicy);
-        }
-        assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
-        ctx.x                  = componentSnapshots[0].x;
-        for (var i = 1; i < componentSnapshots.length; ++i) {
-            var fn             = mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min;
-            ctx.x              = fn(ctx.x, componentSnapshots[i].x);
-        }
-
-        // The exception to this rule occurs when different voices disagree about how much space is needed.
-        // We should usually believe the real (not placeholder) model that reports the smallest number.
-        // This can sadly cause some strange (overly large) spacing for Durations that do not line up.
-        var minX               = Infinity;
-        var otherContexts      = ctx.findVertical(c => true);
-        for (var i = 0; i < otherContexts.length; ++i) {
-            minX               = Math.min(otherContexts[i].x, minX);
-        }
-        for (var i = 0; i < otherContexts.length; ++i) {
-            otherContexts[i].x = minX;
-        }
-
-        ctx.accidentalsByStaff = [];
-        for (var i = 0; i < componentSnapshots.length; ++i) {
-            for (var j = 1; j < componentSnapshots[i].accidentalsByStaff.length; ++j) {
-                // TODO: conflicts?
-                ctx.accidentalsByStaff[j] = <any> _.extend(ctx.accidentalsByStaff[j] || {},
-                    componentSnapshots[i].accidentalsByStaff[j]);
-            }
-        }
-    }
-
-    next(status: C.IterationStatus) {
-        switch (status) {
-            case C.IterationStatus.Success:
-                this._increment();
-                break;
-            case C.IterationStatus.ExitEarly:
-                for (var i = 0; i < this._components.length; ++i) {
-                    this._components[i].markDone();
-                }
-                this.eofJustificationDirty = false;
-                break;
-            case C.IterationStatus.RetryFromEntry:
-                this._reset();
-                break;
-            case C.IterationStatus.LineCreated:
-                this._rollbackLine(this._parent.line);
-                this._rewindTwoNewlines();
-                this._increment();
-                break;
-            case C.IterationStatus.RetryPreviousLine:
-                this._rollbackLine(this._parent.line - 1);
-                this._rewindTwoNewlines();
-                this._increment();
-                break;
-            case C.IterationStatus.RetryLine:
-                this._rollbackLine(this._parent.line);
-                this._rewind(C.Type.NewLine);
-                this._increment();
-                break;
-            case C.IterationStatus.LineRemoved:
-                this._rollbackLine(this._parent.line - 1);
-                break;
-            case C.IterationStatus.RetryBeam:
-                this._parent.division = this._parent.startOfBeamDivision;
-                this._rewind(C.Type.BeamGroup);
-                this._parent.x = this._componentWithPriority(C.Type.BeamGroup).x;
-                break;
-            case C.IterationStatus.RetryCurrent:
-            case C.IterationStatus.RetryCurrentNoOptimizations:
-                this._ensureCurrPrioritiesMatch();
-                break;
-            default:
-                assert(false, "Invalid status");
-        }
-
-        this._assertOffsetsOK();
-
-        if (status !== C.IterationStatus.Success) {
-            recordMetreData(this._parent.score.parts, this._voices);
-        }
-
-        this._assertOffsetsOK();
-    }
-
-    get atEnd(): boolean {
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].atEnd) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    // This is kind of ugly. Another (probably better) option would be to have a
-    // EndOfFileModel which handles the semi-justification for the end of the song.
-    eofJustificationDirty: boolean = true;
-
-    private _assertOffsetsOK() {
-        if (this._assertionPolicy === AssertionPolicy.NoAssertions) {
-            return;
-        }
-        var n = this._components[0]._idx;
-        var len = this._components[0].len;
-        for (var k = 0; k < this._components.length; ++k) {
-            assert(n === this._components[k]._idx, "Invalid offset");
-            if (len !== this._components[k].len) {
-                assert(false, "Mismatched body lengths");
-            }
-        }
-    }
-
-    private _componentWithPriority(type: C.Type): Model {
-        for (var i = 0; i < this._components.length; ++i) {
-            if (this._components[i].curr.priority === type) {
-                return this._components[i].curr;
-            }
-        }
-        assert(false, "Not reached");
-        return null;
-    }
-
-    private _rewindTwoNewlines() {
-        for (var i = 0; i < this._components.length; ++i) {
-            this._components[i].rewind(C.Type.NewLine);
-            this._components[i].rewind();
-            this._components[i].rewind(C.Type.NewLine);
-        }
-    }
-
-    private _rewind(type: C.Type) {
-        var nextLoc = new C.Location(MIN_LOCATION);
-        var i: number;
-
-        for (i = 0; i < this._components.length; ++i) {
-            this._components[i].rewind();
-            var loc = this._components[i].lastOf(type);
-            if (nextLoc.le(loc)) {
-                nextLoc = loc;
-            }
-        }
-        for (i = 0; i < this._components.length; ++i) {
-            this._components[i].rewindSeek(nextLoc, type);
-        }
-    }
-
-    private _rollbackLine(i: number) {
-        this._parent.line = i;
-        _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.StartOfLine);
-    }
-
-    private _increment() {
-        var nextLoc = new C.Location(MAX_LOCATION);
-        var nextPriority = C.MAX_NUM;
-        this._assertOffsetsOK();
-
-        for (var i = 0; i < this._components.length; ++i) {
-            var pri = this._components[i].nextPriority;
-            var loc = this._components[i].nextLocation;
-            if (pri !== C.MAX_NUM && nextLoc.ge(loc) && nextPriority > pri) {
-                nextLoc = new C.Location(loc);
-                nextPriority = pri;
-            }
-        }
-        this._assertOffsetsOK();
-
-        for (var j = 0; j < this._components.length; ++j) {
-            this._components[j].trySeek(nextPriority);
-        }
-        this._assertOffsetsOK();
-
-        // this._parent.loc = nextLoc;
-        // Q: Why don't we do this?
-        // A: Durations and barlines themselves will set the location, annotating things as
-        //    required.
-    }
-
-    private _ensureCurrPrioritiesMatch() {
-        var pri = C.Type.Unknown;
-        _.every(this._components, c => {
-            if (c.curr) {
-                pri = Math.min(pri, c.curr.type);
+                case "fontSize":    ctx.fontSize   = layout.fontSize;   break;
+                case "maxX":        ctx.maxX       = layout.maxX;       break;
+                case "maxY":        ctx.maxY       = layout.maxY;       break;
+                case "attributes":  ctx._attributes = layout._attributes; break;
+                case "partialLine": /* pass */                          break;
+                case "prevLine":    /* pass */                          break;
+                default:            assert(false, "Not reached");
             }
         });
-        if (pri !== C.Type.Unknown) {
-            _.each(this._components, (c: PrivIteratorComponent) => {
-                if (!c.curr) {
-                    c.ensurePriorityIs(pri);
+    }
+
+    /**
+     * Internal. Iterates over a set of bodies in voices and annotates them. Owned by an Annotator.
+     */
+    export class MultiIterator {
+        constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
+                cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
+            this._reset = function reset() {
+                this._parent = parent;
+                this._voices = voices;
+                this._cursor = cursor;
+                this._from = from;
+                this._parent.loc = C.JSONx.clone(from);
+                this._assertionPolicy = assertionPolicy;
+                recordMetreData(parent.score.parts, this._voices);
+                this._components = _.map(voices, (voice, idx) => {
+                    var part: C.IPart   = _.find(parent.score.parts, part =>
+                                            _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice));
+                    var partVoices      = _.chain(part.containsVoice).keys().map(a =>
+                                            parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
+                    var idxInPart       = _.indexOf(partVoices, voice);
+
+                    return new Iterator(
+                        /* starting location*/ from,
+                        /* voice */ voice,
+                        /* part index */ idx,
+                        /* visual cursor */ cursor,
+                        /* part */ part,
+                        /* index in part */ idxInPart,
+                        this._assertionPolicy);
+                });
+
+                this._assertOffsetsOK();
+            };
+            this._reset();
+        }
+
+        annotate(verbose: boolean): C.IterationStatus {
+            this._assertOffsetsOK();
+            // Statuses with higher numbers go back further. Return the highest one.
+            var maxStatus: C.IterationStatus = C.IterationStatus.ExitEarly;
+
+            var origSnapshot: ILineSnapshot = C.JSONx.clone(this._parent.captureLine());
+            var componentSnapshots: Array<ILineSnapshot> = [];
+            var filtered = false;
+
+            for (var i = 0; i < this._components.length; ++i) {
+                this._ensureCurrPrioritiesMatch();
+                if (this.atEnd) {
+                    // All voices are now at the end.
+                    this._assertOffsetsOK();
+                    return C.IterationStatus.RetryCurrent; // Don't go to next!
                 }
-            });
-        }
-    }
 
-    private _clearCursor() {
-        if (this._cursor && this._parent.line === this._cursor.annotatedLine) {
-            this._cursor.annotatedLine = null;
-            this._cursor.annotatedObj = null;
-            this._cursor.annotatedPage = null;
-            this._cursor.annotatedStave = null;
-        }
-    }
+                this._parent.y = origSnapshot.y;
 
-    private _markLineDirty() {
-        if (this._parent.score) {
-            this._parent.score.dangerouslyMarkRendererLineDirty(this._parent.line);
-        }
-        this._canExitAtNewline = false;
-    }
+                this._assertOffsetsOK();
+                var oldType = this._components[i].curr.type;
 
-    private _reset: () => void;
-    private _canExitAtNewline: boolean = false;
-    private _components: Array<PrivIteratorComponent> = [];
-    private _cursor: C.IVisualCursor;
-    private _from: C.ILocation;
-    private _parent: Context;
-    private _voices: Array<C.IVoice>;
-    private _assertionPolicy: AssertionPolicy;
-}
+                // The most important line:
+                var componentStatus = this._components[i].annotate(this._parent, this._canExitAtNewline);
 
+                this._assertOffsetsOK();
 
+                if (verbose) {
+                    console.log(i, this._components[i]._idx, C.Type[oldType], C.Type[this._components[i].curr.type],
+                        C.Type[this._components[i].curr.priority],
+                        C.IterationStatus[componentStatus]);
+                }
 
+                switch(componentStatus) {
+                    case C.IterationStatus.LineCreated:
+                        this._clearCursor();
+                        this._markLineDirty();
+                        break;
+                    case C.IterationStatus.RetryPreviousLine:
+                        this._markLineDirty();
+                        break;
+                    case C.IterationStatus.RetryCurrentNoOptimizations:
+                        this._canExitAtNewline = false;
+                        break;
+                }
 
+                maxStatus = Math.max(maxStatus, componentStatus);
+                var isPlaceholder = this._components[i].curr && this._components[i].curr.type === C.Type.Placeholder;
+                if (!isPlaceholder) {
+                    componentSnapshots.push(this._parent.captureLine());
+                } else {
+                    filtered = true;
+                }
+                _cpyline(this._parent, origSnapshot, NewlineMode.MiddleOfLine); // pop state
+            }
 
+            this._assertOffsetsOK();
 
-/**
- * Internal. Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
- */
-class PrivIteratorComponent {
-    constructor(from: C.ILocation, voice: C.IVoice, idx: number,
-            cursor: C.IVisualCursor, part: C.IPart, indexInPart: number,
-            assertionPolicy: AssertionPolicy) {
-        this._voice             = voice;
-        this._body              = voice.body;
-        this._sidx              = idx;
-        this._cursor            = cursor;
-        this._part              = part;
-        this._idxInPart         = indexInPart;
-        this._assertionPolicy   = assertionPolicy;
-        this.reset(from);
+            if (maxStatus <= C.IterationStatus.Success) {
+                this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
+            }
 
-        assert(this._location.eq(from));
-    }
-
-    annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
-        if (this._division !== null) {
-            ctx.__globalDivision__  = ctx.division;
-            ctx.division    = this._division;
-        }
-        ctx.body                = this._body;
-        ctx.voice               = this._voice;
-        ctx.voiceIdx            = this._sidx;
-        ctx.part                = this._part;
-        ctx.idxInPart           = this._idxInPart;
-        ctx.idx                 = this._idx;
-
-        var shouldUpdateVC      = this._shouldUpdateVC(ctx);
-
-        if (this._beatExceedsContext(ctx)) {
-            return this._addPadding(ctx);
+            this._assertOffsetsOK();
+            return maxStatus;
         }
 
-        ///
-        var status = this._body[this._idx].annotate(ctx);
-        this._nextDivision = ctx.division;
-        ///
+        /**
+         * Merges information from all componentSnapshots into context.
+         * 
+         * @param origSnapshot the snapshot from the previous index
+         * @param componentSnapshots the snapshots to merge into the context
+         * @param filtered true if at least one placeholder has been removed from componentSnapshots
+         */
+        private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
+            // Most parameters should be the same in all components, so we just pick the first.
+            // It may be worthwhile to actually check them for consistency at some point...
+            ctx.bar                = componentSnapshots[0].bar;
+            ctx.barKeys            = componentSnapshots[0].barKeys || [];
+            ctx.barlineX           = componentSnapshots[0].barlineX;
+            ctx.line               = componentSnapshots[0].line;
+            ctx.invisibleForBars   = componentSnapshots[0].invisibleForBars;
+            ctx.pageLines          = componentSnapshots[0].pageLines;
+            ctx.pageStarts         = componentSnapshots[0].pageStarts;
 
-        var isClean = status === C.IterationStatus.Success && (!this._cursor || this._cursor.annotatedObj);
-        var isNewline = this.curr && this.curr.type === C.Type.NewLine;
+            // When "filtered" is true, some placeholders have been removed, and the vertical location will be corrected
+            // later.
+            if (!filtered) {
+                ctx.y              = componentSnapshots[0].y;
+            }
 
-        if (status === C.IterationStatus.Success && shouldUpdateVC) {
-            var c               = this._cursor;
-            c.annotatedObj      = this.curr;
-            c.annotatedStave    = this._idx;
-            c.annotatedLine     = ctx.line;
-            c.annotatedPage     = ctx.pageStarts.length - 1;
-        }
+            // The current beat that the context records is the lagging (minimum from all voices) beat.
+            // Note: the maximum beat in any of the voices is tracked in ctx.__globalBeat__
+            ctx.division           = _.min(componentSnapshots, "division").division;
+            for (var i = 0; i < this._components.length; ++i) {
+                if (    this._components[i].nextLocation.bar === ctx.bar &&
+                        this._components[i].nextLocation.division  < ctx.division) {
+                    ctx.division   = this._components[i].nextLocation.division;
+                }
+            }
 
+            // The horizontal location usually depends on the mergePolicy of the Model.
+            // All models of a given type have the same priority.
+            var mergePolicy        = C.RectifyXPolicy.Invalid;
+            for (var j = 0; j < ctx._voices.length; ++j) {
+                mergePolicy        = Math.max(mergePolicy, ctx._voices[j].body[ctx.idx].xPolicy);
+            }
+            assert(!!mergePolicy, "mergePolicy can't be .Invalid, 0, of otherwise falsy");
+            ctx.x                  = componentSnapshots[0].x;
+            for (var i = 1; i < componentSnapshots.length; ++i) {
+                var fn             = mergePolicy === C.RectifyXPolicy.Max ? Math.max : Math.min;
+                ctx.x              = fn(ctx.x, componentSnapshots[i].x);
+            }
 
-        if (canExitAtNewline && isNewline && isClean) {
-            return C.IterationStatus.ExitEarly;
-        }
+            // The exception to this rule occurs when different voices disagree about how much space is needed.
+            // We should usually believe the real (not placeholder) model that reports the smallest number.
+            // This can sadly cause some strange (overly large) spacing for Durations that do not line up.
+            var minX               = Infinity;
+            var otherContexts      = ctx.findVertical(c => true);
+            for (var i = 0; i < otherContexts.length; ++i) {
+                minX               = Math.min(otherContexts[i].x, minX);
+            }
+            for (var i = 0; i < otherContexts.length; ++i) {
+                otherContexts[i].x = minX;
+            }
 
-        return status;
-    }
-
-    reset(from: C.ILocation) {
-        this._idx = -1;
-        // Important: If bar === 1, this function resets it to the first element.
-        // Otherwise, it resets it to the beginning of a line.
-        do {
-            this._location = new C.Location(this._body[++this._idx].ctxData);
-        } while ((from.bar !== 1 || from.division !== 0) &&
-            (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
-            this.curr.priority <= C.Type.Begin || this.curr.priority === C.Type.Barline)));
-        this._updateSubctx();
-    }
-
-    rewind(priority?: C.Type) {
-        if (!priority) {
-            --this._idx;
-        } else {
-            while (this._idx >= 0 && this._body[this._idx].priority !== priority) {
-                --this._idx;
+            ctx.accidentalsByStaff = [];
+            for (var i = 0; i < componentSnapshots.length; ++i) {
+                for (var j = 1; j < componentSnapshots[i].accidentalsByStaff.length; ++j) {
+                    // TODO: conflicts?
+                    ctx.accidentalsByStaff[j] = <any> _.extend(ctx.accidentalsByStaff[j] || {},
+                        componentSnapshots[i].accidentalsByStaff[j]);
+                }
             }
         }
-        this._updateSubctx();
-    }
 
-    /**
-     * Seek to the location at 'loc' with priority <= 'priority', or if none exists,
-     * the location just before 'loc'.
-     */
-    rewindSeek(loc: C.Location, priority: number) {
-        while (this._idx >= 0 && (
-                !this._body[this._idx].ctxData ||
-                loc.lt(this._body[this._idx].ctxData) ||
-                loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].priority > priority)) {
-            --this._idx;
+        next(status: C.IterationStatus) {
+            switch (status) {
+                case C.IterationStatus.Success:
+                    this._increment();
+                    break;
+                case C.IterationStatus.ExitEarly:
+                    for (var i = 0; i < this._components.length; ++i) {
+                        this._components[i].markDone();
+                    }
+                    this.eofJustificationDirty = false;
+                    break;
+                case C.IterationStatus.RetryFromEntry:
+                    this._reset();
+                    break;
+                case C.IterationStatus.LineCreated:
+                    this._rollbackLine(this._parent.line);
+                    this._rewindTwoNewlines();
+                    this._increment();
+                    break;
+                case C.IterationStatus.RetryPreviousLine:
+                    this._rollbackLine(this._parent.line - 1);
+                    this._rewindTwoNewlines();
+                    this._increment();
+                    break;
+                case C.IterationStatus.RetryLine:
+                    this._rollbackLine(this._parent.line);
+                    this._rewind(C.Type.NewLine);
+                    this._increment();
+                    break;
+                case C.IterationStatus.LineRemoved:
+                    this._rollbackLine(this._parent.line - 1);
+                    break;
+                case C.IterationStatus.RetryBeam:
+                    this._parent.division = this._parent.startOfBeamDivision;
+                    this._rewind(C.Type.BeamGroup);
+                    this._parent.x = this._componentWithPriority(C.Type.BeamGroup).x;
+                    break;
+                case C.IterationStatus.RetryCurrent:
+                case C.IterationStatus.RetryCurrentNoOptimizations:
+                    this._ensureCurrPrioritiesMatch();
+                    break;
+                default:
+                    assert(false, "Invalid status");
+            }
+
+            this._assertOffsetsOK();
+
+            if (status !== C.IterationStatus.Success) {
+                recordMetreData(this._parent.score.parts, this._voices);
+            }
+
+            this._assertOffsetsOK();
         }
-        this._updateSubctx();
-    }
 
-    _updateSubctx() {
-        if (this.curr && this.curr.ctxData) {
-            this._division = this.curr.ctxData.division;
-            this._nextDivision = null;
-        } else {
-            this._division = null;
-            this._nextDivision = null;
-        }
-    }
-
-    trySeek(priority: number) {
-        this.ensurePriorityIs(priority);
-        ++this._idx;
-        assert(this.nextPriority === C.MAX_NUM || this.curr);
-    }
-
-    ensurePriorityIs(priority: number) {
-        if (this._assertionPolicy === AssertionPolicy.Strict) {
-            assert.equal(this.nextPriority, priority, "Priorities must be aligned");
-        } else if (this.nextPriority !== priority) {
-            var nextIsPlaceholder = this._body[this._idx + 1] && this._body[this._idx + 1].placeholder;
-            var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
-            this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
-                new PlaceholderModel({ priority: priority }, true /* ? */));
-        }
-    }
-
-    /**
-     * Returns the position of the last item with priority 'priority'.
-     */
-    lastOf(priority: C.Type): C.Location {
-        var i = this._idx;
-        while (i > 0 && this._body[i].priority !== priority) {
-            --i;
-        }
-        return new C.Location(this._body[i].ctxData);
-    }
-
-    /**
-     * Hack to make this.atEnd true.
-     */
-    markDone(): void {
-        this._idx = this._body.length;
-    }
-
-    get nextLocation(): C.ILocation {
-        var next = this._next;
-        return next ? next.ctxData : MAX_LOCATION;
-    }
-
-    get nextPriority(): number {
-        var next = this._next;
-        return next ? next.priority : C.MAX_NUM;
-    }
-
-    get atEnd(): boolean {
-        return !this._body[this._idx];
-    }
-
-    get curr(): Model {
-        return this._body[this._idx];
-    }
-
-    get len() {
-        return this._body.length;
-    }
-
-    private _beatExceedsContext(ctx: Context): boolean {
-        if (ctx.curr.type !== C.Type.Duration) {
+        get atEnd(): boolean {
+            for (var i = 0; i < this._components.length; ++i) {
+                if (this._components[i].atEnd) {
+                    return true;
+                }
+            }
             return false;
         }
-        var space = !!(ctx.findVertical(c => c.type !== C.Type.Placeholder && c !== ctx.curr).length);
-        return space && ctx.curr.type !== C.Type.Placeholder && ctx.division > ctx.__globalDivision__;
-    }
 
-    private _addPadding(ctx: Context) {
-        var PlaceholderModel = require("./placeholder");
-        ctx.splice(ctx.idx, 0, [new PlaceholderModel({
-            priority: ctx.curr.priority
-        }, true /* ? */)], SplicePolicy.Additive);
-        ctx.division = ctx.__globalDivision__;
-        return C.IterationStatus.RetryCurrentNoOptimizations;
-    }
+        // This is kind of ugly. Another (probably better) option would be to have a
+        // EndOfFileModel which handles the semi-justification for the end of the song.
+        eofJustificationDirty: boolean = true;
 
-    private get _next() {
-        this._division = this._nextDivision;
-        return this._body[this._idx + 1];
-    }
-
-    private _shouldUpdateVC(ctx: Context): boolean {
-        if (!this._cursor) { return false; }
-        if (!ctx.curr) { return false; }
-
-        var target = this._cursor;
-        var barMatches = ctx.bar === target.bar;
-        var beatMatches = (!target.division && !target.annotatedObj) || ctx.division === target.division;
-        var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.EndMarker);
-
-        return barMatches && beatMatches && typeMatches && !target.annotatedObj;
-    }
-
-
-    private _assertionPolicy:   AssertionPolicy;
-    private _division:          number           = null;
-    private _nextDivision:      number             = null;
-    private get _body() {
-        return this._voice.body;
-    }
-    private _cursor:            C.IVisualCursor;
-    public  _idx:               number;
-    private _location:          C.Location;
-    private _sidx:              number;
-    _voice:                     C.IVoice;
-    private _part:              C.IPart;
-    private _idxInPart:         number;
-}
-
-
-
-
-
-function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
-    "use strict";
-
-    if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff); }
-    if (  line.bar         !== null) { ctx.bar                = line.bar;                }
-    if (!!line.barlineX            ) { ctx.barlineX           = line.barlineX;           }
-    if (  line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
-    if (  line.division    !== null) { ctx.division           = line.division;           }
-    if (  line.line        !== null) { ctx.line               = line.line;               }
-    if (!!line.pageLines           ) { ctx.pageLines          = line.pageLines;          }
-    if (!!line.pageStarts          ) { ctx.pageStarts         = line.pageStarts;         }
-    if (  line.x           !== null) { ctx.x                  = line.x;                  }
-    if (  line.y           !== null) { ctx.y                  = line.y;                  }
-}
-
-enum NewlineMode {
-    StartOfLine,
-    MiddleOfLine
-}
-
-function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
-    "use strict";
-
-    _.each(layout, (v, attrib) => {
-        if ((<any>layout)[attrib] === null) {
-            return;
+        private _assertOffsetsOK() {
+            if (this._assertionPolicy === AssertionPolicy.NoAssertions) {
+                return;
+            }
+            var n = this._components[0]._idx;
+            var len = this._components[0].len;
+            for (var k = 0; k < this._components.length; ++k) {
+                assert(n === this._components[k]._idx, "Invalid offset");
+                if (len !== this._components[k].len) {
+                    assert(false, "Mismatched body lengths");
+                }
+            }
         }
-        switch (attrib) {
-            case "lines":
-                ctx.lines = layout.lines;
-                ctx.line  = layout.lines.length - 1;
-                _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.StartOfLine);
-                break;
-            case "fontSize":    ctx.fontSize   = layout.fontSize;   break;
-            case "maxX":        ctx.maxX       = layout.maxX;       break;
-            case "maxY":        ctx.maxY       = layout.maxY;       break;
-            case "attributes":  ctx._attributes = layout._attributes; break;
-            case "partialLine": /* pass */                          break;
-            case "prevLine":    /* pass */                          break;
-            default:            assert(false, "Not reached");
+
+        private _componentWithPriority(type: C.Type): Model {
+            for (var i = 0; i < this._components.length; ++i) {
+                if (this._components[i].curr.priority === type) {
+                    return this._components[i].curr;
+                }
+            }
+            assert(false, "Not reached");
+            return null;
         }
+
+        private _rewindTwoNewlines() {
+            for (var i = 0; i < this._components.length; ++i) {
+                this._components[i].rewind(C.Type.NewLine);
+                this._components[i].rewind();
+                this._components[i].rewind(C.Type.NewLine);
+            }
+        }
+
+        private _rewind(type: C.Type) {
+            var nextLoc = new C.Location(MIN_LOCATION);
+            var i: number;
+
+            for (i = 0; i < this._components.length; ++i) {
+                this._components[i].rewind();
+                var loc = this._components[i].lastOf(type);
+                if (nextLoc.le(loc)) {
+                    nextLoc = loc;
+                }
+            }
+            for (i = 0; i < this._components.length; ++i) {
+                this._components[i].rewindSeek(nextLoc, type);
+            }
+        }
+
+        private _rollbackLine(i: number) {
+            this._parent.line = i;
+            _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.StartOfLine);
+        }
+
+        private _increment() {
+            var nextLoc = new C.Location(MAX_LOCATION);
+            var nextPriority = C.MAX_NUM;
+            this._assertOffsetsOK();
+
+            for (var i = 0; i < this._components.length; ++i) {
+                var pri = this._components[i].nextPriority;
+                var loc = this._components[i].nextLocation;
+                if (pri !== C.MAX_NUM && nextLoc.ge(loc) && nextPriority > pri) {
+                    nextLoc = new C.Location(loc);
+                    nextPriority = pri;
+                }
+            }
+            this._assertOffsetsOK();
+
+            for (var j = 0; j < this._components.length; ++j) {
+                this._components[j].trySeek(nextPriority);
+            }
+            this._assertOffsetsOK();
+
+            // this._parent.loc = nextLoc;
+            // Q: Why don't we do this?
+            // A: Durations and barlines themselves will set the location, annotating things as
+            //    required.
+        }
+
+        private _ensureCurrPrioritiesMatch() {
+            var pri = C.Type.Unknown;
+            _.every(this._components, c => {
+                if (c.curr) {
+                    pri = Math.min(pri, c.curr.type);
+                }
+            });
+            if (pri !== C.Type.Unknown) {
+                _.each(this._components, (c: Iterator) => {
+                    if (!c.curr) {
+                        c.ensurePriorityIs(pri);
+                    }
+                });
+            }
+        }
+
+        private _clearCursor() {
+            if (this._cursor && this._parent.line === this._cursor.annotatedLine) {
+                this._cursor.annotatedLine = null;
+                this._cursor.annotatedObj = null;
+                this._cursor.annotatedPage = null;
+                this._cursor.annotatedStave = null;
+            }
+        }
+
+        private _markLineDirty() {
+            if (this._parent.score) {
+                this._parent.score.dangerouslyMarkRendererLineDirty(this._parent.line);
+            }
+            this._canExitAtNewline = false;
+        }
+
+        private _reset: () => void;
+        private _canExitAtNewline: boolean = false;
+        private _components: Array<Iterator> = [];
+        private _cursor: C.IVisualCursor;
+        private _parent: Context;
+        private _voices: Array<C.IVoice>;
+        private _assertionPolicy: AssertionPolicy;
+    }
+
+    /**
+     * Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
+     */
+    class Iterator {
+        constructor(from: C.ILocation, voice: C.IVoice, idx: number,
+                cursor: C.IVisualCursor, part: C.IPart, indexInPart: number,
+                assertionPolicy: AssertionPolicy) {
+            this._voice             = voice;
+            this._body              = voice.body;
+            this._sidx              = idx;
+            this._cursor            = cursor;
+            this._part              = part;
+            this._idxInPart         = indexInPart;
+            this._assertionPolicy   = assertionPolicy;
+            this.reset(from);
+
+            assert(this._location.eq(from));
+        }
+
+        annotate(ctx: Context, canExitAtNewline: boolean): C.IterationStatus {
+            if (this._division !== null) {
+                ctx.__globalDivision__  = ctx.division;
+                ctx.division    = this._division;
+            }
+            ctx.body                = this._body;
+            ctx.voice               = this._voice;
+            ctx.voiceIdx            = this._sidx;
+            ctx.part                = this._part;
+            ctx.idxInPart           = this._idxInPart;
+            ctx.idx                 = this._idx;
+
+            var shouldUpdateVC      = this._shouldUpdateVC(ctx);
+
+            if (this._beatExceedsContext(ctx)) {
+                return this._addPadding(ctx);
+            }
+
+            ///
+            var status = this._body[this._idx].annotate(ctx);
+            this._nextDivision = ctx.division;
+            ///
+
+            var isClean = status === C.IterationStatus.Success && (!this._cursor || this._cursor.annotatedObj);
+            var isNewline = this.curr && this.curr.type === C.Type.NewLine;
+
+            if (status === C.IterationStatus.Success && shouldUpdateVC) {
+                var c               = this._cursor;
+                c.annotatedObj      = this.curr;
+                c.annotatedStave    = this._idx;
+                c.annotatedLine     = ctx.line;
+                c.annotatedPage     = ctx.pageStarts.length - 1;
+            }
+
+            if (canExitAtNewline && isNewline && isClean) {
+                return C.IterationStatus.ExitEarly;
+            }
+
+            return status;
+        }
+
+        reset(from: C.ILocation) {
+            this._idx = -1;
+            // Important: If bar === 1, this function resets it to the first element.
+            // Otherwise, it resets it to the beginning of a line.
+            do {
+                this._location = new C.Location(this._body[++this._idx].ctxData);
+            } while ((from.bar !== 1 || from.division !== 0) &&
+                (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
+                this.curr.priority <= C.Type.Begin || this.curr.priority === C.Type.Barline)));
+            this._updateSubctx();
+        }
+
+        rewind(priority?: C.Type) {
+            if (!priority) {
+                --this._idx;
+            } else {
+                while (this._idx >= 0 && this._body[this._idx].priority !== priority) {
+                    --this._idx;
+                }
+            }
+            this._updateSubctx();
+        }
+
+        /**
+         * Seek to the location at 'loc' with priority <= 'priority', or if none exists,
+         * the location just before 'loc'.
+         */
+        rewindSeek(loc: C.Location, priority: number) {
+            while (this._idx >= 0 && (
+                    !this._body[this._idx].ctxData ||
+                    loc.lt(this._body[this._idx].ctxData) ||
+                    loc.eq(this._body[this._idx].ctxData) && this._body[this._idx].priority > priority)) {
+                --this._idx;
+            }
+            this._updateSubctx();
+        }
+
+        _updateSubctx() {
+            if (this.curr && this.curr.ctxData) {
+                this._division = this.curr.ctxData.division;
+                this._nextDivision = null;
+            } else {
+                this._division = null;
+                this._nextDivision = null;
+            }
+        }
+
+        trySeek(priority: number) {
+            this.ensurePriorityIs(priority);
+            ++this._idx;
+            assert(this.nextPriority === C.MAX_NUM || this.curr);
+        }
+
+        ensurePriorityIs(priority: number) {
+            if (this._assertionPolicy === AssertionPolicy.Strict) {
+                assert.equal(this.nextPriority, priority, "Priorities must be aligned");
+            } else if (this.nextPriority !== priority) {
+                var nextIsPlaceholder = this._body[this._idx + 1] && this._body[this._idx + 1].placeholder;
+                var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
+                this._body.splice(this._idx + 1, nextIsPlaceholder ? 1 : 0,
+                    new PlaceholderModel({ priority: priority }, true /* ? */));
+            }
+        }
+
+        /**
+         * Returns the position of the last item with priority 'priority'.
+         */
+        lastOf(priority: C.Type): C.Location {
+            var i = this._idx;
+            while (i > 0 && this._body[i].priority !== priority) {
+                --i;
+            }
+            return new C.Location(this._body[i].ctxData);
+        }
+
+        /**
+         * Hack to make this.atEnd true.
+         */
+        markDone(): void {
+            this._idx = this._body.length;
+        }
+
+        get nextLocation(): C.ILocation {
+            var next = this._next;
+            return next ? next.ctxData : MAX_LOCATION;
+        }
+
+        get nextPriority(): number {
+            var next = this._next;
+            return next ? next.priority : C.MAX_NUM;
+        }
+
+        get atEnd(): boolean {
+            return !this._body[this._idx];
+        }
+
+        get curr(): Model {
+            return this._body[this._idx];
+        }
+
+        get len() {
+            return this._body.length;
+        }
+
+        private _beatExceedsContext(ctx: Context): boolean {
+            if (ctx.curr.type !== C.Type.Duration) {
+                return false;
+            }
+            var space = !!(ctx.findVertical(c => c.type !== C.Type.Placeholder && c !== ctx.curr).length);
+            return space && ctx.curr.type !== C.Type.Placeholder && ctx.division > ctx.__globalDivision__;
+        }
+
+        private _addPadding(ctx: Context) {
+            var PlaceholderModel = require("./placeholder");
+            ctx.splice(ctx.idx, 0, [new PlaceholderModel({
+                priority: ctx.curr.priority
+            }, true /* ? */)], SplicePolicy.Additive);
+            ctx.division = ctx.__globalDivision__;
+            return C.IterationStatus.RetryCurrentNoOptimizations;
+        }
+
+        private get _next() {
+            this._division = this._nextDivision;
+            return this._body[this._idx + 1];
+        }
+
+        private _shouldUpdateVC(ctx: Context): boolean {
+            if (!this._cursor) { return false; }
+            if (!ctx.curr) { return false; }
+
+            var target = this._cursor;
+            var barMatches = ctx.bar === target.bar;
+            var beatMatches = (!target.division && !target.annotatedObj) || ctx.division === target.division;
+            var typeMatches = (ctx.curr.isNote && !target.endMarker) || (target.endMarker && ctx.curr.type === C.Type.EndMarker);
+
+            return barMatches && beatMatches && typeMatches && !target.annotatedObj;
+        }
+
+        private _assertionPolicy:   AssertionPolicy;
+        private _division:          number           = null;
+        private _nextDivision:      number             = null;
+        private get _body() {
+            return this._voice.body;
+        }
+        private _cursor:            C.IVisualCursor;
+        public  _idx:               number;
+        private _location:          C.Location;
+        private _sidx:              number;
+        _voice:                     C.IVoice;
+        private _part:              C.IPart;
+        private _idxInPart:         number;
+    }
+
+    Iterator.prototype._voice = {
+        body: [],
+        instrument: null
+    };
+
+    function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
+        "use strict";
+
+        if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff); }
+        if (  line.bar         !== null) { ctx.bar                = line.bar;                }
+        if (!!line.barlineX            ) { ctx.barlineX           = line.barlineX;           }
+        if (  line.barKeys     !== null) { ctx.barKeys            = line.barKeys;            }
+        if (  line.division    !== null) { ctx.division           = line.division;           }
+        if (  line.line        !== null) { ctx.line               = line.line;               }
+        if (!!line.pageLines           ) { ctx.pageLines          = line.pageLines;          }
+        if (!!line.pageStarts          ) { ctx.pageStarts         = line.pageStarts;         }
+        if (  line.x           !== null) { ctx.x                  = line.x;                  }
+        if (  line.y           !== null) { ctx.y                  = line.y;                  }
+    }
+
+    enum NewlineMode {
+        StartOfLine,
+        MiddleOfLine
+    }
+
+    var MAX_LOCATION = new C.Location({
+        bar:  C.MAX_NUM,
+        division: C.MAX_NUM
+    });
+
+    var MIN_LOCATION = new C.Location({
+        bar:  -1,
+        division: -1
     });
 }
-
-var MAX_LOCATION = new C.Location({
-    bar:  C.MAX_NUM,
-    division: C.MAX_NUM
-});
-
-var MIN_LOCATION = new C.Location({
-    bar:  -1,
-    division: -1
-});
-
-PrivIteratorComponent.prototype._voice = {
-    body: [],
-    instrument: null
-};
-
-Context.prototype.body = [];
-Context.prototype.voiceIdx = 0;
-Context.prototype.pageStarts = [];
-Context.prototype._layout = <any> {
-    header: null,
-    snapshot: null,
-    proto: true
-};
-Context.prototype.loc = {
-    bar: 1,
-    division: 0,
-    endMarker: false,
-    proto: true
-};

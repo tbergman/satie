@@ -6,7 +6,7 @@
 
 import React            = require("react");
 import TypedReact   	= require("typed-react");
-var    PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
+import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
 import Line     		= require("./_line");

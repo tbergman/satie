@@ -55,7 +55,6 @@ function rhythmicSpellcheck(ctx) {
         return clearExcessBeats(currNote, excessBeats, ctx);
     }
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartDivision + calcDivisions2(nextNote, ctx);
         patternStartDivision = 0;
         for (var p = 0; p < pattern.length; ++p) {
             var patternEndDivision = patternStartDivision + calcDivisions2(pattern[p], ctx);
@@ -174,7 +173,6 @@ function add(durr1, durr2, ctx, beatOffset) {
 exports.add = add;
 function subtract(durr1, divisions, ctx, divisionOffset) {
     "use strict";
-    var tsName = getTSString(ctx.ts);
     var replaceWith = [];
     var durr1Divisions = isNaN(durr1) ? calcDivisions2(durr1, ctx) : durr1;
     var beatsToFill = durr1Divisions - divisions;

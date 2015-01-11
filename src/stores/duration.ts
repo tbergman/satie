@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -145,7 +145,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     set displayTuplet(t: C.MusicXML.TimeModification) {
         this._displayTuplet     = t;
     }
-
 
     get hasFlagOrBeam() {
         return !!this.tuplet || !this.isRest && DurationModel.countToIsBeamable[this.count];
@@ -598,8 +597,8 @@ class DurationModel extends Model implements C.IPitchDuration {
 
                         return {
                             body:           intermediates,
-                            type:       	"tuplet",
-                            notation:   	tuplet,
+                            type:           "tuplet",
+                            notation:       tuplet,
                             getDirection:   function(): number {
                                 return _.reduce(intermediates, (sum, note) => sum + note.averageLine/intermediates.length, 0) >= 3 ? -1 : 1;
                             }
@@ -793,7 +792,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 third = null;
             }
             var a = first === null || first === undefined || first !== first ? second : first;
-            return a == null || a === undefined || a !== a ? third : a;
+            return a === null || a === undefined || a !== a ? third : a;
         };
         for (var i = 0; i < result.length; ++i) {
             var pitch: C.IPitch = chord[i];
@@ -805,7 +804,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             }
             var generalTarget = or3(ctx.accidentalsByStaff[this.staff][pitch.step], null);
             var target = or3(ctx.accidentalsByStaff[this.staff][pitch.step + pitch.octave], null);
-            
+
             if (!target && generalTarget !== C.InvalidAccidental) {
                 target = generalTarget;
             }
@@ -850,7 +849,9 @@ class DurationModel extends Model implements C.IPitchDuration {
                 if (ctx.division === ctx.attributes.divisions) { // DIFIX: Shouldn't this be 0?
                     var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
                     if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
-                        var prevNote = ctx.prev(c => c.isNote && _.any(c.note.chord, c => c.step === pitch.step) || c.type === C.Type.Barline, 2);
+                        var prevNote = ctx.prev(
+                            c => c.isNote && _.any(c.note.chord, c => c.step === pitch.step) ||
+                            c.type === C.Type.Barline, 2);
                         if (prevNote && prevNote.type !== C.Type.Barline) {
                             noConflicts = noConflicts && !_hasConflict(prevNote.note.chord, pitch.step, target);
                         }
@@ -900,7 +901,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         var dots = 0;
         while (!isPO2(1/(beats/dotFactor/4)) && dots < 5) { // /8?
             ++dots;
-            dotFactor += Math.pow(1/2, dots)
+            dotFactor += Math.pow(1/2, dots);
         }
         if (dots === 5) {
             dots = 0;
@@ -993,9 +994,6 @@ class DurationModel extends Model implements C.IPitchDuration {
         return this.direction === 1 ? this.highestLine : this.lowestLine;
     }
 
-    static IDEAL_STEM_HEIGHT = 35;
-	static MIN_STEM_HEIGHT = 25;
-
     stemHeight: number;
     private _getStemHeight(): number {
         var heightFromOtherNotes = (this.highestLine - this.lowestLine) * 10;
@@ -1037,149 +1035,10 @@ class DurationModel extends Model implements C.IPitchDuration {
     /*---- IV. Statics --------------------------------------------------------------------------*/
 
     static BEAMDATA: Array<DurationModel>;
-
-    static clefOffsets: { [key: string]: number } = {
-        G:              -3.5,
-        F:               2.5,
-        C:              -0.5,
-        PERCUSSION:     -0.5,
-        TAB:            -0.5,
-        NONE:           -0.5
-    };
-
-    static chromaticScale: { [key: string]: number } = {
-        c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
-    }; // c:12
-
-    static countToFlag: { [key: string]: string } = {
-        8: "flag8th",
-        16: "flag16th",
-        32: "flag32nd",
-        64: "flag64th",
-        128: "flag128th",
-        256: "flag256th",
-        512: "flag512th",
-        1024: "flag1024th"
-    };
-
-    static countToHasStem: { [key: string]: boolean } = {
-        0.25: true,
-        0.5: false,
-        1: false,
-        2: true,
-        4: true,
-        8: true,
-        16: true,
-        32: true,
-        64: true,
-        128: true,
-        256: true,
-        512: true,
-        1024: true
-    };
-
-    static countToIsBeamable: { [key: string]: boolean } = {
-        8: true,
-        16: true,
-        32: true,
-        64: true,
-        128: true,
-        256: true,
-        512: true,
-        1024: true
-    };
-
-    static countToNotehead: { [key: number]: string } = {
-        9992: "noteheadDoubleWhole",
-        9991: "noteheadDoubleWhole",
-        9990: "noteheadDoubleWhole",
-        1: "noteheadWhole",
-        2: "noteheadHalf",
-        4: "noteheadBlack",
-        8: "noteheadBlack",
-        16: "noteheadBlack",
-        32: "noteheadBlack",
-        64: "noteheadBlack",
-        128: "noteheadBlack",
-        256: "noteheadBlack",
-        512: "noteheadBlack",
-        1024: "noteheadBlack"
-    };
-
-    static countToRest: { [key: number]: string } = {
-        9992: "restLonga",
-        9991: "restLonga",
-        9990: "restDoubleWhole",
-        1: "restWhole",
-        2: "restHalf",
-        4: "restQuarter",
-        8: "rest8th",
-        16: "rest16th",
-        32: "rest32nd",
-        64: "rest64th",
-        128: "rest128th",
-        256: "rest256th",
-        512: "rest512th",
-        1024: "rest1024th"
-    };
-
-    static getAverageLine = (note: DurationModel, ctx: Annotator.Context) => {
-        var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
-        return _.reduce(lines, (memo, line) => memo + line/lines.length, 0);
-    };
-
-    static getLines = (note: DurationModel,
-            ctx: Annotator.Context, options?: { filterTemporary: boolean }): Array<number> => {
-        options = options || {filterTemporary: false};
-        var ret: Array<number> = [];
-        for (var i = 0; i < note.chord.length; ++i) {
-            if (!options.filterTemporary || !note.chord[i].temporary) {
-                if (note.isRest) {
-                    var durr = <DurationModel> note;
-                    if (durr._notes && durr._notes[i].rest.displayStep) {
-                        ret.push(
-                            DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
-                            ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
-                            DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
-                    } else if (note.isWholebar) {
-                        ret.push(4);
-                    } else {
-                        ret.push(3);
-                    }
-                } else {
-                    ret.push(
-                        DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
-                        ((note.chord[i].octave || 0) - 3) * 3.5 +
-                        DurationModel.pitchOffsets[note.chord[i].step]);
-                }
-            }
-        }
-        _.forEach(ret, r => assert(isFinite(r)));
-        return ret;
-    };
-
-    static offsetToPitch: { [key: string]: string } = {
-        0: "C",
-        0.5: "D",
-        1: "E",
-        1.5: "F",
-        2: "G",
-        2.5: "A",
-        3: "B"
-    };
-
-    static pitchOffsets: { [key: string]: number } = {
-        C: 0,
-        D: 0.5,
-        E: 1,
-        F: 1.5,
-        G: 2,
-        A: 2.5,
-        B: 3
-    };
 }
 
 module DurationModel {
+    "use strict";
     export class MXMLNote implements C.MusicXML.NoteComplete {
         _parent: DurationModel;
         _idx : number;
@@ -1271,7 +1130,6 @@ module DurationModel {
             return this._idx + 1 !== this._parent.chord.length;
         }
 
-
         get pitch(): C.MusicXML.Pitch {
             return this._parent.isRest ? null : this._parent.chord[this._idx ];
         }
@@ -1362,7 +1220,6 @@ module DurationModel {
         pizzicato:          boolean;
         beams:              C.MusicXML.Beam[];
 
-
         /*---- C.MusicXML.PrintStyle ------------------------------------------------------------*/
 
         /*---- C.MusicXML.PrintStyle >> EditorialVoice ------------------------------------------*/
@@ -1400,7 +1257,8 @@ module DurationModel {
                     break;
                 case a[0] === "#":
                     a = a.slice(1);
-                    // passthrough
+                    this._color = parseInt(a, 16);
+                    break;
                 default:
                     this._color = parseInt(a, 16);
                     break;
@@ -1446,7 +1304,7 @@ module DurationModel {
         /**
          * Flattens notations.
          * All of the following are valid and equivalent in MusicXML:
-         *
+         * 
          * 1. <notations>
          *      <articulations>
          *        <staccato placement="above"/>
@@ -1457,7 +1315,7 @@ module DurationModel {
          *        <accent placement="above"/>
          *      </articulations>
          *    </notations>
-         *     
+         * 
          * 2. <notations>
          *      <articulations>
          *        <staccato placement="above"/>
@@ -1466,14 +1324,14 @@ module DurationModel {
          *        <accent placement="above"/>
          *      </articulations>
          *    </notations>
-         *     
+         * 
          * 3. <notations>
          *      <articulations>
          *        <staccato placement="above"/>
          *        <accent placement="above"/>
          *      </articulations>
          *    </notations>
-         *
+         * 
          * This function makes the structure like the third version. So there's only ever 0 or
          * 1 notations and 0 or 1 articulations. This makes the notationObj and articualtionObj
          * function above fast.
@@ -1485,9 +1343,9 @@ module DurationModel {
             if (this.notations) {
                 var notations = this.notations;
                 var notation: C.MusicXML.Notations = {
-                    articulations:          combineArticulations               	("articulations"),
+                    articulations:          combineArticulations                   ("articulations"),
                     accidentalMarks:        combine<C.MusicXML.AccidentalMark>  ("accidentalMarks"),
-                    arpeggiates:            combine<C.MusicXML.Arpeggiate>     	("arpeggiates"),
+                    arpeggiates:            combine<C.MusicXML.Arpeggiate>         ("arpeggiates"),
                     dynamics:               combine<C.MusicXML.Dynamics>        ("dynamics"),
                     fermatas:               combine<C.MusicXML.Fermata>         ("fermatas"),
                     glissandos:             combine<C.MusicXML.Glissando>       ("glissandos"),
@@ -1503,6 +1361,7 @@ module DurationModel {
                     level:                     last<C.MusicXML.Level>           ("level"),
                     printObject:               last<boolean>                    ("printObject")
                 };
+                this.notations = [notation];
 
                 function combine<T>(key: string): T[] {
                     return _.reduce(notations, (memo: any, n:any) =>
@@ -1540,10 +1399,153 @@ module DurationModel {
 
     export interface IContinuingNotation {
         body:           DurationModel[];
-        type:       	string;
-        notation:   	any;
+        type:           string;
+        notation:       any;
         getDirection:   () => number;
     }
+
+    export var IDEAL_STEM_HEIGHT: number = 35;
+    export var MIN_STEM_HEIGHT: number = 25;
+
+    export var clefOffsets: { [key: string]: number } = {
+        G:              -3.5,
+        F:               2.5,
+        C:              -0.5,
+        PERCUSSION:     -0.5,
+        TAB:            -0.5,
+        NONE:           -0.5
+    };
+
+    export var chromaticScale: { [key: string]: number } = {
+        c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11
+    }; // c:12
+
+    export var countToFlag: { [key: string]: string } = {
+        8: "flag8th",
+        16: "flag16th",
+        32: "flag32nd",
+        64: "flag64th",
+        128: "flag128th",
+        256: "flag256th",
+        512: "flag512th",
+        1024: "flag1024th"
+    };
+
+    export var countToHasStem: { [key: string]: boolean } = {
+        0.25: true,
+        0.5: false,
+        1: false,
+        2: true,
+        4: true,
+        8: true,
+        16: true,
+        32: true,
+        64: true,
+        128: true,
+        256: true,
+        512: true,
+        1024: true
+    };
+
+    export var countToIsBeamable: { [key: string]: boolean } = {
+        8: true,
+        16: true,
+        32: true,
+        64: true,
+        128: true,
+        256: true,
+        512: true,
+        1024: true
+    };
+
+    export var countToNotehead: { [key: number]: string } = {
+        9992: "noteheadDoubleWhole",
+        9991: "noteheadDoubleWhole",
+        9990: "noteheadDoubleWhole",
+        1: "noteheadWhole",
+        2: "noteheadHalf",
+        4: "noteheadBlack",
+        8: "noteheadBlack",
+        16: "noteheadBlack",
+        32: "noteheadBlack",
+        64: "noteheadBlack",
+        128: "noteheadBlack",
+        256: "noteheadBlack",
+        512: "noteheadBlack",
+        1024: "noteheadBlack"
+    };
+
+    export var countToRest: { [key: number]: string } = {
+        9992: "restLonga",
+        9991: "restLonga",
+        9990: "restDoubleWhole",
+        1: "restWhole",
+        2: "restHalf",
+        4: "restQuarter",
+        8: "rest8th",
+        16: "rest16th",
+        32: "rest32nd",
+        64: "rest64th",
+        128: "rest128th",
+        256: "rest256th",
+        512: "rest512th",
+        1024: "rest1024th"
+    };
+
+    export var getAverageLine = (note: DurationModel, ctx: Annotator.Context) => {
+        var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
+        return _.reduce(lines, (memo, line) => memo + line/lines.length, 0);
+    };
+
+    export var getLines = (note: DurationModel,
+            ctx: Annotator.Context, options?: { filterTemporary: boolean }): Array<number> => {
+        options = options || {filterTemporary: false};
+        var ret: Array<number> = [];
+        for (var i = 0; i < note.chord.length; ++i) {
+            if (!options.filterTemporary || !note.chord[i].temporary) {
+                if (note.isRest) {
+                    var durr = <DurationModel> note;
+                    if (durr._notes && durr._notes[i].rest.displayStep) {
+                        ret.push(
+                            DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
+                            ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 +
+                            DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    } else if (note.isWholebar) {
+                        ret.push(4);
+                    } else {
+                        ret.push(3);
+                    }
+                } else {
+                    ret.push(
+                        DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) +
+                        ((note.chord[i].octave || 0) - 3) * 3.5 +
+                        DurationModel.pitchOffsets[note.chord[i].step]);
+                }
+            }
+        }
+        _.forEach(ret, r => assert(isFinite(r)));
+        return ret;
+    };
+
+    export var offsetToPitch: { [key: string]: string } = {
+        0: "C",
+        0.5: "D",
+        1: "E",
+        1.5: "F",
+        2: "G",
+        2.5: "A",
+        3: "B"
+    };
+
+    export var pitchOffsets: { [key: string]: number } = {
+        C: 0,
+        D: 0.5,
+        E: 1,
+        F: 1.5,
+        G: 2,
+        A: 2.5,
+        B: 3
+    };
 }
 
 DurationModel.MXMLNote.prototype.staff = 1;

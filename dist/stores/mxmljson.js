@@ -6,6 +6,7 @@ var C = require("./contracts");
 var Model = require("./model");
 var PlaceholderModel = require("./placeholder");
 function toScore(score) {
+    "use strict";
     try {
         var header = extractMXMLHeader(score);
         var partData = extractMXMLPartsAndVoices(score);
@@ -26,6 +27,7 @@ function toScore(score) {
 }
 exports.toScore = toScore;
 function extractMXMLHeader(m) {
+    "use strict";
     var header = new C.ScoreHeader({
         work: m.work,
         movementNumber: m.movementNumber,
@@ -41,6 +43,7 @@ function extractMXMLHeader(m) {
     return header;
 }
 function extractMXMLPartsAndVoices(mxmlJson) {
+    "use strict";
     if (!mxmlJson || !mxmlJson.partList || !mxmlJson.partList.scoreParts || !mxmlJson.partList.scoreParts.length) {
         throw new C.InvalidMXMLException("At least one part is required", 0, 0, "Header");
     }
@@ -242,5 +245,4 @@ function extractMXMLPartsAndVoices(mxmlJson) {
                 throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }
     }
-    ;
 }

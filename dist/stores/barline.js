@@ -160,7 +160,12 @@ var BarlineModel = (function (_super) {
         }
         return 10 /* Success */;
     };
-    BarlineModel.createBarline = function (ctx, type, engraved) {
+    return BarlineModel;
+})(Model);
+var BarlineModel;
+(function (BarlineModel) {
+    "use strict";
+    function createBarline(ctx, type, engraved) {
         if (type === void 0) { type = 0 /* Regular */; }
         if (engraved === void 0) { engraved = false; }
         if (ctx.curr.type === 450 /* BeamGroup */) {
@@ -180,10 +185,12 @@ var BarlineModel = (function (_super) {
             }
             return 60 /* RetryLine */;
         }
-        BarlineModel._seperate(ctx, type, engraved);
+        _seperate(ctx, type, engraved);
         return 30 /* RetryCurrentNoOptimizations */;
-    };
-    BarlineModel._seperate = function (ctx, type, engraved) {
+    }
+    BarlineModel.createBarline = createBarline;
+    ;
+    function _seperate(ctx, type, engraved) {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === 300 /* Barline */) {
@@ -193,9 +200,9 @@ var BarlineModel = (function (_super) {
             return;
         }
         ctx.insertPast(new BarlineModel({ barStyle: { data: type } }, true, engraved), null, true);
-    };
-    return BarlineModel;
-})(Model);
+    }
+    ;
+})(BarlineModel || (BarlineModel = {}));
 BarlineModel.prototype.barStyle = {
     color: "#000000",
     data: 0 /* Regular */

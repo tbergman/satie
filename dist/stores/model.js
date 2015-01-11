@@ -7,7 +7,6 @@ var __extends = this.__extends || function (d, b) {
 var React = require("react");
 var assert = require("assert");
 var _ = require("lodash");
-var assign = require("react/lib/Object.assign");
 var C = require("./contracts");
 var Model = (function () {
     function Model(spec, annotated, engraved) {
@@ -295,35 +294,8 @@ var Model = (function () {
         });
         return model;
     };
-    Model.newKey = function () {
-        return Model._sessionId + "-" + ++Model._lastKey;
-    };
     Model._sessionId = C.generateUUID();
     Model._lastKey = 0;
-    Model.setView = function (View) {
-        this.prototype.render = function (options) {
-            var props = assign({}, options, { key: this.key, spec: this });
-            return React.createElement(View, props);
-        };
-    };
-    Model.removeAnnotations = function (voices) {
-        for (var i = 0; i < voices.length; ++i) {
-            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
-                var item = voices[i].body[j];
-                if (item.annotated && !item.placeholder) {
-                    for (var k = 0; k < voices.length; ++k) {
-                        if (voices[k].body) {
-                            voices[k].body.splice(j, 1);
-                        }
-                    }
-                    --j;
-                }
-                else if (item.inBeam) {
-                    item.inBeam = false;
-                }
-            }
-        }
-    };
     return Model;
 })();
 Model.prototype.soundOnly = false;
@@ -376,6 +348,38 @@ var Model;
         return SubAttributeModel;
     })(Model);
     Model.SubAttributeModel = SubAttributeModel;
+    function setView(View) {
+        this.prototype.render = function (options) {
+            var props = _.extend({}, options, { key: this.key, spec: this });
+            return React.createElement(View, props);
+        };
+    }
+    Model.setView = setView;
+    ;
+    function removeAnnotations(voices) {
+        for (var i = 0; i < voices.length; ++i) {
+            for (var j = 0; voices[i].body && j < voices[i].body.length; ++j) {
+                var item = voices[i].body[j];
+                if (item.annotated && !item.placeholder) {
+                    for (var k = 0; k < voices.length; ++k) {
+                        if (voices[k].body) {
+                            voices[k].body.splice(j, 1);
+                        }
+                    }
+                    --j;
+                }
+                else if (item.inBeam) {
+                    item.inBeam = false;
+                }
+            }
+        }
+    }
+    Model.removeAnnotations = removeAnnotations;
+    ;
+    function newKey() {
+        return Model._sessionId + "-" + ++Model._lastKey;
+    }
+    Model.newKey = newKey;
 })(Model || (Model = {}));
 var Flags;
 (function (Flags) {

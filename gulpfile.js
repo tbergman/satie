@@ -5,6 +5,7 @@ var gutil               = require("gulp-util");
 var newer               = require("gulp-newer");
 var path                = require("path");
 var source              = require("vinyl-source-stream");
+var tslint              = require("gulp-tslint");
 var typescript          = require("gulp-typescript");
 
 var dirs = {
@@ -57,7 +58,13 @@ gulp.task("bundleDTS", ["buildTS"], function() {
     });
 });
 
-gulp.task("build", ["buildTS", "bundleDTS"], function() {
+gulp.task("build", ["buildTS", "bundleDTS", "lint"], function() {
+});
+
+gulp.task("lint", function() {
+    return gulp.src([files.ts])
+        .pipe(tslint())
+        .pipe(tslint.report('verbose'));
 });
 
 gulp.task("watch", ["build"], function() {

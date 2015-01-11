@@ -12,18 +12,17 @@
 import _                        = require("lodash");
 
 export import bravuraMetadata   = require("./bravura_metadata");
-export var glyphClasses         = require("./classes.json");
-export var glyphNames           = require("./glyphnames_diet.json");
+import glyphNames           	= require("./glyphnames_diet");
 
 export var bravuraBBoxes: {[key:string]: any[];} = <any> _.indexBy(bravuraMetadata.glyphBBoxes, 4);
 
 export function getGlyphCode(name: string) {
     "use strict";
-    if (!(name in this.glyphNames)) {
+    if (!(name in glyphNames)) {
         console.warn(name, " is not a valid glyph");
     }
     return String.fromCharCode(parseInt(
-        this.glyphNames[name].substring(2), 16));
+        glyphNames[name].substring(2), 16));
 }
 
 export var distances = {

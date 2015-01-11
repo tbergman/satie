@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -198,9 +198,20 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         return false;
     }
 
-    /*---- IV. Static ---------------------------------------------------------------------------*/
+}
 
-    static createClef = function (ctx: Annotator.Context): C.IterationStatus {
+module ClefModel {
+    "use strict";
+    export function serializeClef(c: C.MusicXML.Clef) {
+        return JSON.stringify({
+            additional:         c.additional || false,
+            size:               c.sign,
+            number_:            c.number_,
+            line:               c.line
+        });
+    }
+
+    export function createClef(ctx: Annotator.Context): C.IterationStatus {
         var clef: C.MusicXML.Clef = <any> ctx.prev(c => c.type === C.Type.Clef) ||
             {
                 sign: "G",
@@ -212,7 +223,7 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
         return C.IterationStatus.RetryLine; // Caching
     };
 
-    static standardClefs: C.MusicXML.ClefComplete[] = [
+    export var standardClefs: C.MusicXML.ClefComplete[] = [
         {
             // Treble
             line:               2,
@@ -291,18 +302,6 @@ class ClefModel extends Model.SubAttributeModel implements C.MusicXML.ClefComple
             size:               1
         }
     ];
-}
-
-module ClefModel {
-    "use strict";
-    export function serializeClef(c: C.MusicXML.Clef) {
-        return JSON.stringify({
-            additional:         c.additional || false,
-            size:               c.sign,
-            number_:            c.number_,
-            line:               c.line
-        });
-    }
 }
 
 export = ClefModel;

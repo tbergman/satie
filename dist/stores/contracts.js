@@ -1,6 +1,4 @@
 exports.MusicXML = require("musicxml-interfaces");
-var _ = require("lodash");
-var assign = require("react/lib/Object.assign");
 exports.SMuFL = require("../util/SMuFL");
 exports.renderUtil = require("../util/renderUtil");
 exports.strHash = require("../util/hash");
@@ -285,7 +283,10 @@ function generateUUID() {
 exports.generateUUID = generateUUID;
 var Print = (function () {
     function Print(print) {
-        assign(this, print);
+        var keys = Object.keys(Object(print));
+        for (var i = 0; i < keys.length; ++i) {
+            this[keys[i]] = print[keys[i]];
+        }
     }
     Print.prototype.pageMarginsFor = function (page) {
         for (var i = 0; i < this.pageLayout.pageMargins.length; ++i) {
@@ -629,6 +630,7 @@ function deepAssign(a, b) {
 }
 exports.deepAssign = deepAssign;
 function tsToSimpleTS(ts) {
+    "use strict";
     var commonBeatType = _.reduce(ts.beatTypes, function (maxBT, beatType) { return Math.max(maxBT, beatType); }, 0);
     var totalBeats = _.reduce(ts.beats, function (memo, time, i) { return memo + _.reduce(time.split("+"), function (memo, time) { return memo + parseInt(time, 10) * commonBeatType / ts.beatTypes[i]; }, 0); }, 0);
     return {

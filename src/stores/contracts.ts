@@ -1,17 +1,17 @@
 ﻿/**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,9 +21,6 @@
  */
 
 export import MusicXML   = require("musicxml-interfaces");
-import        _          = require("lodash");
-import        assert     = require("assert");
-var           assign     = require("react/lib/Object.assign");
 
 import        Annotator  = require("./annotator");
 import        Model      = require("./model");
@@ -33,11 +30,8 @@ export import renderUtil = require("../util/renderUtil");
 export import strHash    = require("../util/hash");
 
 export interface IApi {
-    // Local (Flux) methods
-    // ========================
-    // You'll notice there's no "GET". To retrieve values, use the appropriate store.
-    // For example, to retrieve BPM, use PlaybackStore. You should also subscribe to updates from
-    // said store.
+    /*---- Local Methods --------------------------------------------------------------*/
+
     "PUT /webapp/bpm"?                      (action: IFluxAction<number>): void;
     "POST /webapp/midiOut"?                 (action: IFluxAction<any>): void;
     "PUT /webapp/visualCursor/togglePlay"?  (action: IFluxAction<void>): void;
@@ -45,8 +39,12 @@ export interface IApi {
     "DELETE /webapp/song/dirty"?            (action: IFluxAction<void>): void;
     "PUT /webapp/song/forceUpdate"?         (action: IFluxAction<void>): void;
     "PUT /webapp/song/lineDirty"?           (action: IFluxAction<string>): void;
-    "DELETE /webapp/song/lineDirty"?        (action: IFluxAction<number>): void;
+    "DELETE /webapp/song/lineDirty"?        (action: IFluxAction<string>): void;
     "PUT /webapp/song/src"?                 (action: IFluxAction<string>): void;
+
+    /*---- Remote Methods -------------------------------------------------------------*/
+
+    // Third party clients may wish to extend IApi by declaring remote methods.
 }
 
 /** 
@@ -284,7 +282,6 @@ export class InvalidMXMLException {
     bar:        number;
     beat:       number;
 }
-
 
 /** 
  * A header is a child of parts, and includes the title and other basic
@@ -569,7 +566,11 @@ export class Print implements MusicXML.Print {
 
     /* Convenience */
     constructor(print: MusicXML.Print) {
-        assign(this, print);
+        var keys = Object.keys(Object(print));
+
+        for (var i = 0; i < keys.length; ++i) {
+            (<any>this)[keys[i]] = (<any>print)[keys[i]];
+        }
     }
     pageMarginsFor(page: number): MusicXML.PageMargins {
         for (var i = 0; i < this.pageLayout.pageMargins.length; ++i) {
@@ -1324,6 +1325,7 @@ export function deepAssign<T>(a: T, b: T):T {
 }
 
 export function tsToSimpleTS(ts: MusicXML.Time): ISimpleTimeSignature {
+    "use strict";
     var commonBeatType = _.reduce(ts.beatTypes, (maxBT, beatType) => Math.max(maxBT, beatType), 0);
     var totalBeats = _.reduce(ts.beats, (memo, time, i) => memo +
             _.reduce(time.split("+"), (memo, time) =>

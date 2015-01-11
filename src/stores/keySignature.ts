@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -58,7 +58,6 @@ class KeySignatureModel extends Model.SubAttributeModel implements C.MusicXML.Ke
     keyAlters:          string[];
     keyAccidentals:     string[];
     mode:               string;
-
 
     /* C.MusicXML.PrintStyle */
 
@@ -132,9 +131,12 @@ class KeySignatureModel extends Model.SubAttributeModel implements C.MusicXML.Ke
         }
         return C.IterationStatus.Success;
     }
+}
 
-    /* Static */
-    static createKeySignature = (ctx: Annotator.Context): C.IterationStatus => {
+module KeySignatureModel {
+    "use strict";
+
+    export function createKeySignature(ctx: Annotator.Context): C.IterationStatus {
         var keySignature = ctx.prev(c => c.type === C.Type.KeySignature);
         return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
     };

@@ -29,14 +29,6 @@ var PlaybackStore = (function (_super) {
         var _this = this;
         _super.call(this);
         this["DELETE /webapp/song/show"] = this["PUT /webapp/song/show"].bind(this);
-        this._handleAction = function (action) {
-            assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
-            var fn = _this[action.description];
-            if (fn) {
-                fn.call(_this, action);
-            }
-            return true;
-        };
         this._bpm = 120;
         this._lastChannel = -1;
         this._loadedSoundfonts = {};
@@ -268,6 +260,14 @@ var PlaybackStore = (function (_super) {
     };
     PlaybackStore.prototype._getPiano = function () {
         this._getInstrument("acoustic_grand_piano", true);
+    };
+    PlaybackStore.prototype._handleAction = function (action) {
+        assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
+        var fn = this[action.description];
+        if (fn) {
+            fn.call(this, action);
+        }
+        return true;
     };
     PlaybackStore.prototype._play = function (on) {
         this._playing = on;

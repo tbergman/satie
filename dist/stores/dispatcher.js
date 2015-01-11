@@ -8,11 +8,6 @@ var isBrowser = typeof window !== "undefined";
 var FLUX_DEBUG = isBrowser && global.location.search.indexOf("fluxDebug=1") !== -1;
 var Dispatcher = (function () {
     function Dispatcher() {
-        var _this = this;
-        this._clearPromises = function () {
-            _this._promises = [];
-            _this._inAction = null;
-        };
         this._events = "";
         this._inAction = null;
         this._callbacks = [];
@@ -26,22 +21,22 @@ var Dispatcher = (function () {
     Dispatcher.prototype.unregister = function (callback) {
         this._callbacks = this._callbacks.filter(function (cb) { return cb !== callback; });
     };
-    Dispatcher.prototype.DELETE = function (url, p, successCB, errorCB) {
-        return this._dispatch(url, "DELETE", p, successCB, errorCB);
+    Dispatcher.prototype.DELETE = function (url, p, onSuccess, onError) {
+        return this._dispatch(url, "DELETE", p, onSuccess, onError);
     };
-    Dispatcher.prototype.GET = function (url, p, successCB, errorCB) {
-        return this._dispatch(url, "GET", p, successCB, errorCB);
+    Dispatcher.prototype.GET = function (url, p, onSuccess, onError) {
+        return this._dispatch(url, "GET", p, onSuccess, onError);
     };
-    Dispatcher.prototype.PATCH = function (url, p, successCB, errorCB) {
-        return this._dispatch(url, "PATCH", p, successCB, errorCB);
+    Dispatcher.prototype.PATCH = function (url, p, onSuccess, onError) {
+        return this._dispatch(url, "PATCH", p, onSuccess, onError);
     };
-    Dispatcher.prototype.POST = function (url, p, successCB, errorCB) {
-        return this._dispatch(url, "POST", p, successCB, errorCB);
+    Dispatcher.prototype.POST = function (url, p, onSuccess, onError) {
+        return this._dispatch(url, "POST", p, onSuccess, onError);
     };
-    Dispatcher.prototype.PUT = function (url, p, successCB, errorCB) {
-        return this._dispatch(url, "PUT", p, successCB, errorCB);
+    Dispatcher.prototype.PUT = function (url, p, onSuccess, onError) {
+        return this._dispatch(url, "PUT", p, onSuccess, onError);
     };
-    Dispatcher.prototype._dispatch = function (url, verb, postData, successCB, errorCB) {
+    Dispatcher.prototype._dispatch = function (url, verb, postData, onSuccess, onError) {
         var _this = this;
         assert(verb, "Verb must be defined");
         var pr;
@@ -66,9 +61,9 @@ var Dispatcher = (function () {
                     url: url,
                     response: response,
                     postData: null
-                }, errorCB);
-                if (successCB) {
-                    ev.then(function () { return successCB(response); });
+                }, onError);
+                if (onSuccess) {
+                    ev.then(function () { return onSuccess(response); });
                 }
             });
         }
@@ -80,7 +75,7 @@ var Dispatcher = (function () {
                 status: null,
                 query: query,
                 postData: postData
-            }, errorCB);
+            }, onError);
             if ((verb in networkActions) && !url.indexOf("/api")) {
                 ajax.untrusted.anyJSON(verb, url, postData, function (response, request) {
                     var ev = _this._dispatchImpl({
@@ -91,14 +86,14 @@ var Dispatcher = (function () {
                         url: url,
                         response: response,
                         postData: null
-                    }, errorCB);
-                    if (successCB) {
-                        ev.then(function () { return successCB(response); });
+                    }, onError);
+                    if (onSuccess) {
+                        ev.then(function () { return onSuccess(response); });
                     }
                 });
             }
             else {
-                assert(!successCB, "Callbacks are only necessary for network actions.");
+                assert(!onSuccess, "Callbacks are only necessary for network actions.");
             }
         }
         return pr;
@@ -112,6 +107,10 @@ var Dispatcher = (function () {
                 reject(new Error("Dispatcher callback unsuccessful"));
             }
         }));
+    };
+    Dispatcher.prototype._clearPromises = function () {
+        this._promises = [];
+        this._inAction = null;
     };
     Dispatcher.prototype._dispatchImpl = function (action, onError) {
         var _this = this;

@@ -150,7 +150,21 @@ var ClefModel = (function (_super) {
         }
         return false;
     };
-    ClefModel.createClef = function (ctx) {
+    return ClefModel;
+})(Model.SubAttributeModel);
+var ClefModel;
+(function (ClefModel) {
+    "use strict";
+    function serializeClef(c) {
+        return JSON.stringify({
+            additional: c.additional || false,
+            size: c.sign,
+            number_: c.number_,
+            line: c.line
+        });
+    }
+    ClefModel.serializeClef = serializeClef;
+    function createClef(ctx) {
         var clef = ctx.prev(function (c) { return c.type === 150 /* Clef */; }) || {
             sign: "G",
             line: 2
@@ -159,7 +173,9 @@ var ClefModel = (function (_super) {
         model.ctxData = ctx.curr.ctxData;
         ctx.insertPast(model);
         return 60 /* RetryLine */;
-    };
+    }
+    ClefModel.createClef = createClef;
+    ;
     ClefModel.standardClefs = [
         {
             line: 2,
@@ -238,19 +254,5 @@ var ClefModel = (function (_super) {
             size: 1
         }
     ];
-    return ClefModel;
-})(Model.SubAttributeModel);
-var ClefModel;
-(function (ClefModel) {
-    "use strict";
-    function serializeClef(c) {
-        return JSON.stringify({
-            additional: c.additional || false,
-            size: c.sign,
-            number_: c.number_,
-            line: c.line
-        });
-    }
-    ClefModel.serializeClef = serializeClef;
 })(ClefModel || (ClefModel = {}));
 module.exports = ClefModel;

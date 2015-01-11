@@ -1,32 +1,32 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import Model                = require("./model");
 
-import React            	= require("react");
-import _                	= require("lodash");
-import assert           	= require("assert");
+import React                = require("react");
+import _                    = require("lodash");
+import assert               = require("assert");
 
-import C                	= require("./contracts");
-import Annotator        	= require("./annotator");
-import ClefModel        	= require("./clef");
-import Duration         	= require("../views/duration");
-import DurationModel    	= require("./duration");
+import C                    = require("./contracts");
+import Annotator            = require("./annotator");
+import ClefModel            = require("./clef");
+import Duration             = require("../views/duration");
+import DurationModel        = require("./duration");
 import KeySignatureModel    = require("./keySignature");
 import TimeSignatureModel   = require("./timeSignature");
 
@@ -42,7 +42,7 @@ class BeamGroupModel extends Model {
     /*---- I.1 Model ----------------------------------------------------------------------------*/
 
     get type()                          { return C.Type.BeamGroup; }
-    get xPolicy()                   	{ return C.RectifyXPolicy.Min; }
+    get xPolicy()                       { return C.RectifyXPolicy.Min; }
     get fields() { return ["beamCount", "variableBeams"]; }
 
     /*---- I.2 BeamGroupModel -------------------------------------------------------------------*/
@@ -147,15 +147,15 @@ class BeamGroupModel extends Model {
 
         var mret                = C.IterationStatus.RetryFromEntry;
 
-        var next            	= ctx.next(obj => obj.isNote).note;
-        this.tuplet         	= next ? next.displayTuplet : null;
+        var next                = ctx.next(obj => obj.isNote).note;
+        this.tuplet             = next ? next.displayTuplet : null;
         ctx.startOfBeamDivision = ctx.division;
 
         var b1 = this.beam[0].count;
         if (_.all(this.beam, b => b.count === b1)) {
             this.beams          = Math.round(Math.log(this.beam[0].count) / Math.log(2)) - 2;
         } else {
-            this.beams      	= C.BeamCount.Variable;
+            this.beams          = C.BeamCount.Variable;
             this.variableBeams  = _.map(this.beam, toBeamCount);
 
             function toBeamCount(b: DurationModel) {
@@ -165,23 +165,23 @@ class BeamGroupModel extends Model {
 
         if (!this.beam.every(b => {
                 b.x             = ctx.x;
-        	    b.y             = ctx.y;
-        	    var cidx        = this.idx;
+                b.y             = ctx.y;
+                var cidx        = this.idx;
 
-        	    while(ctx.body[cidx] !== b) {
-        	        cidx        = cidx + 1;
-        	    }
+                while(ctx.body[cidx] !== b) {
+                    cidx        = cidx + 1;
+                }
 
-        	    var oldIdx      = ctx.idx;
-        	    ctx.isBeam      = true;
-        	    ctx.idx         = cidx;
-        	    var ret         = b.annotate(ctx);
-        	    ctx.idx         = oldIdx;
-        	    ctx.isBeam      = undefined;
-        	    mret            = ret;
+                var oldIdx      = ctx.idx;
+                ctx.isBeam      = true;
+                ctx.idx         = cidx;
+                var ret         = b.annotate(ctx);
+                ctx.idx         = oldIdx;
+                ctx.isBeam      = undefined;
+                mret            = ret;
 
-        	    return (mret === C.IterationStatus.Success);
-        	})) {
+                return (mret === C.IterationStatus.Success);
+            })) {
 
             return mret;
         }
@@ -205,10 +205,12 @@ class BeamGroupModel extends Model {
         }
         return sum;
     }
+}
 
-    /*---- IV. Statics --------------------------------------------------------------------------*/
+module BeamGroupModel {
+    "use strict";
 
-    static createBeam = (ctx: Annotator.Context, beam: Array<DurationModel>) => {
+    export function createBeam(ctx: Annotator.Context, beam: Array<DurationModel>) {
         var replaceMode         = ctx.body[ctx.idx - 1].placeholder && ctx.body[ctx.idx - 1].priority === C.Type.BeamGroup;
         var model               = new BeamGroupModel({ beam: beam }, true);
         var offset              = replaceMode ? 1 : 0;
@@ -221,7 +223,7 @@ class BeamGroupModel extends Model {
         return C.IterationStatus.RetryFromEntry;
     };
 
-    static decideDirection = function(firstLines: Array<number>, lastLines: Array<number>) {
+    export function decideDirection(firstLines: Array<number>, lastLines: Array<number>) {
         var firstAvgLine: number;
         var lastAvgLine: number;
 

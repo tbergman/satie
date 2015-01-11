@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -21,7 +21,6 @@ import Model            = require("./model");
 import _                = require("lodash");
 
 import Annotator        = require("./annotator");
-import AttributesModel  = require("./attributes")
 import C                = require("./contracts");
 import DurationModel    = require("./duration");
 import NewPageModel     = require("./newpage");
@@ -129,9 +128,6 @@ class NewlineModel extends Model {
          */
         ctx.x                   = ctx.x + 8;
 
-        var lattributes: C.MusicXML.Attributes = new AttributesModel({
-            time:               ctx.attributes.time
-        }, true);
         ctx.attributes = null;
 
         if (!ctx.lines[ctx.line]) {
@@ -231,7 +227,6 @@ class NewlineModel extends Model {
                         }
                     }
 
-
                     // ADJUST SUCCEEDING BAR
                     noteCount = 0;
                     for (j = i + 1; j < ctx.body.length && ctx.body[j].priority !==
@@ -267,14 +262,15 @@ class NewlineModel extends Model {
             return c.isNote && !c.soundOnly && !(<DurationModel>c)._notes[0].grace;
         }
     }
+}
 
-    /*---- IV. Statics --------------------------------------------------------------------------*/
+module NewlineModel {
+    "use strict";
 
-    static createNewline = (ctx: Annotator.Context): C.IterationStatus => {
+    export function createNewline(ctx: Annotator.Context): C.IterationStatus {
         if (ctx.score) {
             ctx.score.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         }
-        var l = 0;
         var fidx: number;
         for (fidx = ctx.idx; fidx >= 0; --fidx) {
             ctx.body[fidx].extraWidth = 0;
@@ -308,7 +304,7 @@ class NewlineModel extends Model {
      * Given an incomplete line ending at current index, spreads out the line
      * comfortably.
      */
-    static semiJustify = (ctx: Annotator.Context, fullJustify = ctx.curr.x > ctx.maxX) => {
+    export function semiJustify(ctx: Annotator.Context, fullJustify = ctx.curr.x > ctx.maxX) {
         var i: number;
 
         var n = 0;
@@ -353,11 +349,11 @@ class NewlineModel extends Model {
         }
     };
 
-    static centerWholeBarRests(body: Array<Model>, idx: number) {
+    export function centerWholeBarRests(body: Array<Model>, idx: number) {
         // Whole-bar rests are centered.
         var toCenter: Array<Model> = [];
         // -2 because we want to avoid BARLINE and END_MARKER
-        for (var i = idx - 2; i >= 0 && (body[i].priority > C.Type.Barline && body[i].priority !== C.Type.Begin || body[i].soundOnly); --i) {
+        for (var i = idx - 2; i >= 0 && isStartOfBar(body[i]); --i) {
             if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
                 toCenter.push(body[i]);
             }
@@ -378,18 +374,21 @@ class NewlineModel extends Model {
         }
         for (var j = 0; j < toCenter.length; ++j) {
             var bbox = C.SMuFL.bravuraBBoxes[(<any>toCenter[j]).restHead];
-            var offset = 0;
             if (body[i].isNote && body[i].note.temporary) {
                 continue;
             }
             toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10*(bbox[0] - bbox[2])/2 + offsetX - 6.5;
+        }
+
+        function isStartOfBar(model: Model) {
+            return (model.priority > C.Type.Barline && model.priority !== C.Type.Begin || model.soundOnly);
         }
     }
 
     /**
      * Adjusts the vertical positions of all staves & voices.
      */
-    static explode(ctx: Annotator.Context) {
+    export function explode(ctx: Annotator.Context) {
         var veryBottomPadding = 0;
         var braces: {braceY2: number}[] = [];
         _.forEach(ctx.score.parts, part => {
@@ -419,7 +418,7 @@ class NewlineModel extends Model {
                     .flatten(true)
                     .forEach((model: Model) => {
                             model.y += extraTopPadding;
-                            var brace = <any> model
+                            var brace = <any> model;
                             if (brace.braceY) {
                                 brace.braceY = model.y;
                                 braces.push(brace);

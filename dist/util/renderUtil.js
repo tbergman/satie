@@ -585,6 +585,8 @@ function cssSizeToTenths(scaling40, css) {
             px = 32;
             break;
         case css === "small":
+            px = 13;
+            break;
         default:
             px = 13;
             break;

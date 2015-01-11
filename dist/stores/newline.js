@@ -6,7 +6,6 @@ var __extends = this.__extends || function (d, b) {
 };
 var Model = require("./model");
 var _ = require("lodash");
-var AttributesModel = require("./attributes");
 var C = require("./contracts");
 var NewPageModel = require("./newpage");
 var PrintModel = require("./print");
@@ -81,9 +80,6 @@ var NewlineModel = (function (_super) {
         this.x = ctx.x;
         this.staveW = ctx.maxX - ctx.x;
         ctx.x = ctx.x + 8;
-        var lattributes = new AttributesModel({
-            time: ctx.attributes.time
-        }, true);
         ctx.attributes = null;
         if (!ctx.lines[ctx.line]) {
             ctx.lines[ctx.line] = {
@@ -190,76 +186,15 @@ var NewlineModel = (function (_super) {
             return c.isNote && !c.soundOnly && !c._notes[0].grace;
         }
     };
-    NewlineModel.centerWholeBarRests = function (body, idx) {
-        var toCenter = [];
-        for (var i = idx - 2; i >= 0 && (body[i].priority > 300 /* Barline */ && body[i].priority !== 140 /* Begin */ || body[i].soundOnly); --i) {
-            if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
-                toCenter.push(body[i]);
-            }
-        }
-        if (!toCenter.length) {
-            return;
-        }
-        var offsetX = 0;
-        for (var j = i; body[j] && body[j].priority > 100 /* START_OF_ATTRIBUTES */ && body[j].priority !== 300 /* Barline */ && body[j].priority !== 140 /* Begin */; --j) {
-            if (body[j].type === 170 /* TimeSignature */) {
-                offsetX -= body[j]._annotatedSpacing - 6.5;
-            }
-        }
-        if (body[i].type !== 300 /* Barline */) {
-            ++i;
-        }
-        for (var j = 0; j < toCenter.length; ++j) {
-            var bbox = C.SMuFL.bravuraBBoxes[toCenter[j].restHead];
-            var offset = 0;
-            if (body[i].isNote && body[i].note.temporary) {
-                continue;
-            }
-            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10 * (bbox[0] - bbox[2]) / 2 + offsetX - 6.5;
-        }
-    };
-    NewlineModel.explode = function (ctx) {
-        var veryBottomPadding = 0;
-        var braces = [];
-        _.forEach(ctx.score.parts, function (part) {
-            _.times(part.staveCount, function (staff) {
-                staff += 1;
-                var extraTopPadding = (staff - 1) * 50;
-                extraTopPadding += ctx.minTopPaddings[staff];
-                _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).sort().map(function (voiceIdx) { return ctx._voices[voiceIdx].body; }).map(function (body) {
-                    var line = ctx.line;
-                    return _.filter(body, function (model) {
-                        if (model.type === 130 /* NewLine */) {
-                            --line;
-                            return !line || !~line;
-                        }
-                        return !line;
-                    });
-                }).map(function (body, sidx) { return _.filter(body, function (model) { return model.staff === staff || model.staff === -1 && staff === sidx + 1; }); }).flatten(true).forEach(function (model) {
-                    model.y += extraTopPadding;
-                    var brace = model;
-                    if (brace.braceY) {
-                        brace.braceY = model.y;
-                        braces.push(brace);
-                        _.forEach(braces, function (brace) {
-                            brace.braceY2 = model.y;
-                        });
-                    }
-                }).value();
-                extraTopPadding += ctx.minBottomPaddings[staff];
-                veryBottomPadding = ctx.minBottomPaddings[staff];
-            });
-        });
-        veryBottomPadding = Math.max(C.getPrint(ctx._layout.header).systemLayout.systemDistance, veryBottomPadding);
-        ctx.curr.braceY2 += veryBottomPadding;
-        ctx.y = ctx.curr.y + veryBottomPadding;
-        ctx.curr.y = ctx.y;
-    };
-    NewlineModel.createNewline = function (ctx) {
+    return NewlineModel;
+})(Model);
+var NewlineModel;
+(function (NewlineModel) {
+    "use strict";
+    function createNewline(ctx) {
         if (ctx.score) {
             ctx.score.dangerouslyMarkRendererLineDirty(ctx.line + 1);
         }
-        var l = 0;
         var fidx;
         for (fidx = ctx.idx; fidx >= 0; --fidx) {
             ctx.body[fidx].extraWidth = 0;
@@ -282,8 +217,10 @@ var NewlineModel = (function (_super) {
             newline: true
         }, true), fidx + 1);
         return 70 /* LineCreated */;
-    };
-    NewlineModel.semiJustify = function (ctx, fullJustify) {
+    }
+    NewlineModel.createNewline = createNewline;
+    ;
+    function semiJustify(ctx, fullJustify) {
         if (fullJustify === void 0) { fullJustify = ctx.curr.x > ctx.maxX; }
         var i;
         var n = 0;
@@ -322,7 +259,77 @@ var NewlineModel = (function (_super) {
         function expandable(c) {
             return c.isNote && !c.soundOnly && !c._notes[0].grace;
         }
-    };
-    return NewlineModel;
-})(Model);
+    }
+    NewlineModel.semiJustify = semiJustify;
+    ;
+    function centerWholeBarRests(body, idx) {
+        var toCenter = [];
+        for (var i = idx - 2; i >= 0 && isStartOfBar(body[i]); --i) {
+            if (body[i].isRest && body[i].note.isWholebar && !body[i].soundOnly) {
+                toCenter.push(body[i]);
+            }
+        }
+        if (!toCenter.length) {
+            return;
+        }
+        var offsetX = 0;
+        for (var j = i; body[j] && body[j].priority > 100 /* START_OF_ATTRIBUTES */ && body[j].priority !== 300 /* Barline */ && body[j].priority !== 140 /* Begin */; --j) {
+            if (body[j].type === 170 /* TimeSignature */) {
+                offsetX -= body[j]._annotatedSpacing - 6.5;
+            }
+        }
+        if (body[i].type !== 300 /* Barline */) {
+            ++i;
+        }
+        for (var j = 0; j < toCenter.length; ++j) {
+            var bbox = C.SMuFL.bravuraBBoxes[toCenter[j].restHead];
+            if (body[i].isNote && body[i].note.temporary) {
+                continue;
+            }
+            toCenter[j].spacing = (body[idx].x + body[i].x) / 2 - toCenter[j].x - 10 * (bbox[0] - bbox[2]) / 2 + offsetX - 6.5;
+        }
+        function isStartOfBar(model) {
+            return (model.priority > 300 /* Barline */ && model.priority !== 140 /* Begin */ || model.soundOnly);
+        }
+    }
+    NewlineModel.centerWholeBarRests = centerWholeBarRests;
+    function explode(ctx) {
+        var veryBottomPadding = 0;
+        var braces = [];
+        _.forEach(ctx.score.parts, function (part) {
+            _.times(part.staveCount, function (staff) {
+                staff += 1;
+                var extraTopPadding = (staff - 1) * 50;
+                extraTopPadding += ctx.minTopPaddings[staff];
+                _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).sort().map(function (voiceIdx) { return ctx._voices[voiceIdx].body; }).map(function (body) {
+                    var line = ctx.line;
+                    return _.filter(body, function (model) {
+                        if (model.type === 130 /* NewLine */) {
+                            --line;
+                            return !line || !~line;
+                        }
+                        return !line;
+                    });
+                }).map(function (body, sidx) { return _.filter(body, function (model) { return model.staff === staff || model.staff === -1 && staff === sidx + 1; }); }).flatten(true).forEach(function (model) {
+                    model.y += extraTopPadding;
+                    var brace = model;
+                    if (brace.braceY) {
+                        brace.braceY = model.y;
+                        braces.push(brace);
+                        _.forEach(braces, function (brace) {
+                            brace.braceY2 = model.y;
+                        });
+                    }
+                }).value();
+                extraTopPadding += ctx.minBottomPaddings[staff];
+                veryBottomPadding = ctx.minBottomPaddings[staff];
+            });
+        });
+        veryBottomPadding = Math.max(C.getPrint(ctx._layout.header).systemLayout.systemDistance, veryBottomPadding);
+        ctx.curr.braceY2 += veryBottomPadding;
+        ctx.y = ctx.curr.y + veryBottomPadding;
+        ctx.curr.y = ctx.y;
+    }
+    NewlineModel.explode = explode;
+})(NewlineModel || (NewlineModel = {}));
 module.exports = NewlineModel;

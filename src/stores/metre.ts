@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -87,11 +87,9 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
                     t => t && t.type !== C.MusicXML.StartStopContinue.Stop) ? // ... tied to the current noteA
             nextObj.note : null);
 
+    /*---- I. Checks that should be done even if the annotation status is User ------------------*/
 
-    /*---- Checks that should be done even if the annotation status is User ---------------------*/
-    /*-------------------------------------------------------------------------------------------*/
-
-    /*---- Check 0: Make sure tuplet groups don't end part of the way through -------------------*/
+    /*---- I.1: Make sure tuplet groups don't end part of the way through -----------------------*/
 
     if (currNote.tuplet && (!nextNote || !nextNote.tuplet)) {
         var base = 1;
@@ -115,16 +113,15 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
         }
     }
 
-    /*---- Check 0b: User-created durations cannot be spell-checked -----------------------------*/
+    /*---- I.2: User-created durations cannot be spell-checked ----------------------------------*/
 
     if (!ctx.curr.annotated) {
         return C.IterationStatus.Success;
     }
 
-    /*---- Checks that should be done only if the annotation status isn't User ------------------*/
-    /*-------------------------------------------------------------------------------------------*/
+    /*---- II. Checks that should be done only if the annotation status isn't User --------------*/
 
-    /*---- Check 1: Separate durations that cross a boundary and partially fill it. -------------*/
+    /*---- II.1: Separate durations that cross a boundary and partially fill it. ----------------*/
     var excessBeats = 0;
     var patternStartDivision = 0;
     for (var p = 0; p < pattern.length; ++p) {
@@ -142,11 +139,10 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
         return clearExcessBeats(currNote, excessBeats, ctx);
     }
 
-    /*---- Check 2: Join rests and tied notes that don't cross a boundary -----------------------*/
+    /*---- II.2: Join rests and tied notes that don't cross a boundary --------------------------*/
 
     // XXX: Right now this only considers combinations of two notes.
     if (nextEquivNote) {
-        var nextNoteEndBeat = currNoteStartDivision + calcDivisions2(nextNote, ctx);
         patternStartDivision = 0;
 
         for (var p = 0; p < pattern.length; ++p) {
@@ -162,7 +158,7 @@ export function rhythmicSpellcheck(ctx: Annotator.Context) {
         }
     }
 
-    /*---- Check 3: Join rests and tied notes that fully cover multiple boundaries --------------*/
+    /*---- II.3: Join rests and tied notes that fully cover multiple boundaries -----------------*/
 
     // XXX: Right now this only covers combinations of two notes.
     if (nextEquivNote) {
@@ -277,7 +273,7 @@ function getBeamingPattern(ts: C.ISimpleTimeSignature, alt?: string) {
         4: [4,3,2,1],
         8: [12,8,4,3,2,1],
         16: [4,3,2,1]
-    }
+    };
     if (!pattern) {
         // TODO: Partial & Mixed
         pattern = [];
@@ -327,7 +323,6 @@ export function subtract(durr1: any, divisions: number,
         ctx: Annotator.Context, divisionOffset?: number): Array<C.IDuration> {
     "use strict";
 
-    var tsName = getTSString(ctx.ts);
     var replaceWith: Array<C.IDuration> = [];
     var durr1Divisions: number = isNaN(<any>durr1) ? calcDivisions2(durr1, ctx) : <number> durr1;
     var beatsToFill = durr1Divisions - divisions;
@@ -712,7 +707,6 @@ var wholeNotePatterns: {[key: string]: Array <C.IDuration>} = {
     "18/8":     [_1D,           _2D             ],
     "9/4":      [_1D,           _2D             ]
 };
-
 
 export enum Beaming {
     Default,

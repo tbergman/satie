@@ -44,7 +44,12 @@ var NewPageModel = (function (_super) {
         ctx.pageStarts.push(ctx.idx);
         return 10 /* Success */;
     };
-    NewPageModel.createNewPage = function (ctx) {
+    return NewPageModel;
+})(Model);
+var NewPageModel;
+(function (NewPageModel) {
+    "use strict";
+    function createNewPage(ctx) {
         ctx.insertPast(new NewPageModel({ newpage: true }, true));
         for (var i = ctx.idx + 1; i < ctx.body.length; ++i) {
             if (ctx.body[i].type === 120 /* NewPage */ && ctx.body[i].annotated) {
@@ -53,7 +58,8 @@ var NewPageModel = (function (_super) {
             }
         }
         return 20 /* RetryCurrent */;
-    };
-    return NewPageModel;
-})(Model);
+    }
+    NewPageModel.createNewPage = createNewPage;
+    ;
+})(NewPageModel || (NewPageModel = {}));
 module.exports = NewPageModel;

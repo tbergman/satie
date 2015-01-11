@@ -3804,7 +3804,7 @@ declare module '__satie/stores/contracts' {
         "DELETE /webapp/song/dirty"?(action: IFluxAction<void>): void;
         "PUT /webapp/song/forceUpdate"?(action: IFluxAction<void>): void;
         "PUT /webapp/song/lineDirty"?(action: IFluxAction<string>): void;
-        "DELETE /webapp/song/lineDirty"?(action: IFluxAction<number>): void;
+        "DELETE /webapp/song/lineDirty"?(action: IFluxAction<string>): void;
         "PUT /webapp/song/src"?(action: IFluxAction<string>): void;
     }
     export interface IAccidentals {
@@ -4342,18 +4342,12 @@ declare module '__satie/stores/model' {
         protected _setFlag(f: number, v: boolean): void;
         static _sessionId: string;
         static _lastKey: number;
-        static setView: (View: (opts: {
-            key: number;
-            spec: Model;
-        }) => any) => void;
-        static removeAnnotations: (voices: C.IVoice[]) => void;
         static fromJSON(json: Object, existingObjects?: {
             [x: string]: Model;
         }): Model;
         static fromJSON(json: string, existingObjects?: {
             [x: string]: Model;
         }): Model;
-        static newKey(): string;
     }
     module Model {
         var constructorsByType: {
@@ -4363,14 +4357,18 @@ declare module '__satie/stores/model' {
             annotate(ctx: Annotator.Context): C.IterationStatus;
             retryStatus: C.IterationStatus;
         }
+        function setView(View: (opts: {
+            key: number;
+            spec: Model;
+        }) => any): void;
+        function removeAnnotations(voices: C.IVoice[]): void;
+        function newKey(): string;
     }
     export = Model;
 }
 
 declare module '__satie/util/SMuFL' {
     export import bravuraMetadata = require("__satie/util/bravura_metadata");
-    export var glyphClasses: any;
-    export var glyphNames: any;
     export var bravuraBBoxes: {
         [x: string]: any[];
     };
@@ -4927,7 +4925,9 @@ declare module '__satie/stores/barline' {
         }, annotated: boolean, engraved: boolean);
         recordMetreDataImpl(mctx: C.MetreContext): void;
         annotateImpl(ctx: Annotator.Context): C.IterationStatus;
-        static createBarline: (ctx: Annotator.Context, type?: C.MusicXML.BarStyleType, engraved?: boolean) => C.IterationStatus;
+    }
+    module BarlineModel {
+        function createBarline(ctx: Annotator.Context, type?: C.MusicXML.BarStyleType, engraved?: boolean): C.IterationStatus;
     }
     export = BarlineModel;
 }

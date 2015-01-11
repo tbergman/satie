@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -20,25 +20,23 @@ import _                = require("lodash");
 import assert           = require("assert");
 
 import Annotator        = require("./annotator");
-import BeginModel       = require("./begin");
 import BarlineModel     = require("./barline");
 import C                = require("./contracts");
 import DurationModel    = require("./duration");
-import Instruments      = require("./instruments");
 import Model            = require("./model");
 import PlaceholderModel = require("./placeholder");
-
 
 /*---- Exports ----------------------------------------------------------------------------------*/
 
 /**
  * Converts a timewise MXMLJSON score to a Satie score.
- *
+ * 
  * @param score Score produced by github.com/ripieno/musicxml-interfaces
  * @returns A structure that can be consumed by a ScoreStore. If an error occurred
  *          error will be set, and all other properties will be null.
  */
 export function toScore(score: C.MusicXML.ScoreTimewise): ISatieImport {
+    "use strict";
     try {
         var header      = extractMXMLHeader(score);
         var partData    = extractMXMLPartsAndVoices(score);
@@ -68,11 +66,10 @@ export interface ISatieImport {
     error?:     any;
 }
 
-
-
 /*---- Private ----------------------------------------------------------------------------------*/
 
 function extractMXMLHeader(m: C.MusicXML.ScoreTimewise): C.ScoreHeader {
+    "use strict";
     var header = new C.ScoreHeader({
         work:           m.work,
         movementNumber: m.movementNumber,
@@ -93,6 +90,7 @@ function extractMXMLHeader(m: C.MusicXML.ScoreTimewise): C.ScoreHeader {
 }
 
 function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices: C.IVoice[]; parts: C.IPart[]} {
+    "use strict";
     if (!mxmlJson || !mxmlJson.partList || !mxmlJson.partList.scoreParts ||
             !mxmlJson.partList.scoreParts.length) {
         throw new C.InvalidMXMLException("At least one part is required", 0, 0, "Header");
@@ -133,8 +131,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     return {
         voices: voices,
         parts:  parts
-    }
-
+    };
 
     ////
     function processMeasure(measure: C.MusicXML.Measure, measureIdx: number) {
@@ -220,7 +217,6 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                                 .value();
                         }
 
-
                         element._class = _class;
                         delete element._;
 
@@ -247,12 +243,12 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                     }
                 });
                 currDivision = newDivision;
-                currDivisionPerPart = _.map(currDivisionPerPart, m => !~m ? currDivision : m)
+                currDivisionPerPart = _.map(currDivisionPerPart, m => !~m ? currDivision : m);
                 ++outputIdx;
             }
         } while(minPriority !== C.MAX_NUM);
-        
-        if (measureIdx !== mxmlJson.measures.length - 1) { 
+
+        if (measureIdx !== mxmlJson.measures.length - 1) {
             for (var i = 0; i < voices.length; ++i) {
                 voices[i].body.push(new BarlineModel({
                     barStyle: {
@@ -305,7 +301,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
                         return null;
                     }
                     var voiceIdx = getVoiceIdx(idx, element.voice, false);
-                    return (element._class === "Note") && element.chord && !!chords[voiceIdx] ? {el: element, partIdx: idx, voiceIdx: voiceIdx} : null;
+                    return (element._class === "Note") && element.chord && !!chords[voiceIdx] ?
+                        {el: element, partIdx: idx, voiceIdx: voiceIdx} : null;
                 })
                 .filter(a => !!a);
         }
@@ -332,7 +329,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
     ////
     function getVoiceIdx(mPartIdx: number, voice: number, canUpdate: boolean = true) {
-        assert(!!~voice)
+        assert(!!~voice);
         var key = (mPartIdx || 0) + "_" + (voice||1);
         if (_voiceHash[key] === undefined && canUpdate) {
             ++_maxVoice;
@@ -359,5 +356,5 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
             default:
                 throw new C.InvalidMXMLException(type + " is not a known type", bar, beat, part);
         }
-    };
+    }
 }

@@ -696,7 +696,7 @@ var DurationModel = (function (_super) {
                 third = null;
             }
             var a = first === null || first === undefined || first !== first ? second : first;
-            return a == null || a === undefined || a !== a ? third : a;
+            return a === null || a === undefined || a !== a ? third : a;
         }
         ;
         for (var i = 0; i < result.length; ++i) {
@@ -917,143 +917,11 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    DurationModel.IDEAL_STEM_HEIGHT = 35;
-    DurationModel.MIN_STEM_HEIGHT = 25;
-    DurationModel.clefOffsets = {
-        G: -3.5,
-        F: 2.5,
-        C: -0.5,
-        PERCUSSION: -0.5,
-        TAB: -0.5,
-        NONE: -0.5
-    };
-    DurationModel.chromaticScale = {
-        c: 0,
-        d: 2,
-        e: 4,
-        f: 5,
-        g: 7,
-        a: 9,
-        b: 11
-    };
-    DurationModel.countToFlag = {
-        8: "flag8th",
-        16: "flag16th",
-        32: "flag32nd",
-        64: "flag64th",
-        128: "flag128th",
-        256: "flag256th",
-        512: "flag512th",
-        1024: "flag1024th"
-    };
-    DurationModel.countToHasStem = {
-        0.25: true,
-        0.5: false,
-        1: false,
-        2: true,
-        4: true,
-        8: true,
-        16: true,
-        32: true,
-        64: true,
-        128: true,
-        256: true,
-        512: true,
-        1024: true
-    };
-    DurationModel.countToIsBeamable = {
-        8: true,
-        16: true,
-        32: true,
-        64: true,
-        128: true,
-        256: true,
-        512: true,
-        1024: true
-    };
-    DurationModel.countToNotehead = {
-        9992: "noteheadDoubleWhole",
-        9991: "noteheadDoubleWhole",
-        9990: "noteheadDoubleWhole",
-        1: "noteheadWhole",
-        2: "noteheadHalf",
-        4: "noteheadBlack",
-        8: "noteheadBlack",
-        16: "noteheadBlack",
-        32: "noteheadBlack",
-        64: "noteheadBlack",
-        128: "noteheadBlack",
-        256: "noteheadBlack",
-        512: "noteheadBlack",
-        1024: "noteheadBlack"
-    };
-    DurationModel.countToRest = {
-        9992: "restLonga",
-        9991: "restLonga",
-        9990: "restDoubleWhole",
-        1: "restWhole",
-        2: "restHalf",
-        4: "restQuarter",
-        8: "rest8th",
-        16: "rest16th",
-        32: "rest32nd",
-        64: "rest64th",
-        128: "rest128th",
-        256: "rest256th",
-        512: "rest512th",
-        1024: "rest1024th"
-    };
-    DurationModel.getAverageLine = function (note, ctx) {
-        var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
-        return _.reduce(lines, function (memo, line) { return memo + line / lines.length; }, 0);
-    };
-    DurationModel.getLines = function (note, ctx, options) {
-        options = options || { filterTemporary: false };
-        var ret = [];
-        for (var i = 0; i < note.chord.length; ++i) {
-            if (!options.filterTemporary || !note.chord[i].temporary) {
-                if (note.isRest) {
-                    var durr = note;
-                    if (durr._notes && durr._notes[i].rest.displayStep) {
-                        ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
-                    }
-                    else if (note.isWholebar) {
-                        ret.push(4);
-                    }
-                    else {
-                        ret.push(3);
-                    }
-                }
-                else {
-                    ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
-                }
-            }
-        }
-        _.forEach(ret, function (r) { return assert(isFinite(r)); });
-        return ret;
-    };
-    DurationModel.offsetToPitch = {
-        0: "C",
-        0.5: "D",
-        1: "E",
-        1.5: "F",
-        2: "G",
-        2.5: "A",
-        3: "B"
-    };
-    DurationModel.pitchOffsets = {
-        C: 0,
-        D: 0.5,
-        E: 1,
-        F: 1.5,
-        G: 2,
-        A: 2.5,
-        B: 3
-    };
     return DurationModel;
 })(Model);
 var DurationModel;
 (function (DurationModel) {
+    "use strict";
     var MXMLNote = (function () {
         function MXMLNote(parent, idx, note, updateParent) {
             if (updateParent === void 0) { updateParent = true; }
@@ -1244,6 +1112,8 @@ var DurationModel;
                         break;
                     case a[0] === "#":
                         a = a.slice(1);
+                        this._color = parseInt(a, 16);
+                        break;
                     default:
                         this._color = parseInt(a, 16);
                         break;
@@ -1295,6 +1165,7 @@ var DurationModel;
                     level: last("level"),
                     printObject: last("printObject")
                 };
+                this.notations = [notation];
                 function combine(key) {
                     return _.reduce(notations, function (memo, n) { return n[key] ? (memo || []).concat(n[key]) : memo; }, null);
                 }
@@ -1325,6 +1196,139 @@ var DurationModel;
         return DurationModel.clefOffsets[clef.sign] + clef.line - C.defaultClefLines[clef.sign.toUpperCase()] - 3.5 * parseInt(clef.clefOctaveChange || "0", 10);
     }
     DurationModel.getClefOffset = getClefOffset;
+    DurationModel.IDEAL_STEM_HEIGHT = 35;
+    DurationModel.MIN_STEM_HEIGHT = 25;
+    DurationModel.clefOffsets = {
+        G: -3.5,
+        F: 2.5,
+        C: -0.5,
+        PERCUSSION: -0.5,
+        TAB: -0.5,
+        NONE: -0.5
+    };
+    DurationModel.chromaticScale = {
+        c: 0,
+        d: 2,
+        e: 4,
+        f: 5,
+        g: 7,
+        a: 9,
+        b: 11
+    };
+    DurationModel.countToFlag = {
+        8: "flag8th",
+        16: "flag16th",
+        32: "flag32nd",
+        64: "flag64th",
+        128: "flag128th",
+        256: "flag256th",
+        512: "flag512th",
+        1024: "flag1024th"
+    };
+    DurationModel.countToHasStem = {
+        0.25: true,
+        0.5: false,
+        1: false,
+        2: true,
+        4: true,
+        8: true,
+        16: true,
+        32: true,
+        64: true,
+        128: true,
+        256: true,
+        512: true,
+        1024: true
+    };
+    DurationModel.countToIsBeamable = {
+        8: true,
+        16: true,
+        32: true,
+        64: true,
+        128: true,
+        256: true,
+        512: true,
+        1024: true
+    };
+    DurationModel.countToNotehead = {
+        9992: "noteheadDoubleWhole",
+        9991: "noteheadDoubleWhole",
+        9990: "noteheadDoubleWhole",
+        1: "noteheadWhole",
+        2: "noteheadHalf",
+        4: "noteheadBlack",
+        8: "noteheadBlack",
+        16: "noteheadBlack",
+        32: "noteheadBlack",
+        64: "noteheadBlack",
+        128: "noteheadBlack",
+        256: "noteheadBlack",
+        512: "noteheadBlack",
+        1024: "noteheadBlack"
+    };
+    DurationModel.countToRest = {
+        9992: "restLonga",
+        9991: "restLonga",
+        9990: "restDoubleWhole",
+        1: "restWhole",
+        2: "restHalf",
+        4: "restQuarter",
+        8: "rest8th",
+        16: "rest16th",
+        32: "rest32nd",
+        64: "rest64th",
+        128: "rest128th",
+        256: "rest256th",
+        512: "rest512th",
+        1024: "rest1024th"
+    };
+    DurationModel.getAverageLine = function (note, ctx) {
+        var lines = DurationModel.getLines(note, ctx, { filterTemporary: true });
+        return _.reduce(lines, function (memo, line) { return memo + line / lines.length; }, 0);
+    };
+    DurationModel.getLines = function (note, ctx, options) {
+        options = options || { filterTemporary: false };
+        var ret = [];
+        for (var i = 0; i < note.chord.length; ++i) {
+            if (!options.filterTemporary || !note.chord[i].temporary) {
+                if (note.isRest) {
+                    var durr = note;
+                    if (durr._notes && durr._notes[i].rest.displayStep) {
+                        ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((parseInt(durr._notes[i].rest.displayOctave, 10) || 0) - 3) * 3.5 + DurationModel.pitchOffsets[durr._notes[i].rest.displayStep]);
+                    }
+                    else if (note.isWholebar) {
+                        ret.push(4);
+                    }
+                    else {
+                        ret.push(3);
+                    }
+                }
+                else {
+                    ret.push(DurationModel.getClefOffset(ctx.attributes.clefs[note.staff - 1]) + ((note.chord[i].octave || 0) - 3) * 3.5 + DurationModel.pitchOffsets[note.chord[i].step]);
+                }
+            }
+        }
+        _.forEach(ret, function (r) { return assert(isFinite(r)); });
+        return ret;
+    };
+    DurationModel.offsetToPitch = {
+        0: "C",
+        0.5: "D",
+        1: "E",
+        1.5: "F",
+        2: "G",
+        2.5: "A",
+        3: "B"
+    };
+    DurationModel.pitchOffsets = {
+        C: 0,
+        D: 0.5,
+        E: 1,
+        F: 1.5,
+        G: 2,
+        A: 2.5,
+        B: 3
+    };
 })(DurationModel || (DurationModel = {}));
 DurationModel.MXMLNote.prototype.staff = 1;
 function _hasConflict(otherChord, step, target) {

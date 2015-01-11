@@ -1,17 +1,17 @@
 ﻿/**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -50,85 +50,85 @@ class Dispatcher implements C.IDispatcher {
         this._callbacks = this._callbacks.filter(cb => cb !== callback);
     }
 
-	DELETE(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
-	    return this._dispatch(url, "DELETE", p, successCB, errorCB); }
-	GET(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
-	    return this._dispatch(url, "GET", p, successCB, errorCB); }
-    PATCH(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
-        return this._dispatch(url, "PATCH", p, successCB, errorCB); }
-	POST(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
-	    return this._dispatch(url, "POST", p, successCB, errorCB); }
-	PUT(url: string, p?: any, successCB?: (response: any) => void, errorCB?: (error: any) => void): Promise<void> {
-	    return this._dispatch(url, "PUT", p, successCB, errorCB); }
+    DELETE(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "DELETE", p, onSuccess, onError); }
+    GET(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "GET", p, onSuccess, onError); }
+    PATCH(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "PATCH", p, onSuccess, onError); }
+    POST(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "POST", p, onSuccess, onError); }
+    PUT(url: string, p?: any, onSuccess?: (response: any) => void, onError?: (error: any) => void): Promise<void> {
+        return this._dispatch(url, "PUT", p, onSuccess, onError); }
 
-    _dispatch(url: string, verb: string, postData: any, successCB?: (response: any) => void, errorCB?: (error: any) => void) : Promise<void> {
-	    assert(verb, "Verb must be defined");
+    _dispatch(url: string, verb: string, postData: any, onSuccess?: (response: any) => void,
+            onError?: (error: any) => void) : Promise<void> {
+        assert(verb, "Verb must be defined");
 
         var pr: Promise<void>;
 
-	    var root = url;
-	    var resource: string = null;
-	    var query: string = null;
+        var root = url;
+        var resource: string = null;
+        var query: string = null;
 
-	    if (root.indexOf("?") !== -1) {
-	        query = root.substr(root.indexOf("?") + 1);
-	        root = root.substr(0, root.indexOf("?"));
-	    }
-	    if (root.indexOf("/_") !== -1) {
-	        resource = root.substr(root.indexOf("/_") + 2);
-	        root = root.substr(0, root.indexOf("/_"));
-	    }
+        if (root.indexOf("?") !== -1) {
+            query = root.substr(root.indexOf("?") + 1);
+            root = root.substr(0, root.indexOf("?"));
+        }
+        if (root.indexOf("/_") !== -1) {
+            resource = root.substr(root.indexOf("/_") + 2);
+            root = root.substr(0, root.indexOf("/_"));
+        }
 
-	    if (verb === "GET") {
-	        ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
-	            var ev = this._dispatchImpl({
-	                description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
-	                status: request.status,
-	                resource: resource,
-	                query: query,
-	                url: url,
-	                response: response,
+        if (verb === "GET") {
+            ajax.untrusted.getJSON(url, (response: any, request: XMLHttpRequest) => {
+                var ev = this._dispatchImpl({
+                    description: "GET " + root + (request.status === 200 ? "" : " ERROR"),
+                    status: request.status,
+                    resource: resource,
+                    query: query,
+                    url: url,
+                    response: response,
                     postData: null
-	            }, errorCB);
+                }, onError);
 
-	            if (successCB) {
-                    ev.then(() => successCB(response));
-	            }
-	        });
-	    } else if (verb in immediateActions) {
-	        pr = this._dispatchImpl({
-	            description: verb + " " + root,
-	            resource: resource,
-	            response: null,
-	            status: null,
-	            query: query,
+                if (onSuccess) {
+                    ev.then(() => onSuccess(response));
+                }
+            });
+        } else if (verb in immediateActions) {
+            pr = this._dispatchImpl({
+                description: verb + " " + root,
+                resource: resource,
+                response: null,
+                status: null,
+                query: query,
                 postData: postData
-	        }, errorCB);
+            }, onError);
 
-	        if ((verb in networkActions) && !url.indexOf("/api")) {
-	            ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
-	                var ev = this._dispatchImpl({
-	                    description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
-	                    status: request.status,
-	                    resource: resource,
-	                    query: query,
-	                    url: url,
-	                    response: response,
+            if ((verb in networkActions) && !url.indexOf("/api")) {
+                ajax.untrusted.anyJSON(verb, url, postData, (response: any, request: XMLHttpRequest) => {
+                    var ev = this._dispatchImpl({
+                        description: verb + " " + root + (request.status === 200 ? " DONE" : " ERROR"),
+                        status: request.status,
+                        resource: resource,
+                        query: query,
+                        url: url,
+                        response: response,
                         postData: null
-	                }, errorCB);
+                    }, onError);
 
-	                if (successCB) {
-                        ev.then(() => successCB(response));
-	                }
-	            });
-	        } else {
-	            assert(!successCB, "Callbacks are only necessary for network actions.");
-	        }
-	    }
+                    if (onSuccess) {
+                        ev.then(() => onSuccess(response));
+                    }
+                });
+            } else {
+                assert(!onSuccess, "Callbacks are only necessary for network actions.");
+            }
+        }
 
         return pr;
-	}
-
+    }
 
     /**
      * Add a promise to the queue of callback invocation promises.
@@ -148,10 +148,10 @@ class Dispatcher implements C.IDispatcher {
     /**
      * Empty the queue of callback invocation promises.
      */
-    private _clearPromises = () => {
+    private _clearPromises() {
         this._promises = [];
         this._inAction = null;
-    };
+    }
 
     /**
      * For debugging

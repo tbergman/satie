@@ -101,10 +101,16 @@ var KeySignatureModel = (function (_super) {
         }
         return 10 /* Success */;
     };
-    KeySignatureModel.createKeySignature = function (ctx) {
-        var keySignature = ctx.prev(function (c) { return c.type === 160 /* KeySignature */; });
-        return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
-    };
     return KeySignatureModel;
 })(Model.SubAttributeModel);
+var KeySignatureModel;
+(function (KeySignatureModel) {
+    "use strict";
+    function createKeySignature(ctx) {
+        var keySignature = ctx.prev(function (c) { return c.type === 160 /* KeySignature */; });
+        return ctx.insertPast(new KeySignatureModel(keySignature || {}, true));
+    }
+    KeySignatureModel.createKeySignature = createKeySignature;
+    ;
+})(KeySignatureModel || (KeySignatureModel = {}));
 module.exports = KeySignatureModel;

@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -238,12 +238,15 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         return C.IterationStatus.Success;
     }
 
-    /*---- IV. Statics --------------------------------------------------------------------------*/
+}
+
+module BarlineModel {
+    "use strict";
 
     /**
      * Creates a barline directly before the current element (i.e., at ctx.idx).
      */
-    static createBarline = (ctx: Annotator.Context, type = C.MusicXML.BarStyleType.Regular, engraved = false): C.IterationStatus => {
+    export function createBarline(ctx: Annotator.Context, type = C.MusicXML.BarStyleType.Regular, engraved = false): C.IterationStatus {
         if (ctx.curr.type === C.Type.BeamGroup) {
             ctx.eraseCurrent();
             for (var j = ctx.idx; j < ctx.body.length && ctx.body[j].inBeam; ++j) {
@@ -261,11 +264,11 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             return C.IterationStatus.RetryLine;
         }
 
-        BarlineModel._seperate(ctx, type, engraved);
+        _seperate(ctx, type, engraved);
         return C.IterationStatus.RetryCurrentNoOptimizations;
     };
 
-    private static _seperate = (ctx: Annotator.Context, type: C.MusicXML.BarStyleType, engraved: boolean) => {
+    /*private*/ function _seperate(ctx: Annotator.Context, type: C.MusicXML.BarStyleType, engraved: boolean): void {
         var jdx = ctx.nextIdx(null, 2);
         var inTwo = ctx.body[jdx];
         if (inTwo && inTwo.type === C.Type.Barline) {

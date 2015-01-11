@@ -1,17 +1,17 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -39,9 +39,9 @@ import TimeSignatureModel   = require("./timeSignature");
  * Models in the same location across voices must have:
  *  - the same priority (=== type, except in PlaceholderModel)
  *  - the same starting beat
- *
+ * 
  * PlaceholderModels fill gaps in voices to make these conditions true.
- *
+ * 
  * PlaceholderModels are used when there is no information at the current position in the current
  * voice. For example, consider this bar:
  * 
@@ -141,7 +141,13 @@ class PlaceholderModel extends Model {
                     ctx.body.splice(ctx.idx, 1, new AttributesModel({}, true));
                     return C.IterationStatus.RetryCurrent;
                 } else {
-                    ctx.attributes = ctx._voices[_.chain(ctx.part.containsVoice).keys().map(a => parseInt(a, 10)).min().value()].body[ctx.idx];
+                    ctx.attributes = ctx._voices[
+                        _.chain(ctx.part.containsVoice)
+                            .keys()
+                            .map(a => parseInt(a, 10))
+                            .min()
+                            .value()
+                        ].body[ctx.idx];
                     if (!ctx.ts) {
                         ctx.ts = {
                             beats: 4,
@@ -166,7 +172,7 @@ class PlaceholderModel extends Model {
                     if (!ctx.attributes.clefs[ctx.idxInPart]) {
                         newClef = new ClefModel({ sign: "G", line: 2, clefOctaveChange: null }, true);
                     } else if (!("priority" in ctx.attributes.clefs[ctx.idxInPart])) { // This checks if it's a model
-                        newClef = new ClefModel(ctx.attributes.clefs[ctx.idxInPart], true)
+                        newClef = new ClefModel(ctx.attributes.clefs[ctx.idxInPart], true);
                     }
 
                     if (newClef) {

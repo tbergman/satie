@@ -68,9 +68,6 @@ var BeginModel = (function (_super) {
         this.braceY2 = this.y;
         return 10 /* Success */;
     };
-    BeginModel.createBegin = function (ctx) {
-        return ctx.insertPast(new BeginModel({ source: true }, true));
-    };
     return BeginModel;
 })(Model);
 module.exports = BeginModel;

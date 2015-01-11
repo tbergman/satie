@@ -608,6 +608,8 @@ export function cssSizeToTenths(scaling40: number, css: string) {
             px = 32;
             break;
         case css === "small":
+            px = 13;
+            break;
         default:
             px = 13;
             break;

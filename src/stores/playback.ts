@@ -1,38 +1,40 @@
 /**
  * (C) Josh Netterfield <joshua@nettek.ca> 2015.
  * Part of the Satie music engraver <https://github.com/ripieno/satie>.
- *
+ * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Affero General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 import assert                   = require("assert");
-import _                		= require("lodash");
-import TSEE             		= require("./tsee");
+import _                        = require("lodash");
+import TSEE                     = require("./tsee");
 
-import AnnotatorType    		= require("./annotator");       // Cyclic
-import C                		= require("./contracts");
-import Instruments      		= require("./instruments");
-import Metre            		= require("./metre");
-import Model 		   	        = require("./model");
+import AnnotatorType            = require("./annotator");       // Cyclic
+import C                        = require("./contracts");
+import Instruments              = require("./instruments");
+import Metre                    = require("./metre");
+import Model                    = require("./model");
 
 var enabled                     = typeof document !== "undefined";
 
-var MIDI:       any     		= enabled && _.extend(require("midi/js/MIDI/Plugin.js"), {
-                        		    audioDetect: require("midi/js/MIDI/AudioDetect.js"),
-                        		    loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
-                        		    Player: require("midi/js/MIDI/Player.js")
-                        		});
+/* tslint:disable */
+var MIDI:       any             = enabled && _.extend(require("midi/js/MIDI/Plugin.js"), {
+                                    audioDetect: require("midi/js/MIDI/AudioDetect.js"),
+                                    loadPlugin: require("midi/js/MIDI/LoadPlugin.js"),
+                                    Player: require("midi/js/MIDI/Player.js")
+                                });
+/* tslint:enable */
 
 global.AudioContext             = global.AudioContext || global.webkitAudioContext;
 global.MIDI                     = MIDI;
@@ -120,7 +122,8 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         // Stops the current playback stream when a new song will be shown.
         this._play(false);
     }
-    "DELETE /webapp/song/show" = this["PUT /webapp/song/show"].bind(this);
+    "DELETE /webapp/song/show": (action: C.IFluxAction<void>) => void =
+        this["PUT /webapp/song/show"].bind(this);
 
     "PUT /webapp/visualCursor"(action: C.IFluxAction<C.IVisualCursor>) {
         if (!this._pendingInstruments && this._playing && action.postData) {
@@ -302,14 +305,14 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
         this._getInstrument("acoustic_grand_piano", true);
     }
 
-    private _handleAction = (action: C.IFluxAction<any>) => {
+    private _handleAction(action: C.IFluxAction<any>) {
         assert(action.description.indexOf(" ") !== -1, "Malformed description " + action.description);
         var fn: Function = (<any>this)[action.description];
         if (fn) {
             fn.call(this, action);
         }
         return true; // (Success)
-    };
+    }
 
     private _play(on: boolean) {
         this._playing = on;
@@ -324,11 +327,11 @@ class PlaybackStore extends TSEE implements C.IPlaybackStore, C.IApi {
 
     private _bpm: number                                                    = 120;
     private _dispatcher: C.IDispatcher;
-    private _lastChannel: number                                			= -1;
-    private _loadedSoundfonts: { [sfName: string]: boolean }    			= {};
-    private _pendingInstruments: number                         			= 0;
+    private _lastChannel: number                                            = -1;
+    private _loadedSoundfonts: { [sfName: string]: boolean }                = {};
+    private _pendingInstruments: number                                     = 0;
     private _playing: boolean;
-    private _remainingActions: Array<any>                       			= [];
+    private _remainingActions: Array<any>                                   = [];
     private _score: C.IScoreStore;
     private _soundfontToChannel: { [soundfontToChannel: string]: number }   = {};
     private _timeoutId: number;
