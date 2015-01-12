@@ -15,7 +15,6 @@ var EndMarkerModel = require("./endMarker");
 var FontMetrics = require("../util/fontMetrics");
 var KeySignatureModel = require("./keySignature");
 var Metre = require("./metre");
-var NewlineModel = require("./newline");
 var TimeSignatureModel = require("./timeSignature");
 var DurationModel = (function (_super) {
     __extends(DurationModel, _super);
@@ -443,9 +442,6 @@ var DurationModel = (function (_super) {
             this.extraWidth = (Math.log(this._divisions) - Math.log(ctx.smallest * ctx.attributes.divisions)) / C.log2 / 3 * 40;
             if (this._notes[0].grace) {
                 this.extraWidth /= 10;
-            }
-            if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
-                return NewlineModel.createNewline(ctx);
             }
         }
         if (!this.engraved && !ctx.isBeam && this.hasFlagOrBeam && !this.perfectlyBeamed(ctx)) {

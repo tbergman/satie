@@ -30,7 +30,6 @@ import EndMarkerModel       = require("./endMarker");
 import FontMetrics          = require("../util/fontMetrics");
 import KeySignatureModel    = require("./keySignature");
 import Metre                = require("./metre");
-import NewlineModel         = require("./newline");
 import TimeSignatureModel   = require("./timeSignature");
 
 /**
@@ -462,11 +461,6 @@ class DurationModel extends Model implements C.IPitchDuration {
                 C.log2 / 3 * 40;
             if (this._notes[0].grace) {
                 this.extraWidth /= 10; // FIXME: Ideally we have proper rythmic spacing within a grace part.
-            }
-
-            // The width of a line must not exceed that specified by the page layout.
-            if ((ctx.x + this.getWidth(ctx) > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
-                return NewlineModel.createNewline(ctx);
             }
         }
 

@@ -25,6 +25,7 @@ import C                    = require("./contracts");
 import DurationModelType    = require("./duration");        // Cyclic.
 import EndMarkerModel       = require("./endMarker");
 import Metre                = require("./metre");
+import NewlineModel         = require("./newline");
 import TimeSignatureModel   = require("./timeSignature");
 
 /**
@@ -158,6 +159,12 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         }
         if (!okay) {
             return ctx.eraseCurrent();
+        }
+
+        // The width of a line must not exceed that specified by the page layout.
+        if ((ctx.x > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
+            ctx.idx--;
+            return NewlineModel.createNewline(ctx);
         }
 
         if (this.barStyle.data === C.MusicXML.BarStyleType.LightHeavy) {

@@ -9,6 +9,7 @@ var _ = require("lodash");
 var C = require("./contracts");
 var EndMarkerModel = require("./endMarker");
 var Metre = require("./metre");
+var NewlineModel = require("./newline");
 var TimeSignatureModel = require("./timeSignature");
 var BarlineModel = (function (_super) {
     __extends(BarlineModel, _super);
@@ -104,6 +105,10 @@ var BarlineModel = (function (_super) {
         }
         if (!okay) {
             return ctx.eraseCurrent();
+        }
+        if ((ctx.x > ctx.maxX) && ctx.lines[ctx.line].bar !== ctx.bar) {
+            ctx.idx--;
+            return NewlineModel.createNewline(ctx);
         }
         if (this.barStyle.data === 5 /* LightHeavy */) {
             okay = false;
