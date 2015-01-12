@@ -364,7 +364,6 @@ var DurationModel = (function (_super) {
         this._divisions = this.calcDivisions(mctx, null, true);
         if (!this._notes[0].grace) {
             assert(isFinite(this._divisions) && this._divisions !== null);
-            mctx.bar += Math.floor((mctx.division + this._divisions) / (mctx.ts.beats * mctx.attributes.divisions));
             mctx.division = (mctx.division + this._divisions) % (mctx.ts.beats * mctx.attributes.divisions);
         }
     };
