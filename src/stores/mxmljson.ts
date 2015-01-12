@@ -141,7 +141,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         var idxPerPart: number[]            = _.times(parts.length, part => 0);
         var chords: DurationModel[]         = []; // by voices.
         do {
-            var elements: any[]             = _.map(measure.parts, extractElement);
+            var elements: any[]             = _.map(parts, extractElement);
 
             // Check for backups/forwards
             var splits                      = getSplits(elements);
@@ -290,8 +290,8 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
         }
 
         ////
-        function extractElement(p: any, partID: string) {
-            return p[idxPerPart[partToIdx[partID]]] || <any> null;
+        function extractElement(p: C.IPart) {
+            return measure.parts[p.id][idxPerPart[partToIdx[p.id]]] || <any> null;
         }
 
         ////

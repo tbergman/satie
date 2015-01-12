@@ -1073,7 +1073,7 @@ module DurationModel {
             this.unstupidifyNotations();
 
             function setIfDefined(property: string) {
-                if (note.hasOwnProperty(property)) {
+                if (note.hasOwnProperty(property) && (<any>note)[property] !== null) {
                     self[property]  = <any> (<any>note)[property];
                 }
             }

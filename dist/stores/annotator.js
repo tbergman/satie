@@ -732,7 +732,6 @@ exports.recordMetreData = recordMetreData;
 function initVoice(voices, voiceIdx) {
     "use strict";
     var Instruments = require("./instruments");
-    var PrintModel = require("./print");
     var BeginModel = require("./begin");
     var PlaceholderModel = require("./placeholder");
     voices[voiceIdx] = {

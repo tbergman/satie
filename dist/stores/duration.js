@@ -978,7 +978,7 @@ var DurationModel;
             _.forEach(properties, setIfDefined);
             this.unstupidifyNotations();
             function setIfDefined(property) {
-                if (note.hasOwnProperty(property)) {
+                if (note.hasOwnProperty(property) && note[property] !== null) {
                     self[property] = note[property];
                 }
             }

@@ -82,7 +82,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
         var idxPerPart = _.times(parts.length, function (part) { return 0; });
         var chords = [];
         do {
-            var elements = _.map(measure.parts, extractElement);
+            var elements = _.map(parts, extractElement);
             var splits = getSplits(elements);
             if (splits.length) {
                 _.forEach(splits, applySplit);
@@ -192,8 +192,8 @@ function extractMXMLPartsAndVoices(mxmlJson) {
         function extractPriority(element, pIdx) {
             return !element ? C.MAX_NUM : mxmlClassToType(element._class, measureIdx + 1, currDivision, parts[pIdx].id);
         }
-        function extractElement(p, partID) {
-            return p[idxPerPart[partToIdx[partID]]] || null;
+        function extractElement(p) {
+            return measure.parts[p.id][idxPerPart[partToIdx[p.id]]] || null;
         }
         function getChordContinuations(elements) {
             return _.map(elements, function (element, idx) {

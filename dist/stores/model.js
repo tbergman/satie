@@ -24,6 +24,9 @@ var Model = (function () {
         for (var i = 0; i < allFields.length; ++i) {
             if (spec.hasOwnProperty(allFields[i])) {
                 var key = allFields[i];
+                if (spec[key] === null) {
+                    continue;
+                }
                 _this[key] = spec[key];
             }
         }
@@ -288,7 +291,7 @@ var Model = (function () {
         var modelObj = model;
         assert(model);
         _.each(spec, function (value, key) {
-            if (modelObj[key] !== value) {
+            if (modelObj[key] !== value && value !== null) {
                 console.warn("Not loading saved key \"" + key + "\" in type " + C.Type[model.type] + ":", value);
             }
         });

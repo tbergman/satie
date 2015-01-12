@@ -7,6 +7,7 @@ var __extends = this.__extends || function (d, b) {
 exports.MusicXML = require("musicxml-interfaces");
 var React = require("react");
 var TypedReact = require("typed-react");
+var _ = require("lodash");
 var invariant = require("react/lib/invariant");
 var C = require("./stores/contracts");
 var Dispatcher = require("./stores/dispatcher");
@@ -19,6 +20,30 @@ function init(options) {
 }
 exports.init = init;
 exports.MusicXMLView;
+function toSVG(musicXML, onSuccess, onError) {
+    "use strict";
+    invariant(_.isFunction(onSuccess), "If a tree falls in a forest and no one is around to hear it, does it make a sound? " + "(Satie.toSVG is asyncronous and expects a callback function)");
+    var dispatcher = new Dispatcher;
+    var score = new ScoreStore(dispatcher);
+    dispatcher.PUT("/webapp/song/mxmlJSON", musicXML, handleSuccess, onError);
+    function handleSuccess() {
+        var props = {
+            context: score.finalCtx,
+            raw: true,
+            parts: score.parts,
+            voices: score.voices,
+            header: score.header,
+            editMode: false
+        };
+        try {
+            onSuccess("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>" + React.renderToStaticMarkup(React.createElement(Renderer.Component, props)).replace("<svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" ").replace(/class="mn_"/g, "font-family='bravura'").replace(/class="tn_"/g, "font-family='Alegreya'"));
+        }
+        catch (err) {
+            onError(err);
+        }
+    }
+}
+exports.toSVG = toSVG;
 var BrowserSetup;
 (function (BrowserSetup) {
     "use strict";

@@ -21,7 +21,8 @@
         "gulp-newer": "0.5.0",
         "gulp-tslint": "1.4.1",
         "gulp-typescript": "git://github.com/jnetterf/gulp-typescript-react-jsx#fe6ced",
-        "react": "0.12.x"
+        "react": "0.12.x",
+        "svg2png": "1.1.0"
     },
 
     "main": "./dist/satie.js",

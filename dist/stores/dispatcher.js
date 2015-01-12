@@ -60,7 +60,7 @@ var Dispatcher = (function () {
                     });
                 }
                 else {
-                    assert(!onSuccess, "Callbacks are only necessary for network actions.");
+                    _.defer(function () { return onSuccess(null); });
                 }
             }
         }, 0);

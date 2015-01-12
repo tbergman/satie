@@ -1150,21 +1150,11 @@ export function recordMetreData(parts: C.IPart[], voices: C.IVoice[]) {
 export function initVoice(voices: C.IVoice[], voiceIdx: number) {
     "use strict";
     var Instruments          = require("./instruments");
-    var PrintModel           = require("./print");
     var BeginModel           = require("./begin");
     var PlaceholderModel     = require("./placeholder");
     voices[voiceIdx] = {
         instrument: Instruments.List[0],
         body: <Model[]> [
-            //new PrintModel({
-            //        systemLayout: {
-            //            topSystemDistance:      0,
-            //            systemMargins: {
-            //                leftMargin:         108
-            //            }
-            //        }
-            //    }, true
-            //),
             new BeginModel(
                 {},
                 true

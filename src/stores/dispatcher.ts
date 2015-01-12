@@ -116,7 +116,7 @@ class Dispatcher implements C.IDispatcher {
                     }, onSuccess, onError);
                 });
             } else {
-                assert(!onSuccess, "Callbacks are only necessary for network actions.");
+                _.defer(() => onSuccess(null));
             }
         }
     }, 0);
