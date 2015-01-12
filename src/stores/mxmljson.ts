@@ -115,7 +115,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
 
     var divisionsPerPart: number[]          = [];
     var timeSignaturePerPart                = <C.MusicXML.Time[]> [];
-    var outputIdx: number                   = 1; // BeginModel is __always__ output.
+    var outputIdx: number                   = 2; // BeginModel and PrintModel are __always__ output.
 
     // Fill the voice object. This is the bulk of this call.
     _.forEach(mxmlJson.measures, processMeasure);
