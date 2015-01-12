@@ -190,11 +190,11 @@ class Playground extends TypedReact.Component<Playground.IProps, IState> {
                 <!option value="45g">Lily 45g: Repeats/NotEnded</option>
                 <!option value="46a">Lily 46a: Barlines</option>
                 <!option value="46b">Lily 46b: MidmeasureBarlines</option>
-                <!option value="46c">Lily 46b: MidmeasureClef</option>
+                <!option value="46c">Lily 46c: MidmeasureClef</option>
                 <!option value="46d">Lily 46d: Pickup/ImplicitMeasures</option>
                 <!option value="46e">Lily 46e: Pickup/LateSecondVoice</option>
                 <!option value="46f">Lily 46f: IncompleteMeasures</option>
-                <!option value="46a">Lily 46g: Chordnames/FiguredBass</option>
+                <!option value="46g">Lily 46g: Chordnames/FiguredBass</option>
                 <!option value="51b">Lily 51b: Header/Quotes</option>
                 <!option value="51c">Lily 51c: MultipleRights</option>
                 <!option value="51d">Lily 51d: EmptyTitle</option>

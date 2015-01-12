@@ -2,6 +2,8 @@ Satie
 =====
 
 A MusicXML renderer that uses React and SMuFL. It's in active development, and is in alpha.
+The current goal is to pass Lilypond's unofficial MusicXML test suite. You can track progress
+[here](TESTING.md).
 
 ## Copyright
 Copyright (C) 2015 Josh Netterfield <joshua@nettek.ca>.
