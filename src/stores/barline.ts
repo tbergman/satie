@@ -194,6 +194,12 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (
             next.type === C.Type.NewLine || next.type === C.Type.NewPage);
 
+        /*--- Increment bar -------------------------------------------------*/
+        // This needs to happen before checking accidentals.
+        ctx.division = 0;
+        ++ctx.bar;
+        /*-------------------------------------------------------------------*/
+
         // Barlines followed by accidentals have additional padding. We check all
         // parts for following accidentals.
         var intersectingNotes = ctx.intersects(C.Type.Duration, ctx.idx, true, false);
@@ -214,13 +220,12 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             return C.IterationStatus.RetryCurrent;
         }
 
+        ctx.barKeys = ctx.barKeys || [];
         ctx.barKeys.push(this.key);
 
         // Set information from context that the view needs
         // this.onPianoStaff = true; MXFIX
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
-        ctx.division = 0;
-        ++ctx.bar;
         if (ctx.idxInPart < ctx.part.staveCount) {
             ctx.accidentalsByStaff[ctx.idxInPart + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         }

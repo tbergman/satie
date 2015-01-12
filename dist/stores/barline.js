@@ -131,6 +131,8 @@ var BarlineModel = (function (_super) {
         }
         var next = ctx.next(function (c) { return c.type !== 50 /* Print */; });
         this.newlineNext = (ctx.body.length > ctx.idx + 1) && (next.type === 130 /* NewLine */ || next.type === 120 /* NewPage */);
+        ctx.division = 0;
+        ++ctx.bar;
         var intersectingNotes = ctx.intersects(600 /* Duration */, ctx.idx, true, false);
         var nextNonPlaceholderIdx = ctx.nextIdx(function (c) { return !c.placeholder; });
         var nextNonPlaceholder = ctx.body[nextNonPlaceholderIdx];
@@ -144,10 +146,9 @@ var BarlineModel = (function (_super) {
             this.barStyle.data = 0 /* Regular */;
             return 20 /* RetryCurrent */;
         }
+        ctx.barKeys = ctx.barKeys || [];
         ctx.barKeys.push(this.key);
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
-        ctx.division = 0;
-        ++ctx.bar;
         if (ctx.idxInPart < ctx.part.staveCount) {
             ctx.accidentalsByStaff[ctx.idxInPart + 1] = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         }

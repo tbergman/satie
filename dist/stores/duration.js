@@ -593,13 +593,10 @@ var DurationModel = (function (_super) {
         }
         var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var backupAcc = ctx.accidentalsByStaff[this.staff];
-        var division = ctx.division;
         ctx.accidentalsByStaff[this.staff] = staffAcc;
-        ctx.division = ctx.attributes.divisions;
         ctx.idx++;
         var acc = this.getAccidentals(ctx, true);
         ctx.accidentalsByStaff[this.staff] = backupAcc;
-        ctx.division = division;
         ctx.idx--;
         var parens = _.any(acc, function (v) { return typeof v === "string" && !!~v.indexOf("p"); });
         if (parens) {
@@ -731,7 +728,7 @@ var DurationModel = (function (_super) {
                     var otherChord = concurrentNotes[j].note.chord;
                     noConflicts = noConflicts && !_hasConflict(otherChord, pitch.step, target);
                 }
-                if (ctx.division === ctx.attributes.divisions) {
+                if (ctx.division === 0) {
                     var prevBarOrNote = ctx.prev(function (c) { return c.isNote && !c.isRest || c.type === 300 /* Barline */; });
                     if (prevBarOrNote && prevBarOrNote.type === 300 /* Barline */) {
                         var prevNote = ctx.prev(function (c) { return c.isNote && _.any(c.note.chord, function (c) { return c.step === pitch.step; }) || c.type === 300 /* Barline */; }, 2);

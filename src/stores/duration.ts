@@ -673,13 +673,10 @@ class DurationModel extends Model implements C.IPitchDuration {
         }
         var staffAcc = C.NoteUtil.getAccidentals(ctx.attributes.keySignature);
         var backupAcc = ctx.accidentalsByStaff[this.staff];
-        var division = ctx.division;
         ctx.accidentalsByStaff[this.staff] = staffAcc;
-        ctx.division = ctx.attributes.divisions;
         ctx.idx++;
         var acc = this.getAccidentals(ctx, true);
         ctx.accidentalsByStaff[this.staff] = backupAcc;
-        ctx.division = division;
         ctx.idx--;
 
         var parens = _.any(acc, v => typeof v === "string" && !!~v.indexOf("p"));
@@ -839,7 +836,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                 }
 
                 // 4. There isn't ambiguity because or a barline and this is the first beat.
-                if (ctx.division === ctx.attributes.divisions) { // DIFIX: Shouldn't this be 0?
+                if (ctx.division === 0) {
                     var prevBarOrNote = ctx.prev(c => c.isNote && !c.isRest || c.type === C.Type.Barline);
                     if (prevBarOrNote && prevBarOrNote.type === C.Type.Barline) {
                         var prevNote = ctx.prev(
