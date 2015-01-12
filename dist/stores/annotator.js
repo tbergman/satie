@@ -738,14 +738,6 @@ function initVoice(voices, voiceIdx) {
     voices[voiceIdx] = {
         instrument: Instruments.List[0],
         body: [
-            new PrintModel({
-                systemLayout: {
-                    topSystemDistance: 0,
-                    systemMargins: {
-                        leftMargin: 108
-                    }
-                }
-            }, true),
             new BeginModel({}, true)
         ]
     };

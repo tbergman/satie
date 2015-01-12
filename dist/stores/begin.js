@@ -32,7 +32,14 @@ var BeginModel = (function (_super) {
     };
     BeginModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.print) {
-            return ctx.insertPast(new PrintModel({}, true));
+            return ctx.insertPast(new PrintModel({
+                systemLayout: {
+                    topSystemDistance: 0,
+                    systemMargins: {
+                        leftMargin: 108
+                    }
+                }
+            }, true));
         }
         if (ctx.idx !== 1) {
             return ctx.eraseCurrent();

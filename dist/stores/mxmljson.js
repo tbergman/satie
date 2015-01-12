@@ -64,7 +64,7 @@ function extractMXMLPartsAndVoices(mxmlJson) {
     var _maxVoice = -1;
     var divisionsPerPart = [];
     var timeSignaturePerPart = [];
-    var outputIdx = 2;
+    var outputIdx = 1;
     _.forEach(mxmlJson.measures, processMeasure);
     _.forEach(voices, function (part) {
         _.forEach(part.body, function (model, j) {

@@ -326,7 +326,6 @@ var NewlineModel;
             });
         });
         veryBottomPadding = Math.max(C.getPrint(ctx._layout.header).systemLayout.systemDistance, veryBottomPadding);
-        ctx.curr.braceY2 += veryBottomPadding;
         ctx.y = ctx.curr.y + veryBottomPadding;
         ctx.curr.y = ctx.y;
     }

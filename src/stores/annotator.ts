@@ -1156,15 +1156,15 @@ export function initVoice(voices: C.IVoice[], voiceIdx: number) {
     voices[voiceIdx] = {
         instrument: Instruments.List[0],
         body: <Model[]> [
-            new PrintModel({
-                    systemLayout: {
-                        topSystemDistance:      0,
-                        systemMargins: {
-                            leftMargin:         108
-                        }
-                    }
-                }, true
-            ),
+            //new PrintModel({
+            //        systemLayout: {
+            //            topSystemDistance:      0,
+            //            systemMargins: {
+            //                leftMargin:         108
+            //            }
+            //        }
+            //    }, true
+            //),
             new BeginModel(
                 {},
                 true

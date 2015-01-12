@@ -53,7 +53,14 @@ class BeginModel extends Model {
         /*---- Check context ------------------------------------------------*/
 
         if (!ctx.print) {
-            return ctx.insertPast(new PrintModel({}, true));
+            return ctx.insertPast(new PrintModel({
+                systemLayout: {
+                    topSystemDistance:      0,
+                    systemMargins: {
+                        leftMargin:         108
+                    }
+                }
+            }, true));
         }
 
         // BeginModel must only appear at the beginning of a song.

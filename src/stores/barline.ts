@@ -100,8 +100,10 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
         // If we have an overfilled note in the previous bar, it will at some point turn
         // into a tied note. So the barline should still be at beat 0.
         this.ctxData.division = 0;
+        if (mctx.division !== 0) {
+            ++mctx.bar;
+        }
         mctx.division = 0;
-        ++mctx.bar;
     }
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
@@ -220,7 +222,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
             return C.IterationStatus.RetryCurrent;
         }
 
-        ctx.barKeys = ctx.barKeys || [];
+        ctx.barKeys = ctx.barKeys;
         ctx.barKeys.push(this.key);
 
         // Set information from context that the view needs

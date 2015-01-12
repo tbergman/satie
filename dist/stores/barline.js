@@ -55,8 +55,10 @@ var BarlineModel = (function (_super) {
     BarlineModel.prototype.recordMetreDataImpl = function (mctx) {
         this.ctxData = new C.MetreContext(mctx);
         this.ctxData.division = 0;
+        if (mctx.division !== 0) {
+            ++mctx.bar;
+        }
         mctx.division = 0;
-        ++mctx.bar;
     };
     BarlineModel.prototype.annotateImpl = function (ctx) {
         if (!ctx.prev().endMarker) {
@@ -146,7 +148,7 @@ var BarlineModel = (function (_super) {
             this.barStyle.data = 0 /* Regular */;
             return 20 /* RetryCurrent */;
         }
-        ctx.barKeys = ctx.barKeys || [];
+        ctx.barKeys = ctx.barKeys;
         ctx.barKeys.push(this.key);
         ctx.x += (this.newlineNext ? 0 : 12) + this.annotatedAccidentalSpacing;
         if (ctx.idxInPart < ctx.part.staveCount) {
