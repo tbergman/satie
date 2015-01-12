@@ -213,7 +213,7 @@ class AttributesModel extends Model implements C.MusicXML.AttributesComplete {
     private _adjustCurrentDivision(mctx: C.MetreContext) {
         if (this._parent && this._parent.divisions && this.divisions) {
             // DIFIX: Ensure we get a whole number, or else change the current division!
-            var adjustment = this.divisions * this._parent.divisions;
+            var adjustment = this.divisions / this._parent.divisions;
             mctx.division *= adjustment;
         }
     }

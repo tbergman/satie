@@ -233,7 +233,7 @@ var AttributesModel = (function (_super) {
     };
     AttributesModel.prototype._adjustCurrentDivision = function (mctx) {
         if (this._parent && this._parent.divisions && this.divisions) {
-            var adjustment = this.divisions * this._parent.divisions;
+            var adjustment = this.divisions / this._parent.divisions;
             mctx.division *= adjustment;
         }
     };
