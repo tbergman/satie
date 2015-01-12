@@ -550,7 +550,7 @@ var NoteUtil;
         }
         else {
             _.times(Math.min(7, key.fifths), function (idx) {
-                ret[NoteUtil.flatCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
+                ret[NoteUtil.sharpCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
             });
             return ret;
         }

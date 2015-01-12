@@ -1259,7 +1259,7 @@ export module NoteUtil {
             return ret;
         } else {
             _.times(Math.min(7, key.fifths), idx => {
-                ret[flatCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
+                ret[sharpCircle[idx]] = (7 + idx < key.fifths) ? 2 : 1;
             });
             return ret;
         }
