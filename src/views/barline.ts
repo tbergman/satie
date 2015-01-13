@@ -62,19 +62,6 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
                     stroke={spec.barStyle.color}
                     fill={spec.barStyle.color}
                     strokeWidth={defaults.thickBarlineThickness*10} />
-                {/* HACK HACK HACK: We're drawing a white bar to
-                    cover over the empty part of the stave.*/}
-                <!Rect.Component
-                    key={3}
-                    opacity={1.0}
-                    x={spec.x + defaults.barlineSeparation*10 +
-                        defaults.thickBarlineThickness*10 +
-                        defaults.thinBarlineThickness*10}
-                    y={spec.y - spec.height - 1 - spec.yOffset}
-                    stroke={"#FFFFFF"}
-                    fill={"#FFFFFF"}
-                    height={spec.height*2 + 2}
-                    width={4000} />
             </g>;
         }
 

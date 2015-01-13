@@ -80,7 +80,7 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
     fermatas:                   C.MusicXML.Fermata[];
     segnoAttrib:                string;
     divisions:                  string;
-    barStyle:                   C.MusicXML.BarStyle         // See also BarlineModel.prototype.barStyle
+    barStyle:                   C.MusicXML.BarStyle
     ending:                     C.MusicXML.Ending;
     repeat:                     C.MusicXML.Repeat;
 
@@ -93,6 +93,12 @@ class BarlineModel extends Model implements C.MusicXML.BarlineComplete {
 
     constructor(spec: { barStyle: { data: C.MusicXML.BarStyleType }}, annotated: boolean, engraved: boolean) {
         super(spec, annotated, engraved);
+        if (!this.barStyle) {
+            this.barStyle = {
+                color:                                                  "#000000",
+                data:                                                   C.MusicXML.BarStyleType.Regular
+            };
+        }
     }
 
     recordMetreDataImpl(mctx: C.MetreContext) {
@@ -295,15 +301,6 @@ module BarlineModel {
 
         ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true, engraved), null, true);
     };
-}
-
-BarlineModel.prototype.barStyle = {
-    color:                                                  "#000000",
-    data:                                                   C.MusicXML.BarStyleType.Regular
-};
-
-if ("production" !== process.env.NODE_ENV) {
-    Object.freeze(BarlineModel.prototype.barStyle);
 }
 
 export = BarlineModel;

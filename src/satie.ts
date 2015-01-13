@@ -117,7 +117,7 @@ export function toSVG(musicXML: C.MusicXML.ScoreTimewise, onSuccess: (svg: strin
     "use strict";
     invariant(_.isFunction(onSuccess),
         "If a tree falls in a forest and no one is around to hear it, does it make a sound? " +
-        "(Satie.toSVG is asyncronous and expects a callback function)");
+        "(Satie.toSVG is asynchronous and expects a callback function)");
 
     var dispatcher = new Dispatcher;
     var score = new ScoreStore(dispatcher);
@@ -138,6 +138,10 @@ export function toSVG(musicXML: C.MusicXML.ScoreTimewise, onSuccess: (svg: strin
                     .replace("<svg", "<svg xmlns=\"http://www.w3.org/2000/svg\" ")
                         .replace(/class="mn_"/g, "font-family='bravura'")
                         .replace(/class="tn_"/g, "font-family='Alegreya'")
+                        .replace(/class="mmn_"/g, "font-family='Alegreya' " +
+                                 "font-style='italic' stroke='#7a7a7a'")
+                        .replace(/class="bn_"/g, "font-family='Alegreya' " +
+                                 "font-style='italic' text-anchor='end' stroke='#7a7a7a'")
             );
         } catch(err) {
             onError(err);

@@ -31,7 +31,7 @@ import PlaceholderModel = require("./placeholder");
 /**
  * Converts a timewise MXMLJSON score to a Satie score.
  * 
- * @param score Score produced by github.com/ripieno/musicxml-interfaces
+ * @param score produced by github.com/ripieno/musicxml-interfaces
  * @returns A structure that can be consumed by a ScoreStore. If an error occurred
  *          error will be set, and all other properties will be null.
  */

@@ -2,3 +2,5 @@ partial
 .partialBuild
 node_modules
 website/static/build/browser-bundle.js
+tests/out/[0-9a-zA-Z]*
+*.swp

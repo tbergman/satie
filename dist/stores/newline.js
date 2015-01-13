@@ -6,6 +6,7 @@ var __extends = this.__extends || function (d, b) {
 };
 var Model = require("./model");
 var _ = require("lodash");
+var invariant = require("react/lib/invariant");
 var C = require("./contracts");
 var NewPageModel = require("./newpage");
 var PrintModel = require("./print");
@@ -220,41 +221,46 @@ var NewlineModel;
     }
     NewlineModel.createNewline = createNewline;
     ;
-    function semiJustify(ctx, fullJustify) {
-        if (fullJustify === void 0) { fullJustify = ctx.curr.x > ctx.maxX; }
+    function semiJustify(ctx) {
         var i;
-        var n = 0;
+        var expandableCount = 0;
         for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== 130 /* NewLine */); --i) {
             if (expandable(ctx.body[i])) {
-                ++n;
+                ++expandableCount;
             }
             if (i + 1 !== ctx.body.length) {
                 ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
         }
-        if (n) {
-            var lw = ctx.maxX - 3 - ctx.curr.x;
-            var nw = lw / n;
-            if (fullJustify) {
-                lw = ctx.maxX - ctx.curr.x;
-                nw = lw / n;
+        if (expandableCount) {
+            var expansionRemaining;
+            var avgExpansion;
+            if (ctx.curr.x > ctx.maxX) {
+                expansionRemaining = ctx.maxX - ctx.curr.x;
+                avgExpansion = expansionRemaining / expandableCount;
             }
             else {
-                var weight = C.renderUtil.sigmoid((nw - ctx.maxX / 80) / 20) * 2 / 3;
-                nw = (1 - weight) * nw;
-                lw = nw * n;
+                var expansionRemainingGuess = ctx.maxX - 3 - ctx.curr.x;
+                var avgExpansionGuess = expansionRemainingGuess / expandableCount;
+                var weight = C.renderUtil.sigmoid((avgExpansionGuess - ctx.maxX / 80) / 20) * 2 / 3;
+                avgExpansion = (1 - weight) * avgExpansionGuess;
+                expansionRemaining = avgExpansion * expandableCount;
             }
+            var totalSpaceLeft = ctx.maxX - (ctx.curr.x + expansionRemaining);
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== 130 /* NewLine */; --i) {
                 if (expandable(ctx.body[i])) {
-                    lw -= nw;
+                    expansionRemaining -= avgExpansion;
                 }
-                ctx.body[i].x = ctx.body[i].x + lw;
+                ctx.body[i].x = ctx.body[i].x + expansionRemaining;
             }
-            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== 130 /* NewLine */; --i) {
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== 130 /* NewLine */ && ctx.body[i].type !== 140 /* Begin */; --i) {
                 if (ctx.body[i].type === 300 /* Barline */) {
                     NewlineModel.centerWholeBarRests(ctx.body, i);
                 }
             }
+            invariant(Math.abs(expansionRemaining) < 0.001, "expansionRemaining was not calculated correctly.");
+            invariant(ctx.body[i].staveW, "Expected either BeginModel or NewlineModel");
+            ctx.body[i].staveW -= totalSpaceLeft;
         }
         function expandable(c) {
             return c.isNote && !c.soundOnly && !c._notes[0].grace;

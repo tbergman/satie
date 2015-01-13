@@ -16,6 +16,12 @@ var BarlineModel = (function (_super) {
     function BarlineModel(spec, annotated, engraved) {
         _super.call(this, spec, annotated, engraved);
         this.location = 1 /* Right */;
+        if (!this.barStyle) {
+            this.barStyle = {
+                color: "#000000",
+                data: 0 /* Regular */
+            };
+        }
     }
     Object.defineProperty(BarlineModel.prototype, "type", {
         get: function () {
@@ -211,11 +217,4 @@ var BarlineModel;
     }
     ;
 })(BarlineModel || (BarlineModel = {}));
-BarlineModel.prototype.barStyle = {
-    color: "#000000",
-    data: 0 /* Regular */
-};
-if ("production" !== process.env.NODE_ENV) {
-    Object.freeze(BarlineModel.prototype.barStyle);
-}
 module.exports = BarlineModel;

@@ -21,6 +21,7 @@
         "gulp-newer": "0.5.0",
         "gulp-tslint": "1.4.1",
         "gulp-typescript": "git://github.com/jnetterf/gulp-typescript-react-jsx#fe6ced",
+        "gulp-util": "3.0.2",
         "react": "0.12.x",
         "svg2png": "1.1.0"
     },

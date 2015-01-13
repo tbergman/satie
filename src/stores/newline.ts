@@ -19,6 +19,7 @@
 import Model            = require("./model");
 
 import _                = require("lodash");
+import invariant        = require("react/lib/invariant");
 
 import Annotator        = require("./annotator");
 import C                = require("./contracts");
@@ -304,14 +305,13 @@ module NewlineModel {
      * Given an incomplete line ending at current index, spreads out the line
      * comfortably.
      */
-    export function semiJustify(ctx: Annotator.Context, fullJustify = ctx.curr.x > ctx.maxX) {
+    export function semiJustify(ctx: Annotator.Context) {
         var i: number;
 
-        var n = 0;
-        for (i = ctx.idx; i >= 0 && (ctx.body[i].type !==
-                    C.Type.NewLine); --i) {
+        var expandableCount = 0;
+        for (i = ctx.idx; i >= 0 && (ctx.body[i].type !== C.Type.NewLine); --i) {
             if (expandable(ctx.body[i])) {
-                ++n;
+                ++expandableCount;
             }
 
             // Calculate width BEFORE justifying.
@@ -319,29 +319,38 @@ module NewlineModel {
                 ctx.body[i].w = ctx.body[i + 1].x - ctx.body[i].x;
             }
         }
-        if (n) {
-            var lw = ctx.maxX - 3 - ctx.curr.x;
-            var nw = lw/n;
-            if (fullJustify) {
-                lw = ctx.maxX - ctx.curr.x;
-                nw = lw/n;
+        if (expandableCount) {
+            var expansionRemaining: number;
+            var avgExpansion: number;
+            if (ctx.curr.x > ctx.maxX) {
+                // This is possible when a single bar's minimum size exceeds maxX.
+                // In this case, we're contracting (i.e., avgExpansion < 0)
+                expansionRemaining = ctx.maxX - ctx.curr.x;
+                avgExpansion = expansionRemaining/expandableCount;
             } else {
-                var weight = C.renderUtil.sigmoid((nw - ctx.maxX/80)/20)*2/3;
-                nw = (1 - weight)*nw;
-                lw = nw * n;
+                var expansionRemainingGuess = ctx.maxX - 3 - ctx.curr.x;
+                var avgExpansionGuess = expansionRemainingGuess/expandableCount;
+                var weight = C.renderUtil.sigmoid((avgExpansionGuess - ctx.maxX/80)/20)*2/3;
+                avgExpansion = (1 - weight)*avgExpansionGuess;
+                expansionRemaining = avgExpansion * expandableCount;
             }
-            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
-                if (expandable(ctx.body[i])) {
-                    lw -= nw;
-                }
-                ctx.body[i].x = ctx.body[i].x + lw;
-            }
+            var totalSpaceLeft = ctx.maxX - (ctx.curr.x + expansionRemaining);
 
             for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine; --i) {
+                if (expandable(ctx.body[i])) {
+                    expansionRemaining -= avgExpansion;
+                }
+                ctx.body[i].x = ctx.body[i].x + expansionRemaining;
+            }
+
+            for (i = ctx.idx; i >= 0 && ctx.body[i].type !== C.Type.NewLine && ctx.body[i].type !== C.Type.Begin; --i) {
                 if (ctx.body[i].type === C.Type.Barline) {
                     NewlineModel.centerWholeBarRests(ctx.body, i);
                 }
             }
+            invariant(Math.abs(expansionRemaining) < 0.001, "expansionRemaining was not calculated correctly.");
+            invariant((<any>ctx.body[i]).staveW, "Expected either BeginModel or NewlineModel");
+            (<any>ctx.body[i]).staveW -= totalSpaceLeft;
         }
 
         function expandable(c: Model) {
