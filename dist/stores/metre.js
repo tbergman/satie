@@ -131,7 +131,7 @@ function clearExcessBeats(currNote, excessBeats, ctx) {
     var after = ctx.idx + replaceWith.length;
     if (!currNote.isRest) {
         for (var i = ctx.idx; i < after - 1; ++i) {
-            ctx.body[i].note.tieds = _.map(ctx.body[i].note.chord, function (n) {
+            ctx.body[i].note.tieds = _.map(ctx.body[i].note.chord, function () {
                 return {
                     type: 0 /* Start */
                 };
@@ -337,31 +337,31 @@ function wholeNote(ctx) {
     return wholeNotePatterns[tsName];
 }
 exports.wholeNote = wholeNote;
-var _512 = C.NoteUtil.makeDuration({ count: 512 });
-var _256 = C.NoteUtil.makeDuration({ count: 256 });
-var _256D = C.NoteUtil.makeDuration({ count: 256, dots: 1 });
-var _128 = C.NoteUtil.makeDuration({ count: 128 });
-var _128D = C.NoteUtil.makeDuration({ count: 128, dots: 1 });
-var _64 = C.NoteUtil.makeDuration({ count: 64 });
-var _64D = C.NoteUtil.makeDuration({ count: 64, dots: 1 });
-var _32 = C.NoteUtil.makeDuration({ count: 32 });
-var _32D = C.NoteUtil.makeDuration({ count: 32, dots: 1 });
-var _16 = C.NoteUtil.makeDuration({ count: 16 });
-var _16D = C.NoteUtil.makeDuration({ count: 16, dots: 1 });
-var _16DD = C.NoteUtil.makeDuration({ count: 16, dots: 2 });
-var _8 = C.NoteUtil.makeDuration({ count: 8 });
-var _8D = C.NoteUtil.makeDuration({ count: 8, dots: 1 });
-var _8DD = C.NoteUtil.makeDuration({ count: 8, dots: 2 });
-var _4 = C.NoteUtil.makeDuration({ count: 4 });
-var _4D = C.NoteUtil.makeDuration({ count: 4, dots: 1 });
-var _4DD = C.NoteUtil.makeDuration({ count: 4, dots: 2 });
-var _2 = C.NoteUtil.makeDuration({ count: 2 });
-var _2D = C.NoteUtil.makeDuration({ count: 2, dots: 1 });
-var _2DD = C.NoteUtil.makeDuration({ count: 2, dots: 2 });
-var _1 = C.NoteUtil.makeDuration({ count: 1 });
-var _1D = C.NoteUtil.makeDuration({ count: 1, dots: 1 });
-var _1DD = C.NoteUtil.makeDuration({ count: 1, dots: 2 });
-var _05 = C.NoteUtil.makeDuration({ count: 1 / 2 });
+var _512 = makeDuration({ count: 512 });
+var _256 = makeDuration({ count: 256 });
+var _256D = makeDuration({ count: 256, dots: 1 });
+var _128 = makeDuration({ count: 128 });
+var _128D = makeDuration({ count: 128, dots: 1 });
+var _64 = makeDuration({ count: 64 });
+var _64D = makeDuration({ count: 64, dots: 1 });
+var _32 = makeDuration({ count: 32 });
+var _32D = makeDuration({ count: 32, dots: 1 });
+var _16 = makeDuration({ count: 16 });
+var _16D = makeDuration({ count: 16, dots: 1 });
+var _16DD = makeDuration({ count: 16, dots: 2 });
+var _8 = makeDuration({ count: 8 });
+var _8D = makeDuration({ count: 8, dots: 1 });
+var _8DD = makeDuration({ count: 8, dots: 2 });
+var _4 = makeDuration({ count: 4 });
+var _4D = makeDuration({ count: 4, dots: 1 });
+var _4DD = makeDuration({ count: 4, dots: 2 });
+var _2 = makeDuration({ count: 2 });
+var _2D = makeDuration({ count: 2, dots: 1 });
+var _2DD = makeDuration({ count: 2, dots: 2 });
+var _1 = makeDuration({ count: 1 });
+var _1D = makeDuration({ count: 1, dots: 1 });
+var _1DD = makeDuration({ count: 1, dots: 2 });
+var _05 = makeDuration({ count: 1 / 2 });
 var allNotes = [_1, _2D, _2, _4DD, _4D, _4, _8DD, _8D, _8, _16DD, _16D, _16, _32D, _32, _64D, _64, _128D, _128, _256D, _256, _512];
 var beamingPatterns = {
     "1/16": [_16],
@@ -465,3 +465,12 @@ var wholeNotePatterns = {
 })(exports.Beaming || (exports.Beaming = {}));
 var Beaming = exports.Beaming;
 ;
+function makeDuration(spec) {
+    "use strict";
+    return {
+        count: spec.count,
+        dots: spec.dots || 0,
+        tuplet: spec.tuplet || null,
+        displayTuplet: null
+    };
+}

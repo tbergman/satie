@@ -58,27 +58,6 @@ export interface IAccidentals {
     [key: string]:      number
 }
 
-export interface IAnnotationResult {
-    cursor:             IVisualCursor;
-    operations:         number;
-    resetY:             boolean;
-    skip:               boolean;
-    success:            boolean;
-}
-
-/** 
- * Options to pass to Context.annotate and related annotation functions.
- * 
- * @deprecated
- */
-export interface IAnnotationOpts {
-    cursor?:            IVisualCursor;
-    cursorBar?:         number;
-    cursorBeat?:        number;
-    cursorStave?:       number;
-    pointerData?:       IPointerData;
-};
-
 /** 
  * The stupid enumeration is the way it because I didn't know how to make a type
  * that is either a number or variable.
@@ -94,21 +73,6 @@ export enum BeamCount {
     Seven               = 7,
     Eight               = 8,
     Nine                = 9
-}
-
-/** 
- * Standard clefs or sets of clefs.
- * 
- * TODO(jnetterf): Deprecate this in favour of MusicXML.
- */
-export enum Clef {
-    Treble              = 0,
-    Bass                = 1,
-    Alto                = 2,
-    Tenor               = 3,
-    Piano               = 4,
-    Choral              = 5,
-    TrebleDrums         = 6,
 }
 
 /** 
@@ -641,19 +605,12 @@ export interface IInstrument {
     /** 
      * The standard clef or clef set for an instrument.
      */
-    clef:       Clef;
+    clef:       string[];
 
     /** 
      * The 0-indexed MIDI program for the instrument.
      */
     program:    number;
-
-    /** 
-     * In Lilypond, instruments are set like
-     *      \set Staff.midiInstrument = #"glockenspiel"
-     * Names are obtained from http://lilypond.org/doc/v2.17/Documentation/notation/midi-instruments
-     */
-    lilypond:   string;
 }
 
 export class InvalidDurationError {
@@ -728,7 +685,7 @@ export enum IterationStatus {
     RetryFromEntry                  = 90
 };
 
-export interface ILocation {
+export interface ITime {
     /** 
      * MSD of cursor position, counting from 1.
      */
@@ -748,32 +705,32 @@ export interface ILocation {
     endMarker?: boolean;
 }
 
-export class Location implements ILocation {
+export class Time implements ITime {
     bar:        number;
     division:   number;
     endMarker:  boolean;
 
-    eq(b: ILocation) {
+    eq(b: ITime) {
         return this.bar === b.bar && this.division === b.division;
     }
 
-    lt(b: ILocation) {
+    lt(b: ITime) {
         return this.bar < b.bar || this.bar === b.bar && this.division < b.division;
     }
 
-    le(b: ILocation) {
+    le(b: ITime) {
         return this.bar < b.bar || this.bar === b.bar && this.division <= b.division;
     }
 
-    ge(b: ILocation) {
+    ge(b: ITime) {
         return this.bar > b.bar || this.bar === b.bar && this.division >= b.division;
     }
 
-    gt(b: ILocation) {
+    gt(b: ITime) {
         return this.bar > b.bar || this.bar === b.bar && this.division > b.division;
     }
 
-    constructor(opts: ILocation) {
+    constructor(opts: ITime) {
         this.bar = opts.bar;
         this.division = opts.division;
         this.endMarker = opts.endMarker;
@@ -783,16 +740,6 @@ export class Location implements ILocation {
 export var log2     = Math.log(2);
 
 export var MAX_NUM  = 1000000000;
-
-export interface INotation {
-    glyph:          string;
-    noDirection:    boolean;
-    key?:           string;
-    x:              number;
-    y:              number;
-    scale:          number;
-    style?:         any;
-};
 
 export var noteNames =
     ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F",
@@ -820,18 +767,6 @@ export class MetreContext {
             this.endMarker = other.endMarker || false;
         }
     }
-}
-
-export interface IMidiEvent {
-    type:       MidiEventType;
-    note:       number;
-    channel:    number;
-    velocity:   number;
-}
-
-export enum MidiEventType {
-    NoteOn      = 0,
-    NoteOff     = 1
 }
 
 /** 
@@ -878,7 +813,7 @@ export interface IPart {
     /**
      * Number of staves this part owns.
      */
-    staveCount:                     number;
+    staveCount:                 number;
 };
 
 /** 
@@ -955,16 +890,6 @@ export interface IPlaybackStore {
     bpm:                        number;
     playing:                    boolean;
     ready:                      boolean;
-}
-
-export enum PreviewMode {
-    ExcludePreviews             = 0,
-    IncludePreviews             = 1
-}
-
-export interface IPointerAction {
-    mouseData:                  IPointerData;
-    fn:                         (obj: Model, ctx: Annotator.Context) => IterationStatus;
 }
 
 export interface IPointerData {
@@ -1077,31 +1002,9 @@ export interface ISimpleTimeSignature {
 };
 
 /** 
- * A user, directly from the server.
- */
-export interface IUser {
-    /** 
-     * Google ID
-     */
-    userId:                 string;
-
-    /** 
-     * MongoDB id
-     */
-    _id:                    string;
-
-    identity: {
-        id:                 string;
-        displayName:        string;
-    };
-
-    whitelisted:            boolean;
-};
-
-/** 
  * The solid blue line on the page is the VisualCursor.
  */
-export interface IVisualCursor extends ILocation {
+export interface IVisualCursor extends ITime {
     /** 
      * Object directly after the cursor. This information is added as part
      * of the annotation process, and is not guaranteed to exist until after
@@ -1130,22 +1033,6 @@ export module NoteUtil {
     "use strict";
 
     /** 
-     * Creates a simple realization of an IDuration
-     * 
-     * @param spec
-     */
-    export function makeDuration(spec: IDurationSpec): IDuration {
-        "use strict";
-
-        return {
-            count:          spec.count,
-            dots:           spec.dots || 0,
-            tuplet:         spec.tuplet || null,
-            displayTuplet:  null
-        };
-    }
-
-    /** 
      * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
      */
     export function pitchToMidiNumber(p: IPitch) {
@@ -1156,97 +1043,6 @@ export module NoteUtil {
         return base +
             (p.octave || 0)*12 +
             (p.alter  || 0);
-    }
-
-    export var noteToVal: { [key: string]: number } = {
-        c: 0,
-        d: 2,
-        e: 4,
-        f: 5,
-        g: 7,
-        a: 9,
-        b: 11
-    }; // c:12
-
-    export var valToNote = _.invert(noteToVal);
-
-    /** 
-     * Given a pitch, computes the midi note(s) (number of semitones where 60 is middle C).
-     */
-    export function midiNumberToPitch(n: number, ctx: Annotator.Context): IPitch {
-        "use strict";
-
-        // Notes are easiest to read and to pick when they are spelled according to the
-        // following conventions:
-        //  - Use the most familiar intervals -- perfect, minor, and major -- rather than augmented
-        //    or diminished intervals (IMPLEMENTED)
-        //  - Chromatic-scale figures use sharps to ascend, flats to descend (TODO)
-        //  - Spell stepwise figures as a scale, i.e., as adjacent pitch letters (TODO)
-        //
-        //     -- Behind Bars by Elaine Gould, p. 85
-        var key = ctx.attributes.keySignature;
-
-        // Some notes are only aug or dim, never p/M/m, so we tend to give sharps to Cmaj and keys
-        // with sharps, and flats to Amin and keys with flats. (This looks backwards here -- flats
-        // have a higher number than sharps. That's because tendency is in terms of the base note!)
-        var tendency = key.fifths >= 0 ? 0 : 1;
-
-        var idealStepsPerInterval: {[key: number]: number} = {
-            0:  0,              // Perfect unison
-            1:  0 + tendency,   // Augmented unison or diminished second
-            2:  1,              // Perfect second
-            3:  2,              // Minor third
-            4:  2,              // Major third
-            5:  3,              // Perfect fourth
-            6:  3 + tendency,   // Tritone (Augmented fourth or dimished fifth)
-            7:  4,              // Perfect fifth
-            8:  5,              // Minor sixth (Augmented fifth is fairly common though)
-            9:  5,              // Major sixth
-            10: 6,              // Minor seventh
-            11: 6               // Major seventh
-        };
-
-        // We avoid negative modulos.
-        // MXFIX: mode should be an enum!
-        var pitchS = NoteUtil.keyCircle[
-                NoteUtil.circleOffsetByMode[<any>key.mode] + key.fifths];
-
-        var pitch: IPitch = {
-            alter:  pitchS[1] === "#" ? 1 : (pitchS[1] === "b" ? -1 : 0),
-            octave: 0,
-            step:   pitchS[0]
-        };
-        var halfStepsFromScaleRoot = (((n - pitchToMidiNumber(pitch)) % 12) + 12) % 12;
-
-        var idealSteps = idealStepsPerInterval[halfStepsFromScaleRoot];
-        var notesInv: {[key: string]: number} = {
-            "C": 0,
-            "D": 1,
-            "E": 2,
-            "F": 3,
-            "G": 4,
-            "A": 5,
-            "B": 6
-        };
-        var notes = _.invert(notesInv);
-
-        var base = notes[(notesInv[pitch.step] + idealSteps) % 7];
-
-        // Add accidental
-        var acc = -positiveMod(pitchToMidiNumber({octave: 0, alter: 0, step: base}) - n, 12) || null;
-        if (acc < -6) {
-            acc += 12;
-        }
-
-        return {
-            octave: Math.floor(n/12 - 4),
-            alter:  acc,
-            step:   base
-        };
-    }
-
-    export function positiveMod(base: number, mod: number) {
-        return ((base % mod) + mod) % mod;
     }
 
     export function getAccidentals(key: MusicXML.Key) {
@@ -1267,28 +1063,9 @@ export module NoteUtil {
 
     export var flatCircle = "BEADGCF";
     export var sharpCircle = "FCGDAEB";
-
-    export var keyCircle = [
-        "Fb", "Cb", "Gb", "Db", "Ab", "Eb", "Bb",
-        "F ", "C ", "G ", "D ", "A ", "E ", "B ",
-        "F#", "C#", "G#", "D#", "A#", "E#"];
-    export var circleOffsetByMode: {[key: string]: number} = { // MXFIX: enum plz
-        major: 8,
-        minor: 11
-    };
-
-    export function isPitch(k: IPitch, name: string, acc?: number) {
-        return k.step === name && (k.alter || 0) === (acc || 0);
-    }
 }
 
 export var InvalidAccidental = 9001;
-
-export interface ISynthCallback {
-    tmpRef:     string;
-    forExport:  boolean;
-    cb:         string;
-}
 
 export module JSONx {
     "use strict";
@@ -1299,29 +1076,6 @@ export module JSONx {
     export function hash<T>(obj: T): number {
         "use strict";
         return strHash(JSON.stringify(obj));
-    }
-}
-
-export function deepAssign<T>(a: T, b: T):T {
-    "use strict";
-    if (a instanceof Array || b instanceof Array) {
-        var retArr: any[] = [];
-        var aArr:   any[] = (<any>a);
-        var bArr:   any[] = (<any>b);
-        for (var i = 0; i < Math.max(a ? aArr.length : 0, b ? bArr.length : 0); ++i) {
-            retArr.push(deepAssign(a ? aArr[i] : null, b ? bArr[i] : null));
-        }
-        return (<any>retArr);
-    } else if (a instanceof Object || b instanceof Object) {
-        var ret: T = a ? JSONx.clone(a) : (<T>{});
-        for (var key in b) {
-            if (b.hasOwnProperty(key)) {
-                (<any>ret)[key] = deepAssign((<any>ret)[key], (<any>b)[key]);
-            }
-        }
-        return ret;
-    } else {
-        return (a === undefined) ? b : a;
     }
 }
 

@@ -102,7 +102,7 @@ class PlaceholderModel extends Model {
         //     annotation process will eventually either make (1) true, or decide that no
         //     model is required at this index). If we haven't gotten to writing the
         //     starting beat, conservatively assume this placeholder is needed.
-        var loc = new C.Location(ctx.loc);
+        var loc = new C.Time(ctx.loc);
         var usefulItems = ctx.findVertical(obj => obj.type !== C.Type.Placeholder || !obj.ctxData || !loc.eq(obj.ctxData));
         if (!usefulItems.length) {
             return ctx.eraseCurrent();

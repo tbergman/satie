@@ -66,7 +66,7 @@ var DirectionModel = (function (_super) {
     DirectionModel.prototype.recordMetreDataImpl = function (mctx) {
         this.ctxData = new C.MetreContext(mctx);
     };
-    DirectionModel.prototype.annotateImpl = function (ctx) {
+    DirectionModel.prototype.annotateImpl = function () {
         return 10 /* Success */;
     };
     return DirectionModel;

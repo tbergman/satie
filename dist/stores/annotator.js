@@ -33,7 +33,7 @@ var Context = (function () {
             }
         }
     }
-    Context.prototype.annotate = function (from, cursor, disableRecording, dispatcher) {
+    Context.prototype.annotate = function (from, cursor, disableRecording) {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
         Context._ANNOTATING = true;
         var error = null;
@@ -253,7 +253,7 @@ var Context = (function () {
         recordMetreData(this.score.parts, this._voices);
         return 10 /* Success */;
     };
-    Context.prototype.insertPast = function (obj, index, merge) {
+    Context.prototype.insertPast = function (obj, index) {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
         var exitCode = this.idx === index ? 20 /* RetryCurrent */ : 90 /* RetryFromEntry */;
@@ -348,7 +348,7 @@ var Context = (function () {
                         }
                     }
                     if (replaceWith && replaceWith.length && count === 0 && ctxStartData) {
-                        while (startPriority > 300 /* Barline */ && replaceWith[0].priority > 300 /* Barline */ && voice.body[start + offset] && voice.body[start + offset].ctxData && voice.body[start + offset].priority > 300 /* Barline */ && new C.Location(voice.body[start + offset].ctxData).lt(ctxStartData)) {
+                        while (startPriority > 300 /* Barline */ && replaceWith[0].priority > 300 /* Barline */ && voice.body[start + offset] && voice.body[start + offset].ctxData && voice.body[start + offset].priority > 300 /* Barline */ && new C.Time(voice.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
@@ -429,10 +429,10 @@ var Context = (function () {
     Context.prototype._realign = function (start, end) {
         var PlaceholderModel = require("./placeholder");
         var bodies = this._voices.filter(function (s) { return !!s.body; }).map(function (s) { return s.body; });
-        var cDivisions = bodies.map(function (b) { return 0; });
-        var placeholders = bodies.map(function (b) { return []; });
-        var reals = bodies.map(function (b) { return []; });
-        var aligned = bodies.map(function (b) { return []; });
+        var cDivisions = bodies.map(function () { return 0; });
+        var placeholders = bodies.map(function () { return []; });
+        var reals = bodies.map(function () { return []; });
+        var aligned = bodies.map(function () { return []; });
         for (var i = start; i <= end; ++i) {
             for (var j = 0; j < bodies.length; ++j) {
                 if (this._assertionPolicy !== 0 /* Strict */ && !bodies[j][i]) {
@@ -773,7 +773,7 @@ var Priv;
     Priv._recordMetreData = _recordMetreData;
     function _cpysnapshot(ctx, layout) {
         "use strict";
-        _.each(layout, function (v, attrib) {
+        _.forEach(Object.keys(layout), function (attrib) {
             if (layout[attrib] === null) {
                 return;
             }
@@ -781,7 +781,7 @@ var Priv;
                 case "lines":
                     ctx.lines = layout.lines;
                     ctx.line = layout.lines.length - 1;
-                    _cpyline(ctx, ctx.lines[ctx.line], 0 /* StartOfLine */);
+                    _cpyline(ctx, ctx.lines[ctx.line]);
                     break;
                 case "fontSize":
                     ctx.fontSize = layout.fontSize;
@@ -820,7 +820,7 @@ var Priv;
                 this._assertionPolicy = assertionPolicy;
                 recordMetreData(parent.score.parts, this._voices);
                 this._components = _.map(voices, function (voice, idx) {
-                    var part = _.find(parent.score.parts, function (part) { return _.any(part.containsVoice, function (true_, oVoice) { return voices[oVoice] === voice; }); });
+                    var part = _.find(parent.score.parts, function (part) { return _.any(Object.keys(part.containsVoice), function (oVoice) { return (voices[oVoice] === voice); }); });
                     var partVoices = _.chain(part.containsVoice).keys().map(function (a) { return parseInt(a, 10); }).sort().map(function (oVoice) { return voices[oVoice]; }).value();
                     var idxInPart = _.indexOf(partVoices, voice);
                     return new Iterator(from, voice, idx, cursor, part, idxInPart, _this._assertionPolicy);
@@ -869,16 +869,16 @@ var Priv;
                 else {
                     filtered = true;
                 }
-                _cpyline(this._parent, origSnapshot, 1 /* MiddleOfLine */);
+                _cpyline(this._parent, origSnapshot);
             }
             this._assertOffsetsOK();
             if (maxStatus <= 10 /* Success */) {
-                this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
+                this._rectify(this._parent, componentSnapshots, filtered);
             }
             this._assertOffsetsOK();
             return maxStatus;
         };
-        MultiIterator.prototype._rectify = function (ctx, origSnapshot, componentSnapshots, filtered) {
+        MultiIterator.prototype._rectify = function (ctx, componentSnapshots, filtered) {
             ctx.bar = componentSnapshots[0].bar;
             ctx.barKeys = componentSnapshots[0].barKeys || [];
             ctx.barlineX = componentSnapshots[0].barlineX;
@@ -906,7 +906,7 @@ var Priv;
                 ctx.x = fn(ctx.x, componentSnapshots[i].x);
             }
             var minX = Infinity;
-            var otherContexts = ctx.findVertical(function (c) { return true; });
+            var otherContexts = ctx.findVertical(function () { return true; });
             for (var i = 0; i < otherContexts.length; ++i) {
                 minX = Math.min(otherContexts[i].x, minX);
             }
@@ -1012,7 +1012,7 @@ var Priv;
             }
         };
         MultiIterator.prototype._rewind = function (type) {
-            var nextLoc = new C.Location(MIN_LOCATION);
+            var nextLoc = new C.Time(MIN_LOCATION);
             var i;
             for (i = 0; i < this._components.length; ++i) {
                 this._components[i].rewind();
@@ -1027,17 +1027,17 @@ var Priv;
         };
         MultiIterator.prototype._rollbackLine = function (i) {
             this._parent.line = i;
-            _cpyline(this._parent, this._parent.lines[this._parent.line], 0 /* StartOfLine */);
+            _cpyline(this._parent, this._parent.lines[this._parent.line]);
         };
         MultiIterator.prototype._increment = function () {
-            var nextLoc = new C.Location(MAX_LOCATION);
+            var nextLoc = new C.Time(MAX_LOCATION);
             var nextPriority = C.MAX_NUM;
             this._assertOffsetsOK();
             for (var i = 0; i < this._components.length; ++i) {
                 var pri = this._components[i].nextPriority;
                 var loc = this._components[i].nextLocation;
                 if (pri !== C.MAX_NUM && nextLoc.ge(loc) && nextPriority > pri) {
-                    nextLoc = new C.Location(loc);
+                    nextLoc = new C.Time(loc);
                     nextPriority = pri;
                 }
             }
@@ -1126,7 +1126,7 @@ var Priv;
         Iterator.prototype.reset = function (from) {
             this._idx = -1;
             do {
-                this._location = new C.Location(this._body[++this._idx].ctxData);
+                this._location = new C.Time(this._body[++this._idx].ctxData);
             } while ((from.bar !== 1 || from.division !== 0) && (this._location.lt(from) || this._location.eq(from) && (!this.curr || this.curr.priority <= 140 /* Begin */ || this.curr.priority === 300 /* Barline */)));
             this._updateSubctx();
         };
@@ -1177,7 +1177,7 @@ var Priv;
             while (i > 0 && this._body[i].priority !== priority) {
                 --i;
             }
-            return new C.Location(this._body[i].ctxData);
+            return new C.Time(this._body[i].ctxData);
         };
         Iterator.prototype.markDone = function () {
             this._idx = this._body.length;
@@ -1268,7 +1268,7 @@ var Priv;
         body: [],
         instrument: null
     };
-    function _cpyline(ctx, line, mode) {
+    function _cpyline(ctx, line) {
         "use strict";
         if (!!line.accidentalsByStaff) {
             ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff);
@@ -1301,16 +1301,11 @@ var Priv;
             ctx.y = line.y;
         }
     }
-    var NewlineMode;
-    (function (NewlineMode) {
-        NewlineMode[NewlineMode["StartOfLine"] = 0] = "StartOfLine";
-        NewlineMode[NewlineMode["MiddleOfLine"] = 1] = "MiddleOfLine";
-    })(NewlineMode || (NewlineMode = {}));
-    var MAX_LOCATION = new C.Location({
+    var MAX_LOCATION = new C.Time({
         bar: C.MAX_NUM,
         division: C.MAX_NUM
     });
-    var MIN_LOCATION = new C.Location({
+    var MIN_LOCATION = new C.Time({
         bar: -1,
         division: -1
     });

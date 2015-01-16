@@ -18,7 +18,6 @@
 
 import Model                = require("./model");
 
-import Annotator            = require("./annotator");
 import C                    = require("./contracts");
 
 /**
@@ -94,7 +93,7 @@ class DirectionModel extends Model implements C.MusicXML.Direction {
         this.ctxData = new C.MetreContext(mctx);
     }
 
-    annotateImpl(ctx: Annotator.Context): C.IterationStatus {
+    annotateImpl(): C.IterationStatus {
         return C.IterationStatus.Success;
     }
 }

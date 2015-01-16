@@ -210,10 +210,10 @@ var BarlineModel;
         if (inTwo && inTwo.type === 300 /* Barline */) {
             ctx.body[jdx] = new BarlineModel({ barStyle: { data: inTwo.barStyle.data } }, true, engraved);
             inTwo.barStyle.data = type;
-            ctx.insertPast(inTwo, null, true);
+            ctx.insertPast(inTwo, null);
             return;
         }
-        ctx.insertPast(new BarlineModel({ barStyle: { data: type } }, true, engraved), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: { data: type } }, true, engraved), null);
     }
     ;
 })(BarlineModel || (BarlineModel = {}));

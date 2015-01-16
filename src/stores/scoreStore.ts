@@ -318,7 +318,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
             division: context.lines ? context.lines[context.line].division : 0
         };
 
-        var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
+        var result = context.annotate(location, cursor, disableRecording);
 
         if (ScoreStoreStore.PROFILER_ENABLED) {
             console.log("I broke the profiler");
@@ -515,6 +515,7 @@ class ScoreStoreStore extends TSEE implements C.IScoreStore, C.IApi {
      * of Models. A voice can "switch" staves, but it must remain in the same part.
      */
     private _voices:                    C.IVoice[]                  = null;
+    // private _staves:                    Model[]                     = null;
 
     private _header:                    C.ScoreHeader               = null;
 

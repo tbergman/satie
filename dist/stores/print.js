@@ -57,10 +57,34 @@ var PrintModel = (function (_super) {
     };
     PrintModel.prototype.annotateImpl = function (ctx) {
         var defaultPrint = C.getPrint(ctx._layout.header);
-        var spec = C.deepAssign(this, defaultPrint);
+        var spec = deepAssign(this, defaultPrint);
         ctx.print = new C.Print(spec);
         return 10 /* Success */;
     };
     return PrintModel;
 })(Model);
+function deepAssign(a, b) {
+    "use strict";
+    if (a instanceof Array || b instanceof Array) {
+        var retArr = [];
+        var aArr = a;
+        var bArr = b;
+        for (var i = 0; i < Math.max(a ? aArr.length : 0, b ? bArr.length : 0); ++i) {
+            retArr.push(deepAssign(a ? aArr[i] : null, b ? bArr[i] : null));
+        }
+        return retArr;
+    }
+    else if (a instanceof Object || b instanceof Object) {
+        var ret = a ? C.JSONx.clone(a) : {};
+        for (var key in b) {
+            if (b.hasOwnProperty(key)) {
+                ret[key] = deepAssign(ret[key], b[key]);
+            }
+        }
+        return ret;
+    }
+    else {
+        return (a === undefined) ? b : a;
+    }
+}
 module.exports = PrintModel;

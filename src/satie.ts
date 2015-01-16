@@ -18,7 +18,6 @@
 
 /// <reference path="../typings/tsd.d.ts" />
 
-export import MusicXML  = require("musicxml-interfaces");
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import _                = require("lodash");
@@ -29,6 +28,8 @@ import C                = require("./stores/contracts");
 import Dispatcher       = require("./stores/dispatcher");
 import Renderer         = require("./renderer/renderer");
 import ScoreStore       = require("./stores/scoreStore");
+
+export var MusicXML = C.MusicXML;
 
 /*---- Public Interface -------------------------------------------------------------------------*/
 

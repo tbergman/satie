@@ -30,7 +30,7 @@ var Wedge = (function (_super) {
         ];
         return React.createElement("g", null, React.createElement(Line.Component, { x1: spec.x, x2: spec.x + 0.8, y1: (isCrec ? yIn : yOut)[0], y2: (isCrec ? yOut : yIn)[0], stroke: "#000000", strokeWidth: 0.04 }), React.createElement(Line.Component, { x1: spec.x, x2: spec.x + 0.8, y1: (isCrec ? yIn : yOut)[1], y2: (isCrec ? yOut : yIn)[1], stroke: "#000000", strokeWidth: 0.04 }));
     };
-    Wedge.prototype.shouldComponentUpdate = function (nextProps, nextState) {
+    Wedge.prototype.shouldComponentUpdate = function (nextProps) {
         var oldHash = this._hash;
         this._hash = C.JSONx.hash(nextProps);
         return oldHash !== this._hash;

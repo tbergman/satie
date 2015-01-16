@@ -89,7 +89,7 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var viewbox = "0 0 " + width10s + " " + height10s;
 
         var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
-        _.map(parts, (part: C.IPart, idx: number) => {
+        _.map(parts, (part: C.IPart) => {
             _.chain(part.containsVoice).keys().map(k => parseInt(k, 10)).sort().map(voice => voices[<any>voice]).map(null);
         });
         var rawPages = _.map(pages, (page: IPage, pidx: number) => {
@@ -249,7 +249,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         var foundObj: Model = null;
         var foundIdx: number;
         var ctxData: { division: number; bar: number };
-        var ctx = this.getCtx();
         var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var ctx = this.getCtx();
@@ -342,29 +341,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
         return null;
     }
 
-    _elementsInBBox(box: ClientRect, mouse: C.IMouse): Array<Model> {
-        var ret: Array<Model> = [];
-
-        var ctx = this.getCtx();
-        for (var h = 0; h < this.props.voices.length; ++h) {
-            var body = this.props.voices[h].body;
-            if (!body) {
-                continue;
-            }
-            var inRange = function(min: number, val: number, max: number)  {return min < val && val < max;};
-
-            for (var i = ctx.pageStarts[mouse.page]; i < body.length && body[i].type !== C.Type.NewPage; ++i) {
-                var item = body[i];
-                if (inRange(box.top - 1, item.y,
-                            box.bottom + 1) &&
-                        inRange(box.left, item.x, box.right)) {
-                    ret.push(item);
-                }
-            }
-        }
-
-        return ret;
-    }
     getInitialState() {
         return {
             mouse: {x: 0, y: 0},
@@ -376,10 +352,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     getPositionForMouse(event: React.MouseEvent): Renderer.IPosInfo {
         var target: Element;
         if (useGL) {
-            var ctx = this.getCtx();
-            var scale40 = ctx.calcFontSize();
-            var print = C.getPrint(ctx._layout.header);
-            var widthMM = print.pageLayout.pageWidth;
             target = <Element> event.target;
             var rect = target.getBoundingClientRect();
 
@@ -430,7 +402,6 @@ class Renderer extends TypedReact.Component<Renderer.IProps, Renderer.IState> {
     }
 
     handleMouseMoveThrottled = _.throttle((mouse: Renderer.IPosInfo) => {
-        var data = this._getPointerData(mouse);
         this.setState({
             mouse: mouse
         });
@@ -565,7 +536,7 @@ class LineContainer extends TypedReact.Component<ILineProps, ILineState> {
         return <!g>{this.props.generate()}</g>;
     }
 
-    shouldComponentUpdate(nextProps: ILineProps, nextState: ILineState) {
+    shouldComponentUpdate(nextProps: ILineProps) {
         var songDirty = this.props.store && this.props.store.dirty ||
                 nextProps.mainVoice !== this.props.mainVoice;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);

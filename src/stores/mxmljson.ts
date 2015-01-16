@@ -99,6 +99,7 @@ function extractMXMLPartsAndVoices(mxmlJson: C.MusicXML.ScoreTimewise): {voices:
     var idxToPart: {[key: number]: string}  = {};
     var parts: C.IPart[]                    = [];
     var voices: C.IVoice[]                  = [];
+    // var staves: Model[]                     = [];
     _.forEach(mxmlJson.partList.scoreParts, (part, idx) => {
         idxToPart[parts.length]             = part.id;
         parts.push({

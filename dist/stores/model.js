@@ -194,16 +194,12 @@ var Model = (function () {
         get: function () {
             return null;
         },
-        set: function (n) {
-        },
         enumerable: true,
         configurable: true
     });
     Object.defineProperty(Model.prototype, "priority", {
         get: function () {
             return this.type;
-        },
-        set: function (p) {
         },
         enumerable: true,
         configurable: true

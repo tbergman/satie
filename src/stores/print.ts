@@ -73,10 +73,33 @@ class PrintModel extends Model implements C.MusicXML.PrintComplete {
 
     annotateImpl(ctx: Annotator.Context): C.IterationStatus {
         var defaultPrint                = C.getPrint(ctx._layout.header);
-        var spec                        = C.deepAssign<C.MusicXML.Print>(this, defaultPrint);
+        var spec                        = deepAssign<C.MusicXML.Print>(this, defaultPrint);
         ctx.print                       = new C.Print(spec);
 
         return C.IterationStatus.Success;
+    }
+}
+
+function deepAssign<T>(a: T, b: T):T {
+    "use strict";
+    if (a instanceof Array || b instanceof Array) {
+        var retArr: any[] = [];
+        var aArr:   any[] = (<any>a);
+        var bArr:   any[] = (<any>b);
+        for (var i = 0; i < Math.max(a ? aArr.length : 0, b ? bArr.length : 0); ++i) {
+            retArr.push(deepAssign(a ? aArr[i] : null, b ? bArr[i] : null));
+        }
+        return (<any>retArr);
+    } else if (a instanceof Object || b instanceof Object) {
+        var ret: T = a ? C.JSONx.clone(a) : (<T>{});
+        for (var key in b) {
+            if (b.hasOwnProperty(key)) {
+                (<any>ret)[key] = deepAssign((<any>ret)[key], (<any>b)[key]);
+            }
+        }
+        return ret;
+    } else {
+        return (a === undefined) ? b : a;
     }
 }
 

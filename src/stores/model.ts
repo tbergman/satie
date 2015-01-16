@@ -125,10 +125,8 @@ class Model {
     }
 
     get revision():     string                  { return null; }
-    set revision(n: string)                     { /* noop */ }
 
     get priority():     C.Type                  { return this.type; }
-    set priority(p: C.Type)                     { /* noop */ }
 
     calcDivisions(ctx: C.MetreContext)          { return 0; }
 

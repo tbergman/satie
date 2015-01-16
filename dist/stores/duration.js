@@ -237,9 +237,6 @@ var DurationModel = (function (_super) {
         get: function () {
             return !this.inBeam && (this.displayCount in DurationModel.countToFlag) && DurationModel.countToFlag[this.displayCount];
         },
-        set: function (a) {
-            assert(false, "Read-only property");
-        },
         enumerable: true,
         configurable: true
     });
@@ -283,9 +280,6 @@ var DurationModel = (function (_super) {
             assert(isFinite(this._divisions));
             return this._divisions;
         },
-        set: function (n) {
-            assert(false, "Read-only property.");
-        },
         enumerable: true,
         configurable: true
     });
@@ -318,7 +312,7 @@ var DurationModel = (function (_super) {
         enumerable: true,
         configurable: true
     });
-    DurationModel.prototype.modelDidLoad = function (body, idx) {
+    DurationModel.prototype.modelDidLoad = function () {
         for (var i = 0; i < this.chord.length; ++i) {
             if (!this.chord[i]) {
                 this.isRest = true;
@@ -407,7 +401,7 @@ var DurationModel = (function (_super) {
                     for (i = 0; i < replaceWith.length; ++i) {
                         replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                         if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                            replaceWith[i].tieds = this.chord.map(function (c) {
+                            replaceWith[i].tieds = this.chord.map(function () {
                                 return {
                                     type: 0 /* Start */
                                 };
@@ -417,7 +411,7 @@ var DurationModel = (function (_super) {
                     for (i = 0; i < addAfterBar.length; ++i) {
                         addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                         if (i + 1 !== addAfterBar.length && !this.isRest) {
-                            replaceWith[i].tieds = this.chord.map(function (c) {
+                            replaceWith[i].tieds = this.chord.map(function () {
                                 return {
                                     type: 0 /* Start */
                                 };
@@ -493,7 +487,7 @@ var DurationModel = (function (_super) {
             ctx.minTopPaddings[this.staff] = Math.max(ctx.minTopPaddings[this.staff], (this.lines[i] - 4) * 10);
         }
         if (!ctx.isBeam && this.inBeam) {
-            ctx.x = this.x + this.getWidth(ctx);
+            ctx.x = this.x + this.getWidth();
             this._handleTie(ctx);
             return 10 /* Success */;
         }
@@ -549,7 +543,7 @@ var DurationModel = (function (_super) {
         }).flatten(true).filter(function (n) { return !!n; }).value();
         this.color = this.temporary ? "#A5A5A5" : (this.selected ? "#75A1D0" : "#000000");
         this.x = ctx.x;
-        ctx.x += this.getWidth(ctx);
+        ctx.x += this.getWidth();
         if (!ctx.isBeam && !this._notes[0].grace) {
             ctx.division = (ctx.loc.division || 0) + this._divisions;
         }
@@ -559,7 +553,7 @@ var DurationModel = (function (_super) {
         }
         return 10 /* Success */;
     };
-    DurationModel.prototype.getWidth = function (ctx) {
+    DurationModel.prototype.getWidth = function () {
         var grace = this._notes[0].grace;
         var baseWidth = grace ? 11.4 : 22.8;
         var accidentalWidth = this._displayedAccidentals ? 9.6 * (grace ? 0.6 : 1.0) : 0;
@@ -697,7 +691,7 @@ var DurationModel = (function (_super) {
             var actual = or3(display ? pitch.displayAlter : null, pitch.alter);
             assert(actual !== undefined);
             if (!ctx.accidentalsByStaff[this.staff]) {
-                return result.map(function (a) { return NaN; });
+                return result.map(function () { return NaN; });
             }
             var generalTarget = or3(ctx.accidentalsByStaff[this.staff][pitch.step], null);
             var target = or3(ctx.accidentalsByStaff[this.staff][pitch.step + pitch.octave], null);
@@ -1055,7 +1049,7 @@ var DurationModel;
         });
         Object.defineProperty(MXMLNote.prototype, "dots", {
             get: function () {
-                return _.times(this._parent.dots, function (idx) { return {}; });
+                return _.times(this._parent.dots, function () { return {}; });
             },
             set: function (dots) {
                 this._parent.dots = dots.length;

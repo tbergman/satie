@@ -78,7 +78,7 @@ var PlaceholderModel = (function (_super) {
         this.ctxData = new C.MetreContext(mctx);
     };
     PlaceholderModel.prototype.annotateImpl = function (ctx) {
-        var loc = new C.Location(ctx.loc);
+        var loc = new C.Time(ctx.loc);
         var usefulItems = ctx.findVertical(function (obj) { return obj.type !== 999 /* Placeholder */ || !obj.ctxData || !loc.eq(obj.ctxData); });
         if (!usefulItems.length) {
             return ctx.eraseCurrent();

@@ -67,12 +67,11 @@ export class Context implements C.MetreContext {
      * 'mutation'. The mutation must be after 'from'. All modifications to voices must go through
      * Annotator.annotate.
      */
-    annotate(from: C.ILocation, cursor: C.IVisualCursor, disableRecording: boolean,
-            dispatcher: C.IDispatcher): C.IAnnotationResult {
+    annotate(from: C.ITime, cursor: C.IVisualCursor, disableRecording: boolean): IAnnotationResult {
         assert(!Context._ANNOTATING, "annotate() may not be called recursively.");
         Context._ANNOTATING                 = true;
         var error: Error                    = null;
-        var result: C.IAnnotationResult;
+        var result: IAnnotationResult;
         assert(from.bar !== 0);
         assert(this._voices, "Staves must be set!");
 
@@ -362,7 +361,7 @@ export class Context implements C.MetreContext {
      * @param index The absolute position to insert an element at.
      *     By default, just before current position.
      */
-    insertPast(obj: Model, index?: number, merge?: boolean): C.IterationStatus {
+    insertPast(obj: Model, index?: number): C.IterationStatus {
         index = (index === null || index === undefined) ? this.idx : index;
         assert(index <= this.idx, "Otherwise, use 'insertFuture'");
 
@@ -480,7 +479,7 @@ export class Context implements C.MetreContext {
                             replaceWith[0].priority > C.Type.Barline &&
                             voice.body[start + offset] && voice.body[start + offset].ctxData &&
                             voice.body[start + offset].priority > C.Type.Barline &&
-                            new C.Location(voice.body[start + offset].ctxData).lt(ctxStartData)) {
+                            new C.Time(voice.body[start + offset].ctxData).lt(ctxStartData)) {
                             ++offset;
                         }
                     }
@@ -573,10 +572,10 @@ export class Context implements C.MetreContext {
     private _realign(start: number, end: number) {
         var PlaceholderModel: typeof PlaceholderModelType = require("./placeholder");
         var bodies = this._voices.filter(s => !!s.body).map(s => s.body);
-        var cDivisions = bodies.map(b => 0);
-        var placeholders = bodies.map(b => <Array<Model>>[]);
-        var reals = bodies.map(b => <Array<Model>>[]);
-        var aligned = bodies.map(b => <Array<Model>>[]);
+        var cDivisions = bodies.map(() => 0);
+        var placeholders = bodies.map(() => <Array<Model>>[]);
+        var reals = bodies.map(() => <Array<Model>>[]);
+        var aligned = bodies.map(() => <Array<Model>>[]);
 
         for (var i = start; i <= end; ++i) {
             for (var j = 0; j < bodies.length; ++j) {
@@ -801,7 +800,7 @@ export class Context implements C.MetreContext {
      * The current beat and bar
      * @scope line
      */
-    loc: C.ILocation = {
+    loc: C.ITime = {
         bar: 1,
         division: 0
     };
@@ -895,8 +894,8 @@ export class Context implements C.MetreContext {
         return serializable;
     }
 
-    private _annotateImpl(from?: C.ILocation, cursor?: C.IVisualCursor, disableRecordings?: boolean):
-            C.IAnnotationResult {
+    private _annotateImpl(from?: C.ITime, cursor?: C.IVisualCursor, disableRecordings?: boolean):
+            IAnnotationResult {
         from = from || { bar: 1, division: 0 };
 
         this._attributes = {};
@@ -1079,6 +1078,14 @@ export enum SplicePolicy {
     Subtractive = 5
 }
 
+export interface IAnnotationResult {
+    cursor:             C.IVisualCursor;
+    operations:         number;
+    resetY:             boolean;
+    skip:               boolean;
+    success:            boolean;
+}
+
 export enum AssertionPolicy {
     Strict = 0,
     NoAssertions = 1
@@ -1203,7 +1210,7 @@ module Priv {
     export function _cpysnapshot(ctx: Context, layout: ICompleteSnapshot) {
         "use strict";
 
-        _.each(layout, (v, attrib) => {
+        _.forEach(Object.keys(layout), attrib => {
             if ((<any>layout)[attrib] === null) {
                 return;
             }
@@ -1211,7 +1218,7 @@ module Priv {
                 case "lines":
                     ctx.lines = layout.lines;
                     ctx.line  = layout.lines.length - 1;
-                    _cpyline(ctx, ctx.lines[ctx.line], NewlineMode.StartOfLine);
+                    _cpyline(ctx, ctx.lines[ctx.line]);
                     break;
                 case "fontSize":    ctx.fontSize   = layout.fontSize;   break;
                 case "maxX":        ctx.maxX       = layout.maxX;       break;
@@ -1228,7 +1235,7 @@ module Priv {
      * Internal. Iterates over a set of bodies in voices and annotates them. Owned by an Annotator.
      */
     export class MultiIterator {
-        constructor(parent: Context, from: C.ILocation, voices: Array<C.IVoice>,
+        constructor(parent: Context, from: C.ITime, voices: Array<C.IVoice>,
                 cursor: C.IVisualCursor, assertionPolicy: AssertionPolicy) {
             this._reset = function reset() {
                 this._parent = parent;
@@ -1240,7 +1247,7 @@ module Priv {
                 recordMetreData(parent.score.parts, this._voices);
                 this._components = _.map(voices, (voice, idx) => {
                     var part: C.IPart   = _.find(parent.score.parts, part =>
-                                            _.any(part.containsVoice, (true_, oVoice) => voices[oVoice] === voice));
+                                            _.any(Object.keys(part.containsVoice), oVoice => (voices[<any> oVoice] === voice)));
                     var partVoices      = _.chain(part.containsVoice).keys().map(a =>
                                             parseInt(a, 10)).sort().map(oVoice => voices[oVoice]).value();
                     var idxInPart       = _.indexOf(partVoices, voice);
@@ -1313,13 +1320,13 @@ module Priv {
                 } else {
                     filtered = true;
                 }
-                _cpyline(this._parent, origSnapshot, NewlineMode.MiddleOfLine); // pop state
+                _cpyline(this._parent, origSnapshot); // pop state
             }
 
             this._assertOffsetsOK();
 
             if (maxStatus <= C.IterationStatus.Success) {
-                this._rectify(this._parent, origSnapshot, componentSnapshots, filtered);
+                this._rectify(this._parent, componentSnapshots, filtered);
             }
 
             this._assertOffsetsOK();
@@ -1333,7 +1340,7 @@ module Priv {
          * @param componentSnapshots the snapshots to merge into the context
          * @param filtered true if at least one placeholder has been removed from componentSnapshots
          */
-        private _rectify(ctx: Context, origSnapshot: ILineSnapshot, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
+        private _rectify(ctx: Context, componentSnapshots: Array<ILineSnapshot>, filtered: boolean) {
             // Most parameters should be the same in all components, so we just pick the first.
             // It may be worthwhile to actually check them for consistency at some point...
             ctx.bar                = componentSnapshots[0].bar;
@@ -1377,7 +1384,7 @@ module Priv {
             // We should usually believe the real (not placeholder) model that reports the smallest number.
             // This can sadly cause some strange (overly large) spacing for Durations that do not line up.
             var minX               = Infinity;
-            var otherContexts      = ctx.findVertical(c => true);
+            var otherContexts      = ctx.findVertical(() => true);
             for (var i = 0; i < otherContexts.length; ++i) {
                 minX               = Math.min(otherContexts[i].x, minX);
             }
@@ -1495,7 +1502,7 @@ module Priv {
         }
 
         private _rewind(type: C.Type) {
-            var nextLoc = new C.Location(MIN_LOCATION);
+            var nextLoc = new C.Time(MIN_LOCATION);
             var i: number;
 
             for (i = 0; i < this._components.length; ++i) {
@@ -1512,11 +1519,11 @@ module Priv {
 
         private _rollbackLine(i: number) {
             this._parent.line = i;
-            _cpyline(this._parent, this._parent.lines[this._parent.line], NewlineMode.StartOfLine);
+            _cpyline(this._parent, this._parent.lines[this._parent.line]);
         }
 
         private _increment() {
-            var nextLoc = new C.Location(MAX_LOCATION);
+            var nextLoc = new C.Time(MAX_LOCATION);
             var nextPriority = C.MAX_NUM;
             this._assertOffsetsOK();
 
@@ -1524,7 +1531,7 @@ module Priv {
                 var pri = this._components[i].nextPriority;
                 var loc = this._components[i].nextLocation;
                 if (pri !== C.MAX_NUM && nextLoc.ge(loc) && nextPriority > pri) {
-                    nextLoc = new C.Location(loc);
+                    nextLoc = new C.Time(loc);
                     nextPriority = pri;
                 }
             }
@@ -1586,7 +1593,7 @@ module Priv {
      * Tracks the position of a body in an PrivIterator. Owned by an PrivIterator.
      */
     class Iterator {
-        constructor(from: C.ILocation, voice: C.IVoice, idx: number,
+        constructor(from: C.ITime, voice: C.IVoice, idx: number,
                 cursor: C.IVisualCursor, part: C.IPart, indexInPart: number,
                 assertionPolicy: AssertionPolicy) {
             this._voice             = voice;
@@ -1641,12 +1648,12 @@ module Priv {
             return status;
         }
 
-        reset(from: C.ILocation) {
+        reset(from: C.ITime) {
             this._idx = -1;
             // Important: If bar === 1, this function resets it to the first element.
             // Otherwise, it resets it to the beginning of a line.
             do {
-                this._location = new C.Location(this._body[++this._idx].ctxData);
+                this._location = new C.Time(this._body[++this._idx].ctxData);
             } while ((from.bar !== 1 || from.division !== 0) &&
                 (this._location.lt(from) || this._location.eq(from) && (!this.curr ||
                 this.curr.priority <= C.Type.Begin || this.curr.priority === C.Type.Barline)));
@@ -1668,7 +1675,7 @@ module Priv {
          * Seek to the location at 'loc' with priority <= 'priority', or if none exists,
          * the location just before 'loc'.
          */
-        rewindSeek(loc: C.Location, priority: number) {
+        rewindSeek(loc: C.Time, priority: number) {
             while (this._idx >= 0 && (
                     !this._body[this._idx].ctxData ||
                     loc.lt(this._body[this._idx].ctxData) ||
@@ -1708,12 +1715,12 @@ module Priv {
         /**
          * Returns the position of the last item with priority 'priority'.
          */
-        lastOf(priority: C.Type): C.Location {
+        lastOf(priority: C.Type): C.Time {
             var i = this._idx;
             while (i > 0 && this._body[i].priority !== priority) {
                 --i;
             }
-            return new C.Location(this._body[i].ctxData);
+            return new C.Time(this._body[i].ctxData);
         }
 
         /**
@@ -1723,7 +1730,7 @@ module Priv {
             this._idx = this._body.length;
         }
 
-        get nextLocation(): C.ILocation {
+        get nextLocation(): C.ITime {
             var next = this._next;
             return next ? next.ctxData : MAX_LOCATION;
         }
@@ -1787,7 +1794,7 @@ module Priv {
         }
         private _cursor:            C.IVisualCursor;
         public  _idx:               number;
-        private _location:          C.Location;
+        private _location:          C.Time;
         private _sidx:              number;
         _voice:                     C.IVoice;
         private _part:              C.IPart;
@@ -1799,7 +1806,7 @@ module Priv {
         instrument: null
     };
 
-    function _cpyline(ctx: Context, line: ILineSnapshot, mode: NewlineMode) {
+    function _cpyline(ctx: Context, line: ILineSnapshot) {
         "use strict";
 
         if (!!line.accidentalsByStaff  ) { ctx.accidentalsByStaff = C.JSONx.clone(line.accidentalsByStaff); }
@@ -1814,17 +1821,12 @@ module Priv {
         if (  line.y           !== null) { ctx.y                  = line.y;                  }
     }
 
-    enum NewlineMode {
-        StartOfLine,
-        MiddleOfLine
-    }
-
-    var MAX_LOCATION = new C.Location({
+    var MAX_LOCATION = new C.Time({
         bar:  C.MAX_NUM,
         division: C.MAX_NUM
     });
 
-    var MIN_LOCATION = new C.Location({
+    var MIN_LOCATION = new C.Time({
         bar:  -1,
         division: -1
     });

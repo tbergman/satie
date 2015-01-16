@@ -30,7 +30,6 @@ var Renderer = (function (_super) {
             _this.forceUpdate();
         };
         this.handleMouseMoveThrottled = _.throttle(function (mouse) {
-            var data = _this._getPointerData(mouse);
             _this.setState({
                 mouse: mouse
             });
@@ -74,7 +73,7 @@ var Renderer = (function (_super) {
         var height10s = print.pageLayout.pageHeight;
         var viewbox = "0 0 " + width10s + " " + height10s;
         var vcHeight = 48 + ctx.staveSpacing * (ctx._voices.length - 1) / 2;
-        _.map(parts, function (part, idx) {
+        _.map(parts, function (part) {
             _.chain(part.containsVoice).keys().map(function (k) { return parseInt(k, 10); }).sort().map(function (voice) { return voices[voice]; }).map(null);
         });
         var rawPages = _.map(pages, function (page, pidx) {
@@ -178,7 +177,6 @@ var Renderer = (function (_super) {
         var foundObj = null;
         var foundIdx;
         var ctxData;
-        var ctx = this.getCtx();
         var info = this._getStaveInfoForY(mouse.y, mouse.page);
         if (info) {
             var ctx = this.getCtx();
@@ -252,26 +250,6 @@ var Renderer = (function (_super) {
         }
         return null;
     };
-    Renderer.prototype._elementsInBBox = function (box, mouse) {
-        var ret = [];
-        var ctx = this.getCtx();
-        for (var h = 0; h < this.props.voices.length; ++h) {
-            var body = this.props.voices[h].body;
-            if (!body) {
-                continue;
-            }
-            var inRange = function (min, val, max) {
-                return min < val && val < max;
-            };
-            for (var i = ctx.pageStarts[mouse.page]; i < body.length && body[i].type !== 120 /* NewPage */; ++i) {
-                var item = body[i];
-                if (inRange(box.top - 1, item.y, box.bottom + 1) && inRange(box.left, item.x, box.right)) {
-                    ret.push(item);
-                }
-            }
-        }
-        return ret;
-    };
     Renderer.prototype.getInitialState = function () {
         return {
             mouse: { x: 0, y: 0 },
@@ -281,10 +259,6 @@ var Renderer = (function (_super) {
     Renderer.prototype.getPositionForMouse = function (event) {
         var target;
         if (useGL) {
-            var ctx = this.getCtx();
-            var scale40 = ctx.calcFontSize();
-            var print = C.getPrint(ctx._layout.header);
-            var widthMM = print.pageLayout.pageWidth;
             target = event.target;
             var rect = target.getBoundingClientRect();
             return {
@@ -402,7 +376,7 @@ var LineContainer = (function (_super) {
         }
         return React.createElement("g", null, this.props.generate());
     };
-    LineContainer.prototype.shouldComponentUpdate = function (nextProps, nextState) {
+    LineContainer.prototype.shouldComponentUpdate = function (nextProps) {
         var songDirty = this.props.store && this.props.store.dirty || nextProps.mainVoice !== this.props.mainVoice;
         var lineDirty = this.props.store && this.props.store.getLineDirty(nextProps.idx, nextProps.h);
         if (lineDirty) {

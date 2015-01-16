@@ -184,10 +184,6 @@ class DurationModel extends Model implements C.IPitchDuration {
             DurationModel.countToFlag[this.displayCount];
     }
 
-    set flag(a: string) {
-        assert(false, "Read-only property");
-    }
-
     get hasStem() {
         return DurationModel.countToHasStem[this.displayCount];
     }
@@ -233,9 +229,6 @@ class DurationModel extends Model implements C.IPitchDuration {
     get divisions(): number {
         assert(isFinite(this._divisions));  // Not valid before metre has been recorded.
         return this._divisions;
-    }
-    set divisions(n: number) {
-        assert(false, "Read-only property.");
     }
 
     get color() {
@@ -299,7 +292,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         // }
     }
 
-    modelDidLoad(body: Array<Model>, idx: number) {
+    modelDidLoad() {
         for (var i = 0; i < this.chord.length; ++i) {
             if (!this.chord[i]) {
                 this.isRest = true;
@@ -421,7 +414,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     for (i = 0; i < replaceWith.length; ++i) {
                         replaceWith[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                         if ((i + 1 !== replaceWith.length || addAfterBar.length) && !this.isRest) {
-                            replaceWith[i].tieds = this.chord.map(c => {
+                            replaceWith[i].tieds = this.chord.map(() => {
                                 return {
                                     type: C.MusicXML.StartStopContinue.Start
                                 };
@@ -431,7 +424,7 @@ class DurationModel extends Model implements C.IPitchDuration {
                     for (i = 0; i < addAfterBar.length; ++i) {
                         addAfterBar[i].chord = this.chord ? C.JSONx.clone(this.chord) : null;
                         if (i + 1 !== addAfterBar.length && !this.isRest) {
-                            replaceWith[i].tieds = this.chord.map(c => {
+                            replaceWith[i].tieds = this.chord.map(() => {
                                 return {
                                     type: C.MusicXML.StartStopContinue.Start
                                 };
@@ -530,7 +523,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
         if (!ctx.isBeam && this.inBeam) {
             // this.x = Math.max(this.x, ctx.x);
-            ctx.x = this.x + this.getWidth(ctx);
+            ctx.x = this.x + this.getWidth();
             this._handleTie(ctx);
             return C.IterationStatus.Success;
         } else if (!this.inBeam) {
@@ -610,7 +603,7 @@ class DurationModel extends Model implements C.IPitchDuration {
         /*---- Update context -----------------------------------------------*/
 
         this.x = ctx.x;
-        ctx.x += this.getWidth(ctx);
+        ctx.x += this.getWidth();
 
         if (!ctx.isBeam && !this._notes[0].grace) {
             ctx.division = (ctx.loc.division || 0) + this._divisions;
@@ -626,7 +619,7 @@ class DurationModel extends Model implements C.IPitchDuration {
 
     /*---- III. Util ----------------------------------------------------------------------------*/
 
-    private getWidth(ctx: Annotator.Context) {
+    private getWidth() {
         var grace = this._notes[0].grace;
         var baseWidth = grace ? 11.4 : 22.8;
 
@@ -791,7 +784,7 @@ class DurationModel extends Model implements C.IPitchDuration {
             assert(actual !== undefined);
             if (!ctx.accidentalsByStaff[this.staff]) {
                 // WARNING: This probably means there is no key signature yet.
-                return result.map(a => NaN);
+                return result.map(() => NaN);
             }
             var generalTarget = or3(ctx.accidentalsByStaff[this.staff][pitch.step], null);
             var target = or3(ctx.accidentalsByStaff[this.staff][pitch.step + pitch.octave], null);
@@ -1153,7 +1146,7 @@ module DurationModel {
         _restDisplayOctave: string;
 
         get dots(): C.MusicXML.Dot[] {
-            return _.times(this._parent.dots, idx => <C.MusicXML.Dot> {
+            return _.times(this._parent.dots, () => <C.MusicXML.Dot> {
                 // TODO: save/restore dot formatting
                 // TODO: display dot formatting
             });

@@ -3,7 +3,6 @@ var _ = require("lodash");
 exports.SMuFL = require("../util/SMuFL");
 exports.renderUtil = require("../util/renderUtil");
 exports.strHash = require("../util/hash");
-;
 (function (BeamCount) {
     BeamCount[BeamCount["Variable"] = -1] = "Variable";
     BeamCount[BeamCount["One"] = 1] = "One";
@@ -17,16 +16,6 @@ exports.strHash = require("../util/hash");
     BeamCount[BeamCount["Nine"] = 9] = "Nine";
 })(exports.BeamCount || (exports.BeamCount = {}));
 var BeamCount = exports.BeamCount;
-(function (Clef) {
-    Clef[Clef["Treble"] = 0] = "Treble";
-    Clef[Clef["Bass"] = 1] = "Bass";
-    Clef[Clef["Alto"] = 2] = "Alto";
-    Clef[Clef["Tenor"] = 3] = "Tenor";
-    Clef[Clef["Piano"] = 4] = "Piano";
-    Clef[Clef["Choral"] = 5] = "Choral";
-    Clef[Clef["TrebleDrums"] = 6] = "TrebleDrums";
-})(exports.Clef || (exports.Clef = {}));
-var Clef = exports.Clef;
 var DispatcherRedirect = (function () {
     function DispatcherRedirect(verb, newUrl) {
         this.newUrl = newUrl;
@@ -351,33 +340,32 @@ exports.InvalidDurationError = InvalidDurationError;
 })(exports.IterationStatus || (exports.IterationStatus = {}));
 var IterationStatus = exports.IterationStatus;
 ;
-var Location = (function () {
-    function Location(opts) {
+var Time = (function () {
+    function Time(opts) {
         this.bar = opts.bar;
         this.division = opts.division;
         this.endMarker = opts.endMarker;
     }
-    Location.prototype.eq = function (b) {
+    Time.prototype.eq = function (b) {
         return this.bar === b.bar && this.division === b.division;
     };
-    Location.prototype.lt = function (b) {
+    Time.prototype.lt = function (b) {
         return this.bar < b.bar || this.bar === b.bar && this.division < b.division;
     };
-    Location.prototype.le = function (b) {
+    Time.prototype.le = function (b) {
         return this.bar < b.bar || this.bar === b.bar && this.division <= b.division;
     };
-    Location.prototype.ge = function (b) {
+    Time.prototype.ge = function (b) {
         return this.bar > b.bar || this.bar === b.bar && this.division >= b.division;
     };
-    Location.prototype.gt = function (b) {
+    Time.prototype.gt = function (b) {
         return this.bar > b.bar || this.bar === b.bar && this.division > b.division;
     };
-    return Location;
+    return Time;
 })();
-exports.Location = Location;
+exports.Time = Time;
 exports.log2 = Math.log(2);
 exports.MAX_NUM = 1000000000;
-;
 exports.noteNames = ["C", "C\u266F", "D\u266D", "D", "D\u266F", "E\u266D", "E", "F", "F\u266F", "G\u266D", "G", "G\u266F", "A\u266D", "A", "A\u266F", "B\u266D", "B"];
 var MetreContext = (function () {
     function MetreContext(other) {
@@ -399,21 +387,11 @@ var MetreContext = (function () {
     return MetreContext;
 })();
 exports.MetreContext = MetreContext;
-(function (MidiEventType) {
-    MidiEventType[MidiEventType["NoteOn"] = 0] = "NoteOn";
-    MidiEventType[MidiEventType["NoteOff"] = 1] = "NoteOff";
-})(exports.MidiEventType || (exports.MidiEventType = {}));
-var MidiEventType = exports.MidiEventType;
 ;
 ;
 ;
 ;
 ;
-(function (PreviewMode) {
-    PreviewMode[PreviewMode["ExcludePreviews"] = 0] = "ExcludePreviews";
-    PreviewMode[PreviewMode["IncludePreviews"] = 1] = "IncludePreviews";
-})(exports.PreviewMode || (exports.PreviewMode = {}));
-var PreviewMode = exports.PreviewMode;
 ;
 (function (RectifyXPolicy) {
     RectifyXPolicy[RectifyXPolicy["Invalid"] = 0] = "Invalid";
@@ -458,88 +436,15 @@ var Type = exports.Type;
 ;
 ;
 ;
-;
 var NoteUtil;
 (function (NoteUtil) {
     "use strict";
-    function makeDuration(spec) {
-        "use strict";
-        return {
-            count: spec.count,
-            dots: spec.dots || 0,
-            tuplet: spec.tuplet || null,
-            displayTuplet: null
-        };
-    }
-    NoteUtil.makeDuration = makeDuration;
     function pitchToMidiNumber(p) {
         "use strict";
         var base = require("./duration").chromaticScale[p.step] + 48;
         return base + (p.octave || 0) * 12 + (p.alter || 0);
     }
     NoteUtil.pitchToMidiNumber = pitchToMidiNumber;
-    NoteUtil.noteToVal = {
-        c: 0,
-        d: 2,
-        e: 4,
-        f: 5,
-        g: 7,
-        a: 9,
-        b: 11
-    };
-    NoteUtil.valToNote = _.invert(NoteUtil.noteToVal);
-    function midiNumberToPitch(n, ctx) {
-        "use strict";
-        var key = ctx.attributes.keySignature;
-        var tendency = key.fifths >= 0 ? 0 : 1;
-        var idealStepsPerInterval = {
-            0: 0,
-            1: 0 + tendency,
-            2: 1,
-            3: 2,
-            4: 2,
-            5: 3,
-            6: 3 + tendency,
-            7: 4,
-            8: 5,
-            9: 5,
-            10: 6,
-            11: 6
-        };
-        var pitchS = NoteUtil.keyCircle[NoteUtil.circleOffsetByMode[key.mode] + key.fifths];
-        var pitch = {
-            alter: pitchS[1] === "#" ? 1 : (pitchS[1] === "b" ? -1 : 0),
-            octave: 0,
-            step: pitchS[0]
-        };
-        var halfStepsFromScaleRoot = (((n - pitchToMidiNumber(pitch)) % 12) + 12) % 12;
-        var idealSteps = idealStepsPerInterval[halfStepsFromScaleRoot];
-        var notesInv = {
-            "C": 0,
-            "D": 1,
-            "E": 2,
-            "F": 3,
-            "G": 4,
-            "A": 5,
-            "B": 6
-        };
-        var notes = _.invert(notesInv);
-        var base = notes[(notesInv[pitch.step] + idealSteps) % 7];
-        var acc = -positiveMod(pitchToMidiNumber({ octave: 0, alter: 0, step: base }) - n, 12) || null;
-        if (acc < -6) {
-            acc += 12;
-        }
-        return {
-            octave: Math.floor(n / 12 - 4),
-            alter: acc,
-            step: base
-        };
-    }
-    NoteUtil.midiNumberToPitch = midiNumberToPitch;
-    function positiveMod(base, mod) {
-        return ((base % mod) + mod) % mod;
-    }
-    NoteUtil.positiveMod = positiveMod;
     function getAccidentals(key) {
         var ret = {};
         if (key.fifths < 0) {
@@ -559,36 +464,6 @@ var NoteUtil;
     ;
     NoteUtil.flatCircle = "BEADGCF";
     NoteUtil.sharpCircle = "FCGDAEB";
-    NoteUtil.keyCircle = [
-        "Fb",
-        "Cb",
-        "Gb",
-        "Db",
-        "Ab",
-        "Eb",
-        "Bb",
-        "F ",
-        "C ",
-        "G ",
-        "D ",
-        "A ",
-        "E ",
-        "B ",
-        "F#",
-        "C#",
-        "G#",
-        "D#",
-        "A#",
-        "E#"
-    ];
-    NoteUtil.circleOffsetByMode = {
-        major: 8,
-        minor: 11
-    };
-    function isPitch(k, name, acc) {
-        return k.step === name && (k.alter || 0) === (acc || 0);
-    }
-    NoteUtil.isPitch = isPitch;
 })(NoteUtil = exports.NoteUtil || (exports.NoteUtil = {}));
 exports.InvalidAccidental = 9001;
 var JSONx;
@@ -605,31 +480,6 @@ var JSONx;
     }
     JSONx.hash = hash;
 })(JSONx = exports.JSONx || (exports.JSONx = {}));
-function deepAssign(a, b) {
-    "use strict";
-    if (a instanceof Array || b instanceof Array) {
-        var retArr = [];
-        var aArr = a;
-        var bArr = b;
-        for (var i = 0; i < Math.max(a ? aArr.length : 0, b ? bArr.length : 0); ++i) {
-            retArr.push(deepAssign(a ? aArr[i] : null, b ? bArr[i] : null));
-        }
-        return retArr;
-    }
-    else if (a instanceof Object || b instanceof Object) {
-        var ret = a ? JSONx.clone(a) : {};
-        for (var key in b) {
-            if (b.hasOwnProperty(key)) {
-                ret[key] = deepAssign(ret[key], b[key]);
-            }
-        }
-        return ret;
-    }
-    else {
-        return (a === undefined) ? b : a;
-    }
-}
-exports.deepAssign = deepAssign;
 function tsToSimpleTS(ts) {
     "use strict";
     var commonBeatType = _.reduce(ts.beatTypes, function (maxBT, beatType) { return Math.max(maxBT, beatType); }, 0);

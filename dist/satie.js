@@ -4,7 +4,6 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-exports.MusicXML = require("musicxml-interfaces");
 var React = require("react");
 var TypedReact = require("typed-react");
 var _ = require("lodash");
@@ -13,6 +12,7 @@ var C = require("./stores/contracts");
 var Dispatcher = require("./stores/dispatcher");
 var Renderer = require("./renderer/renderer");
 var ScoreStore = require("./stores/scoreStore");
+exports.MusicXML = C.MusicXML;
 function init(options) {
     "use strict";
     invariant(!BrowserSetup.cssInjected, "initSatie must be called before any Satie component is mounted " + "and must only be called once");

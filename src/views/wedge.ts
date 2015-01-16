@@ -67,7 +67,7 @@ class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
     }
 
     _hash: number;
-    shouldComponentUpdate(nextProps: {}, nextState: {}) {
+    shouldComponentUpdate(nextProps: {}) {
         var oldHash         = this._hash;
         this._hash          = C.JSONx.hash(nextProps);
 

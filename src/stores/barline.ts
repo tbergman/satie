@@ -295,11 +295,11 @@ module BarlineModel {
             // We want to keep this barline where it is!
             ctx.body[jdx] = new BarlineModel({ barStyle: {data: (<BarlineModel>inTwo).barStyle.data }}, true, engraved);
             (<BarlineModel>inTwo).barStyle.data = type;
-            ctx.insertPast(inTwo, null, true);
+            ctx.insertPast(inTwo, null);
             return;
         }
 
-        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true, engraved), null, true);
+        ctx.insertPast(new BarlineModel({ barStyle: {data: type }}, true, engraved), null);
     };
 }
 

@@ -258,7 +258,7 @@ var ScoreStoreStore = (function (_super) {
             bar: context.lines ? context.lines[context.line].bar : 1,
             division: context.lines ? context.lines[context.line].division : 0
         };
-        var result = context.annotate(location, cursor, disableRecording, this._dispatcher);
+        var result = context.annotate(location, cursor, disableRecording);
         if (ScoreStoreStore.PROFILER_ENABLED) {
             console.log("I broke the profiler");
         }
