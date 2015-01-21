@@ -16,17 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
-
 import React                = require("react");
 import TypedReact           = require("typed-react");
 
 import BeginModel           = require("../stores/begin");
-import Brace                = require("./_brace");
-import C                    = require("../stores/contracts");
+import _Brace               = require("./_brace");
 import PureModelViewMixin   = require("./pureModelViewMixin");
-import StaveLines           = require("./_staveLines");
+import _StaveLines          = require("./_staveLines");
 
+var    Brace                = React.createFactory(_Brace.Component);
+var    StaveLines           = React.createFactory(_StaveLines.Component);
 
 /**
  * Appears at the very beginning of the first stave.
@@ -36,24 +35,24 @@ class BeginView extends TypedReact.Component<BeginView.IProps, {}> {
     render() {
         var spec = this.props.spec;
 
-        return <!g>
-            <!StaveLines.Component
-                key="StaveLines"
-                width={this.props.spec.staveW}
-                x={spec.x}
-                y={spec.braceY} />
-            {spec.startOfSystem && spec.braceY2 - spec.braceY > 1 && <!Brace.Component
-                idx={1}
-                x={spec.x}
-                y={spec.braceY}
-                y2={spec.braceY2} />}
-        </g>
+        return React.DOM.g(null,
+            StaveLines({
+                key: "StaveLines",
+                width: this.props.spec.staveW,
+                x: spec.x,
+                y: spec.braceY}),
+            spec.startOfSystem && spec.braceY2 - spec.braceY > 1 && Brace({
+                idx: 1,
+                x: spec.x,
+                y: spec.braceY,
+                y2: spec.braceY2})
+        /* React.DOM.g */);
     }
 };
 
 module BeginView {
     "use strict";
-    export var Component = TypedReact.createClass(BeginView, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(BeginView, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

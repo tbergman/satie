@@ -16,15 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Line             = require("./_line");
+import _Line            = require("./_line");
 import getFontOffset    = require("./_getFontOffset");
+
+var    Line             = React.createFactory(_Line.Component);
 
 var stemThickness: number = C.SMuFL.bravuraMetadata.engravingDefaults.stemThickness*10;
 
@@ -35,16 +37,17 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
     render() {
         var fontOffsetX = this.getFontOffset()[0] * (this.props.grace ? 0.6 : 1.0);
         var fontOffsetY = this.getFontOffset()[1];
-        return <!Line.Component
-            x1={this.props.x + fontOffsetX*10 + this.lineXOffset()}
-            x2={this.props.x + fontOffsetX*10 + this.lineXOffset()}
-            y1={this.props.y - fontOffsetY*10 - (this.props.line - 3)*10}
-            y2={this.props.y -
+        return Line({
+            x1: this.props.x + fontOffsetX*10 + this.lineXOffset(),
+            x2: this.props.x + fontOffsetX*10 + this.lineXOffset(),
+            y1: this.props.y - fontOffsetY*10 - (this.props.line - 3)*10,
+            y2: this.props.y -
                 (this.props.line - 3)*10 -
                 fontOffsetY*10 -
-                this.direction()*this.height()}
-            stroke={this.props.stroke}
-            strokeWidth={stemThickness} />;
+                this.direction()*this.height(),
+            stroke: this.props.stroke,
+            strokeWidth: stemThickness
+        });
     }
 
     height() {
@@ -59,7 +62,7 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
         return this.direction() * - stemThickness/2;
     }
 
-    private getFontOffset = getFontOffset;
+    private getFontOffset: (field?: string) => number[] = getFontOffset;
 
     getDefaultProps() {
         return {
@@ -72,8 +75,7 @@ class NoteStem extends TypedReact.Component<NoteStem.IProps, {}> {
 }
 
 module NoteStem {
-    "use strict";
-    export var Component = TypedReact.createClass(NoteStem, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(NoteStem, <any> [PureRenderMixin]);
 
     export interface IProps {
         height: number;

@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
@@ -38,7 +40,6 @@ class Rect extends TypedReact.Component<Rect.IProps, {}> {
 }
 
 module Rect {
-    "use strict";
     export interface IProps {
         className?: string;
         fill: string;
@@ -50,7 +51,7 @@ module Rect {
         y: number;
     }
 
-    export var Component = TypedReact.createClass(Rect, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(Rect, <any> [PureRenderMixin]);
 }
 
 export = Rect;

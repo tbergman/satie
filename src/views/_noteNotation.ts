@@ -16,15 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 import PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                    = require("../stores/contracts");
-import Glyph                = require("./_glyph");
-import getFontOffset        = require("./_getFontOffset");
+import _Glyph               = require("./_glyph");
+
+var    Glyph                = React.createFactory(_Glyph.Component);
 
 /**
  * Renders annotations like staccato, or accents.
@@ -35,12 +36,13 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         var start   = C.SMuFL.bravuraBBoxes[this.props.notehead][3];
         var o2      = C.SMuFL.bravuraBBoxes[this.glyphName()][3];
         var s2      = C.SMuFL.bravuraBBoxes[this.glyphName()][0];
-        return <!Glyph.Component
-            x               = {this.props.x + this.xOffset() + (offset - start)/4/2 + (o2 - s2)/4/2}
-            y       		= {this.props.y - this.yOffset()}
-            fill    		= {this.glyphIsTemporary() ? "#A5A5A5" : "#000000"}
-            glyphName   	= {this.glyphName()}
-            glyphIsTemporary= {this.glyphIsTemporary()} />;
+        return Glyph({
+            x:                  this.props.x + this.xOffset() + (offset - start)/4/2 + (o2 - s2)/4/2,
+            y:              this.props.y - this.yOffset(),
+            fill:           this.glyphIsTemporary() ? "#A5A5A5" : "#000000",
+            glyphName:      this.glyphName(),
+            glyphIsTemporary:   this.glyphIsTemporary()
+        });
     }
 
     directionString() {
@@ -88,7 +90,6 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         }
         return this.props.direction;
     }
-    private getFontOffset = getFontOffset;
     xOffset() {
         // MXFIX
         // if (this.props.notation.indexOf("caesura") === 0) {
@@ -99,13 +100,13 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
         return 0;
     }
     yOffset() {
-		var m: number;
+        var m: number;
         if (this.shouldBeAboveStaff()) {
-			m = (6.0 + this.props.idx - 3)/4;
-			if (m + 1.5 <= this.props.line/4) {
-				m = (this.props.line)/4 + 1.5;
-			}
-			return m;
+            m = (6.0 + this.props.idx - 3)/4;
+            if (m + 1.5 <= this.props.line/4) {
+                m = (this.props.line)/4 + 1.5;
+            }
+            return m;
         } else if (this.shouldBeBelowStaff()) {
             m = (-1.5 + this.props.idx - 3)/4;
             if (m + 1.5 >= this.props.line/4) {
@@ -116,17 +117,14 @@ class NoteNotation extends TypedReact.Component<NoteNotation.IProps, {}> {
 
         if (this.direction() === 1) {
             return (this.props.line - 1.2 - (this.props.line % 1 && this.props.line - 1.2 > 0 ? 0.4 : 0) - this.props.idx - 3)/4;
-			//                               ^^^^^ Prevents notations from begin on lines
         }
 
         return (this.props.line + 1.2 + (this.props.line % 1  && this.props.line + 1.2 < 5 ? 0.4 : 0) + this.props.idx - 3)/4;
-		//                               ^^^^^ Prevents notations from begin on lines
     }
 }
 
 module NoteNotation {
-    "use strict";
-    export var Component = TypedReact.createClass(NoteNotation, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(NoteNotation, <any> [PureRenderMixin]);
 
     export interface IProps {
         direction: number; // -1 or 1

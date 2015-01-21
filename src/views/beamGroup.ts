@@ -16,20 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 import _                    = require("lodash");
 import assert               = require("assert");
 
-import Beam                 = require("./_beam");
+import _Beam                = require("./_beam");
 import BeamGroupModel       = require("../stores/beamGroup");
 import C                    = require("../stores/contracts");
 import Duration             = require("./duration");
 import DurationModel        = require("../stores/duration");
 import Note                 = require("./_note");
-import PureModelViewMixin   = require("./pureModelViewMixin");
+
+var    Beam                 = React.createFactory(_Beam.Component);
 
 /**
  * React component which draws notes and a beam given a collection
@@ -109,7 +110,7 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
         _.each(spec.beam, (note, idx) => {
             durationProps.push({
                 direction: direction,
-            	stemHeight: getSH(direction, idx, getExtremeLine(lines[idx], direction)),
+                stemHeight: getSH(direction, idx, getExtremeLine(lines[idx], direction)),
                 key: null,
                 spec: undefined
             });
@@ -117,26 +118,27 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
 
         var children = spec.generate(durationProps);
 
-        return <!g>
-            <!Beam.Component
-                beams={(spec.beams) || C.BeamCount.One}
-                variableBeams={spec.variableBeams}
-                variableX={spec.variableBeams ? Xs : null}
-                direction={direction}
-                key={"beam"}
-                line1={parseFloat("" + line1) +
-                    direction * getSH(direction, 0, line1)/10}
-                line2={parseFloat("" + line2) +
-                    direction * getSH(direction, spec.beam.length - 1, line2)/10}
-                stemWidth={1.4}
-                stroke={strokeEnabled ? strokeColor : "#000000"}
-                tuplet={spec.tuplet}
-                tupletsTemporary={spec.tupletsTemporary}
-                width={Xs[Xs.length - 1] - Xs[0]}
-                x={Xs[0] /* should assert all in order */}
-                y={Ys[0]/* should assert all are equal */} />
-            {children}
-        </g>;
+        return React.DOM.g(null,
+            Beam({
+                beams: (spec.beams) || C.BeamCount.One,
+                variableBeams: spec.variableBeams,
+                variableX: spec.variableBeams ? Xs : null,
+                direction: direction,
+                key: "beam",
+                line1: parseFloat("" + line1) +
+                    direction * getSH(direction, 0, line1)/10,
+                line2: parseFloat("" + line2) +
+                    direction * getSH(direction, spec.beam.length - 1, line2)/10,
+                stemWidth: 1.4,
+                stroke: strokeEnabled ? strokeColor : "#000000",
+                tuplet: spec.tuplet,
+                tupletsTemporary: spec.tupletsTemporary,
+                width: Xs[Xs.length - 1] - Xs[0],
+                x: Xs[0] /* should assert all in order */,
+                y: Ys[0] /* should assert all are equal */
+            }),
+            children
+        /* React.DOM.g */);
     }
 };
 
@@ -146,7 +148,6 @@ class BeamGroup extends TypedReact.Component<BeamGroup.IProps, {}> {
 var getExtremeLine = Note.getExtremeLine;
 
 module BeamGroup {
-    "use strict";
     export var Component = TypedReact.createClass(BeamGroup);
 
     export interface IProps {

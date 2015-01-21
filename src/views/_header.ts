@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 import React            = require("react");
 import TypedReact       = require("typed-react");
 
@@ -143,7 +145,6 @@ class Header extends TypedReact.Component<Header.IProps, {}> {
 }
 
 module Header {
-    "use strict";
     export var Component = TypedReact.createClass(Header);
 
     export interface INode {

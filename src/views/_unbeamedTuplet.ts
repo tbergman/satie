@@ -16,20 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
-import _                = require("lodash");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Glyph            = require("./_glyph");
+import _Glyph           = require("./_glyph");
 import getFontOffset    = require("./_getFontOffset");
+
+var    Glyph            = React.createFactory(_Glyph.Component);
 
 class UnbeamedTuplet extends TypedReact.Component<UnbeamedTuplet.IProps, {}> {
     render() {
-        return React.DOM.g(null, 
+        return React.DOM.g(null,
             React.DOM.polygon({
                 key: "p1",
                 points: this._getX1() + "," + this._getY1(0) + " " +
@@ -76,7 +77,7 @@ class UnbeamedTuplet extends TypedReact.Component<UnbeamedTuplet.IProps, {}> {
         return this.props.direction;
     }
 
-    private getFontOffset = getFontOffset;
+    private getFontOffset: (field?: string) => number[] = getFontOffset;
 
     private _withXOffset(x: number) {
         // Note that we use notehadBlack regardless of the note-bhead.
@@ -138,27 +139,32 @@ class UnbeamedTuplet extends TypedReact.Component<UnbeamedTuplet.IProps, {}> {
             var y = (this._getY1(1) +
                         this._getY2(1))/2 + 5.8;
 
-            return <!g>
-                <!polygon stroke="white" fill="white" strokeWidth={0}
-                    points={
+            return React.DOM.g(null,
+                /* TODO: We should simply not draw here. This breaks transparent backgrounds! */
+                React.DOM.polygon({
+                    stroke: "white",
+                    fill: "white",
+                    strokeWidth: 0,
+                    points: (
                         (this.props.x + offset - bbox[0]*10 + 4) + "," + (y - bbox[1]*10) + " " +
-                    	(this.props.x + offset - bbox[0]*10 + 4) + "," + (y + bbox[3]*10) + " " +
-                    	(this.props.x + offset + bbox[1]*10 + 4) + "," + (y + bbox[3]*10) + " " +
-                    	(this.props.x + offset + bbox[1]*10 + 4) + "," + (y - bbox[1]*10)} />
-                <!Glyph.Component
-                    "selection-info"="beamTuplet"
-                    fill={this.props.tupletsTemporary ? "#A5A5A5" : "#000000"}
-                    glyphName={symbol}
-                    x={this.props.x + offset}
-                    y={y} />
-            </g>;
+                        (this.props.x + offset - bbox[0]*10 + 4) + "," + (y + bbox[3]*10) + " " +
+                        (this.props.x + offset + bbox[1]*10 + 4) + "," + (y + bbox[3]*10) + " " +
+                        (this.props.x + offset + bbox[1]*10 + 4) + "," + (y - bbox[1]*10))
+                }),
+                Glyph({
+                    "selection-info": "beamTuplet",
+                    fill: this.props.tupletsTemporary ? "#A5A5A5" : "#000000",
+                    glyphName: symbol,
+                    x: this.props.x + offset,
+                    y: y
+                })
+            /* React.DOM.g */);
         }
     }
 };
 
 module UnbeamedTuplet {
-    "use strict";
-    export var Component = TypedReact.createClass(UnbeamedTuplet, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(UnbeamedTuplet, <any> [PureRenderMixin]);
 
     export interface IProps {
         direction: number;

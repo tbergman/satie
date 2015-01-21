@@ -2,5 +2,12 @@ partial
 .partialBuild
 node_modules
 website/static/build/browser-bundle.js
-tests/out/[0-9a-zA-Z]*
+website/build
+layout_test/out/[0-9a-zA-Z]*
+npm-debug.log
 *.swp
+.idea
+dist
+
+// temporary
+vendor/TypeScript

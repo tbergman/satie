@@ -16,26 +16,29 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Glyph            = require("./_glyph");
+import _Glyph           = require("./_glyph");
+
+var    Glyph            = React.createFactory(_Glyph.Component);
 
 /**
  * Renders a note head.
  */
 class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
     render() {
-        return <!Glyph.Component
-            x={this.props.x}
-            y={this.props.y - (this.props.line - 3)*10}
-            fill={this.props.stroke}
-            scale={this.props.grace ? 0.6 : 1.0}
-            glyphName={this.props.notehead} />;
+        return Glyph({
+            x: this.props.x,
+            y: this.props.y - (this.props.line - 3)*10,
+            fill: this.props.stroke,
+            scale: this.props.grace ? 0.6 : 1.0,
+            glyphName: this.props.notehead
+        });
     }
     getDefaultProps() {
         return {
@@ -47,8 +50,7 @@ class NoteHead extends TypedReact.Component<NoteHead.IProps, {}> {
 }
 
 module NoteHead {
-    "use strict";
-    export var Component = TypedReact.createClass(NoteHead, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(NoteHead, <any> [PureRenderMixin]);
 
     export interface IProps {
         line: number;

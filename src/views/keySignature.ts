@@ -16,16 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
-import TypedReact       	= require("typed-react");
-import _                	= require("lodash");
+import TypedReact           = require("typed-react");
+import _                    = require("lodash");
 
-import Accidental       	= require("./_accidental");
-import C                	= require("../stores/contracts");
+import _Accidental          = require("./_accidental");
+import C                    = require("../stores/contracts");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import KeySignatureModel    = require("../stores/keySignature");
+
+var    Accidental           = React.createFactory(_Accidental.Component);
 
 /**
  * Renders a key signature. Not responsible for calculating the width.
@@ -33,16 +35,17 @@ import KeySignatureModel    = require("../stores/keySignature");
 class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
     render() {
         var spec = this.props.spec;
-        return <!g>
-            {_.map(this.getAccidentals(), (a, idx) => <!Accidental.Component
-                key={idx /* for React */}
-                x={spec.x + idx*10}
-                y={spec.y}
-                line={a.line}
-                stroke={spec.color}
-                opacity={this.props.opacity}
-                accidental={a.accidental} />)}
-        </g>
+        return React.DOM.g(null,
+            _.map(this.getAccidentals(), (a, idx) => Accidental({
+                key: idx /* for React */,
+                x: spec.x + idx*10,
+                y: spec.y,
+                line: a.line,
+                stroke: spec.color,
+                opacity: this.props.opacity,
+                accidental: a.accidental
+            /* Accidental */}))
+        /* React.DOM.g */);
     }
 
     /**
@@ -66,7 +69,6 @@ class KeySignature extends TypedReact.Component<KeySignature.IProps, {}> {
 };
 
 function standardClef(clef: C.MusicXML.Clef) {
-    "use strict";
     switch (true) {
         case (clef.sign === "G"):
             return "treble";
@@ -100,8 +102,7 @@ var flats: { [key: string]: Array<number> } = {
 };
 
 module KeySignature {
-    "use strict";
-    export var Component = TypedReact.createClass(KeySignature, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(KeySignature, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

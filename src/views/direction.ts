@@ -16,12 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 
-import C                    = require("../stores/contracts");
 import DirectionModel       = require("../stores/direction");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 
@@ -31,13 +30,12 @@ import PureModelViewMixin   = require("./pureModelViewMixin");
  */
 class Direction extends TypedReact.Component<Direction.IProps, {}> {
     render(): any {
-        return <!g />;
+        return React.DOM.g(null);
     }
 };
 
 module Direction {
-    "use strict";
-    export var Component = TypedReact.createClass(Direction, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(Direction, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

@@ -16,16 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
-import assert               = require("assert");
 
-import C                    = require("../stores/contracts");
 import ClefModel            = require("../stores/clef");
-import Glyph                = require("./_glyph");
+import _Glyph               = require("./_glyph");
 import PureModelViewMixin   = require("./pureModelViewMixin");
+
+var    Glyph                = React.createFactory(_Glyph.Component);
 
 /**
  * Responsible for the rendering of a clef.
@@ -34,12 +34,13 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
     render(): any {
         var spec = this.props.spec;
         var x = spec.x - (spec.isChange ? 0.2 : 0);
-        var clef = <!Glyph.Component
-            x           = {x}
-            y           = {spec.y - (this.line() - 3)*10}
-            opacity     = {this.props.opacity}
-            fill        = {spec.color}
-            glyphName   = {this.sign()} />
+        var clef = Glyph({
+            x:          x,
+            y:          spec.y - (this.line() - 3)*10,
+            opacity:    this.props.opacity,
+            fill:       spec.color,
+            glyphName:  this.sign()
+        });
         return clef;
     }
 
@@ -63,8 +64,7 @@ class Clef extends TypedReact.Component<Clef.IProps, {}> {
 };
 
 module Clef {
-    "use strict";
-    export var Component = TypedReact.createClass(Clef, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(Clef, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

@@ -16,17 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 import _                    = require("lodash");
 import PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import C                    = require("../stores/contracts");
-import Glyph                = require("./_glyph");
+import _Glyph               = require("./_glyph");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import TimeSignatureModel   = require("../stores/timeSignature");
+
+var    Glyph                = React.createFactory(_Glyph.Component);
 
 /**
  * Renders a simple, compound, or common time signature.
@@ -41,36 +42,38 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
             var beatType = ts.beatType;
 
             if (beats === 4 && beatType === 4) {
-                return <!Glyph.Component
-                    x={spec.x}
-                    y={spec.y}
-                    fill={spec.color}
-                    glyphName="timeSigCommon" />
+                return Glyph({
+                    x: spec.x,
+                    y: spec.y,
+                    fill: spec.color,
+                    glyphName: "timeSigCommon"
+                });
             } else if (beats === 2 && beatType === 2) {
-                return <!Glyph.Component
-                    x={spec.x}
-                    y={spec.y}
-                    fill={spec.color}
-                    glyphName="timeSigCutCommon" />;
+                return Glyph({
+                    x: spec.x,
+                    y: spec.y,
+                    fill: spec.color,
+                    glyphName: "timeSigCutCommon"
+                });
             }
             // Cannot be represented in common representation. Pass through.
         }
-        return <!g>
-            <!TimeSignatureNumber.Component
-                    key="-5"
-                    stroke={spec.color}
-                    x={spec.x + this.numOffset()}
-                    y={spec.y - 10}>
-                {ts.beats}
-            </TimeSignatureNumber.Component>
-            <!TimeSignatureNumber.Component
-                    key="-6"
-                    stroke={spec.color}
-                    x={spec.x + this.denOffset()}
-                    y={spec.y + 10}>
-                {ts.beatType}
-            </TimeSignatureNumber.Component>
-        </g>;
+        return React.DOM.g(null,
+            React.createElement(TimeSignatureNumber.Component, {
+                    key: "-5",
+                    stroke: spec.color,
+                    x: spec.x + this.numOffset(),
+                    y: spec.y - 10},
+                ts.beats
+            ),
+            React.createElement(TimeSignatureNumber.Component, {
+                    key: "-6",
+                    stroke: spec.color,
+                    x: spec.x + this.denOffset(),
+                    y: spec.y + 10},
+                ts.beatType
+            )
+        /* React.DOM.g */);
     }
 
     numOffset() {
@@ -92,8 +95,7 @@ class TimeSignature extends TypedReact.Component<TimeSignature.IProps, {}> {
 };
 
 module TimeSignature {
-    "use strict";
-    export var Component = TypedReact.createClass(TimeSignature, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(TimeSignature, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;
@@ -104,20 +106,21 @@ module TimeSignature {
 /* private */
 class TimeSignatureNumber extends TypedReact.Component<TimeSignatureNumber.IProps, {}> {
     render() {
-        return <!g>
-            {_.map((this.props.children + "").split(""), (c, i) => <!Glyph.Component
-                key={"ts-" + i}
-                x={this.props.x + i*12}
-                y={this.props.y}
-                fill={this.props.stroke}
-                glyphName={"timeSig" + c} />)}
-        </g>;
+        return React.DOM.g(null,
+            _.map((this.props.children + "").split(""), (c, i) => Glyph({
+                key: "ts-" + i,
+                x: this.props.x + i*12,
+                y: this.props.y,
+                fill: this.props.stroke,
+                glyphName: "timeSig" + c
+            /* Glyph */}))
+        /* React.DOM.g */);
     }
 }
 
 /* private */
 module TimeSignatureNumber {
-    export var Component = TypedReact.createClass(TimeSignatureNumber, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(TimeSignatureNumber, <any> [PureRenderMixin]);
     export interface IProps {
         key: string;
         x: number;

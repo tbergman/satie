@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
@@ -88,9 +90,7 @@ class Glyph extends TypedReact.Component<Glyph.IProps, {}> {
 }
 
 module Glyph {
-    "use strict";
-
-    export var Component = TypedReact.createClass(Glyph, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(Glyph, <any> [PureRenderMixin]);
 
     export interface IProps {
         fill: string;

@@ -16,10 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _            = require("lodash");
-import assert   	= require("assert");
+"use strict";
 
-import C        	= require("../stores/contracts");
+import _            = require("lodash");
+import assert       = require("assert");
+
+import C            = require("../stores/contracts");
 
 var    getAnchor    = _.memoize((notehead: string) =>
                         (<any>C.SMuFL.bravuraMetadata.glyphsWithAnchors)[notehead]);
@@ -30,10 +32,9 @@ var    getAnchor    = _.memoize((notehead: string) =>
  * annotation.
  */
 function getFontOffset(notehead?: string, directionMult?: number) {
-    "use strict";
     notehead        = notehead || this.props.notehead;
-    var dm      	= directionMult || 1;
-    var anchors 	= getAnchor(notehead);
+    var dm          = directionMult || 1;
+    var anchors     = getAnchor(notehead);
 
     switch (true) {
         case !anchors:

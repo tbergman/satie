@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 import React                = require("react");
 import TypedReact           = require("typed-react");
 import PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
@@ -37,8 +39,7 @@ class Line extends TypedReact.Component<Line.IProps, {}> {
 }
 
 module Line {
-    "use strict";
-    export var Component = TypedReact.createClass(Line, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(Line, <any> [PureRenderMixin]);
 
     export interface IProps {
         className?: string;

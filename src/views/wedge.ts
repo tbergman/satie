@@ -16,14 +16,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import TypedReact       = require("typed-react");
 import React            = require("react");
 
 import C                = require("../stores/contracts");
+import PureModelViewMixin   = require("./pureModelViewMixin");
 import WedgeModel       = require("../stores/wedge");
-import Line             = require("./_line");
+import _Line            = require("./_line");
+
+var    Line             = React.createFactory(_Line.Component);
 
 /**
  * @file Renders a crescendo or diminuendo.
@@ -48,36 +51,31 @@ class Wedge extends TypedReact.Component<Wedge.IProps, {}> {
             spec.y - strokeWidth / 2 + 1.2,
         ];
 
-        return <!g>
-            <!Line.Component
-                x1={spec.x}
-                x2={spec.x + 0.8}
-                y1={(isCrec ? yIn : yOut)[0]}
-                y2={(isCrec ? yOut : yIn)[0]}
-                stroke="#000000"
-                strokeWidth={0.04} />
-            <!Line.Component
-                x1={spec.x}
-                x2={spec.x + 0.8}
-                y1={(isCrec ? yIn : yOut)[1]}
-                y2={(isCrec ? yOut : yIn)[1]}
-                stroke="#000000"
-                strokeWidth={0.04} />
-        </g>;
+        return React.DOM.g(null,
+            Line({
+                x1: spec.x,
+                x2: spec.x + 0.8,
+                y1: (isCrec ? yIn : yOut)[0],
+                y2: (isCrec ? yOut : yIn)[0],
+                stroke: "#000000",
+                strokeWidth: 0.04
+            }),
+            Line({
+                x1: spec.x,
+                x2: spec.x + 0.8,
+                y1: (isCrec ? yIn : yOut)[1],
+                y2: (isCrec ? yOut : yIn)[1],
+                stroke: "#000000",
+                strokeWidth: 0.04
+            })
+        /* React.DOM.g */);
     }
 
     _hash: number;
-    shouldComponentUpdate(nextProps: {}) {
-        var oldHash         = this._hash;
-        this._hash          = C.JSONx.hash(nextProps);
-
-        return oldHash !== this._hash;
-    }
 }
 
 module Wedge {
-    "use strict";
-    export var Component = TypedReact.createClass(Wedge);
+    export var Component = TypedReact.createClass(Wedge, <any> [PureModelViewMixin]);
     export interface IProps {
         key: number;
         spec: WedgeModel;

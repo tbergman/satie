@@ -16,15 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Line             = require("./_line");
+import _Line            = require("./_line");
 
+var    Line             = React.createFactory(_Line.Component);
 
 /**
  * Renders a ledger line at (x, y + line).
@@ -34,21 +35,21 @@ class LedgerLine extends TypedReact.Component<LedgerLine.IProps, {}> {
         var west = C.SMuFL.bravuraBBoxes[this.props.notehead][3];
         var east = C.SMuFL.bravuraBBoxes[this.props.notehead][0];
         var xOffset = (east - west)*10;
-        return <!Line.Component
-            x1                          = {this.props.x - 3.2}
-            x2                          = {this.props.x + xOffset - 0.2}
-            y1                          = {this.props.y - (this.props.line - 3)*10}
-            y2                          = {this.props.y - (this.props.line - 3)*10}
-            victoriaXStrokeWidthFactor  = {0}
-            stroke                      = {"#000000"}
-            strokeWidth                 = {2.2} />
-            // Ledger lines should be thicker than regular lines.
+        return Line({
+            x1:                         this.props.x - 3.2,
+            x2:                         this.props.x + xOffset - 0.2,
+            y1:                         this.props.y - (this.props.line - 3)*10,
+            y2:                         this.props.y - (this.props.line - 3)*10,
+            victoriaXStrokeWidthFactor: 0,
+            stroke:                     "#000000",
+            strokeWidth:                2.2
+                // Ledger lines should be thicker than regular lines.
+        });
     }
 }
 
 module LedgerLine {
-    "use strict";
-    export var Component = TypedReact.createClass(LedgerLine, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(LedgerLine, <any> [PureRenderMixin]);
 
     export interface IProps {
         line:       number;

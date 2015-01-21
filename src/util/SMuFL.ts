@@ -9,6 +9,8 @@
  * See http://smufl.org for more details.
  */
 
+"use strict";
+
 import _                        = require("lodash");
 
 export import bravuraMetadata   = require("./bravura_metadata");
@@ -17,7 +19,6 @@ import glyphNames           	= require("./glyphnames_diet");
 export var bravuraBBoxes: {[key:string]: any[];} = <any> _.indexBy(bravuraMetadata.glyphBBoxes, 4);
 
 export function getGlyphCode(name: string) {
-    "use strict";
     if (!(name in glyphNames)) {
         console.warn(name, " is not a valid glyph");
     }

@@ -16,17 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 
-import Brace                = require("./_brace");
-import C                    = require("../stores/contracts");
 import NewlineModel         = require("../stores/newline");
 import PureModelViewMixin   = require("./pureModelViewMixin");
-import StaveLines           = require("./_staveLines");
-import BarNumber            = require("./_barNumber");
+import _StaveLines          = require("./_staveLines");
+import _BarNumber           = require("./_barNumber");
+
+var    StaveLines           = React.createFactory(_StaveLines.Component);
+var    BarNumber            = React.createFactory(_BarNumber.Component);
 
 /**
  * Appears at the very beginning of a line, except the first line.
@@ -38,31 +39,24 @@ class NewlineView extends TypedReact.Component<NewlineView.IProps, {}> {
         var spec        = this.props.spec;
         var barNumber   = spec.ctxData.bar + "";
 
-        return <!g>
-            <!StaveLines.Component
-                key="StaveLines"
-                width={this.props.spec.staveW}
-                x={spec.x}
-                y={spec.braceY} />
-            <!BarNumber.Component 
-                x={spec.x - 0}
-                y={spec.braceY - 30}
-                barNumber={barNumber} />
-        </g>;
-
-        // {spec.pianoSystemContinues && spec.braceY2 - spec.braceY > 1 && <!Brace.Component MXFIX
-        //     idx={1}
-        //     x={spec.x}
-        //     fontSize={this.props.fontSize}
-        //     y={spec.braceY + spec.lineSpacing}
-        //     y2={spec.braceY2 + spec.lineSpacing} />}
+        return React.DOM.g(null,
+            StaveLines({
+                key: "StaveLines",
+                width: this.props.spec.staveW,
+                x: spec.x,
+                y: spec.braceY
+            }),
+            BarNumber({
+                x: spec.x - 0,
+                y: spec.braceY - 30,
+                barNumber: barNumber
+            })
+        /* React.DOM.g */);
     }
 };
 
-
 module NewlineView {
-    "use strict";
-    export var Component = TypedReact.createClass(NewlineView, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(NewlineView, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

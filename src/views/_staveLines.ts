@@ -16,38 +16,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import _                = require("lodash");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
-import Line             = require("./_line");
+import _Line            = require("./_line");
 import SMuFL            = require("../util/SMuFL");
+
+var    Line             = React.createFactory(_Line.Component);
 
 /**
  * Renders the (usually 5) lines that make up a stave.
  */
 class StaveLines extends TypedReact.Component<StaveLines.IProps, {}> {
     render() {
-        return <!g>
-            {_.times(5, i => <!Line.Component
-                key={"staff-" + i}
-                x1={this.props.x}
-                x2={this.props.x + this.props.width}
-                y1={this.props.y - 10*(i - 2)}
-                y2={this.props.y - 10*(i - 2)}
-                stroke="#6A6A6A"
-                victoriaXStrokeWidthFactor={0}
-                strokeWidth={SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness*10} />)}
-        </g>;
+        return React.DOM.g(null,
+            _.times(5, i => Line({
+                key: "staff-" + i,
+                x1: this.props.x,
+                x2: this.props.x + this.props.width,
+                y1: this.props.y - 10*(i - 2),
+                y2: this.props.y - 10*(i - 2),
+                stroke: "#6A6A6A",
+                victoriaXStrokeWidthFactor: 0,
+                strokeWidth: SMuFL.bravuraMetadata.engravingDefaults.staffLineThickness*10
+            }))
+        /* React.DOM.g */);
     }
 }
 
 module StaveLines {
-    "use strict";
-    export var Component = TypedReact.createClass(StaveLines, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(StaveLines, <any> [PureRenderMixin]);
 
     export interface IProps {
         width: number;

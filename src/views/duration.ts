@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
@@ -25,11 +25,14 @@ import assert               = require("assert");
 
 import C                    = require("../stores/contracts");
 import DurationModel        = require("../stores/duration");
-import Note                 = require("./_note");
-import NoteNotation         = require("./_noteNotation");
+import _Note                = require("./_note");
 import PureModelViewMixin   = require("./pureModelViewMixin");
-import Rest                 = require("./_rest");
-import UnbeamedTuplet       = require("./_unbeamedTuplet");
+import _Rest                = require("./_rest");
+import _UnbeamedTuplet      = require("./_unbeamedTuplet");
+
+var    Note                 = React.createFactory(_Note.Component);
+var    Rest                 = React.createFactory(_Rest.Component);
+var    UnbeamedTuplet       = React.createFactory(_UnbeamedTuplet.Component);
 
 /**
  * Renders notes and their notations.
@@ -42,20 +45,20 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
 
         var notations: any[] = spec.continuingNotations.map(this._mapContinuingNotation).filter(n => !!n);
         // _.map(spec.displayNotations || [], (m, idx) =>
-        //     <!NoteNotation.Component
-        //         idx={1}
-        //         direction={props.direction}
-        //         notation={m}
-        //         key={idx}
-        //         line={3}
-        //         notehead={props.spec.noteheadGlyph}
-        //         x={NaN /*assigned later :( */}
-        //         y={NaN /*assigned later :( */} />);
+        //     NoteNotation({
+        //         idx: 1,
+        //         direction: props.direction,
+        //         notation: m,
+        //         key: idx,
+        //         line: 3,
+        //         notehead: props.spec.noteheadGlyph,
+        //         x: NaN /*assigned later :( */,
+        //         y: NaN /*assigned later :( */}) />);
 
         /**
          * Mode to reduce unneeded renders.
          */
-        var zeroOffsetMode = !C.renderUtil.useGL && !spec.isRest &&
+        var zeroOffsetMode = !spec.isRest &&
             !_.any(spec.tieds, t => t && t.type !== C.MusicXML.StartStopContinue.Stop);
 
         var lyKey = 0;
@@ -76,14 +79,13 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
                                     case "Text":
                                         var textPt = <C.MusicXML.Text> l.lyricParts[i];
                                         var width = C.SMuFL.bravuraBBoxes[props.spec.noteheadGlyph][0]*10;
-                                        text.push(<!text
-                                                textAnchor="middle"
-                                                fontSize={textPt.fontSize || "22"}
-                                                key={++lyKey}
-                                                x={width/2 + (zeroOffsetMode ? 0 : spec.x)}
-                                                y={60      + (zeroOffsetMode ? 0 : spec.y)}>
-                                            {textPt.data}
-                                        </text>);
+                                        text.push(React.DOM.text({
+                                                textAnchor: "middle",
+                                                fontSize: textPt.fontSize || "22",
+                                                key: ++lyKey,
+                                                x: width/2 + (zeroOffsetMode ? 0 : spec.x),
+                                                y: 60      + (zeroOffsetMode ? 0 : spec.y)},
+                                            textPt.data));
                                 }
                             };
                             return text;
@@ -94,57 +96,58 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
         var dotOffset = C.SMuFL.bravuraBBoxes[props.spec.noteheadGlyph || spec.restHead][0]*10 + 6;
 
         if (spec.isRest) {
-            return <!Rest.Component
-                    dotOffset={dotOffset}
-                    dotted={spec.displayDots}
-                    line={spec.lines}
-                    key={spec.key}
-                    isNote={true /* In this context, we mean not a wrapper. */}
-                    notehead={spec.restHead}
-                    multiRest={spec.multiRest}
-                    spacing={spec.spacing}
-                    stroke={spec.color}
-                    x={spec.x}
-                    y={spec.y}>
-                {notations}
-            </Rest.Component>;
+            return Rest({
+                    dotOffset: dotOffset,
+                    dotted: spec.displayDots,
+                    line: spec.lines,
+                    key: spec.key,
+                    isNote: true /* In this context, we mean not a wrapper. */,
+                    notehead: spec.restHead,
+                    multiRest: spec.multiRest,
+                    spacing: spec.spacing,
+                    stroke: spec.color,
+                    x: spec.x,
+                    y: spec.y},
+                notations
+            /* Rest */);
         }
 
-        var note = <!Note.Component
-                    accidentals={spec._displayedAccidentals}
-                    accStrokes={spec.accStrokes}
-                    direction={this.props.direction || spec.direction}
-                    dotOffset={dotOffset}
-                    dotted={spec.displayDots}
-                    flag={spec.flag}
-                    hasStem={spec.hasStem}
-                    isNote={true}
-                    onLedger={spec.onLedger}
-                    lowestLine={spec.lowestLine}
-                    grace={_.map(spec._notes, n => n.grace)}
-                    highestLine={spec.highestLine}
-                    startingLine={spec.startingLine}
-                    key={spec.key}
-                    lyrics={lyrics}
-                    lines={spec.lines}
-                    notehead={spec.noteheadGlyph}
-                    secondaryStroke={spec.color}
-                    stemHeight={this.props.spec.stemHeight || this.props.stemHeight}
-                    strokes={spec.strokes}
-                    tieTo={spec.tieTo && spec.tieTo.x}
-                    x={zeroOffsetMode ? 0 : spec.x}
-                    y={zeroOffsetMode ? 0 : spec.y}>
-                {notations}
-            </Note.Component>
+        var note = Note({
+                    accidentals: spec._displayedAccidentals,
+                    accStrokes: spec.accStrokes,
+                    direction: this.props.direction || spec.direction,
+                    dotOffset: dotOffset,
+                    dotted: spec.displayDots,
+                    flag: spec.flag,
+                    hasStem: spec.hasStem,
+                    isNote: true,
+                    onLedger: spec.onLedger,
+                    lowestLine: spec.lowestLine,
+                    grace: _.map(spec._notes, n => n.grace),
+                    highestLine: spec.highestLine,
+                    startingLine: spec.startingLine,
+                    key: spec.key,
+                    lyrics: lyrics,
+                    lines: spec.lines,
+                    notehead: spec.noteheadGlyph,
+                    secondaryStroke: spec.color,
+                    stemHeight: this.props.spec.stemHeight || this.props.stemHeight,
+                    strokes: spec.strokes,
+                    tieTo: spec.tieTo && spec.tieTo.x,
+                    x: zeroOffsetMode ? 0 : spec.x,
+                    y: zeroOffsetMode ? 0 : spec.y},
+                notations
+            /* Note */);
 
         if (zeroOffsetMode) {
-            return <!g
-                    key={<any> spec.key /* numeric keys are okay */}
-                    x={spec.x /* for beam */}
-                    y={spec.y /* for beam */}
-                    transform={"translate(" + spec.x + "," + spec.y + ")"}>
-                {note}
-            </g>
+            return React.DOM.g({
+                        key: <any> spec.key /* numeric keys are okay */,
+                        x: spec.x /* for beam */,
+                        y: spec.y /* for beam */,
+                        transform: "translate(" + spec.x + "," + spec.y + ")"
+                    },
+                note
+            /* React.DOM.g */);
         } else {
             return note;
         }
@@ -162,11 +165,11 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
 
                 var line1 = (d === -1 ? first.lowestLine + d*first.stemHeight/40 : first.highestLine + d*first.stemHeight/40);
                 var line2 = (d === -1 ?  last.lowestLine + d* last.stemHeight/40 :  last.highestLine + d* last.stemHeight/40);
-                
+
                 line1 = d === -1 ? Math.min(line1, 4) : Math.max(line1, 1);
                 line2 = d === -1 ? Math.min(line2, 4) : Math.max(line2, 1);
 
-                return React.createElement(UnbeamedTuplet.Component, <UnbeamedTuplet.IProps> {
+                return UnbeamedTuplet({
                     key: "cn_" + idx,
                     direction: d,
                     line1: line1 + offset,
@@ -187,7 +190,7 @@ class Duration extends TypedReact.Component<Duration.IProps, {}> {
 }
 
 module Duration {
-    export var Component = TypedReact.createClass(Duration, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(Duration, <any> [PureModelViewMixin]);
     export interface IProps {
         key: number;
         spec: DurationModel;

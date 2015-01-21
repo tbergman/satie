@@ -16,14 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 import assert               = require("assert");
 
-import Bezier               = require("./_bezier");
-import C                    = require("../stores/contracts");
 import Note                 = require("./_note");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import SlurGroupModel       = require("../stores/slur");
@@ -61,28 +59,29 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
         assert(!isNaN(y1my2));
         assert(!isNaN(absw));
 
-        return <!Bezier.Component
-            x1={x2}
-            y1={y2}
+        return React.DOM.g(null, {
+            x1: x2,
+            y1: y2,
 
-            x2={0.28278198 / 1.23897534 * x1mx2 + x2}
-            y2={((dir === -1 ? y1my2 : 0) + absw) + y2}
+            x2: 0.28278198 / 1.23897534 * x1mx2 + x2,
+            y2: ((dir === -1 ? y1my2 : 0) + absw) + y2,
 
-            x3={0.9561935 / 1.23897534 * x1mx2 + x2}
-            y3={((dir === -1 ? y1my2 : 0) + absw) + y2}
+            x3: 0.9561935 / 1.23897534 * x1mx2 + x2,
+            y3: ((dir === -1 ? y1my2 : 0) + absw) + y2,
 
-            x4={x1}
-            y4={y1}
+            x4: x1,
+            y4: y1,
 
-            x5={0.28278198 / 1.23897534 * x2mx1 + x1}
-            y5={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
+            x5: 0.28278198 / 1.23897534 * x2mx1 + x1,
+            y5: ((dir === -1 ? 0 : -y1my2) + absw + relw) + y1,
 
-            x6={0.95619358 / 1.23897534 * x2mx1 + x1}
-            y6={((dir === -1 ? 0 : -y1my2) + absw + relw) + y1}
+            x6: 0.95619358 / 1.23897534 * x2mx1 + x1,
+            y6: ((dir === -1 ? 0 : -y1my2) + absw + relw) + y1,
 
-            fill="#000000"
-            strokeWidth={1.2}
-            stroke="#000000" />
+            fill: "#000000",
+            strokeWidth: 1.2,
+            stroke: "#000000"
+        });
     }
 
     getYOffset() {
@@ -113,8 +112,7 @@ class Slur extends TypedReact.Component<Slur.IProps, {}> {
 }
 
 module Slur {
-    "use strict";
-    export var Component = TypedReact.createClass(Slur, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(Slur, <any> [PureModelViewMixin]);
 
     export interface IProps {
         spec: SlurGroupModel;

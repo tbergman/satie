@@ -16,17 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
 
 import C                    = require("../stores/contracts");
 import BarlineModel         = require("../stores/barline");
-import Rect                 = require("./_rect");
-import Line                 = require("./_line");
+import _Line                = require("./_line");
 import PureModelViewMixin   = require("./pureModelViewMixin");
 import SMuFL                = require("../util/SMuFL");
+
+var    Line                 = React.createFactory(_Line.Component);
 
 /**
  * Renders a full-stave-height barline at (x,y).
@@ -41,44 +42,46 @@ class Barline extends TypedReact.Component<Barline.IProps, {}> {
             defaults.thickBarlineThickness*10;
 
         if (spec.barStyle.data === C.MusicXML.BarStyleType.LightHeavy) {
-            return <!g>
-                <!Line.Component
-                    key={1}
-                    x1={spec.x}
-                    x2={spec.x}
-                    y1={spec.y - spec.height - spec.yOffset}
-                    y2={spec.y + spec.height - spec.yOffset}
-                    stroke={spec.barStyle.color}
-                    victoriaYStrokeWidthFactor={0}
-                    fill={spec.barStyle.color}
-                    strokeWidth={defaults.thinBarlineThickness*10} />
-                <!Line.Component
-                    key={2}
-                    x1={thickX}
-                    x2={thickX}
-                    y1={spec.y - spec.height - spec.yOffset}
-                    y2={spec.y + spec.height - spec.yOffset}
-                    victoriaYStrokeWidthFactor={0}
-                    stroke={spec.barStyle.color}
-                    fill={spec.barStyle.color}
-                    strokeWidth={defaults.thickBarlineThickness*10} />
-            </g>;
+            return React.DOM.g(null,
+                Line({
+                    key: 1,
+                    x1: spec.x,
+                    x2: spec.x,
+                    y1: spec.y - spec.height - spec.yOffset,
+                    y2: spec.y + spec.height - spec.yOffset,
+                    stroke: spec.barStyle.color,
+                    victoriaYStrokeWidthFactor: 0,
+                    fill: spec.barStyle.color,
+                    strokeWidth: defaults.thinBarlineThickness*10
+                }),
+                Line({
+                    key: 2,
+                    x1: thickX,
+                    x2: thickX,
+                    y1: spec.y - spec.height - spec.yOffset,
+                    y2: spec.y + spec.height - spec.yOffset,
+                    victoriaYStrokeWidthFactor: 0,
+                    stroke: spec.barStyle.color,
+                    fill: spec.barStyle.color,
+                    strokeWidth: defaults.thickBarlineThickness*10
+                })
+            /* React.DOM.g */);
         }
 
-        return <!Line.Component
-            x1={spec.x}
-            x2={spec.x}
-            y1={spec.y - spec.height - spec.yOffset}
-            y2={spec.y + spec.height - spec.yOffset}
-            stroke={spec.barStyle.color}
-            fill={spec.barStyle.color}
-            strokeWidth={defaults.thinBarlineThickness*10} />
+        return Line({
+            x1: spec.x,
+            x2: spec.x,
+            y1: spec.y - spec.height - spec.yOffset,
+            y2: spec.y + spec.height - spec.yOffset,
+            stroke: spec.barStyle.color,
+            fill: spec.barStyle.color,
+            strokeWidth: defaults.thinBarlineThickness*10
+        });
     }
 };
 
 module Barline {
-    "use strict";
-    export var Component = TypedReact.createClass(Barline, [PureModelViewMixin]);
+    export var Component = TypedReact.createClass(Barline, <any> [PureModelViewMixin]);
 
     export interface IProps {
         key: number;

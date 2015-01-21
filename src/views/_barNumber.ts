@@ -16,24 +16,25 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React                = require("react");
 import TypedReact           = require("typed-react");
-import _                    = require("lodash");
 import PureRenderMixin      = require("react/lib/ReactComponentWithPureRenderMixin");
-
-import C                    = require("../stores/contracts");
 
 class BarNumber extends TypedReact.Component<BarNumber.IProps, {}> {
     render(): any {
-        return <!text x={this.props.x} y={this.props.y} fontSize={24} className="bn_">{this.props.barNumber}</text>;
+        return React.DOM.text({
+            x: this.props.x,
+            y: this.props.y,
+            fontSize: 24,
+            className: "bn_"
+        }, this.props.barNumber);
     }
 };
 
 module BarNumber {
-    "use strict";
-    export var Component = TypedReact.createClass(BarNumber, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(BarNumber, <any> [PureRenderMixin]);
 
     export interface IProps {
         barNumber: string;

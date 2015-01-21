@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tslint:disable */
+"use strict";
 
 import React            = require("react");
 import TypedReact       = require("typed-react");
@@ -24,8 +24,10 @@ import _                = require("lodash");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
 
 import C                = require("../stores/contracts");
-import Glyph            = require("./_glyph");
+import _Glyph           = require("./_glyph");
 import getFontOffset    = require("./_getFontOffset");
+
+var Glyph               = React.createFactory(_Glyph.Component);
 
 /**
  * Calculates a way to render a beam given two endpoints.
@@ -37,8 +39,8 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
             var xLow = this._getX1();
             var xHi = this._getX2();
 
-            return <!g>
-                {_.map(this.props.variableBeams, (beams: number, idx: number): any => {
+            return React.DOM.g(null,
+                _.map(this.props.variableBeams, (beams: number, idx: number): any => {
                     if (idx === 0) {
                         return null;
                     }
@@ -69,12 +71,12 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                             strokeWidth: 0
                         });
                     });
-                })}
-                {this._tuplet()}
-            </g>;
+                }),
+                this._tuplet()
+            /* React.DOM.g */);
         } else {
-            return <!g>
-                {_.times(this.props.beams, idx =>
+            return React.DOM.g(null,
+                _.times(this.props.beams, idx =>
                     React.DOM.polygon({
                         key: "" + idx,
                         points: this._getX1() + "," + this._getY1(0, idx) + " " +
@@ -84,9 +86,9 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                         stroke: this.props.stroke,
                         fill: this.props.stroke,
                         strokeWidth: 0})
-                )}
-                {this._tuplet()}
-            </g>;
+                ),
+                this._tuplet()
+            /* React.DOM.g */);
         }
     }
 
@@ -105,7 +107,7 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
         return this.props.direction;
     }
 
-    private getFontOffset = getFontOffset;
+    private getFontOffset: (field?: string) => number[] = getFontOffset;
 
     private _withXOffset(x: number) {
         // Note that we use notehadBlack regardless of the notehead.
@@ -175,19 +177,19 @@ class Beam extends TypedReact.Component<Beam.IProps, {}> {
                     (4 + 8*this.props.beams)*this.direction() + 5.2;
 
             // XXX: all tuplets are drawn as triplets.
-            return <!Glyph.Component
-                "selection-info"="beamTuplet"
-                fill={this.props.tupletsTemporary ? "#A5A5A5" : "#000000"}
-                glyphName="tuplet3"
-                x={this.props.x + offset/2}
-                y={y} />;
+            return Glyph({
+                "selection-info": "beamTuplet",
+                fill: this.props.tupletsTemporary ? "#A5A5A5" : "#000000",
+                glyphName: "tuplet3",
+                x: this.props.x + offset/2,
+                y: y
+            });
         }
     }
 };
 
 module Beam {
-    "use strict";
-    export var Component = TypedReact.createClass(Beam, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(Beam, <any> [PureRenderMixin]);
 
     export interface IProps {
         beams: C.BeamCount;

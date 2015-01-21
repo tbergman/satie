@@ -16,6 +16,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+"use strict";
+
 import React            = require("react");
 import TypedReact       = require("typed-react");
 import PureRenderMixin  = require("react/lib/ReactComponentWithPureRenderMixin");
@@ -58,8 +60,7 @@ class Dot extends TypedReact.Component<Dot.IProps, {}> {
 }
 
 module Dot {
-    "use strict";
-    export var Component = TypedReact.createClass(Dot, [PureRenderMixin]);
+    export var Component = TypedReact.createClass(Dot, <any> [PureRenderMixin]);
 
     export interface IProps {
         x: number;
