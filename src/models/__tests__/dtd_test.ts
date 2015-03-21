@@ -44,12 +44,15 @@ describe("import/export dtd validation", function() {
     const files = fs.readdirSync(root); // needs to be setup before leaving 'describe'
     _.forEach(files, file => {
         if (file.match(/\.xml$/)) {
+            if (file !== "01a.xml") {
+                return;
+            }
             describe(file, function() {
                 let input: string;
                 it("can be imported, exported, and validated", function(done) {
                     readFile(root + "/" + file, function(str) {
                         try {
-                            let out = Models.initFile(str);
+                            let out = (<any>_).flow(Models.importXML, Models.exportXML)(str);
                             let env = Object.create(process.env);
                             let err = "";
                             env.XML_CATALOG_FILES = "./vendor/musicxml-dtd/catalog.xml";

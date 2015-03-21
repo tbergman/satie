@@ -22,6 +22,8 @@
 
 "use strict";
 
+import invariant                = require("react/lib/invariant");
+
 /** 
  * Finds the positive greatest common factor of two numbers by using Euclid's algorithm.
  */
@@ -39,6 +41,8 @@ export function gcd(a: number, b: number) {
  * Calculates modified lcm. This functions handles zero and negatives.
  */
 export function lcm(a: number, b: number) {
+    invariant(isFinite(a), "%s is not finite", a);
+    invariant(isFinite(b), "%s is not finite", b);
     a = Math.abs(a);
     b = Math.abs(b);
     return Math.max(a, b, a * b / gcd(a, b) || 0);

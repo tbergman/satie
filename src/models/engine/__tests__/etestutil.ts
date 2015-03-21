@@ -42,7 +42,7 @@ export var fakeAttributeChordFactory: Engine.IModel.IFactory = {
 
 export function createFakeStaffSegment(divisions1: number, divisions2: number): Engine.Measure.ISegmentRef {
     return {
-        owner: 0,
+        owner: 1,
         staffSegment: {
             attributes: {
                 divisions: divisions1 + divisions2
@@ -50,7 +50,7 @@ export function createFakeStaffSegment(divisions1: number, divisions2: number): 
             models: [
                 {
                     divCount: divisions1,
-                    staffIdx: 0,
+                    staffIdx: 1,
                     frozenness: Engine.IModel.FrozenLevel.Warm,
                     modelDidLoad$: (segment$: Engine.Measure.ISegmentRef) => { /* pass */ },
                     validate$: function(cursor$: Engine.ICursor) {
@@ -72,7 +72,7 @@ export function createFakeStaffSegment(divisions1: number, divisions2: number): 
                 },
                 {
                     divCount: divisions2,
-                    staffIdx: 0,
+                    staffIdx: 1,
                     frozenness: Engine.IModel.FrozenLevel.Warm,
                     modelDidLoad$: (segment$: Engine.Measure.ISegmentRef) => { /* pass */ },
                     validate$: function(cursor$: Engine.ICursor) {
@@ -99,13 +99,13 @@ export function createFakeStaffSegment(divisions1: number, divisions2: number): 
 
 export function createFakeVoiceSegment(divisions1: number, divisions2: number): Engine.Measure.ISegmentRef {
     return {
-        owner: 0,
+        owner: 1,
         voiceSegment: {
             divisions: divisions1 + divisions2,
             models: [
                 {
                     divCount: divisions1,
-                    staffIdx: 0,
+                    staffIdx: 1,
                     frozenness: Engine.IModel.FrozenLevel.Warm,
                     modelDidLoad$: (segment$: Engine.Measure.ISegmentRef) => { /* pass */ },
                     validate$: function(cursor$: Engine.ICursor) {
@@ -128,7 +128,7 @@ export function createFakeVoiceSegment(divisions1: number, divisions2: number): 
                 },
                 {
                     divCount: divisions2,
-                    staffIdx: 0,
+                    staffIdx: 1,
                     frozenness: Engine.IModel.FrozenLevel.Warm,
                     modelDidLoad$: (segment$: Engine.Measure.ISegmentRef) => { /* pass */ },
                     validate$: function(cursor$: Engine.ICursor) {

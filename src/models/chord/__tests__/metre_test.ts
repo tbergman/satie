@@ -74,7 +74,7 @@ function genCursor(factory: Factory, models: Engine.IModel[]): Engine.ICursor {
             implicit: false,
             nonControlling: false,
             x: 0,
-            attributesByStaff$: [],
+            attributes$: [],
             uuid: -1
         },
         line: {

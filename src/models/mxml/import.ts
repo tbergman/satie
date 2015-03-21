@@ -39,7 +39,7 @@ import Metre            = require("../chord/metre");
  *          error will be set, and all other properties will be null.
  */
 export function toScore(score: MusicXML.ScoreTimewise,
-        factory: Engine.IModel.IFactory): ISatieImport {
+        factory: Engine.IModel.IFactory): Engine.IDocument {
     try {
         let header      = _extractMXMLHeader(score);
         let partData    = _extractMXMLPartsAndMeasures(score, factory);
@@ -50,7 +50,8 @@ export function toScore(score: MusicXML.ScoreTimewise,
         return {
             header:     header,
             parts:      partData.parts,
-            measures:   partData.measures
+            measures:   partData.measures,
+            factory:    factory
         };
     } catch(err) {
         return {
@@ -60,16 +61,6 @@ export function toScore(score: MusicXML.ScoreTimewise,
             error:      err
         };
     }
-}
-
-/**
- * Contains data that a ScoreStore can consume.
- */
-export interface ISatieImport {
-    header?:    Engine.ScoreHeader;
-    measures?:  Engine.Measure.IMutableMeasure[];
-    parts?:     Engine.IPart[];
-    error?:     any;
 }
 
 /*---- Private ----------------------------------------------------------------------------------*/
@@ -186,7 +177,7 @@ export function _extractMXMLPartsAndMeasures(input: MusicXML.ScoreTimewise,
                                 owner:              voice,
                                 voiceSegment: {
                                     models:         [],
-                                    divisions:      NaN
+                                    divisions:      divisions
                                 }
                             };
                         }

@@ -60,7 +60,7 @@ export interface IMeasure {
     /** 
      * Attributes from previous measure.
      */
-    attributesByStaff$: MusicXML.Attributes[];
+    attributes$: MusicXML.Attributes;
 
     /** 
      * A string uniquely identifying this bar, for collaboration
@@ -76,7 +76,7 @@ export module IMeasure {
             uuid: measure.uuid,
 
             implicit: measure.implicit,
-            attributesByStaff$: [],
+            attributes$: null,
             nonControlling: measure.nonControlling,
             number: measure.number,
             x: x
@@ -189,10 +189,10 @@ export module ILine {
     export function create(segments: Measure.ISegmentRef[]): ILine {
         return {
             barOnLine: 0,
-            shortestCount: _.reduce(segments,(shortest, segment) =>
-                _.reduce((segment.voiceSegment || segment.staffSegment).models, (shortest, model) =>
+            shortestCount: _.reduce(segments, (shortest, segment) =>
+                segment ? _.reduce((segment.voiceSegment || segment.staffSegment).models, (shortest, model) =>
                     Math.min(shortest, model && model.divCount ? model.divCount : Number.MAX_VALUE),
-                shortest),
+                shortest) : shortest,
             Number.MAX_VALUE)
         };
     }

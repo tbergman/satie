@@ -24,6 +24,7 @@ import Barline          = require("./barline");
 import BeamGroup        = require("./beamGroup");
 import Chord            = require("./chord");
 import Direction        = require("./direction");
+import Engine           = require("./engine");
 import Factory          = require("./factory");
 import FiguredBass      = require("./figuredBass");
 import Grouping         = require("./grouping");
@@ -49,7 +50,7 @@ export function makeFactory() {
     ]);
 }
 
-export function initFile(src: string): string {
+export function importXML(src: string): Engine.IDocument {
     let mxmljson    = MusicXML.parse(src);
     if ((<any>mxmljson).error) {
         throw (<any>mxmljson).error;
@@ -59,6 +60,20 @@ export function initFile(src: string): string {
     if (score.error) {
         throw score.error;
     }
+
+    let memo$ = Engine.Options.ILinesLayoutMemo.create();
+    let contextOptions: Engine.Options.ILayoutOptions = {
+        measures: score.measures,
+        pageLayout: score.header.defaults.pageLayout,
+        page$: 0,
+        modelFactory: factory
+    }
+    Engine.validate$(contextOptions, memo$);
+    
+    return score;
+}
+
+export function exportXML(score: Engine.IDocument): string {
     let out = "";
     out += score.header.toXML() + "\n";
     _.forEach(score.measures, measure => {

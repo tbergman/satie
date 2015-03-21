@@ -83,6 +83,7 @@
 
 "use strict";
 
+import MusicXML                 = require("musicxml-interfaces");
 import _                        = require("lodash");
 import invariant                = require("react/lib/invariant");
 
@@ -91,9 +92,10 @@ export import IChord            = require("./engine/ichord");
 export import ICursor           = require("./engine/icursor");
 export import IModel            = require("./engine/imodel");
 export import Measure           = require("./engine/measure");
+export import Options           = require("./engine/options");
+export import RenderUtil        = require("./engine/renderUtil");
 export import ScoreHeader       = require("./engine/scoreHeader");
 export import Util              = require("./engine/util");
-export import Options           = require("./engine/options");
 
 import _processMeasure          = require("./engine/_processMeasure");
 
@@ -152,16 +154,16 @@ export interface IMeasureLayoutOptions {
  * @returns an array of staff and voice layouts with an undefined order
  */
 export function layoutMeasure(opts: IMeasureLayoutOptions): Measure.IMeasureLayout {
-    var measureCtx = Ctx.IMeasure.detach(opts.measure, opts.x);
+    let measureCtx = Ctx.IMeasure.detach(opts.measure, opts.x);
 
-    var voiceRefs = <Measure.ISegmentRef[]> _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(opts.measure.parts),
+    let voiceRefs = <Measure.ISegmentRef[]> _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(opts.measure.parts),
                     part => part.voices), true);
-    var staffRefs = <Measure.ISegmentRef[]> _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(opts.measure.parts),
+    let staffRefs = <Measure.ISegmentRef[]> _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(opts.measure.parts),
                     part => part.staves), true);
 
-    var refs = voiceRefs.concat(staffRefs);
+    let refs = voiceRefs.concat(staffRefs);
 
-    var line = opts.line;
+    let line = opts.line;
 
     return _processMeasure({
         line: line,
@@ -187,7 +189,7 @@ export function approximateWidth(opts: IMeasureLayoutOptions): number {
         "\"FrozenEngraved\" status was not cleared.");
 
     opts = <IMeasureLayoutOptions> _.extend({ _approximate: true, _detached: true }, opts);
-    var layout = layoutMeasure(opts);
+    let layout = layoutMeasure(opts);
     return layout.width;
 }
 
@@ -198,9 +200,9 @@ export function approximateWidth(opts: IMeasureLayoutOptions): number {
  */
 export function justify(options: Options.ILayoutOptions, bounds: Options.ILineBounds,
         measures: Measure.IMeasureLayout[]): Measure.IMeasureLayout[] {
-    var x = bounds.left;
+    let x = bounds.left;
 
-    var measures$ = _.map(measures, Measure.IMeasureLayout.detach);
+    let measures$ = _.map(measures, Measure.IMeasureLayout.detach);
 
     /*---- 1. explode horizontally. ----*/
 
@@ -219,21 +221,21 @@ export function justify(options: Options.ILayoutOptions, bounds: Options.ILineBo
     // guess for a measure width was too liberal. In either case, we're shortening
     // the measure width here, and our partial algorithm doesn't work with negative
     // padding.
-    var partial = x < bounds.right && options.finalLine;
+    let partial = x < bounds.right && options.finalLine;
 
-    var expandableCount = _.reduce(measures$, function(memo, measure$) {
+    let expandableCount = _.reduce(measures$, function(memo, measure$) {
         // Precondition: all layouts at a given index have the same "expandable" value.
         return _.reduce(measure$.elements[0], function(memo, element$) {
             return memo + (element$.expandable ? 1 : 0);
         }, memo);
     }, 0);
 
-    var expansionRemaining: number;
-    var avgExpansion: number;
+    let expansionRemaining: number;
+    let avgExpansion: number;
     if (partial) {
-        var expansionRemainingGuess = bounds.right - 3 - x;
-        var avgExpansionGuess = expansionRemainingGuess / expandableCount;
-        var weight = Util.logistic((avgExpansionGuess - bounds.right / 80) / 20) * 2 / 3;
+        let expansionRemainingGuess = bounds.right - 3 - x;
+        let avgExpansionGuess = expansionRemainingGuess / expandableCount;
+        let weight = Util.logistic((avgExpansionGuess - bounds.right / 80) / 20) * 2 / 3;
         avgExpansion = (1 - weight)*avgExpansionGuess;
         expansionRemaining = avgExpansion * expandableCount;
     } else {
@@ -241,9 +243,9 @@ export function justify(options: Options.ILayoutOptions, bounds: Options.ILineBo
         avgExpansion = expansionRemaining/expandableCount;
     }
 
-    var anyExpandable = false;
+    let anyExpandable = false;
     _.forEachRight(measures$, function(measure) {
-        var expansionRemainingHold = expansionRemaining;
+        let expansionRemainingHold = expansionRemaining;
 
         _.forEachRight(measure.elements, function(elementArr) {
             expansionRemaining = expansionRemainingHold;
@@ -268,21 +270,21 @@ export function justify(options: Options.ILayoutOptions, bounds: Options.ILineBo
 
 export function layoutLine$(options: Options.ILayoutOptions, bounds: Options.ILineBounds,
         memo$: Options.ILinesLayoutState): Options.ILineLayoutResult {
-    var measures = options.measures;
-    var clean$ = memo$.clean$;
+    let measures = options.measures;
+    let clean$ = memo$.clean$;
 
-    var allModels = _.reduce(measures, function(memo, measure) {
-        var voiceRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(measure.parts),
+    let allModels = _.reduce(measures, function(memo, measure) {
+        let voiceRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(measure.parts),
                         part => part.voices), true);
-        var staffRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(measure.parts),
+        let staffRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(measure.parts),
                         part => part.staves), true);
 
-        var refs = voiceRefs$.concat(staffRefs$);
+        let refs = voiceRefs$.concat(staffRefs$);
         return memo.concat(refs);
     }, []);
-    var line = Ctx.ILine.create(allModels);
+    let line = Ctx.ILine.create(allModels);
 
-    var layouts = _.map(measures, (measure, measureIdx) => {
+    let layouts = _.map(measures, (measure, measureIdx) => {
         line.barOnLine = measureIdx;
         if (!(measure.uuid in clean$)) {
             clean$[measure.uuid] = layoutMeasure({
@@ -302,23 +304,33 @@ export function layoutLine$(options: Options.ILayoutOptions, bounds: Options.ILi
 }
 
 export function validate$(options$: Options.ILayoutOptions, memo$: Options.ILinesLayoutState): void {
-    var factory         = options$.modelFactory;
-    var modelHasType    = factory.modelHasType.bind(factory);
-    var createModel     = factory.create.bind(factory);
+    let factory         = options$.modelFactory;
+    let modelHasType    = factory.modelHasType.bind(factory);
+    let createModel     = factory.create.bind(factory);
+
+    let lastAttribs: MusicXML.Attributes = null;
 
     _.forEach(options$.measures, function(measure) {
         if (!(measure.uuid in memo$.clean$)) {
-            var voiceRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(measure.parts),
+            let voiceRefs$ = <Measure.ISegmentRef[]>
+                    _.flatten(_.map(<{ voices: Measure.ISegmentRef[] }[]> _.values(measure.parts),
                             part => part.voices), true);
-            var staffRefs$ = <Measure.ISegmentRef[]> _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(measure.parts),
+
+            let staffRefs$ = <Measure.ISegmentRef[]>
+                    _.flatten(_.map(<{ staves: Measure.ISegmentRef[] }[]> _.values(measure.parts),
                             part => part.staves), true);
 
-            var measureCtx = Ctx.IMeasure.detach(measure, 0);
-            var refs = voiceRefs$.concat(staffRefs$);
+            let measureCtx = Ctx.IMeasure.detach(measure, 0);
+            let refs = voiceRefs$.concat(staffRefs$);
 
+            _.forEach(refs, ref => Measure.resetSegment$(ref, null, factory));
             Measure.normalizeDivisons$(refs, 0);
+
             _.forEach(staffRefs$, function(ref) {
-                var models = ref.staffSegment.models;
+                if (!ref) {
+                    return;
+                }
+                let models = ref.staffSegment.models;
                 if (!modelHasType(models[0], IModel.Type.Attributes)) {
                     models.splice(0, 0, createModel(IModel.Type.Attributes));
                 }
@@ -336,6 +348,8 @@ export function validate$(options$: Options.ILayoutOptions, memo$: Options.ILine
                 _validateOnly: true, // <-- Just validate.
                 factory: factory
             });
+
+            console.log(measureCtx);
         }
     });
 }
@@ -344,12 +358,12 @@ export function layout$(options: Options.ILayoutOptions,
         memo$: Options.ILinesLayoutState): Options.ILineLayoutResult[] {
     // TODO: multiple pages.
 
-    var measures = options.measures;
-    var width$ = memo$.width$;
+    let measures = options.measures;
+    let width$ = memo$.width$;
 
-    var bounds = Options.ILineBounds.calculate(options.pageLayout, options.page$);
+    let bounds = Options.ILineBounds.calculate(options.pageLayout, options.page$);
 
-    var widths = _.map(measures, measure => {
+    let widths = _.map(measures, measure => {
         if (!(measure.uuid in width$)) {
             width$[measure.uuid] = approximateWidth({
                 measure: measure,
@@ -375,8 +389,8 @@ export function layout$(options: Options.ILayoutOptions,
     }
 
     // Super-naive for now...
-    var startingWidth = bounds.right - bounds.left - 150; // FIXME: replace 150 w/ proper __ESTIMATE__ space for start of line/staff
-    var lineOpts$ = _.reduce(widths, function(memo, width, idx) {
+    let startingWidth = bounds.right - bounds.left - 150; // FIXME: replace 150 w/ proper __ESTIMATE__ space for start of line/staff
+    let lineOpts$ = _.reduce(widths, function(memo, width, idx) {
         if (memo.remainingWidth > width) {
             memo.remainingWidth -= width;
         } else {
@@ -407,4 +421,15 @@ export function mutate$(options: Options.ILayoutOptions,
     throw "Not implemented";
 }
 
-export var MAX_SAFE_INTEGER = 9007199254740991;
+/**
+ * Contains data that a ScoreStore can consume.
+ */
+export interface IDocument {
+    error?:     any;
+    factory?:   IModel.IFactory;
+    header?:    ScoreHeader;
+    measures?:  Measure.IMutableMeasure[];
+    parts?:     IPart[];
+}
+
+export let MAX_SAFE_INTEGER = 9007199254740991;

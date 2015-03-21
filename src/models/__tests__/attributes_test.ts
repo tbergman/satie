@@ -51,7 +51,7 @@ function makeCursor(model: Engine.IModel, factory: Factory): Engine.ICursor {
             implicit: false,
             nonControlling: false,
             x: 100,
-            attributesByStaff$: [],
+            attributes$: null,
             uuid: 100
         },
         line: {

@@ -88,19 +88,19 @@ function _processMeasure(spec: _processMeasure.ILayoutOpts): Measure.IMeasureLay
 
     invariant(segments.length > 1, "_processMeasure expects at least one segment.");
 
-    var divisions       = segments[0].staffSegment ?
-                            segments[0].staffSegment.attributes.divisions :
-                            segments[0].voiceSegment.divisions;
+    var divisions       = segments[1].staffSegment ?
+                            segments[1].staffSegment.attributes.divisions :
+                            segments[1].voiceSegment.divisions;
 
     invariant(_.all(segments,
-        seg => divisions === (seg.staffSegment ?
+        seg => !seg || divisions === (seg.staffSegment ?
             seg.staffSegment.attributes.divisions :
             seg.voiceSegment.divisions)),
         "_processMeasure(...) expects all segments to have the same 'divisions' variable. \n" +
         "Use Measure.normalizeDivisions$(segments) to accomplish this.");
 
-    var staffMeasure               = _.indexBy(_.filter(segments, (seg: Measure.ISegmentRef) => seg.staffSegment), "owner");
-    var voiceMeasure               = _.filter(segments, (seg) => seg.voiceSegment);
+    var staffMeasure               = _.indexBy(_.filter(segments, (seg: Measure.ISegmentRef) => seg && seg.staffSegment), "owner");
+    var voiceMeasure               = _.filter(segments, (seg) => seg && seg.voiceSegment);
 
     var staffLayouts$: { [key: number]: IModel.ILayout[][] } = {};
 
@@ -154,6 +154,7 @@ function _processMeasure(spec: _processMeasure.ILayoutOpts): Measure.IMeasureLay
         return _.map(segmentRef.voiceSegment.models, (model, idx, list) => {
             var atEnd = idx + 1 === list.length;
             var staffIdx: number = model.staffIdx;
+            invariant(isFinite(model.staffIdx), "%s is not finite", model.staffIdx);
 
             // Create a voice-staff pair if needed. We'll later merge all the
             // voice staff pairs.

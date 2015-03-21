@@ -24,6 +24,7 @@
 
 import MusicXML         = require("musicxml-interfaces");
 import _                = require("lodash");
+import invariant        = require("react/lib/invariant");
 
 import IModel           = require("./imodel"); // @circular
 import Util             = require("./util");
@@ -73,20 +74,54 @@ export interface ISegmentRef {
     owner:           number;
 }
 
+/**
+ * Resets the attributes of a segment to what it should be at the start of a segment.
+ */
+export function resetSegment$(segment$: ISegmentRef, defaultAttributes: MusicXML.Attributes,
+        factory: IModel.IFactory) {
+    if (!segment$) {
+        return;
+    }
+
+    if (segment$.staffSegment) {
+        let updatedAttributes = false;
+        if (defaultAttributes) {
+            segment$.staffSegment.attributes = defaultAttributes;
+            updatedAttributes = true;
+        } else {
+            for (let i = 0; i < segment$.staffSegment.models.length; ++i) {
+                if (factory.modelHasType(segment$.staffSegment.models[i], IModel.Type.Attributes)) {
+                    segment$.staffSegment.attributes = <any> segment$.staffSegment.models[i];
+                    updatedAttributes = true;
+                    break;
+                }
+            }
+        }
+        invariant(updatedAttributes, "Could not find valid attributes.");
+    }
+}
+
 /** 
  * Given a set of segments, scales divisions so that they are compatible.
  */
 export function normalizeDivisons$(segments$: ISegmentRef[], factor: number = 0) {
-    var divisions = _.reduce(segments$, (divisions, segment) =>
-            Util.lcm(
+    var divisions = _.reduce(segments$, (divisions, segment) => {
+            return Util.lcm(
                 divisions,
-                segment.staffSegment ?
-                    segment.staffSegment.attributes.divisions :
-                    segment.voiceSegment.divisions
-            ),
+                segment ?
+                    (segment.staffSegment ?
+                        segment.staffSegment.attributes.divisions :
+                        segment.voiceSegment.divisions) :
+                    1
+            );
+        },
         factor);
 
     _.forEach(segments$, segment => {
+        if (!segment) {
+            return;
+        }
+
         var ratio = 1;
         if (segment.staffSegment) {
             ratio = divisions / segment.staffSegment.attributes.divisions;
@@ -100,7 +135,8 @@ export function normalizeDivisons$(segments$: ISegmentRef[], factor: number = 0)
             } else {
                 segment.voiceSegment.divisions *= ratio;
             }
-            _.forEach((<any> segment.staffSegment || segment.voiceSegment).models, (model: IModel) => {
+            _.forEach((<any> segment.staffSegment || segment.voiceSegment).models,
+                    (model: IModel) => {
                 if (model.divCount) {
                     model.divCount *= ratio;
                 }

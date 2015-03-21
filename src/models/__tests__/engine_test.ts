@@ -36,10 +36,12 @@ describe("[engine.ts]", function() {
     describe("layoutMeasure", function() {
         it("lays out a case with multiple voices", function() {
             var staffSegments = [
+                null,
                 ETestUtil.createFakeStaffSegment(4, 4)
             ];
 
             var voiceSegments = [
+                null,
                 ETestUtil.createFakeVoiceSegment(2, 6),
                 ETestUtil.createFakeVoiceSegment(1, 7)
             ];
@@ -77,10 +79,12 @@ describe("[engine.ts]", function() {
     describe("approximateWidth", function() {
         it("approximates mid-line width", function() {
             var staffSegments = [
+                null,
                 ETestUtil.createFakeStaffSegment(4, 4)
             ];
 
             var voiceSegments = [
+                null,
                 ETestUtil.createFakeVoiceSegment(2, 6),
                 ETestUtil.createFakeVoiceSegment(1, 7)
             ];
@@ -142,15 +146,17 @@ describe("[engine.ts]", function() {
         it("partially justifies multiple voices and measures on the final line", function() {
             var segments = [
                 {
-                    staves: [ETestUtil.createFakeStaffSegment(4, 4)],
+                    staves: [null, ETestUtil.createFakeStaffSegment(4, 4)],
                     voices: [
+                        null,
                         ETestUtil.createFakeVoiceSegment(2, 6),
                         ETestUtil.createFakeVoiceSegment(1, 7)
                     ]
                 },
                 {
-                    staves: [ETestUtil.createFakeStaffSegment(4, 4)],
+                    staves: [null, ETestUtil.createFakeStaffSegment(4, 4)],
                     voices: [
+                        null,
                         ETestUtil.createFakeVoiceSegment(1, 7),
                         ETestUtil.createFakeVoiceSegment(2, 6)
                     ]
@@ -224,8 +230,9 @@ describe("[engine.ts]", function() {
 
             var segments = _.times(10, function() {
                 return {
-                    staves: [ETestUtil.createFakeStaffSegment(4, 4)],
+                    staves: [null, ETestUtil.createFakeStaffSegment(4, 4)],
                     voices: [
+                        null,
                         ETestUtil.createFakeVoiceSegment(2, 6),
                         ETestUtil.createFakeVoiceSegment(1, 7)
                     ]
@@ -279,7 +286,7 @@ describe("[engine.ts]", function() {
                     ++calledCount;
                     return {
                         divCount: 0,
-                        staffIdx: 0,
+                        staffIdx: 1,
                         frozenness: Engine.IModel.FrozenLevel.Warm,
                         modelDidLoad$: (segment$: Engine.Measure.ISegmentRef) => { /* pass */ },
                         validate$: (cursor$: Engine.ICursor) => { /* pass */ },
@@ -304,8 +311,9 @@ describe("[engine.ts]", function() {
             var padding = 20;
 
             var segments = [{
-                staves: [ETestUtil.createFakeStaffSegment(4, 4)],
+                staves: [null, ETestUtil.createFakeStaffSegment(4, 4)],
                 voices: [
+                    null,
                     ETestUtil.createFakeVoiceSegment(2, 6),
                     ETestUtil.createFakeVoiceSegment(1, 7)
                 ]

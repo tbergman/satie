@@ -21,6 +21,7 @@ import fs               = require("fs");
 import yargs            = require("yargs");
 
 import Models           = require("./models/models");
+import Views            = require("./views/views");
 
 function readStdin(onEnd: (s: string) => void) {
     var content = "";
@@ -52,22 +53,22 @@ function cannotRead(err: any) {
         .wrap(100)
         .usage("Usage: $0 <command> [options]")
 
-        .example("$0 init -f file.xml", "print initialized MusicXML")
+        .example("$0 init -x file.xml", "print initialized MusicXML")
         .example("$0 init", "initialize from stdin")
 
-        .example("$0 diff -f old.xml -f new.xml", "print a patch from old to new")
-        .example("$0 diff -f old.xml", "print a patch from old to stdin")
+        .example("$0 diff -x old.xml -x new.xml", "print a patch from old to new")
+        .example("$0 diff -x old.xml", "print a patch from old to stdin")
 
-        .example("$0 patch -f old.xml -p p.mdiff", "print p.mdiff applied to old.xml")
+        .example("$0 patch -x old.xml -p p.mdiff", "print p.mdiff applied to old.xml")
         .example("$0 patch -p p.mdiff", "print p.mdiff applied to stdin")
 
-        .example("$0 render in.xml", "prints multiple svgs concatenated")
-        .example("$0 render in.xml --as out", "writes out001.svg, out002.svg, ...")
+        .example("$0 render -x in.xml", "prints multiple svgs concatenated")
+        .example("$0 render -x in.xml --as out", "writes out001.svg, out002.svg, ...")
 
         .demand(1)
-        .alias("f", "file")
-        .describe("f", "Specify a MusicXML file")
-        .default("file", ["<stdin>"])
+        .alias("x", "xml")
+        .describe("x", "Specify a MusicXML input")
+        .default("xml", ["<stdin>"])
 
         .describe("v", "Be verbose")
 
@@ -82,15 +83,14 @@ function cannotRead(err: any) {
             }
             switch (argv["_"][0]) {
                 case "init":
-                    if (argv["file"].length > 1) {
+                case "render":
+                    if (argv["xml"].length > 1) {
                         throw "Too many files specified.";
                     }
                     break;
                 case "diff":
                     throw argv["_"][0] + " is not implemented, yet.";
                 case "patch":
-                    throw argv["_"][0] + " is not implemented, yet.";
-                case "render":
                     throw argv["_"][0] + " is not implemented, yet.";
             }
             return true;
@@ -103,7 +103,7 @@ function cannotRead(err: any) {
         .command("diff", "generate a patch between two initialized MusicXML files")
         .command("patch", "applies patch from 'satie diff' to an initialized MusicXML file")
         .command("render", "converts a MusicXML file to one or more SVGs page-by-page")
-        .array("file")
+        .array("xml")
         .epilog("(C) Copyright Josh Netterfield 2015")
 
         .argv;
@@ -115,12 +115,12 @@ function cannotRead(err: any) {
     switch (argv._[0]) {
         case "init":
             if (verbose) {
-                console.warn("Reading from %s", argv.file[0]);
+                console.warn("Reading from %s", argv.xml[0]);
             }
-            if (argv.file[0] === "<stdin>") {
-                readStdin((<any>_).flow(Models.initFile, log));
+            if (argv.xml[0] === "<stdin>") {
+                readStdin((<any>_).flow(Models.importXML, Models.exportXML, log));
             } else {
-                readFile(argv.file[0], (<any>_).flow(Models.initFile, log), cannotRead);
+                readFile(argv.xml[0], (<any>_).flow(Models.importXML, Models.exportXML, log), cannotRead);
             }
             break;
         case "diff":
@@ -128,7 +128,16 @@ function cannotRead(err: any) {
         case "patch":
             throw "not implemented";
         case "render":
-            throw "not implemented";
+            if (verbose) {
+                console.warn("Reading from %s", argv.xml[0]);
+            }
+            const render = _.partialRight(Views.render, 1);
+            if (argv.xml[0] === "<stdin>") {
+                readStdin((<any>_).flow(Models.importXML, render, log));
+            } else {
+                readFile(argv.xml[0], (<any>_).flow(Models.importXML, render, log), cannotRead);
+            }
+            break;
     }
 }());
 

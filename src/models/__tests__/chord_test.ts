@@ -67,7 +67,7 @@ function getCursor(factory: Engine.IModel.IFactory, model: Engine.IModel): Engin
             implicit: false,
             nonControlling: false,
             x: 100,
-            attributesByStaff$: [attributes],
+            attributes$: attributes,
             uuid: 1
         },
         line: {

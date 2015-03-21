@@ -33,17 +33,18 @@ describe("[engine/measure.ts]", function() {
     describe("normalizeDivisions$", function() {
         it("correctly modifies all segments", function() {
             var segments = [
+                null,
                 ETestUtil.createFakeStaffSegment(4, 4),
                 ETestUtil.createFakeVoiceSegment(2, 6),
                 ETestUtil.createFakeVoiceSegment(4, 12),
             ];
             Measure.normalizeDivisons$(segments);
-            expect(segments[0].staffSegment.attributes.divisions).to.equal(16);
-            expect(segments[1].voiceSegment.divisions).to.equal(16);
+            expect(segments[1].staffSegment.attributes.divisions).to.equal(16);
             expect(segments[2].voiceSegment.divisions).to.equal(16);
-            expect(segments[0].staffSegment.models[1].divCount).to.equal(8);
-            expect(segments[1].voiceSegment.models[0].divCount).to.equal(4);
-            expect(segments[2].voiceSegment.models[1].divCount).to.equal(12);
+            expect(segments[3].voiceSegment.divisions).to.equal(16);
+            expect(segments[1].staffSegment.models[1].divCount).to.equal(8);
+            expect(segments[2].voiceSegment.models[0].divCount).to.equal(4);
+            expect(segments[3].voiceSegment.models[1].divCount).to.equal(12);
 
         });
     });

@@ -210,6 +210,7 @@ class ChordModelImpl implements ChordModel.IChordModel {
 
 ChordModelImpl.prototype.frozenness = Engine.IModel.FrozenLevel.Warm;
 ChordModelImpl.prototype.dots = 0;
+ChordModelImpl.prototype.staffIdx = 1;
 ChordModelImpl.prototype._isRest = false;
 
 module ChordModelImpl {
