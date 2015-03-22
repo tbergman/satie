@@ -1,13 +1,9 @@
-partial
 .partialBuild
 node_modules
-website/static/build/browser-bundle.js
-website/build
-layout_test/out/[0-9a-zA-Z]*
 npm-debug.log
 *.swp
-.idea
 dist
+coverage
 
 // temporary
 vendor/TypeScript
